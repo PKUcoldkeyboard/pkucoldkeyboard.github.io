@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='Redis基本介绍和常用命令'><title>Redis入门</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/redis-1/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='Redis入门'>
+<meta property='og:description' content='Redis基本介绍和常用命令'>
+<meta property='og:url' content='https://cuterwrite.top/p/redis-1/'>
+<meta property='og:site_name' content='cuterwrite'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2021-04-07T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2021-04-07T00:00:00&#43;00:00'/>
+<meta name="twitter:title" content="Redis入门">
+<meta name="twitter:description" content="Redis基本介绍和常用命令">
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_2.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
+        <h2 class="site-description">专注于IT互联网，包括但不限于Java、Python、Go、Dart、Flutter、Docker、K8S、大数据等。</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="main-article">
+    <header class="article-header">
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/" style="background-color: #E91E63; color: #fff;">
+                综合技术栈
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/redis-1/">Redis入门</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        Redis基本介绍和常用命令
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2021-04-07</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <h2 id="1命令返回值">1、命令返回值</h2>
+<ul>
+<li>状态回复
+<ul>
+<li>OK：成功</li>
+<li>PONG：响应PING</li>
+</ul>
+</li>
+<li>错误回复：命令不存在或者命令格式有误
+<ul>
+<li>Error Unknown command</li>
+</ul>
+</li>
+<li>整数回复：
+<ul>
+<li>INCR命令：返回递增后的键值</li>
+<li>DBSIZE命令：返回键的数量</li>
+</ul>
+</li>
+<li>字符串回复：
+<ul>
+<li>请求键的值或者请求一个其他类型键中的某个元素</li>
+</ul>
+</li>
+<li>多行字符串回复：
+<ul>
+<li>请求非字符串类型键的元素列表</li>
+<li>Keys (Pattern)：返回数据库中符合指定规则的键名</li>
+</ul>
+</li>
+</ul>
+<h2 id="2多数据库">2、多数据库</h2>
+<ul>
+<li>一个Redis实例提供了多个用来存储数据的字典，客户端可以指定数据存储在哪个字典中。</li>
+<li>数据库默认从0开始递增命名，默认支持16个数据库（DB0，DB1，&hellip;，DB15）</li>
+<li>不支持自定义数据库名字，也不支持单独设置访问密码</li>
+</ul>
+<h2 id="3命令大全">3、命令大全</h2>
+<h3 id="1通用命令">1、通用命令</h3>
+<h4 id="keys-pattern">keys pattern</h4>
+<p>获得符合规则的键名列表，支持？、*、[]、\x四种通配符</p>
+<ul>
+<li>keys命令会遍历所有键，不建议在生产环境中使用</li>
+<li>命令不区分大小写</li>
+</ul>
+<h4 id="exists-key">exists key</h4>
+<ul>
+<li>如果键存在返回1，否则返回0</li>
+</ul>
+<h4 id="del-key">del key</h4>
+<ul>
+<li>删除一个或多个键，返回删除的键的个数</li>
+</ul>
+<h4 id="type-key">type key</h4>
+<ul>
+<li>获得键值的数据类型</li>
+</ul>
+<h3 id="2字符串类型">2、字符串类型</h3>
+<h4 id="简介">简介</h4>
+<ul>
+<li>字符串类型是Redis中最基本的数据类型，它能存储任何形式的字符串，包括二进制数据，可以存储邮箱、JSON、或者一张图片，允许存储的最大容量是512MB</li>
+</ul>
+<h4 id="set-key-value--get-key">set key value / get key</h4>
+<ul>
+<li>赋值与取值</li>
+</ul>
+<h4 id="incr-key">incr key</h4>
+<ul>
+<li>递增数字，让当前键值递增，并返回递增后的值</li>
+<li>如果key不存在时会默认键值为0</li>
+</ul>
+<h4 id="incrby-key-increment">incrby key increment</h4>
+<ul>
+<li>增加指定的整数</li>
+</ul>
+<h4 id="decr-key">decr key</h4>
+<ul>
+<li>同上</li>
+</ul>
+<h4 id="decrby-key-decrement">decrby key decrement</h4>
+<ul>
+<li>同上</li>
+</ul>
+<h4 id="incrbyfloat-key-increment">incrbyfloat key increment</h4>
+<ul>
+<li>增加指定浮点数</li>
+</ul>
+<h4 id="append-key-value">append key value</h4>
+<ul>
+<li>尾部追加</li>
+</ul>
+<h4 id="strlen-key">strlen key</h4>
+<ul>
+<li>字符串长度</li>
+</ul>
+<h4 id="mget-key--mset-key1-value1-">mget key / mset key1 value1 &hellip;</h4>
+<ul>
+<li>同时获取/设置多个键值</li>
+</ul>
+<h4 id="位操作">位操作</h4>
+<ul>
+<li>getbit key offset</li>
+<li>setbit key offset value</li>
+<li>bitcount key</li>
+<li>bittop</li>
+</ul>
+<h4 id="使用场景">使用场景</h4>
+<ol>
+<li>文章访问量统计：为每篇文章使用一个名为post:文h章ID:page.view的键来记录文章的访问量，每次访问文章的时候使用incr命令。（键命名建议：“对象类型：对象ID：对象属性”）</li>
+<li>生成自增ID：对于每一类对象使用名为对象类型：count的键来存储当前类型对象的数量（如users:count），每次新增一个对象时都使用incr命令，返回值就是该新增对象的ID。</li>
+<li>存储文章数据：JSON存储</li>
+</ol>
+<h3 id="3hash类型">3、hash类型</h3>
+<h4 id="简介-1">简介</h4>
+<ul>
+<li>散列类型适合存储对象：使用对象类别和ID构成键名，使用字段表示属性，字段值则存储属性值。一个键最多存2^32 - 1个元素</li>
+</ul>
+<h4 id="hset-key-field-value">hset key field value</h4>
+<ul>
+<li>hset car price 500</li>
+</ul>
+<h4 id="hget-key-field">hget key field</h4>
+<ul>
+<li>hget car price</li>
+</ul>
+<h4 id="hmset-key-field-value">hmset key field value</h4>
+<h4 id="hmget-key-field">hmget key field</h4>
+<h4 id="hgetall-key">hgetall key</h4>
+<h4 id="hexists-key-field">hexists key field</h4>
+<h4 id="hsetnx-key-field-value">hsetnx key field value</h4>
+<ul>
+<li>
+<p>当字段不存在时赋值</p>
+</li>
+<li>
+<p>原子操作，线程安全</p>
+</li>
+</ul>
+<h4 id="hincrby-key-field-increment">hincrby key field increment</h4>
+<h4 id="hdel-key-field">hdel key field</h4>
+<h4 id="其他命令">其他命令</h4>
+<ul>
+<li>hkeys</li>
+<li>hvals</li>
+<li>hlen</li>
+</ul>
+<h4 id="使用场景-1">使用场景</h4>
+<ol>
+<li>存储文章数据</li>
+<li>存储文章缩略名：使用slug.to.id的键来存储文章缩略名和ID之间的映射关系。这样就可以用hexists判断缩略名是否存在，使用hget命令来获取缩略名对应的文章ID</li>
+</ol>
+<h3 id="4list类型">4、list类型</h3>
+<h4 id="简介-2">简介</h4>
+<ul>
+<li>可以存储一个有序的字符串列表，常用操作是向列表两端添加元素</li>
+<li>底层：双向链表，添加复杂度O（1）</li>
+<li>适用场景：只关心最新的内容</li>
+<li>一个键最多存2^32 - 1个元素</li>
+</ul>
+<h4 id="lpush-key-value1">lpush key value1&hellip;</h4>
+<h4 id="rpush-key-value1">rpush key value1&hellip;</h4>
+<h4 id="lpop-key">lpop key</h4>
+<h4 id="rpop-key">rpop key</h4>
+<h4 id="llen-key">llen key</h4>
+<h4 id="lrange-key-start-stop">lrange key start stop</h4>
+<ul>
+<li>获取列表片段（两边都是闭区间）</li>
+<li>支持负索引（与python类似）</li>
+<li>0，-1会返回所有元素</li>
+<li>start &gt; stop：返回空</li>
+<li>stop &gt; len：返回start,start + len</li>
+</ul>
+<h4 id="lrem-key-count-value">lrem key count value</h4>
+<ul>
+<li>删除列表中前count个值为value的元素，返回值是实际删除的元素个数</li>
+<li>count&gt;0时，从列表左边开始删除</li>
+<li>count&lt;0时，从列表右边开始删除</li>
+<li>count=0时，删除所有</li>
+</ul>
+<h4 id="lindex-key-index">lindex key index</h4>
+<ul>
+<li>索引取值，支持负数</li>
+</ul>
+<h4 id="lset-key-index-value">lset key index value</h4>
+<ul>
+<li>索引赋值</li>
+</ul>
+<h4 id="ltrim-key-start-end">ltrim key start end</h4>
+<ul>
+<li>删除指定索引外的全部值</li>
+</ul>
+<h4 id="linsert-key-beforeafter-pivot-value">linsert key before|after pivot value</h4>
+<ul>
+<li>首先查找pivot，然后插入其前面或后面</li>
+</ul>
+<h4 id="rpoplpush-source-destination">rpoplpush source destination</h4>
+<ul>
+<li>将一个元素转到另一个列表</li>
+</ul>
+<h4 id="使用场景-2">使用场景</h4>
+<ul>
+<li>存储文章ID列表</li>
+<li>存储评论列表</li>
+</ul>
+<h3 id="5set类型">5、set类型</h3>
+<h4 id="简介-3">简介</h4>
+<ul>
+<li>无序、唯一</li>
+<li>最多2^32 - 1个元素</li>
+<li>常用操作：插入、删除、判断某个元素是否存在、交集、并集、差集</li>
+</ul>
+<h4 id="sadd-key-member">sadd key member</h4>
+<h4 id="srem-key-member">srem key member</h4>
+<h4 id="smembers">smembers</h4>
+<ul>
+<li>返回所有元素</li>
+</ul>
+<h4 id="sismember-key-member">sismember key member</h4>
+<ul>
+<li>
+<p>判断元素是否在集合中</p>
+</li>
+<li>
+<p>O（1）</p>
+</li>
+</ul>
+<h4 id="sdiff-key1-key2-">sdiff key1 key2 &hellip;</h4>
+<ul>
+<li>求差集（ key1 - key2）</li>
+</ul>
+<h4 id="sinter-key1-key2">sinter key1 key2&hellip;</h4>
+<ul>
+<li>求交集</li>
+</ul>
+<h4 id="sunion-key1-key2">sunion key1 key2&hellip;</h4>
+<ul>
+<li>求并集</li>
+</ul>
+<h4 id="scard-key">scard key</h4>
+<ul>
+<li>获取元素个数</li>
+</ul>
+<h4 id="sdiffstoresinterstoresunionstore-destination-key1-key2">sdiffstore/sinterstore/sunionstore destination key1 key2&hellip;</h4>
+<ul>
+<li>存储集合操作的结果</li>
+</ul>
+<h4 id="srandmember-key-count">srandmember key count</h4>
+<ul>
+<li>count&gt;0时，获取不重复的随机count个元素</li>
+<li>count&lt;0时，获取可能重复的随机count个元素</li>
+</ul>
+<h4 id="spop">spop</h4>
+<ul>
+<li>随机选择一个元素弹出</li>
+</ul>
+<h4 id="使用场景-3">使用场景</h4>
+<ol>
+<li>存储文章标签</li>
+<li>通过标签搜索文章</li>
+</ol>
+<h3 id="6zset类型">6、zset类型</h3>
+<h4 id="简介-4">简介</h4>
+<ul>
+<li>有序</li>
+<li>唯一</li>
+<li>可以获取某一范围的袁旭</li>
+<li>底层：散列表和跳表，读取速度为O(logn)</li>
+</ul>
+<h4 id="zadd-key-score-member">zadd key score member</h4>
+<ul>
+<li>支持整数、双精度浮点数，甚至-inf和+inf</li>
+<li>可以修改score</li>
+</ul>
+<h4 id="zscore-key-member">zscore key member</h4>
+<h4 id="zrange-key-start-stop-withscores">zrange key start stop [withscores]</h4>
+<ul>
+<li>
+<p>获得排名在某个范围的元素</p>
+</li>
+<li>
+<p>可以添加分数</p>
+</li>
+<li>
+<p>复杂度为O(logn + m)</p>
+</li>
+</ul>
+<h4 id="zrangebyscore-key-min-max-withscores-limit-offset-count">zrangebyscore key min max [withscores] limit offset count</h4>
+<ul>
+<li>获得指定分数范围的元素，两边是闭区间</li>
+<li>支持inf</li>
+<li>数字前添加左圆括号表示开区间</li>
+<li>可以用limit限制返回的个数</li>
+</ul>
+<h4 id="zrevrangebyscore-key-max-min-withscores-limit-offset-count">zrevrangebyscore key max min [withscores] limit offset count</h4>
+<ul>
+<li>同上，改成降序</li>
+</ul>
+<h4 id="zincrby-key-increment-member">zincrby key increment member</h4>
+<ul>
+<li>增加某个元素的分数</li>
+</ul>
+<h4 id="zcard-key">zcard key</h4>
+<ul>
+<li>元素数量</li>
+</ul>
+<h4 id="zcount-key-min-max">zcount key min max</h4>
+<ul>
+<li>分数范围内个数</li>
+</ul>
+<h4 id="zrem-key-member1-">zrem key member1 &hellip;</h4>
+<h4 id="zremrangebyranke-key-start-stop">zremrangebyranke key start stop</h4>
+<ul>
+<li>根据排名范围删除元素</li>
+</ul>
+<h4 id="zremrangebyscore-key-min-max">zremrangebyscore key min max</h4>
+<ul>
+<li>根据分数范围删除元素</li>
+</ul>
+<h4 id="zrank-key-member">zrank key member</h4>
+<ul>
+<li>获取元素排名</li>
+</ul>
+<h4 id="zrevrank-key-member">zrevrank key member</h4>
+<ul>
+<li>降序排名</li>
+</ul>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+</aside>
+
+
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2021 cuterwrite
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css">
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
