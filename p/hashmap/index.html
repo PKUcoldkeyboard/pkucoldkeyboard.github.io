@@ -217,8 +217,25 @@
 </header>
 
     <section class="article-content">
-    <h1 id="hashmap源码分析">HashMap源码分析</h1>
-<h2 id="属性">属性</h2>
+    <ul>
+<li><a class="link" href="#hashmap----" >HashMap源码分析</a>
+<ul>
+<li><a class="link" href="#1---" >1 属性</a></li>
+<li><a class="link" href="#2-----" >2 构造方法</a></li>
+<li><a class="link" href="#3-----" >3 增加元素</a></li>
+<li><a class="link" href="#4-----" >4 读取元素</a></li>
+<li><a class="link" href="#5-----" >5 删除元素</a></li>
+<li><a class="link" href="#6---------" >6 底层数据结构分析</a>
+<ul>
+<li><a class="link" href="#61-jdk18--" >6.1 JDK1.8之前</a></li>
+<li><a class="link" href="#62-jdk18--" >6.2 JDK1.8之后</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="hashmap源码分析">HashMap源码分析</h1>
+<h2 id="1-属性">1 属性</h2>
 <ol>
 <li>
 <p>初始化容量</p>
@@ -269,7 +286,7 @@
 <div class="highlight"><pre class="chroma"><code class="language-java" data-lang="java"><span class="kt">float</span> <span class="n">loadFactor</span>
 </code></pre></div></li>
 </ol>
-<h2 id="构造方法">构造方法</h2>
+<h2 id="2-构造方法">2 构造方法</h2>
 <ol>
 <li>
 <p>HashMap()</p>
@@ -301,7 +318,7 @@
 <span class="o">}</span>
 </code></pre></div></li>
 </ol>
-<h2 id="增加元素">增加元素</h2>
+<h2 id="3-增加元素">3 增加元素</h2>
 <ol>
 <li>
 <p>put方法分析</p>
@@ -389,7 +406,11 @@
     <span class="n">afterNodeInsertion</span><span class="o">(</span><span class="n">evict</span><span class="o">);</span>
     <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
 <span class="o">}</span>
-</code></pre></div></li>
+</code></pre></div><ul>
+<li>如果定位到的数组位置没有元素，直接插入。</li>
+<li>如果定位到的数组位置有元素，就要和插入的key比较，key相同则直接覆盖，如果不相同，则判断p是否是TreeNode，如果是则调用e=((TreeNode&lt;K,V)p).putTreeVal(this, tab, hash, key, value)将元素添加进入。如果不是则遍历链表插入到链表尾部。</li>
+</ul>
+</li>
 <li>
 <p>resize方法分析</p>
 <div class="highlight"><pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">final</span> <span class="n">Node</span><span class="o">&lt;</span><span class="n">k</span><span class="o">,</span><span class="n">V</span><span class="o">&gt;[]</span> <span class="nf">resize</span><span class="o">(){</span>
@@ -429,7 +450,7 @@
 <span class="o">}</span>
 </code></pre></div></li>
 </ol>
-<h2 id="读取元素">读取元素</h2>
+<h2 id="4-读取元素">4 读取元素</h2>
 <ol>
 <li>
 <p>get方法分析</p>
@@ -473,7 +494,7 @@
 <span class="o">}</span>
 </code></pre></div></li>
 </ol>
-<h2 id="删除元素">删除元素</h2>
+<h2 id="5-删除元素">5 删除元素</h2>
 <ol>
 <li>
 <p>remove方法分析</p>
@@ -538,6 +559,35 @@
 <span class="o">}</span>
 </code></pre></div></li>
 </ol>
+<h2 id="6-底层数据结构分析">6 底层数据结构分析</h2>
+<h3 id="61-jdk18之前">6.1 JDK1.8之前</h3>
+<ul>
+<li>
+<p>底层：数组加链表</p>
+</li>
+<li>
+<p>基本原理：通过key的hashcode经过扰动处理得到hash值，然后通过(n - 1) &amp; hash判断当前元素存放的位置，如果当前位置存在元素的话，就判断该元素与要存放的元素的hash值以及key是否相同，如果相同则直接覆盖，不相同就用拉链法解决冲突。</p>
+</li>
+<li>
+<p>扰动函数：hash方法，目的是防止一些实现比较差的hashcode方法，减少碰撞。</p>
+</li>
+<li>
+<p>hash方法：</p>
+<div class="highlight"><pre class="chroma"><code class="language-java" data-lang="java"><span class="kd">static</span> <span class="kt">int</span> <span class="nf">hash</span><span class="o">(</span><span class="kt">int</span> <span class="n">h</span><span class="o">){</span>
+  <span class="n">h</span> <span class="o">^=</span> <span class="o">(</span><span class="n">h</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">20</span><span class="o">)</span> <span class="o">^</span> <span class="o">(</span><span class="n">h</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">12</span><span class="o">);</span>
+  <span class="k">return</span> <span class="n">h</span> <span class="o">^</span> <span class="o">(</span><span class="n">h</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">7</span><span class="o">)</span> <span class="o">^</span> <span class="o">(</span><span class="n">h</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">4</span><span class="o">);</span>
+<span class="o">}</span>
+</code></pre></div><p>性能较于1.8差，扰动次数为4</p>
+</li>
+<li>
+<p>拉链法：将链表和数组结合，也就是创建一个链表数组Node&lt;K,V&gt;[]，如果遇到哈希冲突，则将冲突的值加到链表中即可。</p>
+</li>
+</ul>
+<h3 id="62-jdk18之后">6.2 JDK1.8之后</h3>
+<ul>
+<li>底层：数组加链表加红黑树</li>
+<li>基本原理：当链表长度大于阈值8时，会调用treeifyBin方法，根据HashMap数组决定是否转化成红黑树，只有当<strong>数组长度大于或者等于64</strong>时，才会执行转换红黑树的操作，减减少搜索时间。否则只会进行resize()方法对数组进行扩容。</li>
+</ul>
 
 </section>
 
@@ -593,12 +643,36 @@
                 
                     
 <article class="">
-    <a href="/p/web-development/">
+    <a href="/p/arraylist-source-code/">
         
         
 
         <div class="article-details">
-            <h2 class="article-title">前端开发知识点复习</h2>
+            <h2 class="article-title">ArrayList源码分析</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="">
+    <a href="/p/useful-tool/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">实用工具和网址</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="">
+    <a href="/p/web-development-1/">
+        
+        
+
+        <div class="article-details">
+            <h2 class="article-title">前端开发知识点复习-基础篇</h2>
         </div>
     </a>
 </article>
@@ -623,18 +697,6 @@
 
         <div class="article-details">
             <h2 class="article-title">自动上传脚本测试</h2>
-        </div>
-    </a>
-</article>
-                
-                    
-<article class="">
-    <a href="/p/redis-1/">
-        
-        
-
-        <div class="article-details">
-            <h2 class="article-title">Redis入门</h2>
         </div>
     </a>
 </article>
