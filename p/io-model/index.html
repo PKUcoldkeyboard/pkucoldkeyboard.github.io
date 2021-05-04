@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='select、poll、epoll'><title>Socket与IO模型</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/io-model/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='Socket与IO模型'>
+<meta property='og:description' content='select、poll、epoll'>
+<meta property='og:url' content='https://cuterwrite.top/p/io-model/'>
+<meta property='og:site_name' content='cuterwrite (Pang S.Z)'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2021-05-04T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2021-05-04T00:00:00&#43;00:00'/><meta property='og:image' content='https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/cheetah-3749168_1920.4pgxzkp625g0.jpg' />
+<meta name="twitter:title" content="Socket与IO模型">
+<meta name="twitter:description" content="select、poll、epoll"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/cheetah-3749168_1920.4pgxzkp625g0.jpg' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_2.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite (Pang S.Z)</a></h1>
+        <h2 class="site-description">北大在读本科生，主要使用的编程语言为Java、Python、JavaScript等，方向是web网页前后端开发（springBoot &#43; vue.js），python数据分析（numpy、pandas、可视化、spark等），目前找实习ing</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/io-model/">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/cheetah-3749168_1920.4pgxzkp625g0.jpg" loading="lazy" alt="Featured image of post Socket与IO模型" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/" style="background-color: #32c5e9; color: #fff;">
+                综合技术栈
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/io-model/">Socket与IO模型</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        select、poll、epoll
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2021-05-04</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <ul>
+<li><a class="link" href="#socket-io--" >Socket与IO模型</a>
+<ul>
+<li><a class="link" href="#1-io--" >1 IO模型</a>
+<ul>
+<li><a class="link" href="#11----io" >1.1 阻塞式IO</a></li>
+<li><a class="link" href="#12-----io" >1.2 非阻塞式IO</a></li>
+<li><a class="link" href="#13-io--" >1.3 IO复用</a></li>
+<li><a class="link" href="#14-----io" >1.4 信号驱动IO</a></li>
+<li><a class="link" href="#15---io" >1.5 异步IO</a></li>
+<li><a class="link" href="#16-io----" >1.6 IO模型对比</a></li>
+</ul>
+</li>
+<li><a class="link" href="#2-io--" >2 IO复用</a>
+<ul>
+<li><a class="link" href="#21-select" >2.1 select</a></li>
+<li><a class="link" href="#22-poll" >2.2 poll</a></li>
+<li><a class="link" href="#23-epoll" >2.3 epoll</a></li>
+<li><a class="link" href="#24-lt-et" >2.4 LT与ET</a></li>
+<li><a class="link" href="#25-select-poll-epoll--" >2.5 select、poll、epoll对比</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h1 id="socket与io模型">Socket与IO模型</h1>
+<h2 id="1-io模型">1 IO模型</h2>
+<h3 id="11-阻塞式io">1.1 阻塞式IO</h3>
+<p>应用进程被阻塞，直到<strong>数据从内核缓冲区复制到应用进程缓冲区中</strong>才返回。</p>
+<p>应该注意到，在阻塞的过程中，其它应用进程还可以执行，因此阻塞不意味着整个操作系统都被阻塞。因为其它应用进程还可以执行，所以不消耗 CPU 时间，这种模型的 CPU 利用率会比较高。</p>
+<h3 id="12-非阻塞式io">1.2 非阻塞式IO</h3>
+<p>应用进程执行系统调用之后，内核返回一个错误码。应用进程<strong>可以继续执行</strong>，但是需要不断的执行系统调用来获知 I/O 是否完成，这种方式称为<strong>轮询</strong>（polling）。</p>
+<p>由于 CPU 要处理更多的系统调用，因此这种模型的 CPU 利用率比较低。</p>
+<h3 id="13-io复用">1.3 IO复用</h3>
+<p>使用 select 或者 poll 等待数据，并且可以等待多个套接字中的任何一个变为可读。这一过程会被阻塞，当某一个套接字可读时返回，之后再使用 recvfrom 把数据从内核复制到进程中。</p>
+<p>它可以让单个进程具有处理多个 I/O 事件的能力。又被称为 Event Driven I/O，即事件驱动 I/O。</p>
+<p>如果一个 Web 服务器没有 I/O 复用，那么每一个 Socket 连接都需要创建一个线程去处理。如果同时有几万个连接，那么就需要创建相同数量的线程。相比于多进程和多线程技术，I/O 复用<strong>不需要进程线程创建和切换的开销</strong>，系统开销更小。</p>
+<h3 id="14-信号驱动io">1.4 信号驱动IO</h3>
+<p>应用进程使用 sigaction 系统调用，内核立即返回，应用进程<strong>可以继续执行</strong>，也就是说等待数据阶段应用进程是非阻塞的。<strong>内核在数据到达时</strong>向应用进程<strong>发送 SIGIO 信号</strong>，应用进程收到之后在信号处理程序中调用 recvfrom 将数据从内核复制到应用进程中。</p>
+<p>相比于非阻塞式 I/O 的轮询方式，信号驱动 I/O 的 CPU 利用率更高。</p>
+<h3 id="15-异步io">1.5 异步IO</h3>
+<p>应用进程执行 aio_read 系统调用会立即返回，应用进程可以继续执行，不会被阻塞，内核会在所有操作完成之后向应用进程发送信号。</p>
+<p>异步 I/O 与信号驱动 I/O 的区别在于，异步 I/O 的信号是通知应用进程 I/O 完成，而信号驱动 I/O 的信号是通知应用进程可以开始 I/O。</p>
+<h3 id="16-io模型对比">1.6 IO模型对比</h3>
+<ul>
+<li>同步IO：将数据从内核缓冲区复制到应用进程缓冲区的阶段（第二阶段），应用进程会阻塞。</li>
+<li>异步IO：第二阶段应用进程不会阻塞。</li>
+</ul>
+<p>同步IO包括：BIO、NIO、IO复用和信号驱动IO，它们的区别在第一阶段</p>
+<ul>
+<li>
+<p>BIO会直接阻塞应用进程，直到数据从内核缓冲区复制到应用进程缓冲区。</p>
+</li>
+<li>
+<p>NIO采用轮询方式判断IO是否完成，避免阻塞。</p>
+</li>
+<li>
+<p>信号驱动IO采用SIGIO信号方式，避免阻塞</p>
+</li>
+<li>
+<p>IO多路复用使用select/poll/epoll等待描述符成为就绪状态，避免阻塞。</p>
+</li>
+</ul>
+<p>其中，NIO、信号驱动IO和异步IO在第一阶段不会阻塞。</p>
+<h2 id="2-io复用">2 IO复用</h2>
+<h3 id="21-select">2.1 select</h3>
+<p>select 允许应用程序监视一组文件描述符，等待一个或者多个描述符成为就绪状态，从而完成 I/O 操作。</p>
+<p>缺点：</p>
+<ul>
+<li>单个进程所打开的FD是有限制的，通过FD_SETSIZE设置，默认1024</li>
+<li>每次调用select，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大</li>
+<li>对socket扫描时是线性扫描（对所有的fds遍历扫描），采用轮询的方法，效率较低（高并发时）</li>
+</ul>
+<h3 id="22-poll">2.2 poll</h3>
+<p>poll与select相比，只是没有fd的限制，其它基本一样</p>
+<p>缺点：</p>
+<ul>
+<li>每次调用poll，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大</li>
+<li>对socket扫描时是线性扫描，采用轮询的方法，效率较低（高并发时）</li>
+</ul>
+<h3 id="23-epoll">2.3 epoll</h3>
+<p>select 和 poll 速度都比较慢，每次调用都需要将全部描述符从应用进程缓冲区复制到内核缓冲区。</p>
+<p>epoll 只需要将描述符从进程缓冲区向内核缓冲区拷贝一次，并且进程不需要通过轮询来获得事件完成的描述符。</p>
+<p>缺点：epoll只能工作在linux下</p>
+<h3 id="24-lt与et">2.4 LT与ET</h3>
+<ul>
+<li>LT：LT模式下，只要这个fd还有数据可读，每次 epoll_wait都会返回它的事件，提醒用户程序去操作。</li>
+<li>ET：ET模式下，它只会提示一次，直到下次再有数据流入之前都不会再提示了，无论fd中是否还有数据可读。所以在ET模式下，read一个fd的时候一定要把它的buffer读完，或者遇到EAGAIN错误。</li>
+</ul>
+<h3 id="25-selectpollepoll对比">2.5 select、poll、epoll对比</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>select</strong></th>
+<th><strong>poll</strong></th>
+<th><strong>epoll</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>数据结构</td>
+<td>bitmap</td>
+<td>数组</td>
+<td>红黑树</td>
+</tr>
+<tr>
+<td>最大连接数</td>
+<td>1024</td>
+<td>无上限</td>
+<td>无上限</td>
+</tr>
+<tr>
+<td>fd拷贝</td>
+<td>每次调用select拷贝</td>
+<td>每次调用poll拷贝</td>
+<td>fd首次调用epoll_ctl拷贝，每次调用epoll_wait不拷贝</td>
+</tr>
+<tr>
+<td>工作效率</td>
+<td>轮询：O(n)</td>
+<td>轮询：O(n)</td>
+<td>回调：O(1)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p>本文转载自：<a class="link" href="https://github.com/CyC2018/CS-Notes"  target="_blank" rel="noopener"
+    >https://github.com/CyC2018/CS-Notes</a>，用于个人复习。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/jvm/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/naples-122698_1920.2vb750rs8te0.jpg" loading="lazy" data-key="jvm" data-hash="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/naples-122698_1920.2vb750rs8te0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JVM知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-se/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/river-6021951_1920.4hwe8w8ugb20.jpg" loading="lazy" data-key="java-se" data-hash="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/river-6021951_1920.4hwe8w8ugb20.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JavaSE知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-collection/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/antarctica-1987579_1920.4sf6q29twew0.jpg" loading="lazy" data-key="java-collection" data-hash="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/antarctica-1987579_1920.4sf6q29twew0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java容器知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-concurrent/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/santorini-1578440_1920.3ldusy6rm1k0.jpg" loading="lazy" data-key="java-concurrent" data-hash="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/santorini-1578440_1920.3ldusy6rm1k0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java并发知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/database-system/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/windmills-5614160_1920.7f194ofsigg0.jpg" loading="lazy" data-key="database-system" data-hash="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/20210503/windmills-5614160_1920.7f194ofsigg0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">计算机基础知识点总结（数据库系统 &#43; MySQL &#43; Redis）</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+        2021 cuterwrite (Pang S.Z)
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css">
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
