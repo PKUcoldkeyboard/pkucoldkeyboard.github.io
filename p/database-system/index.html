@@ -511,7 +511,7 @@
 <li>一个事务对数据对象 A 加了 S 锁，可以对 A 进行读取操作，但是不能进行更新操作。加锁期间其它事务能对 A 加 S 锁，但是不能加 X 锁。</li>
 </ul>
 <p>锁的兼容关系如下：</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207213523777.png" alt=""  /></p>
 <h4 id="322-意向锁">3.2.2 意向锁</h4>
 <p>使用意向锁（Intention Locks）可以更容易地支持多粒度封锁。</p>
 <p>在存在行级锁和表级锁的情况下，事务 T 想要对表 A 加 X 锁，就需要先检测是否有其它事务对表 A 或者表 A 中的任意一行加了锁，那么就需要对表 A 的每一行都检测一次，这是非常耗时的。</p>
@@ -522,7 +522,7 @@
 </ul>
 <p>通过引入意向锁，事务 T 想要对表 A 加 X 锁，只需要先检测是否有其它事务对表 A 加了 X/IX/S/IS 锁，如果加了就表示有其它事务正在使用这个表或者表中某一行的锁，因此事务 T 加 X 锁失败。</p>
 <p>各种锁的兼容关系如下：</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207214442687.png" alt=""  /></p>
 <p>解释如下：</p>
 <ul>
 <li>任意 IS/IX 锁之间都是兼容的，因为它们只表示想要对表加锁，而不是真正加锁；</li>
@@ -555,7 +555,7 @@
 <p>强制事务串行执行，这样多个事务互不干扰，不会出现并发一致性问题。</p>
 <p>该隔离级别需要加锁实现，因为要使用加锁机制保证同一时间只有一个事务执行，也就是保证事务串行执行。</p>
 <hr>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207223400787.png" alt=""  /></p>
 <h2 id="5-多版本并发控制">5 多版本并发控制</h2>
 <p>多版本并发控制（Multi-Version Concurrency Control, MVCC）是 MySQL 的 InnoDB 存储引擎实现隔离级别的一种具体方式，用于实现提交读和可重复读这两种隔离级别。而未提交读隔离级别总是读取最新的数据行，要求很低，无需使用 MVCC。可串行化隔离级别需要对所有读取的行都加锁，单纯使用 MVCC 无法实现。</p>
 <h3 id="51-基本思想">5.1 基本思想</h3>
@@ -574,11 +574,11 @@
 <span class="k">UPDATE</span> <span class="n">t</span> <span class="k">SET</span> <span class="n">x</span><span class="o">=</span><span class="s2">&#34;b&#34;</span> <span class="k">WHERE</span> <span class="n">id</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
 <span class="k">UPDATE</span> <span class="n">t</span> <span class="k">SET</span> <span class="n">x</span><span class="o">=</span><span class="s2">&#34;c&#34;</span> <span class="k">WHERE</span> <span class="n">id</span><span class="o">=</span><span class="mi">1</span><span class="p">;</span>
 </code></pre></div><p>因为没有使用 <code>START TRANSACTION</code> 将上面的操作当成一个事务来执行，根据 MySQL 的 AUTOCOMMIT 机制，每个操作都会被当成一个事务来执行，所以上面的操作总共涉及到三个事务。快照中除了记录事务版本号 TRX_ID 和操作之外，还记录了一个 bit 的 DEL 字段，用于标记是否被删除。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208164808217.png" alt=""  /></p>
 <p>INSERT、UPDATE、DELETE 操作会创建一个日志，并将事务版本号 TRX_ID  写入。DELETE 可以看成是一个特殊的 UPDATE，还会额外将 DEL 字段设置为 1。</p>
 <h3 id="54-readview">5.4 ReadView</h3>
 <p>MVCC 维护了一个 ReadView 结构，主要包含了当前系统未提交的事务列表 TRX_IDs {TRX_ID_1, TRX_ID_2, &hellip;}，还有该列表的最小值 TRX_ID_MIN 和 TRX_ID_MAX。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208171445674.png" alt=""  /></p>
 <p>在进行 SELECT 操作时，根据数据行快照的 TRX_ID 与 TRX_ID_MIN 和 TRX_ID_MAX 之间的关系，从而判断数据行快照是否可以使用：</p>
 <ul>
 <li>
@@ -618,7 +618,7 @@
 <p>B Tree 指的是 Balance Tree，也就是平衡树。平衡树是一颗查找树，并且所有叶子节点位于同一层。</p>
 <p>B+ Tree 是基于 B Tree 和<strong>叶子节点顺序访问指针</strong>进行实现，它具有 B Tree 的平衡性，并且通过顺序访问指针来提高<strong>区间查询</strong>的性能。</p>
 <p>在 B+ Tree 中，一个节点中的 key 从左到右非递减排列，如果某个指针的左右相邻 key 分别是 key<!-- raw HTML omitted -->i<!-- raw HTML omitted --> 和 key<!-- raw HTML omitted -->i+1<!-- raw HTML omitted -->，且不为 null，则该指针指向节点的所有 key 大于等于 key<!-- raw HTML omitted -->i<!-- raw HTML omitted --> 且小于等于 key<!-- raw HTML omitted -->i+1<!-- raw HTML omitted -->。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/33576849-9275-47bb-ada7-8ded5f5e7c73.png" alt=""  /></p>
 <h4 id="112-操作">1.1.2. 操作</h4>
 <p>进行查找操作时，首先在根节点进行<strong>二分查找</strong>，找到一个 key 所在的指针，然后递归地在指针所指向的节点进行查找。直到查找到叶子节点，然后在叶子节点上进行二分查找，找出 key 所对应的 data。</p>
 <p>插入删除操作会破坏平衡树的平衡性，因此在进行插入删除操作之后，需要对树进行<strong>分裂、合并、旋转</strong>等操作来维护平衡性。</p>
@@ -639,9 +639,9 @@
 <p>可以指定多个列作为索引列，多个索引列共同组成键。</p>
 <p>适用于全键值、键值范围和键前缀查找，其中键前缀查找只适用于最左前缀查找。如果不是按照索引列的顺序进行查找，则无法使用索引。</p>
 <p>InnoDB 的 B+Tree 索引分为主索引和辅助索引。主索引的叶子节点 data 域记录着完整的数据记录，这种索引方式被称为聚簇索引。因为无法把数据行存放在两个不同的地方，所以一个表只能有一个聚簇索引。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/45016e98-6879-4709-8569-262b2d6d60b9.png" alt=""  /></p>
 <p>辅助索引的叶子节点的 data 域记录着主键的值，因此在使用辅助索引进行查找时，需要先查找到主键值，然后再到主索引中进行查找。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/7c349b91-050b-4d72-a7f8-ec86320307ea.png" alt=""  /></p>
 <h4 id="122-哈希索引">1.2.2 哈希索引</h4>
 <p>哈希索引能以 O(1) 时间进行查找，但是失去了有序性：</p>
 <ul>
@@ -812,11 +812,11 @@ customer_id_selectivity: 0.0373
 <h3 id="51-水平切分">5.1 水平切分</h3>
 <p>水平切分又称为 Sharding，它是将同一个表中的记录拆分到多个结构相同的表中。</p>
 <p>当一个表的数据不断增多时，Sharding 是必然的选择，它可以将数据分布到集群的不同节点上，从而缓存单个数据库的压力。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/63c2909f-0c5f-496f-9fe5-ee9176b31aba.jpg" alt=""  /></p>
 <h3 id="52-垂直切分">5.2 垂直切分</h3>
 <p>垂直切分是将一张表按列切分成多个表，通常是按照列的关系密集程度进行切分，也可以利用垂直切分将经常被使用的列和不经常被使用的列切分到不同的表中。</p>
 <p>在数据库的层面使用垂直切分将按数据库中表的密集程度部署到不同的库中，例如将原来的电商数据库垂直切分成商品数据库、用户数据库等。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/e130e5b8-b19a-4f1e-b860-223040525cf6.jpg" alt=""  /></p>
 <h3 id="53-sharding-策略">5.3 Sharding 策略</h3>
 <ul>
 <li>哈希取模：hash(key) % N；</li>
@@ -842,7 +842,7 @@ customer_id_selectivity: 0.0373
 <li><strong>I/O 线程</strong>  ：负责从主服务器上读取二进制日志，并写入从服务器的中继日志（Relay log）。</li>
 <li><strong>SQL 线程</strong>  ：负责读取中继日志，解析出主服务器已经执行的数据更改并在从服务器中重放（Replay）。</li>
 </ul>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/master-slave.png" alt=""  /></p>
 <h3 id="62-读写分离">6.2 读写分离</h3>
 <p>主服务器处理写操作以及实时性要求比较高的读操作，而从服务器处理读操作。</p>
 <p>读写分离能提高性能的原因在于：</p>
@@ -901,9 +901,9 @@ customer_id_selectivity: 0.0373
 <h3 id="32-跳跃表">3.2 跳跃表</h3>
 <p>是有序集合的底层实现之一。</p>
 <p>跳跃表是基于多指针有序链表实现的，可以看成多个有序链表。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/beba612e-dc5b-4fc2-869d-0b23408ac90a.png" alt=""  /></p>
 <p>在查找时，从上层指针开始查找，找到对应的区间之后再到下一层去查找。下图演示了查找 22 的过程。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/0ea37ee2-c224-4c79-b895-e131c6805c40.png" alt=""  /></p>
 <p>与红黑树等平衡树相比，跳跃表具有以下优点：</p>
 <ul>
 <li>插入速度非常快速，因为不需要进行旋转等操作来维护平衡性；</li>
@@ -1021,7 +1021,7 @@ customer_id_selectivity: 0.0373
 <h3 id="91-文件事件">9.1 文件事件</h3>
 <p>服务器通过套接字与客户端或者其它服务器进行通信，文件事件就是对套接字操作的抽象。</p>
 <p>Redis 基于 Reactor 模式开发了自己的网络事件处理器，使用 I/O 多路复用程序来同时监听多个套接字，并将到达的事件传送给文件事件分派器，分派器会根据套接字产生的事件类型调用相应的事件处理器。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/9ea86eb5-000a-4281-b948-7b567bd6f1d8.png" alt=""  /></p>
 <h3 id="92-时间事件">9.2 时间事件</h3>
 <p>服务器有一些操作需要在给定的时间点执行，时间事件是对这类定时操作的抽象。</p>
 <p>时间事件又分为：</p>
@@ -1033,7 +1033,7 @@ customer_id_selectivity: 0.0373
 <h3 id="93-事件的调度与执行">9.3 事件的调度与执行</h3>
 <p>服务器需要不断监听文件事件的套接字才能得到待处理的文件事件，但是不能一直监听，否则时间事件无法在规定的时间内执行，因此监听时间应该根据距离现在最近的时间事件来决定。</p>
 <p>从事件处理的角度来看，服务器运行流程如下：</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/c0a9fa91-da2e-4892-8c9f-80206a6f7047.png" alt=""  /></p>
 <h2 id="10-复制">10 复制</h2>
 <p>通过使用 slaveof host port 命令来让一个服务器成为另一个服务器的从服务器。</p>
 <p>一个从服务器只能有一个主服务器，并且不支持主主复制。</p>
@@ -1051,7 +1051,7 @@ customer_id_selectivity: 0.0373
 </ol>
 <h3 id="102-主从链">10.2 主从链</h3>
 <p>随着负载不断上升，主服务器可能无法很快地更新所有从服务器，或者重新连接和重新同步从服务器将导致系统超载。为了解决这个问题，可以创建一个中间层来分担主服务器的复制工作。中间层的服务器是最上层服务器的从服务器，又是最下层服务器的主服务器。</p>
-<!-- raw HTML omitted -->
+<p><img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/395a9e83-b1a1-4a1d-b170-d081e7bb5bab.png" alt=""  /></p>
 <h2 id="11-哨兵">11 哨兵</h2>
 <p>Sentinel（哨兵）可以监听集群中的服务器，并在主服务器进入下线状态时，自动从从服务器中选举出新的主服务器。</p>
 <h2 id="12-分片">12 分片</h2>
