@@ -6,7 +6,106 @@
         <description>Recent content on cuterwrite (Pang S.Z)</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Thu, 15 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 16 Aug 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>聊聊前缀树Trie</title>
+        <link>https://cuterwrite.top/p/trie/</link>
+        <pubDate>Mon, 16 Aug 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/trie/</guid>
+        <description>&lt;img src="https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/mountains-6522018__340.3begmxsrjam0.webp" alt="Featured image of post 聊聊前缀树Trie" /&gt;&lt;h1 id=&#34;聊聊前缀树trie&#34;&gt;聊聊前缀树Trie&lt;/h1&gt;
+&lt;h2 id=&#34;trie树简介&#34;&gt;Trie树简介&lt;/h2&gt;
+&lt;p&gt;Trie 树，也叫“字典树”。顾名思义，它是一个&lt;strong&gt;树形结构&lt;/strong&gt;。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。&lt;/p&gt;
+&lt;p&gt;此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如pan是panda的前缀）。&lt;/p&gt;
+&lt;p&gt;它的key都为字符串，能做到高效查询和插入，时间复杂度为O(k)，k为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;trie树特点&#34;&gt;Trie树特点&lt;/h2&gt;
+&lt;p&gt;假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。常见的方案有：①如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，时间复杂度为O(n)。②将字符串存入HashSet中，查找的时候时间复杂度为O(1)，但是缺点是空间复杂度高，假如有大量的字符串（比如10亿条）则会浪费大量的空间。&lt;/p&gt;
+&lt;p&gt;Trie树则通过空间换时间的方式，将字符串组织成下图的结构：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/v2-d82b7d102ad949dce0bfb92af3d41a11_720w.3xojsp6h3ig0.jpg&#34; alt=&#34;v2-d82b7d102ad949dce0bfb92af3d41a11_720w&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;通过上图，可以发现 Trie树 的三个特点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;根节点不包含字符，除根节点外每一个节点都只包含一个字符&lt;/li&gt;
+&lt;li&gt;从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串&lt;/li&gt;
+&lt;li&gt;每个节点的所有子节点包含的字符都不相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;trie树的插入操作&#34;&gt;Trie树的插入操作&lt;/h3&gt;
+&lt;p&gt;Trie树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词&lt;code&gt;cook&lt;/code&gt;，就有下面几步：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;插入第一个字母 &lt;code&gt;c&lt;/code&gt;，发现 &lt;code&gt;root&lt;/code&gt; 节点下方存在子节点 &lt;code&gt;c&lt;/code&gt;，则共享节点 &lt;code&gt;c&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第二个字母 &lt;code&gt;o&lt;/code&gt;，发现 &lt;code&gt;c&lt;/code&gt; 节点下方存在子节点 &lt;code&gt;o&lt;/code&gt;，则共享节点 &lt;code&gt;o&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第三个字母 &lt;code&gt;o&lt;/code&gt;，发现 &lt;code&gt;o&lt;/code&gt; 节点下方不存在子节点 &lt;code&gt;o&lt;/code&gt;，则创建子节点 &lt;code&gt;o&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第三个字母 &lt;code&gt;k&lt;/code&gt;，发现 &lt;code&gt;o&lt;/code&gt; 节点下方不存在子节点 &lt;code&gt;k&lt;/code&gt;，则创建子节点 &lt;code&gt;k&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;至此，单词 &lt;code&gt;cook&lt;/code&gt; 中所有字母已被插入 Trie树 中，然后设置节点 &lt;code&gt;k&lt;/code&gt; 中的标志位，标记路径 &lt;code&gt;root-&amp;gt;c-&amp;gt;o-&amp;gt;o-&amp;gt;k&lt;/code&gt;这条路径上所有节点的字符可以组成一个单词&lt;code&gt;cook&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;trie树的查询操作&#34;&gt;Trie树的查询操作&lt;/h3&gt;
+&lt;p&gt;在 Trie 树中查找一个字符串的时候，比如查找字符串 &lt;code&gt;code&lt;/code&gt;，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/1.4i55q8qg8gi0.jpg&#34; alt=&#34;1&#34;  /&gt;&lt;/p&gt;
+&lt;h3 id=&#34;trie树的删除操作&#34;&gt;Trie树的删除操作&lt;/h3&gt;
+&lt;p&gt;Trie树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：
+&lt;strong&gt;删除整个单词（比如&lt;code&gt;hi&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;从根节点开始查找第一个字符&lt;code&gt;h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;找到&lt;code&gt;h&lt;/code&gt;子节点后，继续查找&lt;code&gt;h&lt;/code&gt;的下一个子节点&lt;code&gt;i&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;i&lt;/code&gt;是单词&lt;code&gt;hi&lt;/code&gt;的标志位，将该标志位去掉&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;i&lt;/code&gt;节点是&lt;code&gt;hi&lt;/code&gt;的叶子节点，将其删除&lt;/li&gt;
+&lt;li&gt;删除后发现&lt;code&gt;h&lt;/code&gt;节点为叶子节点，并且不是单词标志位，也将其删除&lt;/li&gt;
+&lt;li&gt;这样就完成了&lt;code&gt;hi&lt;/code&gt;单词的删除操作&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;删除前缀单词（比如&lt;code&gt;cod&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;这种方式删除比较简单。 只需要将&lt;code&gt;cod&lt;/code&gt;单词整个字符串查找完后，&lt;code&gt;d&lt;/code&gt;节点因为不是叶子节点，只需将其单词标志去掉即可。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;删除分支单词（比如&lt;code&gt;cook&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;与 &lt;strong&gt;删除整个单词&lt;/strong&gt; 情况类似，区别点在于删除到 &lt;code&gt;cook&lt;/code&gt; 的第一个 &lt;code&gt;o&lt;/code&gt; 时，该节点为非叶子节点，停止删除，这样就完成&lt;code&gt;cook&lt;/code&gt;字符串的删除操作。&lt;/p&gt;
+&lt;h2 id=&#34;trie树应用与实现&#34;&gt;Trie树应用与实现&lt;/h2&gt;
+&lt;p&gt;事实上 Trie树 在日常生活中的使用随处可见，比如这个：
+具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;实现：最简单的字典树&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/carbon.3wfy1nwqmw00.png&#34; alt=&#34;carbon&#34;  /&gt;&lt;/p&gt;
+&lt;h3 id=&#34;前缀匹配自动补全&#34;&gt;前缀匹配/自动补全&lt;/h3&gt;
+&lt;p&gt;例如：找出一个字符串集合中所有以 &lt;code&gt;五分钟&lt;/code&gt; 开头的字符串。我们只需要用所有字符串构造一个 trie树，然后输出以 五−&amp;gt;分−&amp;gt;钟 开头的路径上的关键字即可。
+trie树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;实现：自动补全功能&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;（1）先找出匹配词语的节点（可能是中间的路径，不一定是最终节点）&lt;/p&gt;
+&lt;p&gt;（2）递归的查询该节点下的所有单词&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/carbon%281%29.773480vjdgw0.png&#34; alt=&#34;carbon(1)&#34;  /&gt;&lt;/p&gt;
+&lt;h3 id=&#34;字符串检索&#34;&gt;字符串检索&lt;/h3&gt;
+&lt;p&gt;给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。
+检索/查询功能是Trie树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;ul&gt;
+&lt;li&gt;如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。&lt;/li&gt;
+&lt;li&gt;如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/carbon%282%29.6t6buvfhqwk0.png&#34; alt=&#34;carbon(2)&#34;  /&gt;&lt;/p&gt;
+&lt;h3 id=&#34;动态路由&#34;&gt;动态路由&lt;/h3&gt;
+&lt;p&gt;实现动态路由最常用的数据结构，被称为前缀树(Trie树)。看到名字你大概也能知道前缀树长啥样了：每一个节点的所有的子节点都拥有相同的前缀。这种结构非常适用于路由匹配，比如我们定义了如下路由规则：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;/:lang/doc&lt;/li&gt;
+&lt;li&gt;/:lang/tutorial&lt;/li&gt;
+&lt;li&gt;/:lang/intro&lt;/li&gt;
+&lt;li&gt;/about&lt;/li&gt;
+&lt;li&gt;/p/blog&lt;/li&gt;
+&lt;li&gt;/p/related&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;HTTP请求的路径恰好是由&lt;code&gt;/&lt;/code&gt;分隔的多段构成的，因此，每一段可以作为前缀树的一个节点。我们通过树结构查询，如果中间某一层的节点都不满足条件，那么就说明没有匹配到的路由，查询结束。&lt;/p&gt;
+&lt;p&gt;接下来我们实现的动态路由具备以下两个功能。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;参数匹配&lt;code&gt;:&lt;/code&gt;。例如 &lt;code&gt;/p/:lang/doc&lt;/code&gt;，可以匹配 &lt;code&gt;/p/c/doc&lt;/code&gt; 和 &lt;code&gt;/p/go/doc&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;通配&lt;code&gt;*&lt;/code&gt;。例如 &lt;code&gt;/static/*filepath&lt;/code&gt;，可以匹配&lt;code&gt;/static/fav.ico&lt;/code&gt;，也可以匹配&lt;code&gt;/static/js/jQuery.js&lt;/code&gt;，这种模式常用于静态服务器，能够递归地匹配子路径。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;实现：动态路由&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;（1）由于路由规则允许模糊匹配，匹配子节点时可能还包括了含有模糊字符串的结构，比如插入&lt;code&gt;/:lang/tutorial&lt;/code&gt;这个路由pattern后再插入&lt;code&gt;/golang/intro&lt;/code&gt;时，虽然golang与:lang并不匹配，但还是需要将intro插入在:lang节点下，而不是再创建一个golang节点，所以仅使用哈希表查找子节点并不合适，需要改用为ArrayList来存TrieNode，使用一个单独的字符串part来保存节点的信息，isWild来判断节点是否是模糊节点。&lt;/p&gt;
+&lt;p&gt;（2）插入与查询的逻辑与字符串检索区别不大，关键修改在于：插入时还需要插入part和isWild信息，搜搜时如果碰到了*号开头的节点，需要终止查询，返回该节点。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cdn.jsdelivr.net/gh/PKUcoldkeyboard/image-hosting@master/store/carbon%283%29.15npysg8nuak.png&#34; alt=&#34;carbon(3)&#34;  /&gt;&lt;/p&gt;
+&lt;h2 id=&#34;trie树的局限性&#34;&gt;Trie树的局限性&lt;/h2&gt;
+&lt;p&gt;如前文所讲，Trie的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
+假设字符的种数有&lt;code&gt;m&lt;/code&gt;个，有若干个长度为n的字符串构成了一个 Trie树 ，则每个节点的出度为 &lt;code&gt;m&lt;/code&gt;（即每个节点的可能子节点数量为&lt;code&gt;m&lt;/code&gt;），Trie树 的高度为&lt;code&gt;n&lt;/code&gt;。很明显我们浪费了大量的空间来存储字符，此时Trie树的最坏空间复杂度为&lt;code&gt;O(m^n)&lt;/code&gt;。也正由于每个节点的出度为&lt;code&gt;m&lt;/code&gt;，所以我们能够沿着树的一个个分支高效的向下逐个字符的查询，而不是遍历所有的字符串来查询，此时Trie树的最坏时间复杂度为&lt;code&gt;O(n)&lt;/code&gt;。
+这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Spring Cloud OAuth2从零开始实现用户认证和单点登录</title>
         <link>https://cuterwrite.top/p/oauth2-guide/</link>
         <pubDate>Thu, 15 Jul 2021 00:00:00 +0000</pubDate>
@@ -3203,6 +3302,8 @@ customer_id_selectivity: 0.0373
     &gt;https://geektutu.com/post/gee.html&lt;/a&gt;&lt;/li&gt;
 &lt;li&gt;Go 高级编程：&lt;a class=&#34;link&#34; href=&#34;https://chai2010.cn/advanced-go-programming-book/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://chai2010.cn/advanced-go-programming-book/&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;Go By Example：&lt;a class=&#34;link&#34; href=&#34;https://gobyexample-cn.github.io/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://gobyexample-cn.github.io/&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;清华大学人工智能技术系列报告：&lt;a class=&#34;link&#34; href=&#34;https://reports.aminer.cn/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
