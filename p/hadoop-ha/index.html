@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='hadoop ha集群'><title>Hadoop3 HA模式三节点高可用集群搭建实验</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/hadoop-ha/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='Hadoop3 HA模式三节点高可用集群搭建实验'>
+<meta property='og:description' content='hadoop ha集群'>
+<meta property='og:url' content='https://cuterwrite.top/p/hadoop-ha/'>
+<meta property='og:site_name' content='cuterwrite (Pang S.Z)'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2022-09-22T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-22T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/typora/32756284e8854b9ba653bd3632af435d.jpg' />
+<meta name="twitter:title" content="Hadoop3 HA模式三节点高可用集群搭建实验">
+<meta name="twitter:description" content="hadoop ha集群"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/typora/32756284e8854b9ba653bd3632af435d.jpg' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite (Pang S.Z)</a></h1>
+        <h2 class="site-description">本网站主要用来记录一些本人感兴趣的东西，佛系更新</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/hadoop-ha/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/32756284e8854b9ba653bd3632af435d.jpg" loading="lazy" alt="Featured image of post Hadoop3 HA模式三节点高可用集群搭建实验" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF/" style="background-color: #ff9f7f; color: #fff;">
+                大数据技术
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/hadoop-ha/">Hadoop3 HA模式三节点高可用集群搭建实验</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        hadoop ha集群
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2022-09-22</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#hadoop3-ha%E6%A8%A1%E5%BC%8F%E4%B8%89%E8%8A%82%E7%82%B9%E9%AB%98%E5%8F%AF%E7%94%A8%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA%E5%AE%9E%E9%AA%8C" >Hadoop3 HA模式三节点高可用集群搭建实验</a>
+<ul>
+<li><a class="link" href="#%E5%85%B3%E4%BA%8Ehadoop3-ha%E6%A8%A1%E5%BC%8F" >关于Hadoop3 HA模式</a>
+<ul>
+<li><a class="link" href="#%E5%8D%95%E7%82%B9%E6%95%85%E9%9A%9Cspof" >单点故障（SPOF）</a></li>
+<li><a class="link" href="#zookeeper" >Zookeeper</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%AE%9E%E9%AA%8C%E8%BF%87%E7%A8%8B%E5%92%8C%E7%BB%93%E6%9E%9C" >实验过程和结果</a>
+<ul>
+<li><a class="link" href="#%E7%8E%AF%E5%A2%83" >环境</a></li>
+<li><a class="link" href="#%E9%9B%86%E7%BE%A4%E8%A7%84%E5%88%92" >集群规划</a></li>
+<li><a class="link" href="#%E5%88%9B%E5%BB%BAhadoop%E7%94%A8%E6%88%B7" >创建hadoop用户</a></li>
+<li><a class="link" href="#%E4%B8%BB%E6%9C%BA%E5%90%8D%E5%92%8C%E7%BD%91%E7%BB%9C%E6%98%A0%E5%B0%84%E9%85%8D%E7%BD%AE" >主机名和网络映射配置</a></li>
+<li><a class="link" href="#%E5%AE%89%E8%A3%85ssh%E5%B9%B6%E9%85%8D%E7%BD%AEssh%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95" >安装SSH并配置SSH免密登录</a></li>
+<li><a class="link" href="#%E5%AE%89%E8%A3%85java%E7%8E%AF%E5%A2%83" >安装Java环境</a></li>
+<li><a class="link" href="#%E5%AE%89%E8%A3%85hadoop3" >安装hadoop3</a></li>
+<li><a class="link" href="#%E5%AE%89%E8%A3%85zookeeper" >安装Zookeeper</a></li>
+<li><a class="link" href="#%E9%85%8D%E7%BD%AE%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F" >配置环境变量</a></li>
+<li><a class="link" href="#%E9%85%8D%E7%BD%AEha%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E5%88%86%E5%B8%83%E5%BC%8F%E7%8E%AF%E5%A2%83" >配置HA模式集群分布式环境</a>
+<ul>
+<li><a class="link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6workers" >修改文件workers</a></li>
+<li><a class="link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6core-sitexml" >修改文件core-site.xml</a></li>
+<li><a class="link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6hdfs-sitexml" >修改文件hdfs-site.xml</a></li>
+<li><a class="link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6hadoop-envsh" >修改文件hadoop-env.sh</a></li>
+<li><a class="link" href="#%E5%9C%A8%E6%89%80%E6%9C%89%E8%8A%82%E7%82%B9%E4%B8%8A%E5%88%9B%E5%BB%BA%E6%95%B0%E6%8D%AE%E6%96%87%E4%BB%B6%E5%A4%B9%E5%92%8C%E6%97%A5%E5%BF%97%E6%96%87%E4%BB%B6%E5%A4%B9" >在所有节点上创建数据文件夹和日志文件夹</a></li>
+<li><a class="link" href="#%E5%9C%A8%E6%89%80%E6%9C%89%E8%8A%82%E7%82%B9%E4%B8%8A%E5%88%86%E5%88%AB%E5%90%AF%E5%8A%A8journalnode" >在所有节点上分别启动journalnode</a></li>
+<li><a class="link" href="#%E6%A0%BC%E5%BC%8F%E5%8C%96namenode%E8%8A%82%E7%82%B9" >格式化namenode节点</a></li>
+<li><a class="link" href="#%E5%88%86%E5%88%AB%E5%9C%A8namenode%E8%8A%82%E7%82%B9%E4%B8%8A%E5%90%AF%E5%8A%A8zkfc" >分别在namenode节点上启动zkfc</a></li>
+<li><a class="link" href="#%E5%9C%A8%E4%B8%BB%E8%8A%82%E7%82%B9%E4%B8%8A%E5%90%AF%E5%8A%A8%E6%89%80%E6%9C%89datanode%E8%8A%82%E7%82%B9" >在主节点上启动所有datanode节点</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C" >实验结果</a></li>
+<li><a class="link" href="#%E5%AE%9E%E4%BE%8B%E8%BF%90%E8%A1%8C" >实例运行</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="hadoop3-ha模式三节点高可用集群搭建实验">Hadoop3 HA模式三节点高可用集群搭建实验</h1>
+<h1 id="关于hadoop3-ha模式">关于Hadoop3 HA模式</h1>
+<h3 id="单点故障spof">单点故障（SPOF）</h3>
+<p>简单来说，单点故障指的是分布式系统过度依赖于某一个节点，以至于只要该节点宕掉，就算整个集群的其它节点是完好的，集群也无法正常工作。而单点故障问题一般出现在集群的元数据存储节点上，这种节点一般一个集群就一个，一旦坏了整个系统就不能正常使用。Hadoop的单点故障出现在namenode上，影响集群不可用主要有以下两种情况：一是namenode节点宕机，将导致集群不可用，重启namenode之后才可使用；二是计划内的namenode节点软件或硬件升级，导致集群短时间内不可用。</p>
+<p>为了避免出现单点故障，Hadoop官方给出了高可用HA方案：可以采取同时启动两个namenode：其中一个工作（active），另一个总是处于后备机（standby）的状态，让它只是单纯地同步活跃机的数据，当活跃机宕掉的时候就可以自动切换过去。这种模式称为<strong>HA模式</strong>。HA模式下不能用[namenode主机:端口]的模式来访问Hadoop集群，因为namenode主机已经不再是一个固定的IP了，而是采用serviceid的方式来访问，这个serviceid存储在ZooKeeper上。</p>
+<h3 id="zookeeper">Zookeeper</h3>
+<p>Zookeeper是一个轻量级的分布式架构集群，为分布式应用提供一致性服务，提供的功能包括：配置维护、域名服务、分布式同步和组服务等。在HA模式中，Zookeeper最大的功能之一是知道某个节点是否宕机了。其原理是：每一个机器在Zookeeper中都有一个会话，如果某个机器宕机了，这个会话就会过期，Zookeeper就能发现该节点已宕机。</p>
+<h2 id="实验过程和结果">实验过程和结果</h2>
+<h3 id="环境">环境</h3>
+<p>本实验使用Ubuntu 18.04 64位作为系统环境，采用3台2核16GB（ MA3.MEDIUM16型号）的腾讯云服务器作为集群部署机器。</p>
+<p>使用的软件如下：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hadoop</td>
+<td>3.2.3</td>
+</tr>
+<tr>
+<td>Zookeeper</td>
+<td>3.6.3</td>
+</tr>
+<tr>
+<td>JDK</td>
+<td>11.0.2</td>
+</tr>
+</tbody>
+</table>
+<p><!-- raw HTML omitted -->建议：在以下的部署过程中使用root用户可以避免很多权限问题。<!-- raw HTML omitted --></p>
+<h3 id="集群规划">集群规划</h3>
+<table>
+<thead>
+<tr>
+<th>主机名</th>
+<th>IP</th>
+<th>Namenode</th>
+<th>Datanode</th>
+<th>Zookeeper</th>
+<th>JournalNode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master</td>
+<td>172.31.0.12</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>slave1</td>
+<td>172.31.0.16</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>slave2</td>
+<td>172.31.0.10</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<h3 id="创建hadoop用户">创建hadoop用户</h3>
+<p>在终端输出如下命令创建一个名为hadoop的用户。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo useradd -m hadoop -s /bin/bash
+</span></span></code></pre></div><p>接着使用如下命令设置密码，按提示输入两次密码，这里简单设置为hadoop</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo passwd hadoop
+</span></span></code></pre></div><p>此外，可以为hadoop用户添加管理员权限，方便后续的部署，避免一些权限问题的出现。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo adduser hadoop sudo
+</span></span></code></pre></div><h3 id="主机名和网络映射配置">主机名和网络映射配置</h3>
+<p>为了便于区分master节点和slave节点，可以修改各个节点的主机名。在Ubuntu系统中，我们可以执行以下命令来修改主机名。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo vim /etc/hostname
+</span></span></code></pre></div><p>执行上面命令后，就打开了/etc/hostname这个文件，这个文件记录了主机名。打开这个文件之后，里面只有当前的主机名这一行内容，可以直接删除，并修改为master或slave1、slave2，然后保存退出vim编辑器，这样就完成了主机名的修改，需要重启系统后才能看到主机名的变化。</p>
+<p>然后，在master节点中执行如下命令打开并修改master节点的/etc/hosts文件</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo vim /etc/hosts
+</span></span></code></pre></div><p>在hosts文件中增加如下三条IP（局域网IP）和主机名映射关系。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">172.31.0.12 master
+</span></span><span class="line"><span class="cl">172.31.0.16 slave1
+</span></span><span class="line"><span class="cl">172.31.0.10 slave2
+</span></span></code></pre></div><p>需要注意的是，一般hosts文件中只能有一个127.0.0.1，其对应主机名为localhost，如果有多余127.0.0.1映射，应删除，特别是不能存在“127.0.0.1 Master”这样的映射记录。修改后需要重启Linux系统。</p>
+<p>上面完成了master节点的配置，接下来要继续完成对其他slave节点的配置修改。请参照上面的方法，把slave1节点上的“/etc/hostname”文件中的主机名修改为“slave1”，把slave1节点上的“/etc/hostname”文件中的主机名修改为“slave2”同时，修改“/etc/hosts”的内容，在hosts文件中增加如下三条IP和主机名映射关系：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">172.31.0.12 master
+</span></span><span class="line"><span class="cl">172.31.0.16 slave1
+</span></span><span class="line"><span class="cl">172.31.0.10 slave2
+</span></span></code></pre></div><p>修改完成以后，重新启动slave节点的Linux系统。</p>
+<p>这样就完成了master节点和slave节点的配置，然后，需要在各个节点上都执行如下命令，测试是否相互ping得通，如果ping不通，后面就无法顺利配置成功：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ping master -c <span class="m">3</span>
+</span></span><span class="line"><span class="cl">ping slave1 -c <span class="m">3</span>
+</span></span><span class="line"><span class="cl">ping slave2 -c <span class="m">3</span>
+</span></span></code></pre></div><p>例如，在master节点上ping slave1，如果ping通的话，会显示如下图所示的结果：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-51-51-image.png" alt=""  /></p>
+<h3 id="安装ssh并配置ssh免密登录">安装SSH并配置SSH免密登录</h3>
+<p>集群模式需要用到SSH登陆，Ubuntu默认已经安装SSH client，此外还需要安装SSH server</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo apt-get install openssh-server
+</span></span></code></pre></div><p>安装后，可以使用如下命令登陆本机</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ssh localhost
+</span></span></code></pre></div><p>在集群模式中，必须要让master节点可以SSH免密登录到各个slave节点上。首先，生成master节点的公钥，如果之前已经生成过公钥，必须要删除原来生成的公钥，重新生成一次。具体命令如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> ~/.ssh <span class="c1">#如果没有该目录，先执行一次ssh localhost</span>
+</span></span><span class="line"><span class="cl">rm ./id_rsa* <span class="c1">#删除之前生成的公钥</span>
+</span></span><span class="line"><span class="cl">ssh-keygen -t rsa <span class="c1">#执行该命令后一直按回车就可以</span>
+</span></span></code></pre></div><p>为了让master节点能够SSH免密登录本机，需要在master节点上执行如下命令：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">cat ./id_rsa.pub &gt;&gt; ./authorized_keys
+</span></span></code></pre></div><p>完成后可以执行“ssh master”来验证一下，可能会遇到提示信息，输入yes即可，测试成功后执行exit命令返回原来的终端。</p>
+<p>接下来，在master节点上将公钥传输到slave1和slave2节点</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">scp ~/.ssh/id_rsa.pub hadoop@slave1:/home/hadoop/
+</span></span><span class="line"><span class="cl">scp ~/.ssh/id_rsa.pub hadoop@slave2:/home/hadoop/
+</span></span></code></pre></div><p>接着在slave1（slave2）节点上将SSH公钥加入授权</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">mkdir ~/.ssh
+</span></span><span class="line"><span class="cl">cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
+</span></span><span class="line"><span class="cl">rm ~/id_rsa.pub <span class="c1">#用完之后可以删除掉</span>
+</span></span></code></pre></div><p>这样，master节点就可以免密登录到各个slave节点上了，例如执行如下命令：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ssh slave1
+</span></span></code></pre></div><p>会显示如下结果，显示已经登录到slave1节点上。</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-30-image.png" alt=""  /></p>
+<h3 id="安装java环境">安装Java环境</h3>
+<p>Hadoop3需要JDK版本在1.8以上，这里我选择11版本JDK作为Java环境，先执行以下命令下载压缩包。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> /usr/local/softwares<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo wget https://repo.huaweicloud.com/openjdk/11.0.2/openjdk-11.0.2_linux-x64_bin.tar.gz
+</span></span></code></pre></div><p>然后，使用如下命令解压缩：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo tar -xzf openjdk-11.0.2_linux-x64_bin.tar.gz<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mv jdk-11.0.2 openjdk<span class="p">;</span>
+</span></span></code></pre></div><p>这时，可以执行以下命令查看是否安装成功</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> openjdk<span class="p">;</span>
+</span></span><span class="line"><span class="cl">./bin/java --version<span class="p">;</span>
+</span></span></code></pre></div><p>如果返回如下信息，则说明安装成功：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-51-image.png" alt=""  /></p>
+<h3 id="安装hadoop3">安装hadoop3</h3>
+<p>先执行以下命令下载压缩包。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> /usr/local/softwares<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo wget https://mirrors.pku.edu.cn/apache/hadoop/common/hadoop-3.2.3/hadoop-3.2.3.tar.gz
+</span></span></code></pre></div><p>然后，使用如下命令解压缩：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo tar -xzf hadoop-3.2.3.tar.gz<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mv hadoop-3.2.3 hadoop
+</span></span></code></pre></div><p>这时，可以执行以下命令查看是否安装成功</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> hadoop<span class="p">;</span>
+</span></span><span class="line"><span class="cl">./bin/hadoop version
+</span></span></code></pre></div><p>如果返回如下信息，则说明安装成功：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-53-11-image.png" alt=""  /></p>
+<h3 id="安装zookeeper">安装Zookeeper</h3>
+<p>先执行以下命令下载压缩包。</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> /usr/local/softwares<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo wget https://mirrors.pku.edu.cn/apache/zookeeper/stable/apache-zookeeper-3.6.3-bin.tar.gz<span class="p">;</span>
+</span></span></code></pre></div><p>然后，使用如下命令解压缩：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo tar -xzf apache-zookeeper-3.6.3-bin.tar.gz<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mv apache-zookeeper-3.6.3-bin zookeeper<span class="p">;</span>
+</span></span></code></pre></div><p>接下来，将Zookeeper中的conf文件夹里的zoo_sample.cfg文件复制一份，改名为zoo.cfg，然后编辑这个文件，其他的部分不用动，需要修改dataDir这一行。dataDir是ZooKeeper的数据文件夹的位置，在我的机器上我用的是/data/zookeeper，你们可以设置成你们的目录。此外，需要在末尾加上所有节点的信息（数字与myid要对应）：</p>
+<pre tabindex="0"><code class="language-properties" data-lang="properties">server.1=master:2888:3888
+server.2=slave1:2888:3888
+server.3=slave2:2888:3888
+</code></pre><p>然后再修改bin/zkEnv.sh，添加以下日志输出文件夹配置：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">ZOO_LOG_DIR</span><span class="o">=</span>/data/logs/zookeeper
+</span></span></code></pre></div><p>最后，需要在每一个节点上的dataDir目录下手动创建一个文件，命名为myid，并写入这台服务器的Zookeeper ID。这个ID数字可以自己随便写，取值范围是1~255，在这里我将master、slave1和slave2分别取值为1，2，3。配置完成以上全部后，分别使用zkServer.sh start命令启动集群，ZooKeeper会自动根据配置把所有的节点连接成一个集群。启动后使用jps命令可以查看到QuorumPeerMain进程已经启动成功。</p>
+<h3 id="配置环境变量">配置环境变量</h3>
+<p>配置环境变量后可以在任意目录中直接使用hadoop、hdfs等命令。配置方法也比较简单。首先执行命令：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo vim ~/.bashrc
+</span></span></code></pre></div><p>然后，在该文件最上面的位置加入下面内容：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">JAVA_HOME</span><span class="o">=</span>/usr/local/softwares/openjdk                                                                                    
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_HOME</span><span class="o">=</span>/usr/local/softwares/hadoop
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_PREFIX</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_MAPRED_HOME</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_COMMON_HOME</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_HDFS_HOME</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">YARN_HOME</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_COMMON_LIB_NATIVE_DIR</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>/lib/natvie
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_INSTALL</span><span class="o">=</span><span class="nv">$HADOOP_HOME</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">ZK_HOME</span><span class="o">=</span>/usr/local/softwares/zookeeper
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="nv">$JAVA_HOME</span>/bin:<span class="nv">$HADOOP_HOME</span>/bin:<span class="nv">$HADOOP_HOME</span>/sbin:<span class="nv">$ZK_HOME</span>/bin
+</span></span></code></pre></div><p>保存后执行如下命令使配置生效：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">source</span> ~/.bashrc
+</span></span></code></pre></div><h3 id="配置ha模式集群分布式环境">配置HA模式集群分布式环境</h3>
+<h4 id="修改文件workers">修改文件workers</h4>
+<p>需要把所有数据节点的主机名写入该文件，每行一个，默认为localhost（即把本机作为数据节点），在本实验中，master和slave1、slave2都充当datanode，所以该文件内容配置如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">master
+</span></span><span class="line"><span class="cl">slave1
+</span></span><span class="line"><span class="cl">slave2
+</span></span></code></pre></div><h4 id="修改文件core-sitexml">修改文件core-site.xml</h4>
+<p>在一般集群模式中，<code>fs.defaultFS</code>配置为hdfs://master:9000，即名称节点所在的主机名加上端口号，但需要注意的是，在HA模式下分别有一个active和standby的名称节点，需要将该属性设置为集群id，这里写的ha-cluster需要与hdfs-site.xml中的配置一致，所以将该文件修改为如下内容：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="nt">&lt;configuration&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>fs.defaultFS<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>hdfs://ha-cluster<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">         <span class="nt">&lt;name&gt;</span>ha.zookeeper.quorum<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">         <span class="nt">&lt;value&gt;</span>master:2181,slave1:2181,slave2:2181<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">         <span class="nt">&lt;name&gt;</span>ha.zookeeper.session-timeout.ms<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">         <span class="nt">&lt;value&gt;</span>30000<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/configuration&gt;</span>
+</span></span></code></pre></div><h4 id="修改文件hdfs-sitexml">修改文件hdfs-site.xml</h4>
+<p>对以下属性进行配置：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="nt">&lt;configuration&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- 服务ID--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.nameservices<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>ha-cluster<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.ha.namenodes.ha-cluster<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;valu&gt;</span>master,slave1<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- rpc地址--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.rpc-address.ha-cluster.master<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>master:8020<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.rpc-address.ha-cluster.slave1<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>slave1:8020<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- http地址--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.http-address.ha-cluster.master<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>master:9870<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.http-address.ha-cluster.slave1<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>slave1:9870<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- journalnode集群访问地址--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.shared.edits.dir<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>qjournal://master:8485;slave1:8485;slave2:8485/ha-cluster<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- dfs客户端--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.client.failover.proxy.provider.ha-cluster<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- 配置kill方式--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.ha.fencing.methods<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>sshfence<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.ha.fencing.ssh.private-key-files<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>/home/hadoop/.ssh/id_rsa<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- 自动failover机制--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.ha.automatic-failover.enabled<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>true<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">     <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>ha.zookeeper.quorum<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>master:2181,slave1:2181,slave2:2181<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- 冗余因子，datanode有3个，所以设置为3--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.replication<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>3<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.namenode.name.dir<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>file:/data/hadoop/hdfs/nn<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.datanode.data.dir<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>file:/data/hadoop/hdfs/dn<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="c">&lt;!-- 不要加file前缀--&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;property&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;name&gt;</span>dfs.journalnode.edits.dir<span class="nt">&lt;/name&gt;</span>
+</span></span><span class="line"><span class="cl">        <span class="nt">&lt;value&gt;</span>/data/hadoop/hdfs/jn<span class="nt">&lt;/value&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/property&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/configuration&gt;</span>
+</span></span></code></pre></div><h4 id="修改文件hadoop-envsh">修改文件hadoop-env.sh</h4>
+<p>在文件开头添加以下变量</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_NAMENODE_OPS</span><span class="o">=</span><span class="s2">&#34; -Xms1024m -Xmx1024m -XX:+UseParallelGC&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_DATANODE_OPS</span><span class="o">=</span><span class="s2">&#34; -Xms1024m -Xmx1024m&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">HADOOP_LOG_DIR</span><span class="o">=</span>/data/logs/hadoop
+</span></span></code></pre></div><h4 id="在所有节点上创建数据文件夹和日志文件夹">在所有节点上创建数据文件夹和日志文件夹</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo mkdir -p /data/hadoop/hdfs/nn<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir -p /data/hadoop/hdfs/dn<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir -p /data/hadoop/hdfs/jn<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir -p /data/zookeeper<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo chown -R hadoop.hadoop /data/hadoop<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo chown -R hadoop.hadoop /data/zookeeper<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir /data/logs<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir /data/logs/hadoop<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo mkdir /data/logs/zookeeper<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo chown -R hadoop.hadoop /data/logs
+</span></span></code></pre></div><h4 id="在所有节点上分别启动journalnode">在所有节点上分别启动journalnode</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs --daemon start journalnode
+</span></span></code></pre></div><h4 id="格式化namenode节点">格式化namenode节点</h4>
+<ul>
+<li>
+<p>在第一个namenode上进行格式化并启动hdfs：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs namenode -format<span class="p">;</span>
+</span></span><span class="line"><span class="cl">hdfs --daemon start namenode
+</span></span></code></pre></div></li>
+<li>
+<p>在第二个namenode上进行备用初始化</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs namenode -bootstrapStandby
+</span></span></code></pre></div></li>
+<li>
+<p>在第一个namenode上进行journalnode的初始化</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs namenode -initializeSharedEdits
+</span></span></code></pre></div></li>
+</ul>
+<h4 id="分别在namenode节点上启动zkfc">分别在namenode节点上启动zkfc</h4>
+<pre tabindex="0"><code class="language-shel" data-lang="shel">hdfs zkfc -formatZK
+</code></pre><h4 id="在主节点上启动所有datanode节点">在主节点上启动所有datanode节点</h4>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">start-dfs.sh
+</span></span></code></pre></div><h3 id="实验结果">实验结果</h3>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-13-image.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-26-image.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-33-image.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-42-image.png" alt=""  /></p>
+<h3 id="实例运行">实例运行</h3>
+<p>首先创建HDFS上的用户目录，命令如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs dfs -mkdir -p /user/hadoop
+</span></span></code></pre></div><p>然后，在HDFS中创建一个input目录，并将“/usr/local/softwares/hadoop/etc/hadoop”目录中的配置文件作为输入文件复制到input目录中，命令如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs dfs -mkdir input<span class="p">;</span>
+</span></span><span class="line"><span class="cl">hdfs dfs -put /usr/local/softwares/hadoop/etc/hadoop/*.xml input
+</span></span></code></pre></div><p>接着就可以运行MapReduce作业了，命令如下：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hadoop jar /usr/local/softwares/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.3.jar grep input output <span class="s1">&#39;dfs[a-z.]+&#39;</span>
+</span></span></code></pre></div><p>运行结果如下：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-16-35-image.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-17-58-image.png" alt=""  /></p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2022 cuterwrite (Pang S.Z)
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
