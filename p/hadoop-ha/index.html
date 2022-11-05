@@ -433,10 +433,10 @@
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo tar -xzf apache-zookeeper-3.6.3-bin.tar.gz<span class="p">;</span>
 </span></span><span class="line"><span class="cl">sudo mv apache-zookeeper-3.6.3-bin zookeeper<span class="p">;</span>
 </span></span></code></pre></div><p>接下来，将Zookeeper中的conf文件夹里的zoo_sample.cfg文件复制一份，改名为zoo.cfg，然后编辑这个文件，其他的部分不用动，需要修改dataDir这一行。dataDir是ZooKeeper的数据文件夹的位置，在我的机器上我用的是/data/zookeeper，你们可以设置成你们的目录。此外，需要在末尾加上所有节点的信息（数字与myid要对应）：</p>
-<pre tabindex="0"><code class="language-properties" data-lang="properties">server.1=master:2888:3888
-server.2=slave1:2888:3888
-server.3=slave2:2888:3888
-</code></pre><p>然后再修改bin/zkEnv.sh，添加以下日志输出文件夹配置：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-properties" data-lang="properties"><span class="line"><span class="cl"><span class="na">server.1</span><span class="o">=</span><span class="s">master:2888:3888</span>
+</span></span><span class="line"><span class="cl"><span class="na">server.2</span><span class="o">=</span><span class="s">slave1:2888:3888</span>
+</span></span><span class="line"><span class="cl"><span class="na">server.3</span><span class="o">=</span><span class="s">slave2:2888:3888</span>
+</span></span></code></pre></div><p>然后再修改bin/zkEnv.sh，添加以下日志输出文件夹配置：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nv">ZOO_LOG_DIR</span><span class="o">=</span>/data/logs/zookeeper
 </span></span></code></pre></div><p>最后，需要在每一个节点上的dataDir目录下手动创建一个文件，命名为myid，并写入这台服务器的Zookeeper ID。这个ID数字可以自己随便写，取值范围是1~255，在这里我将master、slave1和slave2分别取值为1，2，3。配置完成以上全部后，分别使用zkServer.sh start命令启动集群，ZooKeeper会自动根据配置把所有的节点连接成一个集群。启动后使用jps命令可以查看到QuorumPeerMain进程已经启动成功。</p>
 <h3 id="配置环境变量">配置环境变量</h3>
