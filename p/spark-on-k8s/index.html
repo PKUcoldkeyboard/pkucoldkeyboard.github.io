@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='spark on k8s词频统计'><title>基于Spark on k8s的词频统计实验</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/spark-on-k8s/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='基于Spark on k8s的词频统计实验'>
+<meta property='og:description' content='spark on k8s词频统计'>
+<meta property='og:url' content='https://cuterwrite.top/p/spark-on-k8s/'>
+<meta property='og:site_name' content='cuterwrite (Pang S.Z)'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Spark' /><meta property='article:tag' content='Kubernetes' /><meta property='article:published_time' content='2022-12-23T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-12-23T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/92.png' />
+<meta name="twitter:title" content="基于Spark on k8s的词频统计实验">
+<meta name="twitter:description" content="spark on k8s词频统计"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/92.png' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite (Pang S.Z)</a></h1>
+        <h2 class="site-description">本网站主要用来记录一些本人感兴趣的东西，佛系更新</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/spark-on-k8s/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/92.png" loading="lazy" alt="Featured image of post 基于Spark on k8s的词频统计实验" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF/" style="background-color: #ff9f7f; color: #fff;">
+                大数据技术
+            </a>
+        
+            <a href="/categories/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/" style="background-color: #ffdb5c; color: #fff;">
+                容器技术
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/spark-on-k8s/">基于Spark on k8s的词频统计实验</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        spark on k8s词频统计
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2022-12-23</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <p><strong>Table of Contents</strong> <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#%E5%9F%BA%E4%BA%8Espark-on-k8s%E7%9A%84%E8%AF%8D%E9%A2%91%E7%BB%9F%E8%AE%A1%E5%AE%9E%E9%AA%8C" >基于Spark on k8s的词频统计实验</a>
+<ul>
+<li><a class="link" href="#1-%E7%AE%80%E4%BB%8B" >1 简介</a>
+<ul>
+<li><a class="link" href="#11-%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83" >1.1 实验环境</a></li>
+<li><a class="link" href="#12-%E9%9B%86%E7%BE%A4%E8%A7%84%E5%88%92" >1.2 集群规划</a></li>
+</ul>
+</li>
+<li><a class="link" href="#2-%E9%83%A8%E7%BD%B2kubernetes%E9%9B%86%E7%BE%A4" >2 部署Kubernetes集群</a>
+<ul>
+<li><a class="link" href="#21-%E5%AE%89%E8%A3%85kuboard-spray" >2.1 安装Kuboard-Spray</a></li>
+<li><a class="link" href="#22-%E5%8A%A0%E8%BD%BD%E7%A6%BB%E7%BA%BF%E8%B5%84%E6%BA%90%E5%8C%85" >2.2 加载离线资源包</a></li>
+<li><a class="link" href="#23-%E5%AE%89%E8%A3%85kubernetes%E9%9B%86%E7%BE%A4" >2.3 安装Kubernetes集群</a></li>
+</ul>
+</li>
+<li><a class="link" href="#3-%E9%83%A8%E7%BD%B2spark-on-k8s" >3 部署Spark on k8s</a>
+<ul>
+<li><a class="link" href="#31-%E5%88%B6%E4%BD%9Cspark%E5%AE%B9%E5%99%A8%E9%95%9C%E5%83%8F" >3.1 制作spark容器镜像</a></li>
+<li><a class="link" href="#32-%E5%88%9B%E5%BB%BA%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4" >3.2 创建命名空间</a></li>
+<li><a class="link" href="#33-%E9%85%8D%E7%BD%AEspark%E7%94%A8%E6%88%B7%E6%9D%83%E9%99%90" >3.3 配置spark用户权限</a></li>
+<li><a class="link" href="#34-%E9%85%8D%E7%BD%AEspark%E5%8E%86%E5%8F%B2%E6%9C%8D%E5%8A%A1%E5%99%A8" >3.4 配置spark历史服务器</a></li>
+</ul>
+</li>
+<li><a class="link" href="#4-%E7%BC%96%E5%86%99wordcount%E7%A8%8B%E5%BA%8F" >4 编写WordCount程序</a></li>
+<li><a class="link" href="#5-%E5%AE%9E%E9%AA%8C%E7%BB%93%E6%9E%9C" >5 实验结果</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="基于spark-on-k8s的词频统计实验">基于Spark on k8s的词频统计实验</h1>
+<h2 id="1-简介">1 简介</h2>
+<h3 id="11-实验环境">1.1 实验环境</h3>
+<p>本实验主要使用Ubuntu 20.04 64位作为系统环境，采用6台4核8GB云服务器作为Kubernetes集群部署机器，1台2核4GB云服务器作为集群管理工具Kuboard Spary部署机器，1台2核4GB云服务器作为NFS Server（使用Centos 7.6系统）部署机器。</p>
+<p>使用的软件如下：</p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kuboard spary</td>
+<td>v1.2.3-amd64</td>
+</tr>
+<tr>
+<td>kubernetes</td>
+<td>v1.25.4</td>
+</tr>
+<tr>
+<td>calico</td>
+<td>v3.23.3</td>
+</tr>
+<tr>
+<td>etcd</td>
+<td>v3.5.5</td>
+</tr>
+<tr>
+<td>crictl</td>
+<td>v1.25.0</td>
+</tr>
+<tr>
+<td>crun</td>
+<td>1.4.5</td>
+</tr>
+<tr>
+<td>krew</td>
+<td>v0.4.3</td>
+</tr>
+<tr>
+<td>runc</td>
+<td>v1.1.4</td>
+</tr>
+<tr>
+<td>cni</td>
+<td>v1.1.1</td>
+</tr>
+<tr>
+<td>nerdctl</td>
+<td>1.0.0</td>
+</tr>
+<tr>
+<td>coredns</td>
+<td>v1.8.6</td>
+</tr>
+<tr>
+<td>dnsautoscaler</td>
+<td>1.8.5</td>
+</tr>
+<tr>
+<td>pod_infra</td>
+<td>3.7</td>
+</tr>
+<tr>
+<td>spark</td>
+<td>3.3.1</td>
+</tr>
+<tr>
+<td>hadoop</td>
+<td>3.2.3</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-集群规划">1.2 集群规划</h3>
+<ul>
+<li>Kuborad Spary</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>主机名</th>
+<th>IP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kuborad</td>
+<td>192.168.0.115</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>NFS Server</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>主机名</th>
+<th>IP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NFS-server</td>
+<td>192.168.0.132</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Kubernetes集群规划</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>主机名</th>
+<th>IP</th>
+<th>控制节点</th>
+<th>etcd节点</th>
+<th>工作节点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>node1</td>
+<td>192.168.0.76</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>node2</td>
+<td>192.168.0.213</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>node3</td>
+<td>192.168.0.2</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>node4</td>
+<td>192.168.0.41</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>node5</td>
+<td>192.168.0.73</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+</tr>
+<tr>
+<td>node6</td>
+<td>192.168.0.12</td>
+<td>否</td>
+<td>否</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-部署kubernetes集群">2 部署Kubernetes集群</h2>
+<h3 id="21-安装kuboard-spray">2.1 安装Kuboard-Spray</h3>
+<p>Kuboard-Spray 是一款可以在图形界面引导下完成 Kubernetes 高可用集群离线安装的工具，开源仓库的地址为 <a class="link" href="https://github.com/eip-work/kuboard-spray"  target="_blank" rel="noopener"
+    >Kuboard-Spray</a></p>
+<ul>
+<li>
+<p>在kuborad节点上安装docker-ce</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="c1"># 1. 安装必备的系统工具</span>
+</span></span><span class="line"><span class="cl">sudo apt-get remove docker docker-engine docker.io containerd runc<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common<span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 2. 安装GPG证书</span>
+</span></span><span class="line"><span class="cl">curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg <span class="p">|</span> sudo gpg --dearmor -o /etc/apt/docker.gpg<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 3. 写入软件源信息</span>
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  <span class="s2">&#34;deb [arch=</span><span class="k">$(</span>dpkg --print-architecture<span class="k">)</span><span class="s2"> signed-by=/etc/apt/docker.gpg] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu \
+</span></span></span><span class="line"><span class="cl"><span class="s2">  </span><span class="k">$(</span>lsb_release -cs<span class="k">)</span><span class="s2"> stable&#34;</span> <span class="p">|</span> sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 4. 更新并安装Docker-CE</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo apt-get update<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo apt-get install docker-ce<span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 5. 配置docker镜像加速器(可以在阿里云获取地址)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo mkdir -p /etc/docker<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo tee /etc/docker/daemon.json <span class="s">&lt;&lt;-&#39;EOF&#39;
+</span></span></span><span class="line"><span class="cl"><span class="s">{
+</span></span></span><span class="line"><span class="cl"><span class="s"> &#34;registry-mirrors&#34;: [&#34;https://0dvo0os8.mirror.aliyuncs.com&#34;]
+</span></span></span><span class="line"><span class="cl"><span class="s">}
+</span></span></span><span class="line"><span class="cl"><span class="s">EOF</span>
+</span></span><span class="line"><span class="cl">sudo systemctl daemon-reload<span class="p">;</span>
+</span></span><span class="line"><span class="cl">sudo systemctl restart docker<span class="p">;</span>
+</span></span></code></pre></div></li>
+<li>
+<p>在kuboard节点上执行以下命令：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">docker run -d <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --privileged <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --restart<span class="o">=</span>unless-stopped <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --name<span class="o">=</span>kuboard-spray <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -e <span class="nv">TZ</span><span class="o">=</span>Asia/Shanghai <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -p 80:80/tcp <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -v /var/run/docker.sock:/var/run/docker.sock <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -v ~/kuboard-spray-data:/data <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>  eipwork/kuboard-spray:v1.2.3-amd64  
+</span></span></code></pre></div></li>
+<li>
+<p>在浏览器打开地址 <code>http://这台机器的IP</code>，输入用户名 <code>admin</code>，默认密码 <code>Kuboard123</code>，即可登录 Kuboard-Spray 界面。</p>
+</li>
+</ul>
+<h3 id="22-加载离线资源包">2.2 加载离线资源包</h3>
+<ul>
+<li>
+<p>在 Kuboard-Spray 界面中，导航到 <code>系统设置</code> &ndash;&gt; <code>资源包管理</code> 界面，可以看到已经等候您多时的 <code>Kuboard-Spray 离线资源包</code>，如下图所示</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-16-02-14-image.png" alt=""  /></p>
+</li>
+<li>
+<p>点击 <code>导入</code> 按钮，在界面的引导下完成资源包的加载。</p>
+</li>
+</ul>
+<h3 id="23-安装kubernetes集群">2.3 安装Kubernetes集群</h3>
+<p>在 Kuboard-Spray 界面中，导航到 <code>集群管理</code> 界面，点击界面中的 <code>添加集群安装计划</code> 按钮，填写表单如下：</p>
+<ul>
+<li>
+<p>集群名称： 自定义名称，本文中填写为 <code>kuboard</code>，此名称不可以修改；</p>
+</li>
+<li>
+<p>资源包：选择前面步骤中导入的离线资源包。</p>
+</li>
+<li>
+<p>点击 <code>确定</code> 按钮后，将进入集群规划页面，在该界面中添加每个集群节点的连接参数并设置节点的角色，如下图所示：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-20-13-12-image.png" alt=""  /></p>
+<p><strong>重要</strong>： kuboard-spray 所在机器不能当做 K8S 集群的一个节点，因为安装过程中会重启集群节点的容器引擎，这会导致 kuboard-spray 被重启掉。</p>
+</li>
+<li>
+<p>注意：</p>
+<ul>
+<li>最少的节点数量是 1 个；</li>
+<li>ETCD 节点、控制节点的总数量必须为奇数；</li>
+</ul>
+</li>
+<li>
+<p>点击上图的 <code>保存</code> 按钮，再点击 <code>执行</code> 按钮，可以启动集群的离线安装过程，安装结果如下：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-22-22-52-image.png" alt=""  /></p>
+</li>
+</ul>
+<h2 id="3-部署spark-on-k8s">3 部署Spark on k8s</h2>
+<h3 id="31-制作spark容器镜像">3.1 制作spark容器镜像</h3>
+<ul>
+<li>
+<p>下载spark-3.3.1-bin-hadoop3</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">wget https://mirrors.pku.edu.cn/apache/spark/spark-3.3.1/spark-3.3.1-bin-hadoop3.tgz<span class="p">;</span>
+</span></span><span class="line"><span class="cl">tar -xzf spark-3.3.1-bin-hadoop.tgz<span class="p">;</span>
+</span></span><span class="line"><span class="cl">mv spark-3.3.1-bin-hadoop spark<span class="p">;</span>
+</span></span></code></pre></div></li>
+<li>
+<p>修改Dockerfile默认apt源加速</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> spark/kubernetes/dockerfiles/spark<span class="p">;</span>
+</span></span><span class="line"><span class="cl">// 修改Dockerfile内容
+</span></span><span class="line"><span class="cl">// 修改前：
+</span></span><span class="line"><span class="cl">sed -i <span class="s1">&#39;s/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g&#39;</span> /etc/apt/sources.list
+</span></span><span class="line"><span class="cl">// 修改后：
+</span></span><span class="line"><span class="cl">sed -i <span class="s1">&#39;s#http://deb.debian.org#https://mirrors.ustc.edu.cn#g&#39;</span> /etc/apt/source.list
+</span></span><span class="line"><span class="cl">sed -i <span class="s1">&#39;s|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g&#39;</span> /etc/apt/source.list
+</span></span></code></pre></div></li>
+<li>
+<p>构建docker镜像</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> spark/bin<span class="p">;</span>
+</span></span><span class="line"><span class="cl">// -r &lt;repo&gt; -t &lt;tag&gt;
+</span></span><span class="line"><span class="cl">./docker-image-tool.sh -r cuterwrite -t 0.1 build<span class="p">;</span>
+</span></span></code></pre></div></li>
+<li>
+<p>推送镜像到阿里云仓库（参考容器镜像服务-&gt;实例列表-&gt;镜像仓库）</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">docker login --username<span class="o">=[</span>阿里云账号<span class="o">]</span> registry.cn-hangzhou.aliyuncs.com<span class="p">;</span>
+</span></span><span class="line"><span class="cl">docker tag <span class="o">[</span>ImageId<span class="o">]</span> registry.cn-hangzhou.aliyuncs.com/<span class="o">[</span>repository<span class="o">]</span>:<span class="o">[</span>镜像版本号<span class="o">]</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">docker push registry.cn-hangzhou.aliyuncs.com/<span class="o">[</span>repository<span class="o">]</span>:<span class="o">[</span>镜像版本号<span class="o">]</span><span class="p">;</span>
+</span></span></code></pre></div></li>
+</ul>
+<h3 id="32-创建命名空间">3.2 创建命名空间</h3>
+<ul>
+<li>
+<p>访问Kuboard，通常默认用户名为 <code>admin</code>，默认密码为 <code>Kuboard123</code>，访问地址为第一个控制节点的 80 端口（取决于安装时的参数），如下图所示：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-41-32-image.png" alt=""  /></p>
+</li>
+<li>
+<p>点击进入default集群，在下图所示的页面点击创建<code>spark</code>命名空间：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-43-13-image.png" alt=""  /></p>
+</li>
+</ul>
+<h3 id="33-配置spark用户权限">3.3 配置spark用户权限</h3>
+<ul>
+<li>
+<p>创建用户<code>spark</code>并配置权限</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">kubectl create serviceaccount spark
+</span></span><span class="line"><span class="cl">kubectl create clusterrolebinding spark-role --clusterrole<span class="o">=</span>edit --serviceaccount<span class="o">=</span>spark:spark --namesparce<span class="o">=</span>spark
+</span></span></code></pre></div></li>
+</ul>
+<h3 id="34-配置spark历史服务器">3.4 配置spark历史服务器</h3>
+<ul>
+<li>
+<p>创建一个名为<code>spark-history-server</code>的deployment，配置如下：</p>
+<ul>
+<li>
+<p>容器信息：</p>
+<ul>
+<li>
+<p>名称：spark-history-server</p>
+</li>
+<li>
+<p>容器镜像：registry.cn-hangzhou.aliyuncs.com/[用户名]/spark:0.1（需配置仓库仓库名和密码）</p>
+</li>
+<li>
+<p>环境变量：SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=hdfs://192.168.0.238:8020/sparkhistory（需提前部署HDFS)</p>
+</li>
+<li>
+<p>容器端口：18080，端口名称http</p>
+</li>
+<li>
+<p>参数：[&quot;/opt/spark/bin/spark-class&quot;, &ldquo;org.apache.spark.deploy.history.HistoryServer&rdquo;]</p>
+</li>
+</ul>
+</li>
+<li>
+<p>服务信息：</p>
+<ul>
+<li>
+<p>端口：18080</p>
+</li>
+<li>
+<p>协议：TCP</p>
+</li>
+<li>
+<p>目标端口：18080</p>
+</li>
+<li>
+<p>NodePort：30080</p>
+</li>
+<li>
+<p>类型：NodePort</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>测试配置是否成功：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./spark-submit <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --master k8s://https://127.0.0.1:6443 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --deploy-mode cluster <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --name spark-pi <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --class org.apache.spark.examples.SparkPi <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.executor.request.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.executor.limit.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.driver.limit.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.driver.request.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.eventLog.enabled<span class="o">=</span><span class="nb">true</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.eventLog.dir<span class="o">=</span>hdfs://192.168.0.238:8020/sparkhistory <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.authenticate.driver.serviceAccountName<span class="o">=</span>spark <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.executor.instances<span class="o">=</span><span class="m">2</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.file.upload.path<span class="o">=</span>/tmp <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.container.pullSecrets<span class="o">=</span>aliyun-repository <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.container.image<span class="o">=</span>registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>hdfs://192.168.0.238:8020/user/root/jars/spark-examples_2.12-3.3.1.jar 
+</span></span></code></pre></div><p>提交任务成功后可以在Kuboard管理界面看到一个新启动的容器组：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-16-35-20-image.png" alt=""  /></p>
+<p>访问spark历史服务器，可以看到以下记录：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-18-50-59-image.png" alt=""  /></p>
+</li>
+</ul>
+<h2 id="4-编写wordcount程序">4 编写WordCount程序</h2>
+<p><code>WordCount.java</code></p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">package</span> <span class="n">com</span><span class="o">.</span><span class="n">cuterwrite</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.spark.api.java.function.FlatMapFunction</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.spark.sql.Dataset</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.spark.sql.Encoders</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.spark.sql.Row</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.spark.sql.SparkSession</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.Arrays</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">java.util.Iterator</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">public</span> <span class="k">class</span> <span class="nc">WordCount</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">public</span> <span class="n">static</span> <span class="n">void</span> <span class="n">main</span><span class="p">(</span><span class="n">String</span><span class="p">[]</span> <span class="n">args</span><span class="p">)</span> <span class="n">throws</span> <span class="ne">Exception</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">SparkSession</span> <span class="n">spark</span> <span class="o">=</span> <span class="n">SparkSession</span><span class="o">.</span><span class="n">builder</span><span class="p">()</span><span class="o">.</span><span class="n">appName</span><span class="p">(</span><span class="s2">&#34;WordCount&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">getOrCreate</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Dataset</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">lines</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">textFile</span><span class="p">(</span><span class="s2">&#34;hdfs://192.168.0.238:8020/input/news.txt&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Dataset</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">words</span> <span class="o">=</span> <span class="n">lines</span><span class="o">.</span><span class="n">flatMap</span><span class="p">(</span><span class="n">new</span> <span class="n">FlatMapFunction</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span> <span class="n">String</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nd">@Override</span>
+</span></span><span class="line"><span class="cl">            <span class="n">public</span> <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">call</span><span class="p">(</span><span class="n">String</span> <span class="n">line</span><span class="p">)</span> <span class="n">throws</span> <span class="ne">Exception</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">Arrays</span><span class="o">.</span><span class="n">asList</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&#34; &#34;</span><span class="p">))</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">},</span> <span class="n">Encoders</span><span class="o">.</span><span class="n">STRING</span><span class="p">());</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Dataset</span><span class="o">&lt;</span><span class="n">Row</span><span class="o">&gt;</span> <span class="n">wordCounts</span> <span class="o">=</span> <span class="n">words</span><span class="o">.</span><span class="n">groupBy</span><span class="p">(</span><span class="s2">&#34;value&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">wordCounts</span><span class="o">.</span><span class="n">write</span><span class="p">()</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&#34;csv&#34;</span><span class="p">)</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&#34;hdfs://192.168.0.238:8020/output/word_count_result&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="5-实验结果">5 实验结果</h2>
+<ul>
+<li>提交词频统计任务到<code>Kubernetes</code></li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./spark-submit <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --master k8s://https://127.0.0.1:6443 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --deploy-mode cluster <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --name wordcount <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --class com.cuterwrite.WordCount <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.executor.request.cores<span class="o">=</span><span class="m">2</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.executor.limit.cores<span class="o">=</span><span class="m">2</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.driver.limit.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.driver.request.cores<span class="o">=</span><span class="m">1</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.eventLog.enabled<span class="o">=</span><span class="nb">true</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.eventLog.dir<span class="o">=</span>hdfs://192.168.0.238:8020/sparkhistory <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.authenticate.driver.serviceAccountName<span class="o">=</span>spark <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.executor.instances<span class="o">=</span><span class="m">3</span> <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.file.upload.path<span class="o">=</span>/tmp <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.container.pullSecrets<span class="o">=</span>aliyun-repository <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>    --conf spark.kubernetes.container.image<span class="o">=</span>registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>hdfs://192.168.0.238:8020/user/root/jars/SparkApp-1.0.jar
+</span></span></code></pre></div><ul>
+<li>执行结果：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">hdfs dfs -cat output/wordCount/_temporary/0/task_202212221534101760903765384745539_0002_m_000000/*
+</span></span></code></pre></div><p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1671723913622.jpg" alt=""  /></p>
+<p>    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1671723670687.jpg" alt=""  /></p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/spark/">Spark</a>
+        
+            <a href="/tags/kubernetes/">Kubernetes</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/flink-native-k8s/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/YSFD_P2_50.png" loading="lazy" data-key="flink-native-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/YSFD_P2_50.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">基于Flink Native Kubernetes的词频统计实验</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/zookeeper-on-k8s/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/202210172323.png" loading="lazy" data-key="zookeeper-on-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/202210172323.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Zookeeper on k8s部署实验</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mapreduce/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/202210221658.png" loading="lazy" data-key="mapreduce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/202210221658.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MapReduce实验</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/hadoop-ha/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/32756284e8854b9ba653bd3632af435d.jpg" loading="lazy" data-key="hadoop-ha" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/32756284e8854b9ba653bd3632af435d.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Hadoop3 HA模式三节点高可用集群搭建实验</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2022 cuterwrite (Pang S.Z)
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
