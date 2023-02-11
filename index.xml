@@ -6,7 +6,171 @@
         <description>Recent content on cuterwrite (Pang S.Z)</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Sat, 11 Feb 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>RDMA：Soft-RoCE环境搭建实验</title>
+        <link>https://cuterwrite.top/p/soft-roce/</link>
+        <pubDate>Sat, 11 Feb 2023 00:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/soft-roce/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png" alt="Featured image of post RDMA：Soft-RoCE环境搭建实验" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#rdma-soft-roce%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%AE%9E%E9%AA%8C&#34; &gt;RDMA: Soft-RoCE环境搭建实验&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-roce%E7%AE%80%E4%BB%8B&#34; &gt;1. RoCE简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-roce%E7%9A%84%E5%8D%8F%E8%AE%AE%E5%B1%82%E6%AC%A1&#34; &gt;2. RoCE的协议层次&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-roce%E7%9A%84%E4%BC%98%E5%8A%BF&#34; &gt;3. RoCE的优势&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-soft-roce&#34; &gt;4. Soft-RoCE&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E9%83%A8%E7%BD%B2%E5%AE%9E%E9%AA%8C&#34; &gt;5. 部署实验&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#51-%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83&#34; &gt;5.1. 实验环境&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#52-%E9%83%A8%E7%BD%B2rdma%E8%BD%AF%E4%BB%B6%E6%A0%88&#34; &gt;5.2. 部署RDMA软件栈&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#521-%E7%A1%AE%E8%AE%A4%E5%BD%93%E5%89%8D%E5%86%85%E6%A0%B8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81rxe&#34; &gt;5.2.1. 确认当前内核是否支持RXE&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#522-%E5%AE%89%E8%A3%85%E7%94%A8%E6%88%B7%E6%80%81%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E5%BA%93&#34; &gt;5.2.2. 安装用户态动态链接库&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#523-%E5%AE%89%E8%A3%85iproute2%E5%92%8Cperftest&#34; &gt;5.2.3. 安装iproute2和perftest&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#53-%E9%85%8D%E7%BD%AErxe%E7%BD%91%E5%8D%A1&#34; &gt;5.3. 配置RXE网卡&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#54-%E6%89%A7%E8%A1%8Cperftest%E6%B5%8B%E8%AF%95&#34; &gt;5.4. 执行perftest测试&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;rdma-soft-roce环境搭建实验&#34;&gt;RDMA: Soft-RoCE环境搭建实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-roce简介&#34;&gt;1. RoCE简介&lt;/h2&gt;
+&lt;p&gt;RoCE是三大RDMA协议之一，全称为RDMA Over Converged Ethernet，即基于融合以太网的RDMA。它是一种基于传统以太网的部分下层协议，在其基础上实现InfiniBand的部分上层协议。&lt;/p&gt;
+&lt;p&gt;RoCE的发展历史如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;1999年，由Compaq, Dell, HP, IBM, Intel, Microsoft和Sun公司组成了IBTA组织。愿景是&lt;strong&gt;设计一种更高速的新的互联协议规范标准，来应对传统以太网在面对未来计算机行业的发展时可能遇到的瓶颈&lt;/strong&gt;。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2000年，IBTA组织设计并发布了Infiniband Architecture Specification 1.0（IB规范）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2007年，IETF发布了iWARP（Internet Wide Area RDMA Protocol）的一系列RFC。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2010年，IBTA发布了RoCE v1规范。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2014年，IBTA发布了RoCE v2规范。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;2-roce的协议层次&#34;&gt;2. RoCE的协议层次&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/v2-106078a152d4926ac8234022bd629c79_1440w.jpg&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/v2-17e04efb14c550ad0be456b7b71209b4_1440w.jpg&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;首先是二层的以太网链路帧，然后是IP报文头和UDP报文头，最后是各层级协议的校验。而Infiniband传输层报文实际上是UDP层的负载，也就是深蓝色背景的部分。UDP报文头中有一个字段Destination Port Number（目的端口号），对于RoCE v2来说固定是4791，当对端网卡收到报文后，会根据该字段识别是普通的以太网数据包，还是RoCE数据包，或者是其他协议的数据包，然后再进行解析。深蓝色背景的IB传输层部分又分成了IB报头，实际的用户数据（Payload）以及校验部分。&lt;/p&gt;
+&lt;h2 id=&#34;3-roce的优势&#34;&gt;3. RoCE的优势&lt;/h2&gt;
+&lt;p&gt;为什么我们有了Infiniband协议之后，还要设计RoCE协议呢？最主要的原因还是成本问题：由于Infiniband协议本身定义了一套全新的层次架构，从链路层到传输层，都无法与现有的以太网设备兼容。也就是说，如果某个数据中心因为性能瓶颈，想要把数据交换方式从以太网切换到Infiniband技术，那么需要购买全套的Infiniband设备，包括网卡、线缆、交换机和路由器等等。商用级设备由于对可靠性有比较高的要求，所以这一套下来是非常昂贵的。&lt;/p&gt;
+&lt;p&gt;而RoCE协议的出现解决了这一问题，如果用户想要从以太网切换到RoCE，那么只需要购买支持RoCE的网卡就可以了，线缆、交换机和路由器（RoCE v1不支持以太网路由器）等网络设备都是兼容的——因为我们只是在以太网传输层基础上又定义了一套协议而已。&lt;/p&gt;
+&lt;p&gt;所以RoCE相比于Infiniband，主要还是省钱，当然性能上相比Infiniband还是有一些损失，毕竟人家是全套重新设计的。&lt;/p&gt;
+&lt;p&gt;至于iWARP，相比于RoCE协议栈更复杂，并且由于TCP的限制，只能支持可靠传输，即无法支持UD等传输类型。所以目前iWARP的发展并不如RoCE和Infiniband。&lt;/p&gt;
+&lt;h2 id=&#34;4-soft-roce&#34;&gt;4. Soft-RoCE&lt;/h2&gt;
+&lt;p&gt;虽然RoCE相比Infiniband具有兼容性优势，价格也便宜，但是&lt;strong&gt;实际应用&lt;/strong&gt;的时候&lt;strong&gt;依然需要专用的网卡支持&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;RoCE本身确实可以由软件实现，也就是本节即将介绍的Soft-RoCE，但是商用的时候，几乎不会有人用软件实现的RoCE。RDMA技术本身的一大特点就是“硬件卸载”，即把本来软件（CPU）做的事情放到硬件中实现以达到加速的目的。CPU主要是用来计算的，让它去处理协议封包和解析以及搬运数据，这是对计算资源的浪费。所以RoCE网卡会把TCP/IP协议栈放到硬件中实现以解放CPU，让它去做更重要的事。&lt;/p&gt;
+&lt;p&gt;我们说回Soft-RoCE，它由IBM和Mellanox牵头的IBTA RoCE工作组实现。本身的设计初衷有几点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;降低RoCE部署成本：Soft-RoCE可以使不具备RoCE能力的硬件和支持RoCE的硬件间进行基于IB语义的交流，这样可以免于替换网络中的一些非关键节点的旧型号网卡。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;相比TCP提升性能：虽然软件实现IB传输层带来了一定的开销，但是相比基于Socket-TCP/IP的传统通信方式，Soft-RoCE因为减少了系统调用（只在软件通知硬件下发了新SQ WQE时才会使用系统调用），发送端的零拷贝以及接收端的只需要单次拷贝等原因，仍然带来了性能上的提升。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;便于开发和测试RDMA程序：有了Soft-RoCE，我们基于Verbs API编写的程序，就可以不依赖于硬件执行起来，可以很方便地运行程序。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;实现原理&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Soft-RoCE就是把本来应该卸载到硬件的封包和解析工作，又拿到软件来做。其本身是基于Linux内核的TCP/IP协议栈实现的，网卡本身并不感知收发的数据包是RoCE报文，其驱动程序按照IB规范中的报文格式将用户数据封装成IB传输层报文，然后把报文整体当做数据填入Socket Buffer当中，由网卡进行下一步收发包处理。&lt;/p&gt;
+&lt;h2 id=&#34;5-部署实验&#34;&gt;5. 部署实验&lt;/h2&gt;
+&lt;h3 id=&#34;51-实验环境&#34;&gt;5.1. 实验环境&lt;/h3&gt;
+&lt;p&gt;本实验主要使用Ubuntu 20.04 64位作为系统环境，采用2台2核4GB云服务器作为Soft-RoCE的部署环境，&lt;/p&gt;
+&lt;h3 id=&#34;52-部署rdma软件栈&#34;&gt;5.2. 部署RDMA软件栈&lt;/h3&gt;
+&lt;h4 id=&#34;521-确认当前内核是否支持rxe&#34;&gt;5.2.1. 确认当前内核是否支持RXE&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cat /boot/config-&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;uname -r&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;|&lt;/span&gt; grep RXE
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;如果CONFIG_RDMA_RXE的值为y或者m，表示当前的操作系统可以使用RXE。&lt;/p&gt;
+&lt;h4 id=&#34;522-安装用户态动态链接库&#34;&gt;5.2.2. 安装用户态动态链接库&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install libibverbs1 ibverbs-utils librdmacm1 libibumad3 ibverbs-providers rdma-core
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;这几个软件包的作用如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;软件包名&lt;/th&gt;
+&lt;th&gt;主要功能&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;libibverbs1&lt;/td&gt;
+&lt;td&gt;ibverbs动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ibverbs-utils&lt;/td&gt;
+&lt;td&gt;ibverbs示例程序&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;librdmacm1&lt;/td&gt;
+&lt;td&gt;rdmacm动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;libibumad3&lt;/td&gt;
+&lt;td&gt;ibumad动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ibverbs-providers&lt;/td&gt;
+&lt;td&gt;ibverbs各厂商用户态驱动（包括RXE）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;rdma-core&lt;/td&gt;
+&lt;td&gt;文档及用户态配置文件&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;安装完上述软件之后，可以执行ibv_devices看看有没有报错：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devices.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;这是个基于verbs接口编写的小程序，用来获取并打印出当前系统中的RDMA设备列表。&lt;/p&gt;
+&lt;p&gt;查看安装的版本：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;dpkg -L libibverbs1
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202023-02-11%20125822.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;可以看到安装的版本是28.0&lt;/p&gt;
+&lt;h4 id=&#34;523-安装iproute2和perftest&#34;&gt;5.2.3. 安装iproute2和perftest&lt;/h4&gt;
+&lt;p&gt;iproute2是用来替代net-tools软件包的，是一组开源的网络工具集合，比如用更强大ip命令替换了以前常用的ifconfig。我们需要其中的rdma工具来对RXE进行配置。一般的操作系统都已经包含了，安装也很简单：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install iproute2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;perftest是一个基于Verbs接口开发的开源RDMA性能测试工具，可以对支持RDMA技术的节点进行带宽和时延测试。相比于rdma-core自带的示例程序 ，功能更加强大，当然也更复杂。使用如下命令安装：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install perftest
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;h3 id=&#34;53-配置rxe网卡&#34;&gt;5.3. 配置RXE网卡&lt;/h3&gt;
+&lt;p&gt;首先我们需要加载内核驱动，modprobe会自动加载依赖的其他驱动。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo modprobe rdma_rxe
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;然后进行用户态配置：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo rdma link add rxe_0 &lt;span class=&#34;nb&#34;&gt;type&lt;/span&gt; rxe netdev eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;其中rxe_0是你希望的RDMA的设备名，可任意取名。eth0为Soft-RoCE设备所绑定的网络设备名，也就是ifconfig中看到的网卡名。&lt;/p&gt;
+&lt;p&gt;接着我们用rdma工具查看是否添加成功：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;rdma link
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/rdma_link.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;再次运行&lt;code&gt;ibv_devices&lt;/code&gt;程序，可以看到RXE网卡已经出现在设备列表里。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devices_new.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;也可以运行&lt;code&gt;ibv_devinfo -d rxe_0&lt;/code&gt;命令查看虚拟RDMA设备的信息。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devinfo.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;h3 id=&#34;54-执行perftest测试&#34;&gt;5.4. 执行perftest测试&lt;/h3&gt;
+&lt;p&gt;分别在两端执行以下命令：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;ib_send_bw -d rxe_0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;以及：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;ib_send_bw -d rxe_0 192.168.1.5
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;p&gt;ib_send_bw是用来测试SEND操作的带宽的程序（infiniband_send&lt;em&gt;bandwidth），其中&lt;/em&gt;&amp;lt;server_ip&amp;gt;表示对端的IP&lt;/p&gt;
+&lt;p&gt;两端的结果如下，Server端：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/ib_server.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;Client端：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_client.png&#34; alt=&#34;&#34;  /&gt;&lt;/p&gt;
+&lt;p&gt;可以看到两端都打印出了一些测试信息以及最后的测试结果，也就是带宽信息。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>基于Flink Native Kubernetes的词频统计实验</title>
         <link>https://cuterwrite.top/p/flink-native-k8s/</link>
         <pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate>
@@ -5884,6 +6048,10 @@ Stream&amp;lt;Integer&amp;gt; stream2 = Stream.iterate(0, x -&amp;gt; x + 3).lim
 &lt;/ul&gt;
 &lt;h2 id=&#34;常用电子资源检索网站&#34;&gt;常用电子资源检索网站&lt;/h2&gt;
 &lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;zhelper：&lt;a class=&#34;link&#34; href=&#34;https://docs.zhelper.net/search/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;https://docs.zhelper.net/search/&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;书享家：&lt;a class=&#34;link&#34; href=&#34;https://www.shuxiangjia.cn/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://www.shuxiangjia.cn/&lt;/a&gt;&lt;/p&gt;
