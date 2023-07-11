@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。'><title>最小反馈弧集合问题</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/fas/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='最小反馈弧集合问题'>
+<meta property='og:description' content='在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。'>
+<meta property='og:url' content='https://cuterwrite.top/p/fas/'>
+<meta property='og:site_name' content='cuterwrite (Pang S.Z)'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='algorithm' /><meta property='article:published_time' content='2023-07-11T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-11T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230711173143.png' />
+<meta name="twitter:title" content="最小反馈弧集合问题">
+<meta name="twitter:description" content="在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230711173143.png' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite (Pang S.Z)</a></h1>
+        <h2 class="site-description">本网站主要用来记录一些本人感兴趣的东西，佛系更新</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/fas/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230711173143.png" loading="lazy" alt="Featured image of post 最小反馈弧集合问题" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/" style="background-color: #9fe6b8; color: #fff;">
+                数据结构与算法
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/fas/">最小反馈弧集合问题</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2023-07-11</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#%E6%9C%80%E5%B0%8F%E5%8F%8D%E9%A6%88%E5%BC%A7%E9%9B%86%E5%90%88%E9%97%AE%E9%A2%98" >最小反馈弧集合问题</a>
+<ul>
+<li><a class="link" href="#%E4%B8%80%E5%BC%95%E8%A8%80" >一、引言</a></li>
+<li><a class="link" href="#%E4%BA%8C%E9%97%AE%E9%A2%98%E5%AE%9A%E4%B9%89" >二、问题定义</a></li>
+<li><a class="link" href="#%E4%B8%89%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88" >三、解决方案</a>
+<ul>
+<li><a class="link" href="#1-greedyfas" >1. GreedyFAS</a></li>
+<li><a class="link" href="#2-sortfas" >2. SortFAS</a></li>
+<li><a class="link" href="#3-pagerankfas" >3. PageRankFAS</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%9B%9B%E5%AE%9E%E9%99%85%E5%BA%94%E7%94%A8" >四、实际应用</a></li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="最小反馈弧集合问题">最小反馈弧集合问题</h1>
+<h2 id="一引言">一、引言</h2>
+<p>在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。</p>
+<h2 id="二问题定义">二、问题定义</h2>
+<p>首先，我们来详细定义一下最小反馈弧集问题。给定一个有向图G=(V, E)，其中V是顶点集，E是边集。给定有向图G(V,E)，集合F是E的一个子集，若G的生成子图G′(V,E−F)中不包含环，则称F是G的一个反馈弧集合。容易推出：若有向图G包含环，则其每个环至少有一条边在F中。我们将基数最小的反馈弧集合称为最小反馈弧集合。最小反馈弧集合问题就是在给定有向图G的情况下，求解最小反馈弧集合F。</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230711173938.png" alt="20230711173938"  /></p>
+<ul>
+<li>例如：$ F={(1, 2), (4, 5)} $</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230711174006.png" alt="20230711174006"  /></p>
+<p>在这个问题中，我们的目标是找到最小的反馈弧集，也就是说，我们希望找到尽可能少的边，使得去掉这些边后图中不再有环。这个问题在许多实际应用中都有重要的意义。例如，在社会网络分析中，我们可以通过这个问题来找出社区内的关键人物；在生物信息学中，我们可以通过这个问题来找出基因调控网络中的关键基因。</p>
+<p>最小反馈弧集问题已经被证明是一个NP难问题。这意味着，我们无法在多项式时间内找到这个问题的精确解（除非P=NP）。然而，尽管这个问题很难，但是我们仍然可以通过一些方法来找到它的近似解。在理论计算机科学中，有一类算法被称为近似算法，它们可以在多项式时间内找到问题的近似解。对于最小反馈弧集问题，我们也可以使用这类算法来求解。在接下来的部分中，我们将介绍一些常见的近似算法。</p>
+<h2 id="三解决方案">三、解决方案</h2>
+<p>对于最小反馈弧集问题，我们有多种解决方案，其中包括贪心算法（GreedyFAS）、排序算法（SortFAS）和基于PageRank的算法（PageRankFAS）。</p>
+<h3 id="1-greedyfas">1. GreedyFAS</h3>
+<p>GreedyFAS算法的核心思想在于用贪心法生成一个线性排列，将该线性排列中的后向边集作为结果返回。该算法的伪代码如下图所示：
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230711172920.png" alt="20230711172920"  /></p>
+<p>对任一有向图G，GreedyFAS算法使用的贪心策略为：</p>
+<ul>
+<li>查找源头点（入度为0的点）。若查到源头点则排在序列 $s_1$ 末尾并移除该点，重复直到 $G$ 无源头点。</li>
+<li>查找汇集点（出度为0的点）。若查到汇集点则排在序列 $s_2$ 首部并移除该点，重复直到 $G$ 无汇集点。</li>
+<li>计算剩余点的 $\delta$ 值（出度与入度的差值），将 $\delta$ 值最大的点排在 $s_1$ 末尾并移除该点。</li>
+<li>重复上述过程直到 $G$ 不存在任何点。</li>
+<li>返回序列 $s_1 s_2$ 。</li>
+</ul>
+<h3 id="2-sortfas">2. SortFAS</h3>
+<p>SortFAS算法的基本思想是该算法根据序号的自然顺序生成初始最小线性排列问题（LA），不断调整LA使后向边的数量尽可能少。该算法的伪代码如下图所示：
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/SortFAS.png" alt="SortFAS"  /></p>
+<p>对任一有向图G，SortFAS算法的步骤如下：</p>
+<ul>
+<li>生成初始最小线性排列问题（LA）。</li>
+<li>对于LA中的每个序号v，记录全局变量val，初始化为0，表示调整后新增的后向边数。记录v的位置loc。记录最小值min=0
+<ul>
+<li>从序号loc-1开始，向前遍历LA得到序号w，若v-&gt;w存在则val&ndash;，否则val++。</li>
+<li>如果val小于等于min，则赋值min=val，记录位置loc=w</li>
+<li>在位置loc插入序号v</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-pagerankfas">3. PageRankFAS</h3>
+<p>PageRankFAS算法的核心思想在于将原始图的强连通分量转换为线图，然后用PageRank算法评估线图中节点的重要性，然后依次删除线图中PageRank值最高的节点对应的边。该算法的伪代码如下图所示：</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/PageRankFAS.png" alt="PageRankFAS"  /></p>
+<p>对任一有向图G，PageRankFAS的算法步骤如下：</p>
+<p>检测图是否有环，如果存在环，执行以下循环：</p>
+<ol>
+<li>识别有向图中的强连接分量 $s_i, i=0,1,\cdots$</li>
+<li>遍历强连通分量 $s_i$ ，对于每个强连通分量 $s_i$ ，执行：
+<ul>
+<li>如果 $s-i$ 的大小小于等于1，跳过该强连通分量的处理。</li>
+<li>选择 $s_i$ 中的一个随机节点 $v$ ，从 $v$ 开始遍历创建 $s_i$ 的线图 $L(s_i)$</li>
+<li>计算 $L(s_i)$ 的PageRank值。</li>
+<li>选择 $L(s_i)$ 中PageRank值最大的节点，找到 $s_i$ 中对应的边 $e$ ，添加到最小反馈弧集。</li>
+<li>在 $G$ 中删除边 $e$ 。</li>
+</ul>
+</li>
+<li>如果仍有环，重复执行1和2，直到图不存在环为止。</li>
+</ol>
+<h2 id="四实际应用">四、实际应用</h2>
+<p>最小反馈弧集问题在许多领域都有广泛的应用。例如，在生物信息学中，我们可以通过求解最小反馈弧集问题，来找出基因调控网络中的关键基因。在这种情况下，我们通常将基因调控网络表示为一个有向图，其中的顶点代表基因，边代表基因之间的调控关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个网络有重要影响的基因。</p>
+<p>在社会网络分析中，我们可以通过求解最小反馈弧集问题，来检测社区内的关键人物。在这种情况下，我们通常将社区表示为一个有向图，其中的顶点代表人，边代表人之间的关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个社区有重要影响的人。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/algorithm/">algorithm</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/route-planning-alogrithm/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/photo-1563207153-f403bf289096.4ciiq7uwjl40.jfif" loading="lazy" data-key="route-planning-alogrithm" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/photo-1563207153-f403bf289096.4ciiq7uwjl40.jfif"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">路径规划算法之A* 与D* Lite原理详解</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/trie/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp" loading="lazy" data-key="trie" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">聊聊前缀树Trie</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2023 cuterwrite (Pang S.Z)
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
