@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。'><title>MPI与并行计算（三）：集合通信</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/mpi-tutorial/3/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='MPI与并行计算（三）：集合通信'>
+<meta property='og:description' content='集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。'>
+<meta property='og:url' content='https://cuterwrite.top/p/mpi-tutorial/3/'>
+<meta property='og:site_name' content='cuterwrite (Pang S.Z)'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='MPI' /><meta property='article:published_time' content='2023-07-19T15:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-19T15:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png' />
+<meta name="twitter:title" content="MPI与并行计算（三）：集合通信">
+<meta name="twitter:description" content="集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite (Pang S.Z)</a></h1>
+        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/mpi-tutorial/3/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png" loading="lazy" alt="Featured image of post MPI与并行计算（三）：集合通信" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #ffdb5c; color: #fff;">
+                高性能计算
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/mpi-tutorial/3/">MPI与并行计算（三）：集合通信</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2023-07-19</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%B8%89%E9%9B%86%E5%90%88%E9%80%9A%E4%BF%A1" >MPI与并行计算（三）：集合通信</a>
+<ul>
+<li><a class="link" href="#1-%E5%AE%9A%E4%B9%89" >1. 定义</a></li>
+<li><a class="link" href="#2-%E9%9B%86%E5%90%88%E9%80%9A%E4%BF%A1%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD" >2. 集合通信实现的功能</a></li>
+<li><a class="link" href="#3-%E4%B8%80%E5%AF%B9%E5%A4%9A%E9%80%9A%E4%BF%A1%E5%B9%BF%E6%92%AD" >3. 一对多通信：广播</a></li>
+<li><a class="link" href="#4-%E5%A4%9A%E5%AF%B9%E4%B8%80%E9%80%9A%E4%BF%A1%E6%94%B6%E9%9B%86" >4. 多对一通信：收集</a></li>
+<li><a class="link" href="#5-%E4%B8%80%E5%AF%B9%E5%A4%9A%E9%80%9A%E4%BF%A1%E6%95%A3%E6%92%AD" >5. 一对多通信：散播</a></li>
+<li><a class="link" href="#6-%E8%81%9A%E9%9B%86" >6. 聚合</a></li>
+<li><a class="link" href="#7-%E5%90%8C%E6%AD%A5" >7. 同步</a></li>
+<li><a class="link" href="#8-%E8%A7%84%E7%BA%A6" >8. 规约</a></li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="mpi与并行计算三集合通信">MPI与并行计算（三）：集合通信</h1>
+<h2 id="1-定义">1. 定义</h2>
+<ul>
+<li><strong>集合通信（Collective Communication）</strong>：是一个进程组中的所有进程都参加的全局通信操作。</li>
+<li>特点：
+<ul>
+<li>通信空间中的所有进程都参与通信操作</li>
+<li>每一个进程都需要调用该操作函数</li>
+</ul>
+</li>
+<li>数据移动类型
+<ul>
+<li>Broadcast
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002920.png" alt="20230720002920"  /></li>
+<li>Scatter</li>
+<li>Gather
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002946.png" alt="20230720002946"  /></li>
+<li>AllGather</li>
+<li>Alltoall
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720003014.png" alt="20230720003014"  /></li>
+</ul>
+</li>
+</ul>
+<h2 id="2-集合通信实现的功能">2. 集合通信实现的功能</h2>
+<ul>
+<li>
+<p>集合通信一般实现三个功能：通信、聚合和同步</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">类型</th>
+<th style="text-align:center">函数名</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Bcast</td>
+<td style="text-align:center">一对多广播同样的消息</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Gather</td>
+<td style="text-align:center">多对一收集各个进程的消息</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Gatherv</td>
+<td style="text-align:center">MPI_Gather的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Allgather</td>
+<td style="text-align:center">全局收集</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Allgatherv</td>
+<td style="text-align:center">MPI_Allgather的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Scatter</td>
+<td style="text-align:center">一对多散播不同的消息</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Scatterv</td>
+<td style="text-align:center">MPI_Scatter的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Alltoall</td>
+<td style="text-align:center">多对多全局交换消息</td>
+</tr>
+<tr>
+<td style="text-align:center">通信</td>
+<td style="text-align:center">MPI_Alltoallv</td>
+<td style="text-align:center">MPI_Alltoall的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">聚合</td>
+<td style="text-align:center">MPI_Reduce</td>
+<td style="text-align:center">多对一规约</td>
+</tr>
+<tr>
+<td style="text-align:center">聚合</td>
+<td style="text-align:center">MPI_Allreduce</td>
+<td style="text-align:center">MPI_Reduce的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">聚合</td>
+<td style="text-align:center">MPI_Scan</td>
+<td style="text-align:center">多对多扫描</td>
+</tr>
+<tr>
+<td style="text-align:center">聚合</td>
+<td style="text-align:center">MPI_Reduce_scatter</td>
+<td style="text-align:center">MPI_Reduce的一般化</td>
+</tr>
+<tr>
+<td style="text-align:center">同步</td>
+<td style="text-align:center">MPI_Barrier</td>
+<td style="text-align:center">路障同步</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>通信：集合通信，按照通信方向的不同，又可以分为三种：一对多通信，多对一通信和多对多通信。</p>
+</li>
+<li>
+<p>一对多通信：一个进程向其它所有的进程发送消息，这个负责发送消息的进程叫做Root进程。</p>
+</li>
+<li>
+<p>多对一通信：一个进程负责从其它所有的进程接收消息，这个接收的进程也叫做Root进程。</p>
+</li>
+<li>
+<p>多对多通信：每一个进程都向其它所有的进程发送或者接收消息。</p>
+</li>
+</ul>
+<h2 id="3-一对多通信广播">3. 一对多通信：广播</h2>
+<ul>
+<li><strong>广播</strong>是一对多通信的典型例子，其调用格式为：<code>MPI_Bcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm)</code></li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例1：广播</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// bcast.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">rank</span><span class="p">,</span> <span class="n">size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">data</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rank</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">data</span> <span class="o">=</span> <span class="mi">123</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Bcast</span><span class="p">(</span><span class="o">&amp;</span><span class="n">data</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Process %d got data %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>结果：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc bcast.c -o bcast
+</span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./bcast
+</span></span><span class="line"><span class="cl">Process <span class="m">0</span> got data <span class="m">123</span>
+</span></span><span class="line"><span class="cl">Process <span class="m">1</span> got data <span class="m">123</span>
+</span></span></code></pre></div><ul>
+<li>广播的特点
+<ul>
+<li>标号为Root的进程发送相同的消息给通信域Comm中的所有进程。</li>
+<li>消息的内容如同点对点通信一样由三元组&lt;Address, Count, Datatype&gt;标识。</li>
+<li>对Root进程来说，这个三元组既定义了发送缓冲也定义了接收缓冲。对其它进程来说，这个三元组只定义了接收缓冲</li>
+</ul>
+</li>
+</ul>
+<h2 id="4-多对一通信收集">4. 多对一通信：收集</h2>
+<ul>
+<li>收集是多对一通信的典型例子，其调用格式为：<code>MPI_Gather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)</code></li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720004519.png" alt="20230720004519"  /></p>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例2：收集</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// gather.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">rank</span><span class="p">,</span> <span class="n">size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 分布变量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">int</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rank</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">rank</span> <span class="o">*</span> <span class="n">rank</span> <span class="o">*</span> <span class="mi">3</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 开辟接收缓存区
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">buf</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">size</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Gather</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">size</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%d &#34;</span><span class="p">,</span> <span class="n">buf</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">printf</span><span class="p">(</span><span class="s">&#34;</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">free</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>结果：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc gather.c -o gather
+</span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./gather
+</span></span><span class="line"><span class="cl"><span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">5</span>
+</span></span></code></pre></div><ul>
+<li>收集的特点
+<ul>
+<li>在收集操作中，Root进程从进程域Comm的所有进程(包括它自已)接收消息。</li>
+<li>这n个消息按照进程的标识rank排序进行拼接，然后存放在Root进程的接收缓冲中。</li>
+<li>接收缓冲由三元组&lt;RecvAddress, RecvCount, RecvDatatype&gt;标识，发送缓冲由三元组&lt;SendAddress, SendCount, SendDatatype&gt;标识，所有非Root进程忽略接收缓冲。</li>
+</ul>
+</li>
+</ul>
+<h2 id="5-一对多通信散播">5. 一对多通信：散播</h2>
+<ul>
+<li>散播是一个一对多操作，其调用格式为：<code>MPI_Scatter(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)</code></li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720005711.png" alt="20230720005711"  /></p>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例3：散播</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// scatter.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">rank</span><span class="p">,</span> <span class="n">size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">buf</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">rank</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">size</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">buf</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">size</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">size</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">buf</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Scatter</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;rank = %d, data = %d %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">free</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>结果：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc scatter.c -o scatter
+</span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./scatter
+</span></span><span class="line"><span class="cl"><span class="nv">rank</span> <span class="o">=</span> 0, <span class="nv">data</span> <span class="o">=</span> <span class="m">0</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="nv">rank</span> <span class="o">=</span> 1, <span class="nv">data</span> <span class="o">=</span> <span class="m">2</span> <span class="m">3</span>
+</span></span></code></pre></div><ul>
+<li>散播的特点
+<ul>
+<li>Scatter执行与Gather相反的操作。</li>
+<li>Root进程给所有进程(包括它自已)发送一个不同的消息，这n (n为进程域comm包括的进程个数)个消息在Root进程的发送缓冲区中按进程标识的顺序有序地存放。</li>
+<li>每个接收缓冲由三元组&lt;RecvAddress, RecvCount, RecvDatatype&gt;标识，所有的非Root进程忽略发送缓冲。对Root进程，发送缓冲由三元组&lt;SendAddress,SendCount, SendDatatype&gt;标识。</li>
+</ul>
+</li>
+</ul>
+<h2 id="6-聚合">6. 聚合</h2>
+<ul>
+<li>集合通信的聚合功能使得MPI进行通信的同时完成一定的计算。</li>
+<li>MPI聚合的功能分三步实现：
+<ul>
+<li>首先是通信的功能，即消息根据要求发送到目标进程，目标进程也已经收到了各自需要的消息</li>
+<li>然后是对消息的处理，即执行计算功能</li>
+<li>最后把处理结果放入指定的接收缓冲区</li>
+</ul>
+</li>
+<li>MPI提供了两种类型的聚合操作: 归约(Reduce)和扫描(Scan)。</li>
+</ul>
+<h2 id="7-同步">7. 同步</h2>
+<ul>
+<li>同步功能用来协调各个进程之间的进度和步伐 。目前MPI的实现中支持一个同步操作，即<strong>路障同步(Barrier)</strong>。</li>
+<li>路障同步的调用格式为：<code>MPI_Barrier(MPI_Comm comm)</code>
+<ul>
+<li>在路障同步操作<code>MPI_Barrier(Comm)</code>中，通信域Comm中的所有进程相互同步。</li>
+<li>在该操作调用返回后，可以保证组内所有的进程都已经执行完了调用之前的所有操作，可以开始该调用后的操作。</li>
+</ul>
+</li>
+</ul>
+<h2 id="8-规约">8. 规约</h2>
+<p>MPI_REDUCE将组内每个进程输入缓冲区中的数据按给定的操作op进行运算，并将其结果返回到序列号为root的进程的输出缓冲区中，输入缓冲区由参数sendbuf、count和datatype定义，输出缓冲区由参数recvbuf count和datatype定义，要求两者的元素数目和类型都必须相同，因为所有组成员都用同样的参数count、datatype、op、root和comm来调用此例程 故而所有进程都提供长度相同、元素类型相同的输入和输出缓冲区，每个进程可能提供一个元素或一系列元素 组合操作依次针对每个元素进行。</p>
+<p>操作op始终被认为是可结合的 并且所有MPI定义的操作被认为是可交换的，用户自定义的操作被认为是可结合的，但可以不是可交换的。MPI中已经定义好的一些操作,它们是为函数<code>MPI_Reduce</code>和一些其他的相关函数,如<code>MPI_Allreduce</code>、<code>MPI_Reduce_scatter</code>和<code>MPI_Scan</code>而定义的 这些操作用来设定相应的op。</p>
+<p>MPI预定的归约操作如下:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">操作</th>
+<th style="text-align:center">含义</th>
+<th style="text-align:center">操作</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">MPI_MAX</td>
+<td style="text-align:center">最大值</td>
+<td style="text-align:center">MPI_MIN</td>
+<td style="text-align:center">最小值</td>
+</tr>
+<tr>
+<td style="text-align:center">MPI_SUM</td>
+<td style="text-align:center">求和</td>
+<td style="text-align:center">MPI_PROD</td>
+<td style="text-align:center">求积</td>
+</tr>
+<tr>
+<td style="text-align:center">MPI_LAND</td>
+<td style="text-align:center">逻辑与</td>
+<td style="text-align:center">MPI_BAND</td>
+<td style="text-align:center">按位与</td>
+</tr>
+<tr>
+<td style="text-align:center">MPI_LOR</td>
+<td style="text-align:center">逻辑或</td>
+<td style="text-align:center">MPI_BOR</td>
+<td style="text-align:center">按位或</td>
+</tr>
+<tr>
+<td style="text-align:center">MPI_LXOR</td>
+<td style="text-align:center">逻辑异或</td>
+<td style="text-align:center">MPI_BXOR</td>
+<td style="text-align:center">按位异或</td>
+</tr>
+<tr>
+<td style="text-align:center">MPI_MAXLOC</td>
+<td style="text-align:center">最大值和位置</td>
+<td style="text-align:center">MPI_MINLOC</td>
+<td style="text-align:center">最小值和位置</td>
+</tr>
+</tbody>
+</table>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例4：计算pi值</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// reduce.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;math.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">double</span> <span class="nf">f</span><span class="p">(</span><span class="kt">double</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">double</span> <span class="nf">f</span><span class="p">(</span><span class="kt">double</span> <span class="n">x</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mf">4.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">done</span>      <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">,</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">PI25DT</span> <span class="o">=</span> <span class="mf">3.141592653589793238462643</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">mypi</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">sum</span><span class="p">,</span> <span class="n">x</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">startwtime</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">endwtime</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">namelen</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">process_name</span><span class="p">[</span><span class="n">MPI_MAX_PROCESSOR_NAME</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">numprocs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myid</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Get_processor_name</span><span class="p">(</span><span class="n">process_name</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">namelen</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&#34;Process %d of %d is on %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">,</span> <span class="n">process_name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">n</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&#34;Enter the number of intervals: (0 quits) &#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">scanf</span><span class="p">(</span><span class="s">&#34;%d&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">startwtime</span> <span class="o">=</span> <span class="n">MPI_Wtime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 将n广播给所有进程 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Bcast</span><span class="p">(</span><span class="o">&amp;</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 矩形宽度 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">h</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="n">n</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 矩形面积初值 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 每个进程计算自己的部分 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="n">myid</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="n">numprocs</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">x</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="p">((</span><span class="kt">double</span><span class="p">)</span><span class="n">i</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sum</span> <span class="o">+=</span> <span class="n">f</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 各个进程并行计算得到的和 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mypi</span> <span class="o">=</span> <span class="n">h</span> <span class="o">*</span> <span class="n">sum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Reduce</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mypi</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pi</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="n">MPI_SUM</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="cm">/* 将部分和累加得到最终结果 */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">printf</span><span class="p">(</span><span class="s">&#34;pi is approximately %.16f, Error is %.16f</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="n">fabs</span><span class="p">(</span><span class="n">pi</span> <span class="o">-</span> <span class="n">PI25DT</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">        <span class="n">endwtime</span> <span class="o">=</span> <span class="n">MPI_Wtime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="n">printf</span><span class="p">(</span><span class="s">&#34;wall clock time = %f</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">endwtime</span> <span class="o">-</span> <span class="n">startwtime</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">fflush</span><span class="p">(</span><span class="n">stdout</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div>
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/mpi/">MPI</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/2/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png" loading="lazy" data-key="mpi-tutorial/2" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（二）：点到点通信</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/1/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719012753.png" loading="lazy" data-key="mpi-tutorial/1" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719012753.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（一）：并行环境及编程模型</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/cuda-tutorial/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ba25bc69cbefbfac1287056fee570cee2b6458ff.jpg@1256w_880h_!web-article-pic.avif" loading="lazy" data-key="cuda-tutorial" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/ba25bc69cbefbfac1287056fee570cee2b6458ff.jpg@1256w_880h_!web-article-pic.avif"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">CUDA编程：从基础到应用</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/soft-roce/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png" loading="lazy" data-key="soft-roce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA：Soft-RoCE环境搭建实验</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2023 cuterwrite (Pang S.Z)
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
