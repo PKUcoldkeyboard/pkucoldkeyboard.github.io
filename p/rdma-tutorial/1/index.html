@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文介绍了RDMA（Remote Direct Memory Access）技术的基本概念和工作原理。首先，简要介绍了RDMA技术的背景和定义。接着，详细解释了RDMA工作原理中的几个重要概念，包括Infiband与以太网的对比、QRs/WRs执行模型、通信语义和传输服务。此外，还介绍了RDMA架构的层级结构。然后，介绍了Verbs与OFA Verbs API，包括Verbs的简介和OFA Verbs API对应用的支持。最后，对本文进行了总结。通过本文的阅读，读者可以了解RDMA技术的基本概念和工作原理，以及Verbs与OFA Verbs API的应用。'><title>RDMA技术及其编程方法（一）：RDMA简介与原理</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/rdma-tutorial/1/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='RDMA技术及其编程方法（一）：RDMA简介与原理'>
+<meta property='og:description' content='本文介绍了RDMA（Remote Direct Memory Access）技术的基本概念和工作原理。首先，简要介绍了RDMA技术的背景和定义。接着，详细解释了RDMA工作原理中的几个重要概念，包括Infiband与以太网的对比、QRs/WRs执行模型、通信语义和传输服务。此外，还介绍了RDMA架构的层级结构。然后，介绍了Verbs与OFA Verbs API，包括Verbs的简介和OFA Verbs API对应用的支持。最后，对本文进行了总结。通过本文的阅读，读者可以了解RDMA技术的基本概念和工作原理，以及Verbs与OFA Verbs API的应用。'>
+<meta property='og:url' content='https://cuterwrite.top/p/rdma-tutorial/1/'>
+<meta property='og:site_name' content='cuterwrite'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='RDMA' /><meta property='article:published_time' content='2023-07-21T01:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-21T01:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png' />
+<meta name="twitter:title" content="RDMA技术及其编程方法（一）：RDMA简介与原理">
+<meta name="twitter:description" content="本文介绍了RDMA（Remote Direct Memory Access）技术的基本概念和工作原理。首先，简要介绍了RDMA技术的背景和定义。接着，详细解释了RDMA工作原理中的几个重要概念，包括Infiband与以太网的对比、QRs/WRs执行模型、通信语义和传输服务。此外，还介绍了RDMA架构的层级结构。然后，介绍了Verbs与OFA Verbs API，包括Verbs的简介和OFA Verbs API对应用的支持。最后，对本文进行了总结。通过本文的阅读，读者可以了解RDMA技术的基本概念和工作原理，以及Verbs与OFA Verbs API的应用。"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
+        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/rdma-tutorial/1/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png" loading="lazy" alt="Featured image of post RDMA技术及其编程方法（一）：RDMA简介与原理" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #ffdb5c; color: #fff;">
+                高性能计算
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/rdma-tutorial/1/">RDMA技术及其编程方法（一）：RDMA简介与原理</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        本文介绍了RDMA（Remote Direct Memory Access）技术的基本概念和工作原理。首先，简要介绍了RDMA技术的背景和定义。接着，详细解释了RDMA工作原理中的几个重要概念，包括Infiband与以太网的对比、QRs/WRs执行模型、通信语义和传输服务。此外，还介绍了RDMA架构的层级结构。然后，介绍了Verbs与OFA Verbs API，包括Verbs的简介和OFA Verbs API对应用的支持。最后，对本文进行了总结。通过本文的阅读，读者可以了解RDMA技术的基本概念和工作原理，以及Verbs与OFA Verbs API的应用。
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2023-07-21</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#rdma%E6%8A%80%E6%9C%AF%E5%8F%8A%E5%85%B6%E7%BC%96%E7%A8%8B%E6%96%B9%E6%B3%95%E4%B8%80rdma%E6%8A%80%E6%9C%AF" >RDMA技术及其编程方法（一）：RDMA技术</a>
+<ul>
+<li><a class="link" href="#%E4%B8%80-rdma%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B" >一、 RDMA技术简介</a></li>
+<li><a class="link" href="#%E4%BA%8C-rdma%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86" >二、 RDMA工作原理</a>
+<ul>
+<li><a class="link" href="#1-infiband%E4%B8%8E%E4%BB%A5%E5%A4%AA%E7%BD%91%E7%9A%84%E5%AF%B9%E6%AF%94" >1. Infiband与以太网的对比</a></li>
+<li><a class="link" href="#2-rdma%E4%B8%AD%E7%9A%84%E9%87%8D%E8%A6%81%E6%A6%82%E5%BF%B5" >2. RDMA中的重要概念</a></li>
+<li><a class="link" href="#3-qrswrs%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%9E%8B" >3. QRs/WRs执行模型</a></li>
+<li><a class="link" href="#4-%E9%80%9A%E4%BF%A1%E8%AF%AD%E4%B9%89" >4. 通信语义</a></li>
+<li><a class="link" href="#5-%E4%BC%A0%E8%BE%93%E6%9C%8D%E5%8A%A1" >5. 传输服务</a></li>
+<li><a class="link" href="#6-rdma%E6%9E%B6%E6%9E%84%E5%B1%82%E7%BA%A7%E7%BB%93%E6%9E%84" >6. RDMA架构层级结构</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E4%B8%89verbs%E4%B8%8Eofa-verbs-api" >三、Verbs与OFA Verbs API</a>
+<ul>
+<li><a class="link" href="#1-verbs%E7%AE%80%E4%BB%8B" >1. Verbs简介</a></li>
+<li><a class="link" href="#2-ofa-verbs-api%E6%94%AF%E6%8C%81%E5%BA%94%E7%94%A8" >2. OFA Verbs API支持应用</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%9B%9B%E6%80%BB%E7%BB%93" >四、总结</a></li>
+<li><a class="link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE" >参考文献</a></li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="rdma技术及其编程方法一rdma技术">RDMA技术及其编程方法（一）：RDMA技术</h1>
+<h2 id="一-rdma技术简介">一、 RDMA技术简介</h2>
+<ul>
+<li>RDMA: Remote Direct Memory Access
+<ul>
+<li>RDMA就是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过CPU的参与，从而大大减少了CPU的开销，提高了数据传输的效率。</li>
+</ul>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">术语</th>
+<th style="text-align:center">含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Remote</td>
+<td style="text-align:center">数据在同一网络中的节点之间传输</td>
+</tr>
+<tr>
+<td style="text-align:center">Direct</td>
+<td style="text-align:center">（1）传输过程没有操作系统内核的参与 （2）所有关于传输的协议都负载在网卡上</td>
+</tr>
+<tr>
+<td style="text-align:center">Memory</td>
+<td style="text-align:center">（1）在用户态的应用程序的虚拟内存之间传输（2）没有额外的内存拷贝或缓存</td>
+</tr>
+<tr>
+<td style="text-align:center">Access</td>
+<td style="text-align:center">send、receive、read、write、原子操作</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>RDMA的各种协议
+<ul>
+<li>InfiniBand - (41.8% of top 500 supercomputers)
+<ul>
+<li>InfiniBand是一个工业标准的分组交换网络</li>
+<li>在高性能计算机系统中越来越多地被采用</li>
+<li>用户层网络，可绕过操作系统内核</li>
+<li>SDR 4x - 8 Gbps</li>
+<li>DDR 4x - 16 Gbps</li>
+<li>QDR 4x - 32 Gbps</li>
+<li>FDQ 4x - 54 Gbps</li>
+</ul>
+</li>
+<li>RoCE - RDMA over Converged Ethernet
+<ul>
+<li>允许在以太网络上执行RDMA的网络协议</li>
+<li>RoCE v1 - 10 Gbps</li>
+<li>RoCE v2 - 25 Gbps</li>
+</ul>
+</li>
+<li>iWarp - internet Wide Area RDMA Protocol
+<ul>
+<li>运行在TCP/IP协议栈上的RDMA协议</li>
+<li>10 Gbps</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>RDMA的支持嵌入在内核之中：Kernel中的drivers/infiniband</li>
+<li>RDMA协议优势
+<ol>
+<li><strong>Zero-copy</strong>：零拷贝，能够读写远程内存，能够直接访问远程缓冲区，无需在不同软件层之间复制数据</li>
+<li><strong>Kernel bypass</strong>：跳过内核，可在相同的代码上下文（即用户空间或内核）中收发数据，节省了上下文切换时间</li>
+<li><strong>No CPU involvement</strong>：无CPU参与，可使用专用硬件收发数据，而不需要CPU干预。可降低远程端的CPU使用率，因为不需要它执行任何主动操作</li>
+<li><strong>Message based transactions</strong>：基于消息的事务，可在不同的连接上同时执行多个事务，而无需等待任何事务完成</li>
+<li><strong>Scatter/gather entries support</strong>：支持分散/聚集条目，可在单个操作中传输多个缓冲区，而无需将它们合并到单个缓冲区中</li>
+</ol>
+</li>
+</ul>
+<h2 id="二-rdma工作原理">二、 RDMA工作原理</h2>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722174248.png" alt="20230722174248"  /></p>
+<h3 id="1-infiband与以太网的对比">1. Infiband与以太网的对比</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">Feature/Network Type</th>
+<th style="text-align:center">InfiniBand</th>
+<th style="text-align:center">Ethernet</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Addressing</td>
+<td style="text-align:center">lids, gid</td>
+<td style="text-align:center">macs, IP addresses</td>
+</tr>
+<tr>
+<td style="text-align:center">Path resolution</td>
+<td style="text-align:center">Path queries</td>
+<td style="text-align:center">ARP</td>
+</tr>
+<tr>
+<td style="text-align:center">Lossless network</td>
+<td style="text-align:center">Credit-based flow control</td>
+<td style="text-align:center">Pause frames/PFC</td>
+</tr>
+<tr>
+<td style="text-align:center">QoS</td>
+<td style="text-align:center">SLs/VLs</td>
+<td style="text-align:center">Priorities/TC</td>
+</tr>
+<tr>
+<td style="text-align:center">Virtual networks</td>
+<td style="text-align:center">Pkeys</td>
+<td style="text-align:center">VLANs</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>可以看到，InfiniBand与以太网的区别首先在于网络地址的表示方式不同，以太网使用mac地址和IP地址，而InfiniBand使用lid和gid</li>
+<li>其次，网络的路径解析方式不同，以太网使用ARP地址解析协议，而InfiniBand使用path queries；</li>
+<li>然后，在网络的可靠性方面，以太网使用Pause frames/PFC（Priority-based Flow Control，基于优先级的流量控制），而InfiniBand使用的是Credit-based flow control(基于信用的流量控制)</li>
+<li>接着在网络的服务质量方面，以太网使用Priorities/TC（Traffic Class，流量类别），而InfiniBand使用SLs/VLs（Service Level，服务等级）</li>
+<li>最后，在网络的虚拟化方面，以太网使用VLANs（Virtual Local Area Network，虚拟局域网），而InfiniBand使用Pkeys（Partition Keys，分区键）。</li>
+</ul>
+<h3 id="2-rdma中的重要概念">2. RDMA中的重要概念</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">缩写</th>
+<th style="text-align:center">全称</th>
+<th style="text-align:center">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">PD</td>
+<td style="text-align:center">Protection Domain</td>
+<td style="text-align:center">保护域，是RDMA中的一种资源管理机制。PD定义了一组内存区域和访问权限，用于控制RDMA操作的安全性。PD与QP、MR均有关联。</td>
+</tr>
+<tr>
+<td style="text-align:center">MR</td>
+<td style="text-align:center">Memory Region</td>
+<td style="text-align:center">内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。</td>
+</tr>
+<tr>
+<td style="text-align:center">QP</td>
+<td style="text-align:center">Queue Pair</td>
+<td style="text-align:center">队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue）和接收队列（Receive Queue）组成，用于发送和接收RDMA操作的请求和数据。</td>
+</tr>
+<tr>
+<td style="text-align:center">CQ</td>
+<td style="text-align:center">Completion Queue</td>
+<td style="text-align:center">完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。</td>
+</tr>
+<tr>
+<td style="text-align:center">WR</td>
+<td style="text-align:center">Work Request</td>
+<td style="text-align:center">工作请求，用于描述RDMA操作的请求。WR包含了操作类型、源地址、目的地址等信息，应用程序通过将WR放入QP的发送队列来触发RDMA操作。</td>
+</tr>
+<tr>
+<td style="text-align:center">SGE</td>
+<td style="text-align:center">Scatter/Gather Element</td>
+<td style="text-align:center">即将读或写的内存地址。必须提供L_Key或R_Key来认证MR的连接</td>
+</tr>
+<tr>
+<td style="text-align:center">WC</td>
+<td style="text-align:center">Work Completion</td>
+<td style="text-align:center">工作完成，用于描述RDMA操作的完成事件。WC包含了操作类型、状态、传输长度等信息，应用程序可以通过读取CQ中的WC来获取RDMA操作的结果。</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-qrswrs执行模型">3. QRs/WRs执行模型</h3>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722225719.png" alt="20230722225719"  /></p>
+<ul>
+<li>硬件提供
+<ul>
+<li>针对每个QR上下文</li>
+<li>虚拟到物理内存的转换</li>
+<li>安全的进程控制机制</li>
+<li>可靠性(取决于传输服务)</li>
+</ul>
+</li>
+<li>操作系统管理资源创建
+<ul>
+<li>但不发布WR和轮询CQ</li>
+</ul>
+</li>
+<li>结果
+<ul>
+<li>应用程序以安全的方式直接访问硬件</li>
+<li>软件处理缓冲区而不是信息包</li>
+<li>在快速路径中不需要操作系统干预。</li>
+<li>完全异步的过程</li>
+</ul>
+</li>
+</ul>
+<h3 id="4-通信语义">4. 通信语义</h3>
+<ul>
+<li>Channel（消息传递）
+<ul>
+<li>请求者提供源缓冲区</li>
+<li>接收者提供目的缓冲区</li>
+</ul>
+</li>
+<li>Remote Direct Memory Access（RDMA）
+<ul>
+<li>请求者同时提供源缓冲区和目标缓冲区</li>
+<li>同时支持RDMA读取和写入</li>
+</ul>
+</li>
+</ul>
+<h3 id="5-传输服务">5. 传输服务</h3>
+<ul>
+<li>
+<p>分类：Connected（连接）与Datagram（数据报）</p>
+</li>
+<li>
+<p>分类：Reliable（可靠）与Unreliable（不可靠）</p>
+</li>
+<li>
+<p>两两组合形成四种类型的传输：</p>
+<ul>
+<li>Reliable Connected（RC），例如TCP</li>
+<li>Unreliable Datagram（UD），例如UDP</li>
+<li>UC也可以实现</li>
+<li>RD不支持，虽然它是由规范定义的，但在API/DIVER/硬件中不支持</li>
+</ul>
+</li>
+<li>
+<p>QP的传输类型：</p>
+<ul>
+<li>可靠连接RC
+<ul>
+<li>QP仅与一个远程QP关联</li>
+<li>由一个QP的发送队列发送的消息被可靠地递送到另一个QP的接收队列。</li>
+<li>数据包按顺序发送</li>
+<li>发送端，每条消息都被划分为长度为路径MTU的数据包，接收方将数据包重组为消息。支持发送、RDMA write/read</li>
+</ul>
+</li>
+<li>不可靠连接RC
+<ul>
+<li>QP仅与一个远程QP关联</li>
+<li>连接是不可靠的，即发送的数据包可能会丢失</li>
+<li>消息出错时不会重传，错误处理必须由更高级别的协议提供。</li>
+<li>支持发送、RDMA write</li>
+</ul>
+</li>
+<li>不可靠数据报UD
+<ul>
+<li>队列对可以向/从任何其他多个QP发送和接收单数据包消息。</li>
+<li>不能保证有序和数据包到达，并且发送的数据包可能会被接收方丢弃。</li>
+<li>支持广播消息(一对多)</li>
+<li>只支持发送操作</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>RDMA支持的传输操作</p>
+<ul>
+<li>Send（立即）
+<ul>
+<li>发送方需要加上时间戳</li>
+<li>接收方也需要在某些地方加上该时间戳用来标识该消息</li>
+</ul>
+</li>
+<li>RDMA Write（立即）</li>
+<li>RDMA Read（异步）</li>
+<li>Atomic operations（原子操作）
+<ul>
+<li>发送方发送读/写请求，并指定其将访问读写的本地和远程地址</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Send操作流程：</p>
+<ul>
+<li>接收方需要发送接收请求（Receive Request, RR）给发送方</li>
+<li>发送方发送Send操作请求（Send Request, SR）给接收方</li>
+<li>只在可靠连接中发送ACK</li>
+<li>接收方轮询CQ，获取SR的完成事件</li>
+<li>发送方轮询CQ，获取RR的完成事件</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232438.png" alt="20230722232438"  /></p>
+<ul>
+<li>RDMA Write操作流程：
+<ul>
+<li>请求方发送Send操作请求（Send Request, SR）加上远程地址与key给接收方</li>
+<li>只在可靠连接中发送ACK</li>
+<li>请求方轮询CQ，获取SR的完成事件</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232556.png" alt="20230722232556"  /></p>
+<ul>
+<li>RDMA Read与Atomic操作流程：
+<ul>
+<li>请求方发送Send操作请求（Send Request, SR）加上远程地址与key给接收方</li>
+<li>只在可靠连接中发送ACK</li>
+<li>请求方轮询CQ，获取SR的完成事件</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232758.png" alt="20230722232758"  /></p>
+<ul>
+<li>小结：UD、UC、RC三种QP传输方式对比，w/o-&gt;with/without
+<table>
+<thead>
+<tr>
+<th style="text-align:center">操作原语</th>
+<th style="text-align:center">UD</th>
+<th style="text-align:center">UC</th>
+<th style="text-align:center">RC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">Send(w/o immediate)</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center">RDMA Write(w/o immediate)</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center">RDMA Read</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center">Atomic operations</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">支持</td>
+</tr>
+<tr>
+<td style="text-align:center">连接类型</td>
+<td style="text-align:center">数据报（一对多）</td>
+<td style="text-align:center">连接（一对一）</td>
+<td style="text-align:center">连接（一对一）</td>
+</tr>
+<tr>
+<td style="text-align:center">最大消息大小</td>
+<td style="text-align:center">最大路径MTU</td>
+<td style="text-align:center">2GB</td>
+<td style="text-align:center">2GB</td>
+</tr>
+<tr>
+<td style="text-align:center">广播</td>
+<td style="text-align:center">支持</td>
+<td style="text-align:center">不支持</td>
+<td style="text-align:center">不支持</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h3 id="6-rdma架构层级结构">6. RDMA架构层级结构</h3>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722233900.png" alt="20230722233900"  /></p>
+<h2 id="三verbs与ofa-verbs-api">三、Verbs与OFA Verbs API</h2>
+<h3 id="1-verbs简介">1. Verbs简介</h3>
+<ul>
+<li>Verbs是对为使用RDMA的应用程序提供的功能的抽象描述
+<ul>
+<li>Verbs不是API</li>
+<li>Verbs有多种实现</li>
+</ul>
+</li>
+<li>Verbs可以被分为两大类
+<ul>
+<li>控制：管理资源，通常需要切换上下文。
+<ul>
+<li>创建/销毁/修改/查询/处理事件</li>
+</ul>
+</li>
+<li>数据：使用资源发送/接收数据，不需要切换上下文。
+<ul>
+<li>发送Send/发送Receive/轮询CQ/请求完成事件</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Verbs是对RDMA编程的底层描述。</li>
+<li>Verbs旨在提供延迟、带宽、消息速率等方面的最佳性能。它可以被视作许多应用构建的基石。
+<ul>
+<li>Sockets</li>
+<li>存储</li>
+<li>并行计算</li>
+</ul>
+</li>
+<li>InfiniBand规范以Verbs接口形式编写
+<ul>
+<li>所需行为的语义描述</li>
+<li>没有语法或操作系统特定的详细信息</li>
+<li>可以自由定义实现
+<ul>
+<li>函数、结构、类型等的语法。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>OpenFabrics Alliance (OFA) Verbs API
+<ul>
+<li>一种Verbs接口，由OpenFabrics Alliance（OFA）组织定义和推广。OFA Verbs是基于RDMA Verbs的扩展，提供了更加统一和标准化的RDMA编程接口。OFA Verbs是RDMA领域的一个重要标准，被广泛应用于高性能计算、数据中心和云计算等领域。</li>
+<li>旨在提供一个开放、跨平台的RDMA编程接口，使应用程序能够在不同的RDMA硬件和操作系统上进行移植和开发</li>
+<li>OFA统一InfiniBand市场的战略</li>
+<li>OFA面向Linux、FreeBSD、Windows等操作系统实现</li>
+<li>应用程序的软件接口：支持C/C++程序的数据结构、函数原型</li>
+<li>用户态空间和内核态空间的变体：大多数应用程序和库都在用户态空间中</li>
+<li>客户端-服务器编程模型
+<ul>
+<li>与TCP/IP套接字有一些明显的相似之处</li>
+<li>而许多的其它不同之处，则是由于RDMA与TCP/IP的不同导致</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-ofa-verbs-api支持应用">2. OFA Verbs API支持应用</h3>
+<ol>
+<li>MPI： Message Passing Interface，支持多种版本
+<ul>
+<li>OpenMPI</li>
+<li>MVAPICH</li>
+<li>Intel MPI</li>
+</ul>
+</li>
+<li>文件系统：
+<ul>
+<li>Lustre</li>
+<li>NFS_RDMA</li>
+</ul>
+</li>
+<li>DDN和NetApp公司生产的存储设备
+<ul>
+<li>SRP：SCSI RDMA (Remote) Protocol – Linux kernel</li>
+<li>iSER – iSCSI Extensions for RDMA – Linux kernel</li>
+</ul>
+</li>
+<li>伪Socket库
+<ul>
+<li>SDP – Sockets Direct Protocol – supported by Oracle</li>
+<li>rsockets – RDMA Sockets – supported by Intel</li>
+<li>mva – Mellanox Messaging Accelerator</li>
+<li>SMC-R – proposed by IBM</li>
+</ul>
+</li>
+</ol>
+<h2 id="四总结">四、总结</h2>
+<ul>
+<li>RDMA技术是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过CPU的参与，从而大大减少了CPU的开销，提高了数据传输的效率。</li>
+<li>RDMA技术的各种协议：InfiniBand、RoCE、iWarp</li>
+<li>RDMA技术的优势：Zero-copy、Kernel bypass、No CPU involvement、Message based transactions、Scatter/gather entries support</li>
+<li>RDMA技术的传输服务：Connected（连接）与Datagram（数据报）、Reliable（可靠）与Unreliable（不可靠）</li>
+<li>RDMA技术的QP传输类型：RC、UC、UD</li>
+<li>RDMA技术的操作原语：Send、RDMA Write、RDMA Read、Atomic operations</li>
+<li>RDMA技术的Verbs与OFA Verbs API</li>
+<li>RDMA技术的应用：MPI、文件系统、存储设备、伪Socket库</li>
+</ul>
+<h2 id="参考文献">参考文献</h2>
+<ul>
+<li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.</li>
+</ul>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/rdma/">RDMA</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/soft-roce/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png" loading="lazy" data-key="soft-roce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA：Soft-RoCE环境搭建实验</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/5/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif" loading="lazy" data-key="mpi-tutorial/5" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（五）：MPI扩展</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/4/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720120242.png" loading="lazy" data-key="mpi-tutorial/4" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720120242.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（四）：数据类型</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/3/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png" loading="lazy" data-key="mpi-tutorial/3" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（三）：集合通信</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/2/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png" loading="lazy" data-key="mpi-tutorial/2" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（二）：点到点通信</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2023 cuterwrite
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
