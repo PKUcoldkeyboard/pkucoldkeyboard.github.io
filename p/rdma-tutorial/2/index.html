@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='Table of Contents generated with DocToc RDMA技术及其编程方法（二）：编程指导 一、libibverbs简介 二、Verbs API详解 1. 简介 2. Verbs对象创建层次 3. 两个'><title>RDMA技术及其编程方法（二）：编程指导</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/rdma-tutorial/2/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='RDMA技术及其编程方法（二）：编程指导'>
+<meta property='og:description' content='Table of Contents generated with DocToc RDMA技术及其编程方法（二）：编程指导 一、libibverbs简介 二、Verbs API详解 1. 简介 2. Verbs对象创建层次 3. 两个'>
+<meta property='og:url' content='https://cuterwrite.top/p/rdma-tutorial/2/'>
+<meta property='og:site_name' content='cuterwrite'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='RDMA' /><meta property='article:published_time' content='2023-07-28T01:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-28T01:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png' />
+<meta name="twitter:title" content="RDMA技术及其编程方法（二）：编程指导">
+<meta name="twitter:description" content="Table of Contents generated with DocToc RDMA技术及其编程方法（二）：编程指导 一、libibverbs简介 二、Verbs API详解 1. 简介 2. Verbs对象创建层次 3. 两个"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
+        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/rdma-tutorial/2/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png" loading="lazy" alt="Featured image of post RDMA技术及其编程方法（二）：编程指导" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #ffdb5c; color: #fff;">
+                高性能计算
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/rdma-tutorial/2/">RDMA技术及其编程方法（二）：编程指导</a>
+    </h2>
+
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2023-07-28</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#rdma%E6%8A%80%E6%9C%AF%E5%8F%8A%E5%85%B6%E7%BC%96%E7%A8%8B%E6%96%B9%E6%B3%95%E4%BA%8C%E7%BC%96%E7%A8%8B%E6%8C%87%E5%AF%BC" >RDMA技术及其编程方法（二）：编程指导</a>
+<ul>
+<li><a class="link" href="#%E4%B8%80libibverbs%E7%AE%80%E4%BB%8B" >一、libibverbs简介</a></li>
+<li><a class="link" href="#%E4%BA%8Cverbs-api%E8%AF%A6%E8%A7%A3" >二、Verbs API详解</a>
+<ul>
+<li><a class="link" href="#1-%E7%AE%80%E4%BB%8B" >1. 简介</a></li>
+<li><a class="link" href="#2-verbs%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%B1%82%E6%AC%A1" >2. Verbs对象创建层次</a></li>
+<li><a class="link" href="#3-%E4%B8%A4%E4%B8%AA%E5%8A%A8%E6%80%81%E5%BA%93" >3. 两个动态库</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E4%B8%89connection-manager" >三、Connection Manager</a>
+<ul>
+<li><a class="link" href="#1-%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%BB%BA%E7%AB%8B" >1. 连接的建立</a></li>
+<li><a class="link" href="#2-cm%E7%9A%84%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%9E%8Brdmacm" >2. CM的抽象类型（RDMACM）</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%9B%9B-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E8%A2%AB%E5%8A%A8%E6%96%B9" >四、 RDMACM程序解析——被动方</a>
+<ul>
+<li><a class="link" href="#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel" >1. 创建事件channel</a></li>
+<li><a class="link" href="#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id" >2. 创建连接ID</a></li>
+<li><a class="link" href="#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80" >3. 绑定地址</a></li>
+<li><a class="link" href="#4-%E5%88%9B%E5%BB%BAlistener%E8%BF%94%E5%9B%9E%E7%AB%AF%E5%8F%A3%E5%9C%B0%E5%9D%80" >4. 创建Listener，返回端口/地址</a></li>
+<li><a class="link" href="#5-%E7%AD%89%E5%BE%85%E8%BF%9E%E6%8E%A5%E8%AF%B7%E6%B1%82" >5. 等待连接请求</a></li>
+<li><a class="link" href="#6-%E5%88%9B%E5%BB%BApdcq%E5%92%8Csend-receive-qp" >6. 创建PD、CQ和Send-Receive QP</a></li>
+<li><a class="link" href="#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C" >7. 最后的操作</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E4%BA%94-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E4%B8%BB%E5%8A%A8%E6%96%B9" >五、 RDMACM程序解析——主动方</a>
+<ul>
+<li><a class="link" href="#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel-1" >1. 创建事件channel</a></li>
+<li><a class="link" href="#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id-1" >2. 创建连接ID</a></li>
+<li><a class="link" href="#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80-1" >3. 绑定地址</a></li>
+<li><a class="link" href="#4-%E5%88%9B%E5%BB%BAqp" >4. 创建QP</a></li>
+<li><a class="link" href="#5-%E8%A7%A3%E6%9E%90%E8%B7%AF%E7%94%B1" >5. 解析路由</a></li>
+<li><a class="link" href="#6-%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5" >6. 建立连接</a></li>
+<li><a class="link" href="#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C-1" >7. 最后的操作</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%85%AD%E5%AE%9E%E6%88%98%E5%9F%BA%E4%BA%8Erdma%E7%9A%84client-server%E7%A8%8B%E5%BA%8F" >六、实战：基于RDMA的client-server程序</a>
+<ul>
+<li><a class="link" href="#1-server%E7%AB%AF" >1. server端</a></li>
+<li><a class="link" href="#2-client%E7%AB%AF" >2. client端</a></li>
+<li><a class="link" href="#3-%E9%A1%B9%E7%9B%AE%E5%AE%9E%E7%8E%B0" >3. 项目实现</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE" >参考文献</a></li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="rdma技术及其编程方法二编程指导">RDMA技术及其编程方法（二）：编程指导</h1>
+<h2 id="一libibverbs简介">一、libibverbs简介</h2>
+<ul>
+<li>libibverbs由Roland Dreier自2006年开始开发和维护，实际上是*nix中的Verbs API标准
+<ul>
+<li>开源</li>
+<li>Verbs的核心部分自2005年起集成到Linux内核中&ndash;内核2.6.11</li>
+<li>Inbox in several *nix distributions</li>
+<li>目前有多个硬件供应商提供的级别较低的库</li>
+</ul>
+</li>
+<li>对所有启用RDMA的传输协议使用相同的API
+<ul>
+<li><strong>InfiniBand</strong>： 支持RDMA的网络体系结构
+<ul>
+<li>需要支持它的网卡和InfiniBand交换机。</li>
+</ul>
+</li>
+<li><strong>RoCE</strong>：基于以太网/IP帧的RDMA数据包封装
+<ul>
+<li>需要支持它的网卡和标准以太网交换机</li>
+</ul>
+</li>
+<li><strong>iWARP</strong>：提供基于流控制传输协议(SCTP)和传输控制协议(TCP)的RDMA
+<ul>
+<li>需要支持它的网卡和标准以太网交换机</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>libibverbs是完全线程安全的
+<ul>
+<li>libibverbs本身是线程安全的</li>
+<li>用户态空间低级驱动程序库也是线程安全的</li>
+<li>应用程序可以在多线程中使用RDMA资源</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-warning" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 576 512"><path d="M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>销毁一个线程中的资源并在另一个线程中使用它将导致segmentation fault，这个问题在非多线程代码中也会发生</p></div>
+
+<ul>
+<li>使用libibverbs的基本须知
+<table>
+<thead>
+<tr>
+<th style="text-align:left">tips</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">头文件引入</td>
+<td style="text-align:left">#include&lt;infiniband/verbs.h&gt;</td>
+</tr>
+<tr>
+<td style="text-align:left">编译时链接</td>
+<td style="text-align:left">-libverbs</td>
+</tr>
+<tr>
+<td style="text-align:left">所有的input structures需要为zeroed</td>
+<td style="text-align:left">使用memset()或结构初始化、如果该structure有扩充的需求，则零值将保留遗留行为</td>
+</tr>
+<tr>
+<td style="text-align:left">大多数资源句柄都是指针，因此使用错误的句柄可能会导致分段错误</td>
+<td style="text-align:left">使用NULL检查句柄</td>
+</tr>
+<tr>
+<td style="text-align:left">返回指针的Verbs成功时返回有效值，失败时返回NULL</td>
+<td style="text-align:left">检查返回值</td>
+</tr>
+<tr>
+<td style="text-align:left">返回整形变量的Verbs如果成功则返回零，如果成功则返回-1或errno</td>
+<td style="text-align:left">检查返回值</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h2 id="二verbs-api详解">二、Verbs API详解</h2>
+<h3 id="1-简介">1. 简介</h3>
+<ul>
+<li>在内核和用户态空间均可使用</li>
+<li>Verbs中的类
+<ul>
+<li>资源管理：Qps、CQs、SRQs等等</li>
+<li>WR处理：post send, 轮询CQ等等</li>
+<li>内存注册</li>
+<li>地址句柄</li>
+</ul>
+</li>
+<li>Verbs中的操作
+<ul>
+<li>Device操作</li>
+<li>上下文操作</li>
+<li>PD操作</li>
+<li>QP bringup</li>
+<li>活跃QP操作</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-verbs对象创建层次">2. Verbs对象创建层次</h3>
+<ol>
+<li>获取devide列表</li>
+<li>打开请求的device</li>
+<li>查询device功能</li>
+<li>分配PD内存空间</li>
+<li>注册内存域MR</li>
+<li>关联并创建完成队列CQ</li>
+<li>创建QP</li>
+<li>Bring up a QP</li>
+<li>Post WR并且轮询CQ</li>
+<li>清理资源
+<img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230724235009.png" alt="20230724235009"  /></li>
+</ol>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230724235116.png" alt="20230724235116"  /></p>
+<h3 id="3-两个动态库">3. 两个动态库</h3>
+<ul>
+<li>libibverbs.so
+<ul>
+<li>用于直接通过用户态空间访问InfiniBand硬件的库</li>
+<li>Infiniband(根据Infiniband规范)和iWarp(iWARP动词规范)的RDMA Verbs的实现</li>
+<li>它处理创建、修改、查询和销毁资源的控制路径，如保护域(PD)、完成队列(CQ)、队列对(QP)、共享接收队列(SRQ)、地址句柄(AH)、内存区域(MR)</li>
+<li>它还处理发送和接收发布到QPS和SRQ的数据，使用轮询和完成事件从CQs获取完成</li>
+</ul>
+</li>
+<li>librdmacm.so
+<ul>
+<li>用户态空间的RDMA连接管理器</li>
+<li>使用Socket语义的RDMA(InfiniBand、ROCE和iWARP)通信管理库</li>
+</ul>
+</li>
+</ul>
+<h2 id="三connection-manager">三、Connection Manager</h2>
+<h3 id="1-连接的建立">1. 连接的建立</h3>
+<ul>
+<li>
+<p>基于Infiniband通信管理(CM)协议（在通用服务接口(GSI)上定义的协议QP：QP1）</p>
+</li>
+<li>
+<p>提供以下服务</p>
+<ul>
+<li>在对等RC和QP之间交换必要的参数，使它们为通信做好准备
+<ul>
+<li>初始化器请求连接到远程上的服务ID（服务ID映射）</li>
+<li>类TCP握手：请求/响应/即用消息</li>
+</ul>
+</li>
+<li>查找给定服务ID的远程UD和QP序号
+<ul>
+<li>服务ID请求/响应消息</li>
+</ul>
+</li>
+<li>加载备用路径</li>
+</ul>
+</li>
+<li>
+<p>连接管理器（Connection Manager，CM）是一个用户态空间的库，它提供了一个通用的接口，用于在RDMA网络中建立连接。它可以用于建立连接，也可以用于查找远程QP的地址，以便在不建立连接的情况下发送数据。</p>
+<ul>
+<li>需要在对等QP之间交换信息</li>
+<li>负责RC、UC、RD连接的建立</li>
+<li>应用程序使用SA来获取其他信息(例如路径记录)</li>
+<li>SIDR用于UD</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-cm的抽象类型rdmacm">2. CM的抽象类型（RDMACM）</h3>
+<ul>
+<li>类似于Socket连接模式的语义</li>
+<li>对IB和ROCE都使用基于IP的寻址模式</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">类</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>rdma_create/destroy_id</strong></td>
+<td style="text-align:left">creates/destroys a connection identifier (equivalent to a socket)</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_create/destroy_qp</strong></td>
+<td style="text-align:left">allocate/destroy a qp for communication</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_bind_addr</strong></td>
+<td style="text-align:left">set local port to listen on</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_resolve_addr</strong></td>
+<td style="text-align:left">obtain local RDMA device to reach remote address</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_resolve_route</strong></td>
+<td style="text-align:left">determine route to remote address</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_get_src_port</strong></td>
+<td style="text-align:left">query local port</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_get_local_addr</strong></td>
+<td style="text-align:left">query local ip</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_get_peer_addr</strong></td>
+<td style="text-align:left">query remote ip</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_connect/disconnect</strong></td>
+<td style="text-align:left">connect/disconnect rc qps, or resolve service id to qp for ud qps</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_listen</strong></td>
+<td style="text-align:left">listen for incoming connections</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_accept/reject</strong></td>
+<td style="text-align:left">accept/reject incoming connection requests</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_create/destroy_event_channel</strong></td>
+<td style="text-align:left">allocate/destroy an event channel</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_get_cm_event</strong></td>
+<td style="text-align:left">get next event</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_ack_cm_event</strong></td>
+<td style="text-align:left">acknowledge event(s) to rdmacm</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>rdma_join/leave_multicast</strong></td>
+<td style="text-align:left">join/leave multicast addresses</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>使用rdmacm的基本须知
+<table>
+<thead>
+<tr>
+<th style="text-align:left">tips</th>
+<th style="text-align:left">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">头文件引入</td>
+<td style="text-align:left">#include&lt;rdma/rdma_cma.h&gt;</td>
+</tr>
+<tr>
+<td style="text-align:left">编译时链接</td>
+<td style="text-align:left">-lrdmacm</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h2 id="四-rdmacm程序解析被动方">四、 RDMACM程序解析——被动方</h2>
+<p>流程如下：</p>
+<ol>
+<li>创建事件channel，以便我们可以接收rdmacm事件，如连接请求和连接建立通知。</li>
+<li>创建连接ID并绑定到地址。</li>
+<li>创建Listener并返回端口/地址。</li>
+<li>等待连接请求</li>
+<li>创建PD、CQ和Send-Receive QP</li>
+<li>接受连接请求</li>
+<li>等待建立连接</li>
+<li>视情况发布操作</li>
+</ol>
+<h3 id="1-创建事件channel">1. 创建事件channel</h3>
+<ul>
+<li>打开用于报告通信事件的channel。异步事件将通过事件channel报告给用户，对应方法为<code>struct rdma_event_channel * rdma_create_event_channel(void)</code>。</li>
+<li>事件channel用于定向rdma_cm_id上的所有事件。对于许多客户端来说，单个事件channel可能就足够了，然而，当管理大量的连接或cm_id时，用户可能会发现将不同cm_id的事件定向到不同的channel进行处理是有用的。</li>
+<li>必须通过调用<code>rdma_destroy_event_channel</code>销毁所有创建的事件channel。用户应该调用<code>rdma_get_cm_event</code>来检索事件channel上的事件。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_event_channel</span> <span class="o">*</span><span class="n">channel</span> <span class="o">=</span> <span class="n">rdma_create_event_channel</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">channel</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_create_event_channel&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_cm_event</span><span class="o">*</span> <span class="n">event</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 此处会阻塞，直到有事件发生
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">err</span> <span class="o">=</span> <span class="n">rdma_get_cm_event</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_get_cm_event&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 中间处理代码...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">rdma_destroy_event_channel</span><span class="p">(</span><span class="n">channel</span><span class="p">);</span>
+</span></span></code></pre></div><ul>
+<li>每个事件channel都映射到一个文件描述符。可以像使用和操作任何其他FD一样使用和操作关联的文件描述符，以更改其行为。</li>
+</ul>
+<h3 id="2-创建连接id">2. 创建连接ID</h3>
+<ul>
+<li>创建用于跟踪通信信息的标识符，对应方法为<code>int rdma_create_id(struct rdma_event_channel *channel, struct rdma_cm_id **id, void *context, enum rdma_port_space ps)</code>。</li>
+<li>输入参数：
+<ul>
+<li>channel：事件channel</li>
+<li>id：指向rdma_cm_id指针的指针，用于返回新创建的rdma_cm_id</li>
+<li>context：用户上下文，将在事件中返回给用户</li>
+<li>ps：RDMA端口空间，指定要使用的端口空间</li>
+</ul>
+</li>
+<li>rdma_cm_id在概念上等同于用于RDMA通信的套接字。不同之处在于，RDMA通信需要显式绑定到指定的RDMA设备，然后才能进行通信，并且大多数操作本质上是异步的。</li>
+<li>端口空间
+<ul>
+<li>RDMA_PS_TCP：提供可靠、面向连接的QP通信。与TCP不同，RDMA端口空间提供基于消息的通信，而不是基于流的通信。</li>
+<li>RDMA_PS_UDP：提供不可靠、无连接的QP通信。支持数据报和组播通信。</li>
+</ul>
+</li>
+<li>销毁：在调用此函数并确认相关事件之前，用户必须释放任何与rdma_cm_id相关的QP。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_cm_id</span> <span class="o">*</span><span class="n">listen_id</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">err</span> <span class="o">=</span> <span class="n">rdma_create_id</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">listen_id</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">RDMA_PS_TCP</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_create_id&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 中间处理代码...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">rdma_destroy_id</span><span class="p">(</span><span class="n">listen_id</span><span class="p">);</span>
+</span></span></code></pre></div><h3 id="3-绑定地址">3. 绑定地址</h3>
+<ul>
+<li>将源地址与rdma_cm_id相关联。对应方法为<code>int rdma_bind_addr(struct rdma_cm_id *id, struct sockaddr *addr)</code>。
+<ul>
+<li>地址中可以包含通配符。</li>
+<li>如果绑定到特定本地地址，则rdma_cm_id也将绑定到本地RDMA设备。</li>
+<li>通常，在调用<code>rdma_listen</code>以绑定到特定端口号之前调用此函数，但也可以在调用<code>rdma_resolve_addr</code>以绑定到特定地址之前在主动方调用该函数。</li>
+<li>如果用于绑定到端口0，rdma_cm将选择一个可用端口，可以使用<code>rdma_get_src_port</code>检索该端口。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/*  sockaddr_in是IPV4的地址结构体
+</span></span></span><span class="line"><span class="cl"><span class="cm">*   AF_INET：IPV4
+</span></span></span><span class="line"><span class="cl"><span class="cm">*   htons：将主机字节序转换为网络字节序（小端存储）, 20079是端口号
+</span></span></span><span class="line"><span class="cl"><span class="cm">*   INADDR_ANY：表示任意地址
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="n">addr</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span><span class="n">sin_family</span> <span class="o">=</span> <span class="n">AF_INET</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span><span class="n">sin_port</span> <span class="o">=</span> <span class="n">htons</span><span class="p">(</span><span class="mi">20079</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span><span class="n">sin_addr</span> <span class="o">=</span> <span class="p">{</span> <span class="p">.</span><span class="n">s_addr</span> <span class="o">=</span> <span class="n">INADDR_ANY</span> <span class="p">},</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="n">err</span> <span class="o">=</span> <span class="n">rdma_bind_addr</span><span class="p">(</span><span class="n">listen_id</span><span class="p">,</span> <span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">addr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_bind_addr&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="4-创建listener返回端口地址">4. 创建Listener，返回端口/地址</h3>
+<ul>
+<li>初始化传入连接请求或数据报服务查找的Listener。对应方法为<code>int rdma_listen(struct rdma_cm_id *id, int backlog)</code>。
+<ul>
+<li>侦听将被限制为本地绑定源地址</li>
+<li>在调用此函数之前，用户必须已通过调用<code>rdma_bind_addr</code>将<code>rdma_cm_id</code>绑定到本地地址。</li>
+<li>如果<code>rdma_cm_id</code>绑定到特定的IP地址，则侦听将仅限于该地址和关联的RDMA设备。</li>
+<li>如果<code>rdma_cm_id</code>仅绑定到RDMA端口号，则将在所有RDMA设备上进行侦听。</li>
+</ul>
+</li>
+<li>返回已绑定到本地地址的<code>rdma_cm_id</code>的本地端口号。对应方法为<code>uint16_t rdma_get_src_port(struct rdma_cm_id *id)</code>。</li>
+<li>返回已绑定到本地设备的<code>rdma_cm_id</code>的本地IP地址。对应方法为<code>struct sockaddr * rdma_get_local_addr(struct rdma_cm_id *id)</code>。</li>
+<li>解析目的节点和服务地址，并返回建立通信所需的信息。提供与getaddrinfo等效的RDMA功能(配合<code>rdma_create_ep</code>使用)。对应方法为<code>int rdma_getaddrinfo (char *node, char *service, struct rdma_addrinfo *hints, struct rdma_addrinfo **res)</code>。
+<ul>
+<li>node: 可选，目的节点的主机名，或者点分十进制的IPv4/IPv6十六进制地址</li>
+<li>service：地址的服务名称或端口号。</li>
+<li>hints：一个包含有关调用方支持的服务类型的提示的rdma_addrinfo结构的引用。</li>
+<li>res：指向包含响应信息的rdma_addrinfo结构的LinkedList的指针。</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// 等待连接请求的最大数量
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">int</span> <span class="n">backlog</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">err</span> <span class="o">=</span> <span class="n">rdma_listen</span><span class="p">(</span><span class="n">listen_id</span><span class="p">,</span> <span class="n">backlog</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_listen&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">uint16_t</span> <span class="n">port</span> <span class="o">=</span> <span class="n">rdma_get_src_port</span><span class="p">(</span><span class="n">listen_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">port</span> <span class="o">=</span> <span class="n">ntohs</span><span class="p">(</span><span class="n">port</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="n">printf</span><span class="p">(</span><span class="s">&#34;listening on port %u.</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">port</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">sockaddr</span> <span class="o">*</span><span class="n">local_addr</span> <span class="o">=</span> <span class="n">rdma_get_local_addr</span><span class="p">(</span><span class="n">listen_id</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">local_addr</span><span class="o">-&gt;</span><span class="n">sa_family</span> <span class="o">==</span> <span class="n">AF_INET</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="o">*</span><span class="n">sin</span> <span class="o">=</span> <span class="p">(</span><span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="o">*</span><span class="p">)</span><span class="n">local_addr</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">ip</span><span class="p">[</span><span class="n">INET_ADDRSTRLEN</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// 需要加上头文件 #include &lt;arpa/inet.h&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">inet_ntop</span><span class="p">(</span><span class="n">AF_INET</span><span class="p">,</span> <span class="o">&amp;</span><span class="p">(</span><span class="n">sin</span><span class="o">-&gt;</span><span class="n">sin_addr</span><span class="p">),</span> <span class="n">ip</span><span class="p">,</span> <span class="n">INET_ADDRSTRLEN</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Local IP address is: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ip</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Local port is: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ntohs</span><span class="p">(</span><span class="n">sin</span><span class="o">-&gt;</span><span class="n">sin_port</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_addrinfo</span> <span class="n">hints</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hints</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">hints</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="n">hints</span><span class="p">.</span><span class="n">ai_flags</span> <span class="o">=</span> <span class="n">RAI_PASSIVE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">hints</span><span class="p">.</span><span class="n">ai_port_space</span> <span class="o">=</span> <span class="n">RDMA_PS_TCP</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_addrinfo</span> <span class="o">*</span><span class="n">res</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">err</span> <span class="o">=</span> <span class="n">rdma_getaddrinfo</span><span class="p">(</span><span class="nb">NULL</span><span class="p">,</span> <span class="s">&#34;20079&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">hints</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">res</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">err</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;rdma_getaddrinfo&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">err</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// do something with struct rdma_addrinfo *cur = res...
+</span></span></span></code></pre></div><h3 id="5-等待连接请求">5. 等待连接请求</h3>
+<ul>
+<li>检索通信事件。如果没有挂起的事件，默认情况下，调用将阻塞，直到接收到事件。对应方法为<code>int rdma_get_cm_event(struct rdma_event_channel *channel, struct rdma_cm_event **event)</code>。</li>
+<li>通过修改与给定通道相关联的文件描述符，可以更改此函数的默认同步行为。</li>
+<li>所有报告的事件都必须通过调用<code>rdma_ack_cm_event</code>进行确认。</li>
+<li><code>rdma_cm_id</code> 的销毁将被阻塞，直到相关事件被确认。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">rdma_cm_event</span><span class="o">*</span> <span class="n">event</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// 此处会阻塞，直到有事件发生
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">err</span> <span class="o">=</span> <span class="n">rdma_get_cm_event</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
+</span></span></code></pre></div><h3 id="6-创建pdcq和send-receive-qp">6. 创建PD、CQ和Send-Receive QP</h3>
+<ul>
+<li>分配与指定的<code>rdma_cm_id</code>相关联的QP，并将其转换为用于发送和接收。对应方法为<code>int rdma_create_qp(struct rdma_cm_id *id, struct ibv_pd *pd, struct ibv_qp_init_attr *qp_init_attr)</code>。</li>
+<li>在调用此函数之前，<code>rdma_cm_id</code>必须绑定到本地RDMA设备，且保护域PD必须用于同一设备。</li>
+<li>被分配给<code>rdma_cm_id</code>的QP会由 librdmacm 自动转换状态.</li>
+<li>分配完毕后，QP 将准备就绪，处理接收信息的发布。如果 QP 未连接，它将准备好发布发送。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">pd</span> <span class="o">=</span> <span class="n">ibv_alloc_pd</span><span class="p">(</span><span class="n">cm_client_id</span><span class="o">-&gt;</span><span class="n">verbs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pd</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;Failed to allocate a protection domain&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">io_completion_channel</span> <span class="o">=</span> <span class="n">ibv_create_comp_channel</span><span class="p">(</span><span class="n">cm_client_id</span><span class="o">-&gt;</span><span class="n">verbs</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">io_completion_channel</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;Failed to create an I/O completion event channel&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">cq</span> <span class="o">=</span> <span class="n">ibv_create_cq</span><span class="p">(</span><span class="n">cm_client_id</span><span class="o">-&gt;</span><span class="n">verbs</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">io_completion_channel</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cq</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;Failed to create a completion queue&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">ibv_req_notify_cq</span><span class="p">(</span><span class="n">cq</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;Failed to request notifications&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">bzero</span><span class="p">(</span><span class="o">&amp;</span><span class="n">qp_init_attr</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">qp_init_attr</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">qp_type</span> <span class="o">=</span> <span class="n">IBV_QPT_RC</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">cap</span><span class="p">.</span><span class="n">max_send_wr</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">cap</span><span class="p">.</span><span class="n">max_recv_wr</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">cap</span><span class="p">.</span><span class="n">max_send_sge</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">cap</span><span class="p">.</span><span class="n">max_recv_sge</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">send_cq</span> <span class="o">=</span> <span class="n">cq</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="n">qp_init_attr</span><span class="p">.</span><span class="n">recv_cq</span> <span class="o">=</span> <span class="n">cq</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">ret</span> <span class="o">=</span> <span class="n">rdma_create_qp</span><span class="p">(</span><span class="n">cm_client_id</span><span class="p">,</span> <span class="n">pd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">qp_init_attr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">perror</span><span class="p">(</span><span class="s">&#34;Failed to create QP&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">client_qp</span> <span class="o">=</span> <span class="n">cm_client_id</span><span class="o">-&gt;</span><span class="n">qp</span><span class="p">;</span>
+</span></span></code></pre></div><h3 id="7-最后的操作">7. 最后的操作</h3>
+<ol>
+<li>Accept请求连接</li>
+<li>等待连接建立</li>
+<li>发布操作</li>
+</ol>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725224928.png" alt="20230725224928"  /></p>
+<h2 id="五-rdmacm程序解析主动方">五、 RDMACM程序解析——主动方</h2>
+<h3 id="1-创建事件channel-1">1. 创建事件channel</h3>
+<ul>
+<li>与被动方相同</li>
+</ul>
+<h3 id="2-创建连接id-1">2. 创建连接ID</h3>
+<ul>
+<li>与被动方相同</li>
+</ul>
+<h3 id="3-绑定地址-1">3. 绑定地址</h3>
+<ul>
+<li>将目的地址和可选源地址从IP地址解析为RDMA地址。如果成功，则指定的rdma_cm_id将绑定到本地设备。对应方法为<code>int rdma_resolve_addr (struct rdma_cm_id *id, struct sockaddr *src_addr, struct sockaddr *dst_addr, int timeout_ms)</code>。</li>
+<li>此方法用于将给定的目标IP地址映射到可用的RDMA地址。</li>
+<li>IP到RDMA地址的映射使用本地路由表或通过ARP完成。</li>
+<li>如果给定源地址，则将<code>rdma_cm_id</code>绑定到该地址，就像调用<code>rdma_ind_addr</code>一样。</li>
+<li>如果没有给出源地址，并且<code>rdma_cm_id</code>尚未绑定到设备，则<code>rdma_cm_id</code>将根据本地路由表绑定到源地址。</li>
+<li>在此方法调用之后，<code>rdma_cm_id</code>将绑定到RDMA设备。</li>
+<li>该方法调用通常在调用 <code>rdma_resolve_route</code> 和 <code>rdma_connect</code> 之前在主动方上进行。</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>InfiniBand特定</p></div>
+
+<ul>
+<li>此方法还会将目标IP地址和源IP地址(如果给定)映射到GID。</li>
+<li>为了执行映射，IPoIB必须同时在本地和远程节点上运行。</li>
+</ul>
+<h3 id="4-创建qp">4. 创建QP</h3>
+<ul>
+<li>与被动方相同</li>
+</ul>
+<h3 id="5-解析路由">5. 解析路由</h3>
+<ul>
+<li>解析指向目标地址的 RDMA 路由，以建立连接。目标地址必须已通过调用 rdma_resolve_addr 解析。对应方法为<code>int rdma_resolve_route (struct rdma_cm_id *id, int timeout_ms);</code></li>
+</ul>
+<h3 id="6-建立连接">6. 建立连接</h3>
+<ul>
+<li>
+<p>对应方法为<code>int rdma_connect (struct rdma_cm_id *id, struct rdma_conn_param *conn_param);</code></p>
+<ul>
+<li>id：指向rdma_cm_id的指针</li>
+<li>conn_param：指向rdma_conn_param结构的指针，包含连接参数</li>
+</ul>
+</li>
+<li>
+<p>对于 <code>RDMA_PS_TCP</code> 类型的 <code>rdma_cm_id</code>，该调用会向远程目的地发起连接请求</p>
+</li>
+<li>
+<p>对于 <code>RDMA_PS_UDP</code> 类型的 <code>rdma_cm_id</code>，它会启动对提供数据报服务的远程 QP 的查询</p>
+</li>
+</ul>
+<h3 id="7-最后的操作-1">7. 最后的操作</h3>
+<ol>
+<li>等待连接建立</li>
+<li>发布操作</li>
+</ol>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725225927.png" alt="20230725225927"  /></p>
+<hr>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725225943.png" alt="20230725225943"  /></p>
+<h2 id="六实战基于rdma的client-server程序">六、实战：基于RDMA的client-server程序</h2>
+<h3 id="1-server端">1. server端</h3>
+<ul>
+<li>工作流程：
+<ol>
+<li>初始化RDMA资源</li>
+<li>等待client连接</li>
+<li>分配并固定服务器缓冲区buffer</li>
+<li>接受客户端连接</li>
+<li>将有关本地服务器缓冲区的信息发送到客户端</li>
+<li>等待断开连接</li>
+</ol>
+</li>
+</ul>
+<h3 id="2-client端">2. client端</h3>
+<ul>
+<li>工作流程：
+<ol>
+<li>初始化RDMA资源</li>
+<li>连接server</li>
+<li>通过发送/接收exchange接收服务器端缓冲区信息</li>
+<li>从（第一个）本地缓冲区向服务器缓冲区进行 RDMA 写入。</li>
+<li>进行 RDMA 读取，将服务器缓冲区的内容读入第二个本地缓冲区。</li>
+<li>比较第一缓冲区和第二缓冲区的内容，并进行匹配</li>
+<li>断开连接</li>
+</ol>
+</li>
+</ul>
+<h3 id="3-项目实现">3. 项目实现</h3>
+<div class="github">
+    <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon github-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 2.5C2 1.83696 2.26339 1.20107 2.73223 0.732233C3.20108 0.263392 3.83696 0 4.5 0L13.25 0C13.4489 0 13.6397 0.0790176 13.7803 0.21967C13.921 0.360322 14 0.551088 14 0.75V13.25C14 13.4489 13.921 13.6397 13.7803 13.7803C13.6397 13.921 13.4489 14 13.25 14H10.75C10.5511 14 10.3603 13.921 10.2197 13.7803C10.079 13.6397 10 13.4489 10 13.25C10 13.0511 10.079 12.8603 10.2197 12.7197C10.3603 12.579 10.5511 12.5 10.75 12.5H12.5V10.5H4.5C4.30308 10.5 4.11056 10.5582 3.94657 10.6672C3.78257 10.7762 3.65442 10.9312 3.57816 11.1128C3.50191 11.2943 3.48096 11.4943 3.51793 11.6878C3.5549 11.8812 3.64816 12.0594 3.786 12.2C3.92524 12.3422 4.0023 12.5338 4.00024 12.7328C3.99818 12.9318 3.91716 13.1218 3.775 13.261C3.63285 13.4002 3.4412 13.4773 3.24222 13.4752C3.04325 13.4732 2.85324 13.3922 2.714 13.25C2.25571 12.7829 1.99929 12.1544 2 11.5V2.5ZM12.5 1.5V9H4.5C4.144 9 3.806 9.074 3.5 9.208V2.5C3.5 2.23478 3.60536 1.98043 3.79289 1.79289C3.98043 1.60536 4.23478 1.5 4.5 1.5H12.5ZM5 12.25V15.5C5 15.5464 5.01293 15.5919 5.03734 15.6314C5.06175 15.6709 5.09667 15.7028 5.1382 15.7236C5.17972 15.7444 5.22621 15.7532 5.27245 15.749C5.31869 15.7448 5.36286 15.7279 5.4 15.7L6.85 14.613C6.89328 14.5805 6.94591 14.563 7 14.563C7.05409 14.563 7.10673 14.5805 7.15 14.613L8.6 15.7C8.63714 15.7279 8.68131 15.7448 8.72755 15.749C8.77379 15.7532 8.82028 15.7444 8.8618 15.7236C8.90333 15.7028 8.93826 15.6709 8.96266 15.6314C8.98707 15.5919 9 15.5464 9 15.5V12.25C9 12.1837 8.97366 12.1201 8.92678 12.0732C8.87989 12.0263 8.81631 12 8.75 12H5.25C5.1837 12 5.12011 12.0263 5.07322 12.0732C5.02634 12.1201 5 12.1837 5 12.25Z"/></svg>
+        <a class="name" href=https://github.com/PKUcoldkeyboard/RDMA-examples target="_blank">RDMA-examples</a>
+    </div>
+    <div class="description">RDMA-examples: A repository of practical code examples showcasing the fundamental concepts and usage of RDMA (Remote Direct Memory Access) technology.</div> 
+    <div class="language">
+        <span class="language-color" style="background-color: #555555"></span>
+        <span class="language-name">C</span>
+    </div>
+</div>
+<h2 id="参考文献">参考文献</h2>
+<ul>
+<li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.</li>
+</ul>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/rdma/">RDMA</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/rdma-tutorial/1/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png" loading="lazy" data-key="rdma-tutorial/1" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA技术及其编程方法（一）：RDMA简介与原理</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/soft-roce/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png" loading="lazy" data-key="soft-roce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA：Soft-RoCE环境搭建实验</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/5/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif" loading="lazy" data-key="mpi-tutorial/5" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（五）：MPI扩展</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/4/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720120242.png" loading="lazy" data-key="mpi-tutorial/4" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720120242.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（四）：数据类型</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/mpi-tutorial/3/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png" loading="lazy" data-key="mpi-tutorial/3" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720002052.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MPI与并行计算（三）：集合通信</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2023 cuterwrite
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>

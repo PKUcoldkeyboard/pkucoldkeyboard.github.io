@@ -306,7 +306,28 @@
 <p>Soft-RoCE就是把本来应该卸载到硬件的封包和解析工作，又拿到软件来做。其本身是基于Linux内核的TCP/IP协议栈实现的，网卡本身并不感知收发的数据包是RoCE报文，其驱动程序按照IB规范中的报文格式将用户数据封装成IB传输层报文，然后把报文整体当做数据填入Socket Buffer当中，由网卡进行下一步收发包处理。</p>
 <h2 id="5-部署实验">5. 部署实验</h2>
 <h3 id="51-实验环境">5.1. 实验环境</h3>
-<p>本实验主要使用Ubuntu 20.04 64位作为系统环境，采用2台2核4GB云服务器作为Soft-RoCE的部署环境，</p>
+<p>本实验主要使用Ubuntu 20.04 64位作为系统环境，采用2台2核4GB云服务器作为Soft-RoCE的部署环境。</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">节点</th>
+<th style="text-align:left">IP地址</th>
+<th style="text-align:left">RDMA设备名</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">node1</td>
+<td style="text-align:left">172.16.16.10</td>
+<td style="text-align:left">node1</td>
+</tr>
+<tr>
+<td style="text-align:left">node2</td>
+<td style="text-align:left">172.16.16.6</td>
+<td style="text-align:left">node2</td>
+</tr>
+</tbody>
+</table>
 <h3 id="52-部署rdma软件栈">5.2. 部署RDMA软件栈</h3>
 <h4 id="521-确认当前内核是否支持rxe">5.2.1. 确认当前内核是否支持RXE</h4>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">cat /boot/config-<span class="k">$(</span>uname -r<span class="k">)</span> <span class="p">|</span> grep RXE
@@ -349,12 +370,12 @@
 </tbody>
 </table>
 <p>安装完上述软件之后，可以执行ibv_devices看看有没有报错：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devices.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152257.png" alt="20230725152257"  /></p>
 <p>这是个基于verbs接口编写的小程序，用来获取并打印出当前系统中的RDMA设备列表。</p>
 <p>查看安装的版本：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">dpkg -L libibverbs1
-</span></span></code></pre></div><p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202023-02-11%20125822.png" alt=""  /></p>
-<p>可以看到安装的版本是28.0</p>
+</span></span></code></pre></div><p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152107.png" alt="20230725152107"  /></p>
+<p>可以看到安装的版本是1.14.19.0</p>
 <h4 id="523-安装iproute2和perftest">5.2.3. 安装iproute2和perftest</h4>
 <p>iproute2是用来替代net-tools软件包的，是一组开源的网络工具集合，比如用更强大ip命令替换了以前常用的ifconfig。我们需要其中的rdma工具来对RXE进行配置。一般的操作系统都已经包含了，安装也很简单：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo apt-get install iproute2
@@ -368,21 +389,21 @@
 </span></span></code></pre></div><p>其中rxe_0是你希望的RDMA的设备名，可任意取名。eth0为Soft-RoCE设备所绑定的网络设备名，也就是ifconfig中看到的网卡名。</p>
 <p>接着我们用rdma工具查看是否添加成功：</p>
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">rdma link
-</span></span></code></pre></div><p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma_link.png" alt=""  /></p>
+</span></span></code></pre></div><p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152620.png" alt="20230725152620"  /></p>
 <p>再次运行<code>ibv_devices</code>程序，可以看到RXE网卡已经出现在设备列表里。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devices_new.png" alt=""  /></p>
-<p>也可以运行<code>ibv_devinfo -d rxe_0</code>命令查看虚拟RDMA设备的信息。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_devinfo.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152728.png" alt="20230725152728"  /></p>
+<p>也可以运行<code>ibv_devinfo -d node1</code>命令查看虚拟RDMA设备的信息。</p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152801.png" alt="20230725152801"  /></p>
 <h3 id="54-执行perftest测试">5.4. 执行perftest测试</h3>
 <p>分别在两端执行以下命令：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ib_send_bw -d rxe_0
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ib_send_bw -d node2
 </span></span></code></pre></div><p>以及：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ib_send_bw -d rxe_0 192.168.1.5
-</span></span></code></pre></div><p>ib_send_bw是用来测试SEND操作的带宽的程序（infiniband_send<em>bandwidth），其中</em>&lt;server_ip&gt;表示对端的IP</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ib_send_bw -d node1 172.16.16.6
+</span></span></code></pre></div><p>ib_send_bw是用来测试SEND操作的带宽的程序（infiniband_send bandwidth），其中 <strong>&lt;server_ip&gt;</strong> 表示对端的IP</p>
 <p>两端的结果如下，Server端：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ib_server.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152955.png" alt="20230725152955"  /></p>
 <p>Client端：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ibv_client.png" alt=""  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725153015.png" alt="20230725153015"  /></p>
 <p>可以看到两端都打印出了一些测试信息以及最后的测试结果，也就是带宽信息。</p>
 
 </section>
@@ -442,6 +463,24 @@
         <h2 class="section-title">相关文章</h2>
         <div class="related-contents">
             <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/rdma-tutorial/2/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png" loading="lazy" data-key="rdma-tutorial/2" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA技术及其编程方法（二）：编程指导</h2>
+        </div>
+    </a>
+</article>
                 
                     
 <article class="has-image">
@@ -511,24 +550,6 @@
 
         <div class="article-details">
             <h2 class="article-title">MPI与并行计算（三）：集合通信</h2>
-        </div>
-    </a>
-</article>
-                
-                    
-<article class="has-image">
-    <a href="/p/mpi-tutorial/2/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png" loading="lazy" data-key="mpi-tutorial/2" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230719212254.png"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MPI与并行计算（二）：点到点通信</h2>
         </div>
     </a>
 </article>
