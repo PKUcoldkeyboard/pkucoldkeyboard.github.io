@@ -6,10 +6,10 @@
         <description>Recent content on cuterwrite</description>
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
-        <lastBuildDate>Fri, 28 Jul 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Thu, 27 Jul 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
         <title>RDMA技术及其编程方法（二）：编程指导</title>
         <link>https://cuterwrite.top/p/rdma-tutorial/2/</link>
-        <pubDate>Fri, 28 Jul 2023 01:00:00 +0000</pubDate>
+        <pubDate>Thu, 27 Jul 2023 01:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/rdma-tutorial/2/</guid>
         <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png" alt="Featured image of post RDMA技术及其编程方法（二）：编程指导" /&gt;&lt;!-- raw HTML omitted --&gt;
@@ -643,6 +643,8 @@
         &lt;span class=&#34;language-name&#34;&gt;C&lt;/span&gt;
     &lt;/div&gt;
 &lt;/div&gt;
+&lt;h3 id=&#34;4-补充rdma应用程序标准流程&#34;&gt;4. 补充：RDMA应用程序标准流程&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230729185145.png&#34; alt=&#34;20230729185145&#34;  /&gt;&lt;/p&gt;
 &lt;h2 id=&#34;参考文献&#34;&gt;参考文献&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li&gt;
@@ -824,17 +826,17 @@
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MR&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;Memory Region&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。MR的配套机制用来解决RDMA操作中的两个问题：（1）APP提供的地址都是虚拟地址，经过MMU的转换才能得到真实的物理地址，RDMA网卡是如何得到真实物理地址从而去内存中读取或写入数据的？（2）假设网卡有能力获取目的地址，但如果用户恶意指定了一个非法的虚拟地址，网卡就有可能被指使去读写系统关键内存，如何预防？因此，MR的作用之一就是实现虚拟地址与物理地址的转换，APP只能看到虚拟地址，而且会在发起RDMA Write时把本地和对端的内存的虚拟地址传递给RDMA网卡。网卡需要知道APP提供的虚拟地址所对应的物理地址才能访问系统内存。在注册MR的过程中，软件会在内存中创建并填写一个虚拟地址到物理地址的映射表供网卡查询。MR的第二个作用是控制HCA访问内存的权限，程序在注册MR时会产生两把钥匙L_KEY（Local）和R_KEY（Remote）。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;QP&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;Queue Pair&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue）和接收队列（Receive Queue）组成，用于发送和接收RDMA操作的请求和数据。&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue, SQ）和接收队列（Receive Queue, RQ）组成，用于发送和接收RDMA操作的请求和数据。SQ专门用来存放发送任务，RQ专门用来存放接收任务。在一次SEND-RECV流程中，发送端需要把表示一次发送任务的WR放到SQ里面(这种操作称为Post Send)，接收端需要把表示一次接收任务的WR放到QP里面（称为Post Receive），这样硬件才知道收到数据之后放到内存中的哪个位置。在RDMA中，通信的基本对象是QP，而不是节点。对于每个节点来说，每个进程都可以申请和使用若干个QP，而每个本地QP可以连接到一个远端的QP。每个节点中的QP都有一个唯一的编号，称为QPN，通过QPN可以唯一确定一个节点上的QP。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;CQ&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;Completion Queue&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。CQ中有很多元素，称为CQE。CQE是硬件完成任务之后返回给软件的“完成报告”，与WR相反。每个CQE都包含某个WR的完成信息。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;WR&lt;/td&gt;
@@ -853,12 +855,12 @@
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;h3 id=&#34;3-qrswrs执行模型&#34;&gt;3. QRs/WRs执行模型&lt;/h3&gt;
+&lt;h3 id=&#34;3-qpswrs执行模型&#34;&gt;3. QPs/WRs执行模型&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722225719.png&#34; alt=&#34;20230722225719&#34;  /&gt;&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;硬件提供
 &lt;ul&gt;
-&lt;li&gt;针对每个QR上下文&lt;/li&gt;
+&lt;li&gt;针对每个QP上下文&lt;/li&gt;
 &lt;li&gt;虚拟到物理内存的转换&lt;/li&gt;
 &lt;li&gt;安全的进程控制机制&lt;/li&gt;
 &lt;li&gt;可靠性(取决于传输服务)&lt;/li&gt;
@@ -977,6 +979,8 @@
 &lt;li&gt;请求方轮询CQ，获取SR的完成事件&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
+&lt;li&gt;RDMA Write操作是一端应用主动写入远端内存的行为，除了准备阶段，远端CPU不需要参与，也不感知何时有数据写入、数据在何时接收完毕，所以这是一种单端操作。&lt;/li&gt;
+&lt;li&gt;需要注意的是，操作发起端的应用程序是通过虚拟地址来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址——物理地址的转换由RDMA网卡完成。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232556.png&#34; alt=&#34;20230722232556&#34;  /&gt;&lt;/p&gt;
 &lt;ul&gt;
@@ -1049,6 +1053,8 @@
 &lt;/ul&gt;
 &lt;h3 id=&#34;6-rdma架构层级结构&#34;&gt;6. RDMA架构层级结构&lt;/h3&gt;
 &lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722233900.png&#34; alt=&#34;20230722233900&#34;  /&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230728235849.png&#34; alt=&#34;20230728235849&#34;  /&gt;&lt;/p&gt;
 &lt;h2 id=&#34;三verbs与ofa-verbs-api&#34;&gt;三、Verbs与OFA Verbs API&lt;/h2&gt;
 &lt;h3 id=&#34;1-verbs简介&#34;&gt;1. Verbs简介&lt;/h3&gt;
 &lt;ul&gt;

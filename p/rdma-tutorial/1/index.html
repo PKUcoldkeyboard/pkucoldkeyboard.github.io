@@ -397,17 +397,17 @@
 <tr>
 <td style="text-align:center">MR</td>
 <td style="text-align:center">Memory Region</td>
-<td style="text-align:center">内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。</td>
+<td style="text-align:center">内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。MR的配套机制用来解决RDMA操作中的两个问题：（1）APP提供的地址都是虚拟地址，经过MMU的转换才能得到真实的物理地址，RDMA网卡是如何得到真实物理地址从而去内存中读取或写入数据的？（2）假设网卡有能力获取目的地址，但如果用户恶意指定了一个非法的虚拟地址，网卡就有可能被指使去读写系统关键内存，如何预防？因此，MR的作用之一就是实现虚拟地址与物理地址的转换，APP只能看到虚拟地址，而且会在发起RDMA Write时把本地和对端的内存的虚拟地址传递给RDMA网卡。网卡需要知道APP提供的虚拟地址所对应的物理地址才能访问系统内存。在注册MR的过程中，软件会在内存中创建并填写一个虚拟地址到物理地址的映射表供网卡查询。MR的第二个作用是控制HCA访问内存的权限，程序在注册MR时会产生两把钥匙L_KEY（Local）和R_KEY（Remote）。</td>
 </tr>
 <tr>
 <td style="text-align:center">QP</td>
 <td style="text-align:center">Queue Pair</td>
-<td style="text-align:center">队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue）和接收队列（Receive Queue）组成，用于发送和接收RDMA操作的请求和数据。</td>
+<td style="text-align:center">队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue, SQ）和接收队列（Receive Queue, RQ）组成，用于发送和接收RDMA操作的请求和数据。SQ专门用来存放发送任务，RQ专门用来存放接收任务。在一次SEND-RECV流程中，发送端需要把表示一次发送任务的WR放到SQ里面(这种操作称为Post Send)，接收端需要把表示一次接收任务的WR放到QP里面（称为Post Receive），这样硬件才知道收到数据之后放到内存中的哪个位置。在RDMA中，通信的基本对象是QP，而不是节点。对于每个节点来说，每个进程都可以申请和使用若干个QP，而每个本地QP可以连接到一个远端的QP。每个节点中的QP都有一个唯一的编号，称为QPN，通过QPN可以唯一确定一个节点上的QP。</td>
 </tr>
 <tr>
 <td style="text-align:center">CQ</td>
 <td style="text-align:center">Completion Queue</td>
-<td style="text-align:center">完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。</td>
+<td style="text-align:center">完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。CQ中有很多元素，称为CQE。CQE是硬件完成任务之后返回给软件的“完成报告”，与WR相反。每个CQE都包含某个WR的完成信息。</td>
 </tr>
 <tr>
 <td style="text-align:center">WR</td>
@@ -426,12 +426,12 @@
 </tr>
 </tbody>
 </table>
-<h3 id="3-qrswrs执行模型">3. QRs/WRs执行模型</h3>
+<h3 id="3-qpswrs执行模型">3. QPs/WRs执行模型</h3>
 <p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722225719.png" alt="20230722225719"  /></p>
 <ul>
 <li>硬件提供
 <ul>
-<li>针对每个QR上下文</li>
+<li>针对每个QP上下文</li>
 <li>虚拟到物理内存的转换</li>
 <li>安全的进程控制机制</li>
 <li>可靠性(取决于传输服务)</li>
@@ -550,6 +550,8 @@
 <li>请求方轮询CQ，获取SR的完成事件</li>
 </ul>
 </li>
+<li>RDMA Write操作是一端应用主动写入远端内存的行为，除了准备阶段，远端CPU不需要参与，也不感知何时有数据写入、数据在何时接收完毕，所以这是一种单端操作。</li>
+<li>需要注意的是，操作发起端的应用程序是通过虚拟地址来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址——物理地址的转换由RDMA网卡完成。</li>
 </ul>
 <p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232556.png" alt="20230722232556"  /></p>
 <ul>
@@ -622,6 +624,8 @@
 </ul>
 <h3 id="6-rdma架构层级结构">6. RDMA架构层级结构</h3>
 <p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722233900.png" alt="20230722233900"  /></p>
+<hr>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230728235849.png" alt="20230728235849"  /></p>
 <h2 id="三verbs与ofa-verbs-api">三、Verbs与OFA Verbs API</h2>
 <h3 id="1-verbs简介">1. Verbs简介</h3>
 <ul>
