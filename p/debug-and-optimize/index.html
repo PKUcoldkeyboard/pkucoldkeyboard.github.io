@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+    <head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文将详细介绍几种常用的程序调试与优化分析工具，如强大的调试器gdb，可用于跟踪程序执行过程、检测内存错误；Valgrind，能发现内存泄漏等问题；还有性能分析工具gprof，可测量各函数执行时间，以及perf和Vtune等，它们都是开发人员的得力助手，能够有效地定位和解决程序中的问题，并极大地优化代码性能，提高软件质量和性能。'><title>程序调试与优化分析工具</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/debug-and-optimize/'>
+
+<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='程序调试与优化分析工具'>
+<meta property='og:description' content='本文将详细介绍几种常用的程序调试与优化分析工具，如强大的调试器gdb，可用于跟踪程序执行过程、检测内存错误；Valgrind，能发现内存泄漏等问题；还有性能分析工具gprof，可测量各函数执行时间，以及perf和Vtune等，它们都是开发人员的得力助手，能够有效地定位和解决程序中的问题，并极大地优化代码性能，提高软件质量和性能。'>
+<meta property='og:url' content='https://cuterwrite.top/p/debug-and-optimize/'>
+<meta property='og:site_name' content='cuterwrite'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2023-08-02T01:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-08-02T01:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/1c86d46879544786889dcdbaa1cf158f1fb36107.jpg@1256w_1774h_!web-article-pic.jpg' />
+<meta name="twitter:title" content="程序调试与优化分析工具">
+<meta name="twitter:description" content="本文将详细介绍几种常用的程序调试与优化分析工具，如强大的调试器gdb，可用于跟踪程序执行过程、检测内存错误；Valgrind，能发现内存泄漏等问题；还有性能分析工具gprof，可测量各函数执行时间，以及perf和Vtune等，它们都是开发人员的得力助手，能够有效地定位和解决程序中的问题，并极大地优化代码性能，提高软件质量和性能。"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/1c86d46879544786889dcdbaa1cf158f1fb36107.jpg@1256w_1774h_!web-article-pic.jpg' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    </head>
+    <body class="">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.body.dataset.scheme = 'dark';
+        } else {
+            document.body.dataset.scheme = 'light';
+        }
+    })();
+</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
+            <aside class="sidebar left-sidebar sticky">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header class="site-info">
+        
+            <figure class="site-avatar">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+        
+        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
+        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+    </header>
+
+    <ol class="menu" id="main-menu">
+        
+        
+        
+
+        <li >
+            <a href='/'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/about'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/archives'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+
+        <li >
+            <a href='/search'>
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        
+            <li id="dark-mode-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                <span>暗色模式</span>
+            </li>
+        
+    </ol>
+</aside>
+
+            <main class="main full-width">
+    <div id="article-toolbar">
+        <a href="https://cuterwrite.top" class="back-home">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-chevron-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="15 6 9 12 15 18" />
+</svg>
+
+
+
+            <span>Back</span>
+        </a>
+    </div>
+
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/debug-and-optimize/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1c86d46879544786889dcdbaa1cf158f1fb36107.jpg@1256w_1774h_!web-article-pic.jpg" loading="lazy" alt="Featured image of post 程序调试与优化分析工具" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/" style="background-color: #eea2a4; color: #fff;">
+                综合技术栈
+            </a>
+        
+    </header>
+    
+
+    <h2 class="article-title">
+        <a href="/p/debug-and-optimize/">程序调试与优化分析工具</a>
+    </h2>
+
+    
+    <h3 class="article-subtitle">
+        本文将详细介绍几种常用的程序调试与优化分析工具，如强大的调试器gdb，可用于跟踪程序执行过程、检测内存错误；Valgrind，能发现内存泄漏等问题；还有性能分析工具gprof，可测量各函数执行时间，以及perf和Vtune等，它们都是开发人员的得力助手，能够有效地定位和解决程序中的问题，并极大地优化代码性能，提高软件质量和性能。
+    </h3>
+    <footer class="article-time">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+        <time class="article-time--published">2023-08-02</time>
+    </footer></div>
+</header>
+
+    <section class="article-content">
+    <!-- raw HTML omitted -->
+<!-- raw HTML omitted -->
+<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
+    >DocToc</a></em></p>
+<ul>
+<li><a class="link" href="#%E7%A8%8B%E5%BA%8F%E8%B0%83%E8%AF%95%E4%B8%8E%E4%BC%98%E5%8C%96%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7" >程序调试与优化分析工具</a>
+<ul>
+<li><a class="link" href="#%E4%B8%80%E6%A6%82%E8%BF%B0" >一、概述</a></li>
+<li><a class="link" href="#%E4%BA%8C%E7%A8%8B%E5%BA%8F%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7%E7%AE%80%E4%BB%8B" >二、程序调试分析工具简介</a>
+<ul>
+<li><a class="link" href="#1-gdb" >1. gdb</a></li>
+<li><a class="link" href="#2-valgrind" >2. Valgrind</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E4%B8%89%E7%A8%8B%E5%BA%8F%E4%BC%98%E5%8C%96%E5%88%86%E6%9E%90%E5%B7%A5%E5%85%B7%E7%AE%80%E4%BB%8B" >三、程序优化分析工具简介</a>
+<ul>
+<li><a class="link" href="#1-gprof" >1. gprof</a></li>
+<li><a class="link" href="#2-perf" >2. perf</a></li>
+<li><a class="link" href="#3-vtune" >3. Vtune</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E6%80%BB%E7%BB%93" >总结</a></li>
+<li><a class="link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" >参考资料</a></li>
+</ul>
+</li>
+</ul>
+<!-- raw HTML omitted -->
+<h1 id="程序调试与优化分析工具">程序调试与优化分析工具</h1>
+<h2 id="一概述">一、概述</h2>
+<ul>
+<li>
+<p>在编程中我们通常会遇到如下问题：</p>
+<ol>
+<li>程序运行慢，效率低</li>
+<li>消耗了大量的内存</li>
+<li>segmentation fault</li>
+<li>程序崩溃</li>
+<li>程序运行结果不正确&hellip;&hellip;</li>
+</ol>
+</li>
+<li>
+<p>随着处理器复杂度的增加</p>
+<ul>
+<li>我们不再能够轻松地跟踪代码段的执行
+<ul>
+<li>静态/动态分支预测、预取、顺序调度&hellip;&hellip;</li>
+</ul>
+</li>
+<li>仅使用墙钟时间来衡量代码性能是不够的。</li>
+<li>我们还需要了解到底发生了什么</li>
+</ul>
+</li>
+<li>
+<p>对于性能评估，有直接和间接两种方法</p>
+<ul>
+<li>直接方法：需要某些形式的显示插装
+<ul>
+<li>追踪
+<ul>
+<li>为每个测量事件生成记录</li>
+<li>只有在产生大量数据情况下，出现的性能异常数据才有用</li>
+</ul>
+</li>
+<li>聚合
+<ul>
+<li>减少数据在运行时平均/最小/最大测量</li>
+<li>适用于应用程序和体系结构和描述和优化</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>间接方法：不需要插装，可不修改应用程序</li>
+<li>事实上，直接和间接方法的界限有些模糊
+<ul>
+<li>聚合：如gprof，可以不修改程序，但是需要重新编译链接</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>实际编程中，常见的分析工具如下：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">类型</th>
+<th style="text-align:center">工具</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">程序调试</td>
+<td style="text-align:center">gdb</td>
+</tr>
+<tr>
+<td style="text-align:center">程序调试</td>
+<td style="text-align:center">valgrind</td>
+</tr>
+<tr>
+<td style="text-align:center">程序优化</td>
+<td style="text-align:center">gprof</td>
+</tr>
+<tr>
+<td style="text-align:center">程序优化</td>
+<td style="text-align:center">perf</td>
+</tr>
+<tr>
+<td style="text-align:center">程序优化</td>
+<td style="text-align:center">Intel VTune Amplifier</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ul>
+<h2 id="二程序调试分析工具简介">二、程序调试分析工具简介</h2>
+<ul>
+<li>程序中的错误按其性质可以分为三种：
+<ul>
+<li><strong>编译错误</strong> ：即语法错误，主要是程序代码中有不符合所用编程语言语法规则的错误。</li>
+<li><strong>运行时错误</strong> ：如对负数开平方、除数为0、循环终止条件永远不能达到等。</li>
+<li><strong>逻辑错误</strong> ：这类错误往往是编程前对求解的问题理解不正确或算法不正确引起的，它们很难查找（数组越界、空指针）</li>
+</ul>
+</li>
+<li>程序调试就是查找程序中的错误，诊断其准确位置，并予以改正。</li>
+</ul>
+<h3 id="1-gdb">1. gdb</h3>
+<ul>
+<li>GDB是GNU开源组织发布的一个强大的UNIX下的程序调试工具</li>
+<li>GDB具备如下4个方面的功能：
+<ul>
+<li>启动程序，可以按用户要求影响程序的运行行为</li>
+<li>可以让被调试的程序在用户所指定的断点处暂停（断点可以是条件表达式）</li>
+<li>当程序被暂停时，可以检查此时用户程序中所发生的事情</li>
+<li>动态改变用户程序的执行环境，这样就可以先纠正一个错误的影响，然后再纠正其他错误</li>
+</ul>
+</li>
+<li>为了发挥GDB的全部功能，需要在编译源程序时使用<code>-g</code>选项</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g test.c -o proc
+</span></span></code></pre></div><ul>
+<li>
+<p>启动GDB，以参数形式将可执行程序传递给GDB</p>
+<ul>
+<li>gdb program</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gdb ./proc
+</span></span></code></pre></div><ul>
+<li>gdb -p pid</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gdb -p <span class="sb">`</span>pidof proc<span class="sb">`</span>
+</span></span></code></pre></div><ul>
+<li>gdb program core</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gdb ./proc core.xxx
+</span></span></code></pre></div><ul>
+<li>gdb attach pid</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gdb attach <span class="m">2313</span>
+</span></span></code></pre></div></li>
+<li>
+<p>启动gdb后就显示其提示符：（gdb），并等待用户输入相应的内部命令</p>
+<ul>
+<li>设置断点、设置运行参数和环境变量、跟踪调试命令、查看栈信息……</li>
+</ul>
+</li>
+<li>
+<p>用户可以利用命令quit终止其执行，退出gdb环境</p>
+</li>
+<li>
+<p>gdb常用命令列表如下：</p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>解释</th>
+<th>简写</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>file</td>
+<td>装入想要调试的可执行文件</td>
+<td>无</td>
+</tr>
+<tr>
+<td>list</td>
+<td>列出产生执行文件源代码的一部分</td>
+<td>l</td>
+</tr>
+<tr>
+<td>next</td>
+<td>执行一行源代码但不进入函数内部</td>
+<td>n</td>
+</tr>
+<tr>
+<td>step</td>
+<td>执行一行源代码而且进入函数内部</td>
+<td>s</td>
+</tr>
+<tr>
+<td>run</td>
+<td>执行当前被调试的程序</td>
+<td>r</td>
+</tr>
+<tr>
+<td>continue</td>
+<td>继续执行程序</td>
+<td>c</td>
+</tr>
+<tr>
+<td>quit</td>
+<td>终止GDB</td>
+<td>q</td>
+</tr>
+<tr>
+<td>print</td>
+<td>输出当前指定变量的值</td>
+<td>p</td>
+</tr>
+<tr>
+<td>break</td>
+<td>在代码里设置断点</td>
+<td>b</td>
+</tr>
+<tr>
+<td>info break</td>
+<td>查看设置断点的信息</td>
+<td>ib</td>
+</tr>
+<tr>
+<td>delete</td>
+<td>删除设置的断点</td>
+<td>d</td>
+</tr>
+<tr>
+<td>watch</td>
+<td>监视一个变量的值，一旦值有变化，程序停住</td>
+<td>wa</td>
+</tr>
+<tr>
+<td>help</td>
+<td>GDB中的帮助命令</td>
+<td>h</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>设置断点：</p>
+<ul>
+<li>编译源程序时需要使用<code>-g</code>选项</li>
+<li>在GDB中用break命令（其缩写形式为b）设置断点：
+<ul>
+<li>break linenum 在当前文件指定行linenum处设置断点，停在该行开头</li>
+<li>break linenum if condition 在当前文件指定行linenum处设置断点，但仅在条件表达式condition成立时才停止程序执行</li>
+<li>break function 在当前文件函数function的入口处设置断点</li>
+<li>break file:linenum 在源文件file的linenum行上设置断点</li>
+<li>break file:function 在源文件file的函数function的入口处设置断点</li>
+<li>break *address 运行程序在指定的内存地址address处停止</li>
+<li>break 不带任何参数，则表示在下一条指令处停止</li>
+</ul>
+</li>
+<li>断点应设置在可执行的行上，不应是变量定义之类的语句</li>
+</ul>
+</li>
+<li>
+<p>删除断点：</p>
+<ul>
+<li>delete [bkptnums]</li>
+</ul>
+</li>
+<li>
+<p>显示断点：</p>
+<ul>
+<li>info breakpoints [num]</li>
+<li>info break [num]</li>
+</ul>
+</li>
+<li>
+<p>运行程序：</p>
+<ul>
+<li>run [args]</li>
+</ul>
+</li>
+<li>
+<p>程序的单步跟踪和</p>
+<ul>
+<li>step [N] 参数N表示每步执行的语句行数，进入被调用函数内部执行</li>
+<li>next [N] 参数N表示每步执行的语句行数，被调用函数被当做一条指令执行</li>
+<li>stepi（缩写为si）或nexti（缩写为ni）命令一条一条地执行机器指令</li>
+</ul>
+</li>
+<li>
+<p>程序的连续执行</p>
+<ul>
+<li>利用continue，c或fg命令连续执行到下一个断点</li>
+</ul>
+</li>
+<li>
+<p>显示源文件命令list （l）</p>
+<ul>
+<li>list：没有参数，显示当前行之后或周围的10多行</li>
+<li>list -：显示之前的10行</li>
+<li>list [file]:num：显示源文件file中给定行号num周围的10行。如果缺少file，则默认为当前文件。例如，list 100</li>
+<li>list start, end：显示从行号start至end之间的代码行。例如，list 20,38</li>
+<li>list [file:]fun：显示源文件file中指定函数function的代码行。如果缺少file，则默认为当前文件。例如，list meng1.c:square</li>
+<li>set listsize linenum : 可以使用该命令设置一次显示的行数</li>
+</ul>
+</li>
+<li>
+<p>查看运行时数据命令print （p）</p>
+<ul>
+<li>当被调试的程序停止时，可以用print命令或同义命令inspect来查看当前程序中运行的数据</li>
+<li>print命令的一般使用格式：print [/fmt] exp
+<ul>
+<li>print i （或p i） 显示当前变量i的值</li>
+<li>print i*j (或p i*j) 将根据程序当前运行的实际情况显示出i*j的值</li>
+</ul>
+</li>
+<li>print所支持的运算符：
+<ul>
+<li>取地址&amp;符号</li>
+<li>@ 是一个与数组有关的双目运算符，使用形式如
+<ul>
+<li>print array@10 打印从array（数组名，即数组的基地址）开始的10个值</li>
+<li>print array[3]@5 打印从array第三个元素开始的5个数组元素的数值</li>
+</ul>
+</li>
+<li>file::i 或 function ::i 表示文件或者函数中i的值</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>GDB使用示例</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">sum</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="mi">50</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">result</span> <span class="o">+=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;result[1-50]=%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">result</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;result[1-100]=%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">sum</span><span class="p">(</span><span class="mi">100</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">sum</span><span class="p">(</span><span class="kt">int</span> <span class="n">n</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">sum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;=</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sum</span> <span class="o">+=</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">sum</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>编译带调试信息的可执行文件</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g test.c -o <span class="nb">test</span>
+</span></span></code></pre></div><ul>
+<li>启动GDB</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gdb <span class="nb">test</span>
+</span></span></code></pre></div><ul>
+<li>调试结果</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">GNU gdb <span class="o">(</span>Ubuntu 9.2-0ubuntu1~20.04.1<span class="o">)</span> 9.2
+</span></span><span class="line"><span class="cl">Copyright <span class="o">(</span>C<span class="o">)</span> <span class="m">2020</span> Free Software Foundation, Inc.
+</span></span><span class="line"><span class="cl">License GPLv3+: GNU GPL version <span class="m">3</span> or later &lt;http://gnu.org/licenses/gpl.html&gt;
+</span></span><span class="line"><span class="cl">This is free software: you are free to change and redistribute it.
+</span></span><span class="line"><span class="cl">There is NO WARRANTY, to the extent permitted by law.
+</span></span><span class="line"><span class="cl">Type <span class="s2">&#34;show copying&#34;</span> and <span class="s2">&#34;show warranty&#34;</span> <span class="k">for</span> details.
+</span></span><span class="line"><span class="cl">This GDB was configured as <span class="s2">&#34;x86_64-linux-gnu&#34;</span>.
+</span></span><span class="line"><span class="cl">Type <span class="s2">&#34;show configuration&#34;</span> <span class="k">for</span> configuration details.
+</span></span><span class="line"><span class="cl">For bug reporting instructions, please see:
+</span></span><span class="line"><span class="cl">&lt;http://www.gnu.org/software/gdb/bugs/&gt;.
+</span></span><span class="line"><span class="cl">Find the GDB manual and other documentation resources online at:
+</span></span><span class="line"><span class="cl">    &lt;http://www.gnu.org/software/gdb/documentation/&gt;.
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">For help, <span class="nb">type</span> <span class="s2">&#34;help&#34;</span>.
+</span></span><span class="line"><span class="cl">Type <span class="s2">&#34;apropos word&#34;</span> to search <span class="k">for</span> commands related to <span class="s2">&#34;word&#34;</span>...
+</span></span><span class="line"><span class="cl">Reading symbols from test...
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> list
+</span></span><span class="line"><span class="cl"><span class="m">1</span>       <span class="c1">#include &lt;stdio.h&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="m">2</span>
+</span></span><span class="line"><span class="cl"><span class="m">3</span>       int sum<span class="o">(</span>int n<span class="o">)</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">4</span>
+</span></span><span class="line"><span class="cl"><span class="m">5</span>       int main<span class="o">(</span>int argc, char **argv<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="m">6</span>       <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="m">7</span>           int i, <span class="nv">result</span> <span class="o">=</span> 0<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">8</span>           <span class="k">for</span> <span class="o">(</span><span class="nv">i</span> <span class="o">=</span> 1<span class="p">;</span> i &lt;<span class="o">=</span> 50<span class="p">;</span> i++<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="m">9</span>           <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="m">10</span>              <span class="nv">result</span> <span class="o">+=</span> i<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> 
+</span></span><span class="line"><span class="cl"><span class="m">11</span>          <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="m">12</span>          printf<span class="o">(</span><span class="s2">&#34;result[1-50]=%d\n&#34;</span>, result<span class="o">)</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">13</span>          printf<span class="o">(</span><span class="s2">&#34;result[1-100]=%d\n&#34;</span>, sum<span class="o">(</span>100<span class="o">))</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">14</span>      <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="m">15</span>
+</span></span><span class="line"><span class="cl"><span class="m">16</span>      int sum<span class="o">(</span>int n<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="m">17</span>      <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="m">18</span>          int i, sum<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">19</span>          <span class="k">for</span> <span class="o">(</span><span class="nv">i</span> <span class="o">=</span> 1<span class="p">;</span> i &lt;<span class="o">=</span> n<span class="p">;</span> i++<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="m">20</span>          <span class="o">{</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> 
+</span></span><span class="line"><span class="cl"><span class="m">21</span>              <span class="nv">sum</span> <span class="o">+=</span> i<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">22</span>          <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="m">23</span>          <span class="k">return</span> sum<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="m">24</span>      <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> b <span class="m">8</span>
+</span></span><span class="line"><span class="cl">Breakpoint <span class="m">1</span> at 0x1163: file test.c, line 8.
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> info b
+</span></span><span class="line"><span class="cl">Num     Type           Disp Enb Address            What
+</span></span><span class="line"><span class="cl"><span class="m">1</span>       breakpoint     keep y   0x0000000000001163 in main at test.c:8
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> r
+</span></span><span class="line"><span class="cl">Starting program: /root/workspace/test 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Breakpoint 1, main <span class="o">(</span><span class="nv">argc</span><span class="o">=</span>1, <span class="nv">argv</span><span class="o">=</span>0x7fffffffe2d8<span class="o">)</span> at test.c:8
+</span></span><span class="line"><span class="cl"><span class="m">8</span>           <span class="k">for</span> <span class="o">(</span><span class="nv">i</span> <span class="o">=</span> 1<span class="p">;</span> i &lt;<span class="o">=</span> 50<span class="p">;</span> i++<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> p i
+</span></span><span class="line"><span class="cl"><span class="nv">$1</span> <span class="o">=</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> p result
+</span></span><span class="line"><span class="cl"><span class="nv">$2</span> <span class="o">=</span> <span class="m">0</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> n
+</span></span><span class="line"><span class="cl"><span class="m">10</span>              <span class="nv">result</span> <span class="o">+=</span> i<span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> n
+</span></span><span class="line"><span class="cl"><span class="m">8</span>           <span class="k">for</span> <span class="o">(</span><span class="nv">i</span> <span class="o">=</span> 1<span class="p">;</span> i &lt;<span class="o">=</span> 50<span class="p">;</span> i++<span class="o">)</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> p i
+</span></span><span class="line"><span class="cl"><span class="nv">$3</span> <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> p result
+</span></span><span class="line"><span class="cl"><span class="nv">$4</span> <span class="o">=</span> <span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> d <span class="m">1</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> info b
+</span></span><span class="line"><span class="cl">No breakpoints or watchpoints.
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> c
+</span></span><span class="line"><span class="cl">Continuing.
+</span></span><span class="line"><span class="cl">result<span class="o">[</span>1-50<span class="o">]=</span><span class="m">1275</span>
+</span></span><span class="line"><span class="cl">result<span class="o">[</span>1-100<span class="o">]=</span><span class="m">26895</span>
+</span></span><span class="line"><span class="cl"><span class="o">[</span>Inferior <span class="m">1</span> <span class="o">(</span>process 286758<span class="o">)</span> exited normally<span class="o">]</span>
+</span></span><span class="line"><span class="cl"><span class="o">(</span>gdb<span class="o">)</span> q
+</span></span></code></pre></div><ul>
+<li>总的来说，GDB调试的过程为：
+<ul>
+<li>编译带调试信息的可执行文件</li>
+<li>启动GDB，开始调试</li>
+<li>GDB中查看文件</li>
+<li>设置断点</li>
+<li>查看断点情况</li>
+<li>运行代码</li>
+<li>跟踪变量值</li>
+<li>删除所设断点</li>
+<li>恢复程序运行</li>
+<li>退出GDB</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-valgrind">2. Valgrind</h3>
+<ul>
+<li>Valgrind是一个Linux下灵活的调试和剖析工具</li>
+<li>收集各种有用的运行时信息，可以帮助找到程序中潜在的bug和性能瓶颈</li>
+<li>Valgrind包含多个工具：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memcheck</td>
+<td>这是valgrind应用最广泛的工具，一个重量级的内存检查器，能够发现开发中绝大多数内存错误使用情况，比如：使用未初始化的内存、使用已经释放了的内存、内存访问越界等</td>
+</tr>
+<tr>
+<td>Callgrind</td>
+<td>主要用来检查程序中函数调用过程中出现的问题</td>
+</tr>
+<tr>
+<td>Cachegrind</td>
+<td>主要用来检查程序中缓存使用出现的问题</td>
+</tr>
+<tr>
+<td>Helgrind</td>
+<td>主要用来检查多线程程序中出现的竞争问题</td>
+</tr>
+<tr>
+<td>Massif</td>
+<td>主要用来检查程序中堆栈使用中出现的问题</td>
+</tr>
+<tr>
+<td>Extensio</td>
+<td>可以利用core提供的功能，自己编写特定的内存调试工具</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Valgrind使用需要先进行安装，在ubuntu下可以使用apt-get进行安装</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo apt-get install valgrind
+</span></span></code></pre></div><ul>
+<li>为了使Valgrind发现的错误更精确，建议在编译时加上<code>-g</code>参数，编译优化选择<code>O0</code>，即：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g -O0 test.c -o <span class="nb">test</span>
+</span></span></code></pre></div><ul>
+<li>
+<p>valgrind命令格式为: <code>valgrind [options] prog-and-args [options]</code></p>
+<ul>
+<li>[options]: 常用选项，适用于所有Valgrind工具</li>
+<li>&ndash;tool=&lt;name&gt;： 最常用的选项，运行valgrind中名为toolname的工具，默认memcheck</li>
+<li>-h|&ndash;help：显示帮助信息</li>
+<li>&ndash;version：显示valgrind内核的版本，每个工具都有各自的版本</li>
+<li>-q|&ndash;quiet：安静地运行，只打印错误信息</li>
+<li>-v|&ndash;verbose：更详细的信息，增加错误数统计</li>
+<li>&hellip;&hellip;</li>
+</ul>
+</li>
+<li>
+<p>Memcheck内存错误检查：</p>
+<ul>
+<li>可以检查出下列几种错误
+<ul>
+<li>使用已经释放的内存</li>
+<li>内存块越界</li>
+<li>使用未初始化的变量</li>
+<li>内存泄漏</li>
+<li>同一个内存块释放多次</li>
+</ul>
+</li>
+<li>Memcheck命令行选项：
+<ul>
+<li>&ndash;leak-check=&lt;no|summary|yes|full&gt; [default: summary]
+<ul>
+<li>summary是给出最后leak的汇总，yes或者full将会给出比较详细的leak信息</li>
+</ul>
+</li>
+<li>&ndash;leak-resolution=&lt;low|med|high&gt; [default: high]
+<ul>
+<li>用于合并leak信息来源的backtraces，low是有两层匹配的时候就可以合并，med是四层，high必须完全比配。该选项不影响查找leak的能力，只影响结果的显示方式</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Cachegrind缓存检查</p>
+<ul>
+<li>通过模拟cpu的1,3级缓存，收集应用程序运行时关于cpu的一些统计数据，最后在将明细数据和汇总信息打印出来</li>
+<li>执行方式：
+<ul>
+<li>$ valgrind &ndash;tool=cachegrind your_application
+<ul>
+<li>cachegrind的结果也会以输出文件的方式输出更多的细节，输出文件的缺省文件名是cachegrind.out.<!-- raw HTML omitted -->，其中<!-- raw HTML omitted -->是当前进程的pid。该文件名可以通过&ndash;cachegrind-out-file选择指定更可读的文件名，这个文件将会成为cg_annotate的输入</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Cachegrind命令行选项：
+<ul>
+<li>&ndash;cache-sim=no|yes [yes]
+<ul>
+<li>指定是否收集cache accesses和miss counts</li>
+</ul>
+</li>
+<li>&ndash;branch-sim=no|yes [no]
+<ul>
+<li>指定是否收集branch instruction和misprediction counts</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Callgrind函数调用分析</p>
+<ul>
+<li>Callgrind收集程序运行时的一些数据，建立函数调用关系图，还可以有选择地进行cache模拟。被分析的程序编译时要加<code>-g</code>，编译优化选项建议选择<code>-O2</code></li>
+<li>执行方式：
+<ul>
+<li>$ valgrind &ndash;tool=callgrind your_application
+<ul>
+<li>输出文件的缺省文件名是callgrind.out.<!-- raw HTML omitted --> ，其中<!-- raw HTML omitted -->是当前进程的pid</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Cachegrind命令行选项：
+<ul>
+<li>&ndash;callgrind-out-file=<!-- raw HTML omitted -->
+<ul>
+<li>指定profile data的输出文件，而不是缺省命名规则生成的文件</li>
+</ul>
+</li>
+<li>&ndash;dump-line=&lt;no|yes&gt; [default: yes]
+<ul>
+<li>事件计数将以source line作为统计的粒度，但是源程序在编译的时候加入<code>-g</code>选项</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Helgrind多线程分析器</p>
+<ul>
+<li>主要用来检查多线程程序中出现的竞争问题</li>
+<li>执行方式：
+<ul>
+<li>$ valgrind &ndash;tool=helgrind your_application</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Massif堆栈分析</p>
+<ul>
+<li>堆栈分析器，它能测量程序在堆栈中使用了多少内存，告诉我们堆块，堆管理块和栈的大小。Massif能帮助我们减少内存的使用</li>
+<li>执行方式：
+<ul>
+<li>$ valgrind &ndash;tool=massif your_application
+<ul>
+<li>输出文件：massif.<!-- raw HTML omitted -->.ps massif. <!-- raw HTML omitted -->.txt，其中<!-- raw HTML omitted -->是当前进程的pid</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>Valgrind使用示例1：内存检查</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span><span class="o">*</span> <span class="n">x</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">// 问题1：数组下标越界
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">// 问题2：内存泄漏，没有free(x)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>编译并运行：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g -O0 test.c -o <span class="nb">test</span>
+</span></span><span class="line"><span class="cl">valgrind --tool<span class="o">=</span>memcheck --leak-check<span class="o">=</span>full ./test
+</span></span></code></pre></div><ul>
+<li>输出结果：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">==292701== Memcheck, a memory error detector
+</span></span><span class="line"><span class="cl">==292701== Copyright (C) 2002-2017, and GNU GPL&#39;d, by Julian Seward et al.
+</span></span><span class="line"><span class="cl">==292701== Using Valgrind-3.15.0 and LibVEX; rerun with -h for copyright info
+</span></span><span class="line"><span class="cl">==292701== Command: ./test
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== Invalid write of size 4
+</span></span><span class="line"><span class="cl">==292701==    at 0x10916B: f (test.c:6)
+</span></span><span class="line"><span class="cl">==292701==    by 0x10918B: main (test.c:12)
+</span></span><span class="line"><span class="cl">==292701==  Address 0x4a4b068 is 0 bytes after a block of size 40 alloc&#39;d
+</span></span><span class="line"><span class="cl">==292701==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+</span></span><span class="line"><span class="cl">==292701==    by 0x10915E: f (test.c:5)
+</span></span><span class="line"><span class="cl">==292701==    by 0x10918B: main (test.c:12)
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== HEAP SUMMARY:
+</span></span><span class="line"><span class="cl">==292701==     in use at exit: 40 bytes in 1 blocks
+</span></span><span class="line"><span class="cl">==292701==   total heap usage: 1 allocs, 0 frees, 40 bytes allocated
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== 40 bytes in 1 blocks are definitely lost in loss record 1 of 1
+</span></span><span class="line"><span class="cl">==292701==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+</span></span><span class="line"><span class="cl">==292701==    by 0x10915E: f (test.c:5)
+</span></span><span class="line"><span class="cl">==292701==    by 0x10918B: main (test.c:12)
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== LEAK SUMMARY:
+</span></span><span class="line"><span class="cl">==292701==    definitely lost: 40 bytes in 1 blocks
+</span></span><span class="line"><span class="cl">==292701==    indirectly lost: 0 bytes in 0 blocks
+</span></span><span class="line"><span class="cl">==292701==      possibly lost: 0 bytes in 0 blocks
+</span></span><span class="line"><span class="cl">==292701==    still reachable: 0 bytes in 0 blocks
+</span></span><span class="line"><span class="cl">==292701==         suppressed: 0 bytes in 0 blocks
+</span></span><span class="line"><span class="cl">==292701== 
+</span></span><span class="line"><span class="cl">==292701== For lists of detected and suppressed errors, rerun with: -s
+</span></span><span class="line"><span class="cl">==292701== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)
+</span></span></code></pre></div><ul>
+<li>可以看到：valgrind检测到了两个错误，一个是内存越界，一个是内存泄漏
+<ul>
+<li>Invalid write of size 4：提示了内存越界的错误</li>
+<li>40 bytes in 1 blocks are definitely lost in loss record 1 of 1：提示了内存泄漏的错误</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>Valgrind使用示例2：Cachegrind缓存检查</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">arr</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">4</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">arr2</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="n">strcpy</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="s">&#34;1234&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">exit</span><span class="p">(</span><span class="n">arr2</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>编译并运行：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g -O0 test.c -o <span class="nb">test</span>
+</span></span><span class="line"><span class="cl">valgrind --tool<span class="o">=</span>cachegrind ./test
+</span></span></code></pre></div><ul>
+<li>当前目录下会生成一个cachegrind.out.<!-- raw HTML omitted -->文件，其中<!-- raw HTML omitted -->是当前进程的pid，使用<code>ls</code>命令查看：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ ls
+</span></span><span class="line"><span class="cl">cachegrind.out.293847  <span class="nb">test</span>  test.c
+</span></span></code></pre></div><ul>
+<li>使用<code>cg_annnotate</code>命令查看cachegrind.out.<!-- raw HTML omitted -->文件的内容：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ cg_annotate cachegrind.out.293847
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">I1 cache:         <span class="m">32768</span> B, <span class="m">64</span> B, 8-way associative
+</span></span><span class="line"><span class="cl">D1 cache:         <span class="m">32768</span> B, <span class="m">64</span> B, 8-way associative
+</span></span><span class="line"><span class="cl">LL cache:         <span class="m">31457280</span> B, <span class="m">64</span> B, 15-way associative
+</span></span><span class="line"><span class="cl">Command:          ./test
+</span></span><span class="line"><span class="cl">Data file:        cachegrind.out.293847
+</span></span><span class="line"><span class="cl">Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+</span></span><span class="line"><span class="cl">Events shown:     Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+</span></span><span class="line"><span class="cl">Event sort order: Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+</span></span><span class="line"><span class="cl">Thresholds:       0.1 <span class="m">100</span> <span class="m">100</span> <span class="m">100</span> <span class="m">100</span> <span class="m">100</span> <span class="m">100</span> <span class="m">100</span> <span class="m">100</span>
+</span></span><span class="line"><span class="cl">Include dirs:     
+</span></span><span class="line"><span class="cl">User annotated:   
+</span></span><span class="line"><span class="cl">Auto-annotation:  off
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">/* 以下内容省略 */
+</span></span></code></pre></div><ul>
+<li>可以看到，cachegrind.out.<!-- raw HTML omitted -->文件中记录了程序运行时的缓存信息，包括I1 cache，D1 cache，LL cache等，这些信息可以帮助我们分析程序的缓存使用情况</li>
+<li>cachegrind输出的信息中，我们比较关注的是：
+<ul>
+<li>Ir: 指令读取次数</li>
+<li>I1mr：指令读取miss次数</li>
+<li>ILmr：指令读取miss次数</li>
+<li>Dr：数据读取次数</li>
+<li>D1mr：数据读取miss次数</li>
+<li>DLmr：数据读取miss次数</li>
+<li>Dw：数据写入次数</li>
+<li>D1mw：数据写入miss次数</li>
+<li>DLmw：数据写入miss次数</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>Valgrind使用示例3：Callgrind调用图检查</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">void</span> <span class="nf">f</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="o">*</span><span class="n">x</span> <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="n">x</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>  <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// 问题1: 数组下标越界
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>  <span class="c1">//问题2: 内存没有释放
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">f</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;i=%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>  <span class="c1">// 问题3：变量没有赋初值
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>编译并运行：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -g -O2 test.c -o <span class="nb">test</span>
+</span></span><span class="line"><span class="cl">valgrind --tool<span class="o">=</span>callgrind ./test
+</span></span></code></pre></div><ul>
+<li>当前目录下会生成一个callgrind.out.<!-- raw HTML omitted -->文件，其中<!-- raw HTML omitted -->是当前进程的pid，使用<code>ls</code>命令查看：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ ls
+</span></span><span class="line"><span class="cl">callgrind.out.295036  <span class="nb">test</span>  test.c
+</span></span></code></pre></div><ul>
+<li>使用<code>callgrind_annotate</code>命令查看callgrind.out.<!-- raw HTML omitted -->文件的内容：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">$ callgrind_annotate callgrind.out.295036
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">Profile data file <span class="s1">&#39;callgrind.out.295036&#39;</span> <span class="o">(</span>creator: callgrind-3.15.0<span class="o">)</span>
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">I1 cache: 
+</span></span><span class="line"><span class="cl">D1 cache: 
+</span></span><span class="line"><span class="cl">LL cache: 
+</span></span><span class="line"><span class="cl">Timerange: Basic block <span class="m">0</span> - <span class="m">43734</span>
+</span></span><span class="line"><span class="cl">Trigger: Program termination
+</span></span><span class="line"><span class="cl">Profiled target:  ./test <span class="o">(</span>PID 295036, part 1<span class="o">)</span>
+</span></span><span class="line"><span class="cl">Events recorded:  Ir
+</span></span><span class="line"><span class="cl">Events shown:     Ir
+</span></span><span class="line"><span class="cl">Event sort order: Ir
+</span></span><span class="line"><span class="cl">Thresholds:       <span class="m">99</span>
+</span></span><span class="line"><span class="cl">Include dirs:     
+</span></span><span class="line"><span class="cl">User annotated:   
+</span></span><span class="line"><span class="cl">Auto-annotation:  off
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">Ir      
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">193,311  PROGRAM TOTALS
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">Ir      file:function
+</span></span><span class="line"><span class="cl">--------------------------------------------------------------------------------
+</span></span><span class="line"><span class="cl">71,545  /build/glibc-SzIz7B/glibc-2.31/elf/dl-addr.c:_dl_addr <span class="o">[</span>/usr/lib/x86_64-linux-gnu/libc-2.31.so<span class="o">]</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">/* 以下内容省略 */
+</span></span></code></pre></div><ul>
+<li>可以看到，callgrind.out.<!-- raw HTML omitted -->文件中记录了程序运行时的调用图信息，包括函数调用次数，函数调用路径等，这些信息可以帮助我们分析程序的调用图使用情况</li>
+<li>callgrind输出的信息中，我们比较关注的是：
+<ul>
+<li>Ir：指令读取次数</li>
+</ul>
+</li>
+</ul>
+<h2 id="三程序优化分析工具简介">三、程序优化分析工具简介</h2>
+<ul>
+<li>运行缓慢的代码将消耗大量的CPU时间, 因此，我们必需评估代码的运行效率, 在整个代码的设计和实现周期里都需考虑性能。</li>
+<li>Amdahl定律：在一个系统中，如果某部分的执行时间占总执行时间的比例为p，那么优化这部分的执行时间，系统的整体执行时间至少降低p倍。</li>
+</ul>
+<p>$$
+\begin{array}{c}T_{new} = T_{old} \times (1-p) + \frac{T_{old} \times p}{k} \ = T_{old} \times (1-p + \frac{p}{k})\end{array}
+$$</p>
+<ul>
+<li>根据Amdahl定律，对热点部分进行性能优化能够获得最大收益</li>
+<li>常见的程序优化分析工具有：
+<ul>
+<li>gprof</li>
+<li>perf</li>
+<li>Vtune</li>
+<li>&hellip;&hellip;</li>
+</ul>
+</li>
+</ul>
+<h3 id="1-gprof">1. gprof</h3>
+<ul>
+<li>
+<p>Gprof，又称GNU profiler，是Linux/Unix系统上的性能profiling软件，其功能是获得程序各个函数运行时间，帮助找出耗时最多的函数，以及显示函数调用关系，包括调用次数，帮助分析程序运行流程。</p>
+</li>
+<li>
+<p>基本原理为：</p>
+<ul>
+<li>编译链接程序时，编译器在程序的每个函数中都加入了一个函数，程序里的每一个函数都会调用该函数, 该函数 会在内存中保存一张函数调用图，并通过函数调用堆栈的形式查找子函数和父函数的地址</li>
+<li>调用图也保存了所有与函数相关的调用时间，调用次数等信息</li>
+</ul>
+</li>
+<li>
+<p>Gprof需要先使用<code>-pg</code>编译和链接应用程序</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ifort -pg -O3 -o prog prog.f90
+</span></span></code></pre></div><ul>
+<li>执行应用程序使之生成供gprof分析的数据，生成gmon.out</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./prog
+</span></span></code></pre></div><ul>
+<li>使用gprof程序分析应用程序生成的数据</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gprof prog gmon.out &gt; gprof.out
+</span></span></code></pre></div><ul>
+<li>gprof的输出信息包括：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>序号</th>
+<th>列名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>time</td>
+<td>函数执行时间占总执行时间的百分比</td>
+</tr>
+<tr>
+<td>2</td>
+<td>cumulative seconds</td>
+<td>函数和上列函数累计执行的时间</td>
+</tr>
+<tr>
+<td>3</td>
+<td>self seconds</td>
+<td>函数本身所执行的时间</td>
+</tr>
+<tr>
+<td>4</td>
+<td>calls</td>
+<td>函数被调用次数</td>
+</tr>
+<tr>
+<td>5</td>
+<td>self ms/call</td>
+<td>每一次调用花费在函数的时间</td>
+</tr>
+<tr>
+<td>6</td>
+<td>total ms/call</td>
+<td>每一次调用，花费在函数及其衍生函数的平均时间</td>
+</tr>
+<tr>
+<td>7</td>
+<td>name</td>
+<td>函数名</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>gprof常用的命令选项有：</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>选项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-b</td>
+<td>不再输出统计图表中每个字段的详细描述</td>
+</tr>
+<tr>
+<td>-p</td>
+<td>只输出函数的调用图</td>
+</tr>
+<tr>
+<td>-q</td>
+<td>只输出函数的时间消耗列表</td>
+</tr>
+<tr>
+<td>-e Name</td>
+<td>不再输出函数Name及其子函数的调用图</td>
+</tr>
+<tr>
+<td>-E Name</td>
+<td>不再输出函数Name及其子函数的调用图，在总时间和百分比时间计算中排除了由函数Name及其子函数所用的时间</td>
+</tr>
+<tr>
+<td>-f Name</td>
+<td>输出函数Name及其子函数的调用图</td>
+</tr>
+<tr>
+<td>-F Name</td>
+<td>输出函数Name及其子函数的调用图，类似于-f，但它在总时间和百分比时间计算中仅使用所打印的例程的时间</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>对于由多个源文件组成的程序，编译时需要在生成每个.o文件的时候加上<code>-pg</code>参数，同时在链接的时候也要加上<code>-pg</code>参数</li>
+<li><code>-pg</code>参数只能记录源代码中各个函数的调用关系，而不能记录库函数的调用情况</li>
+<li>要想记录每个库函数（如memcpy、memset、sprintf等函数）的调用情况，链接的时候必须指定库函数的动态（或者静态）链接库libc_p.a，即加上-lc_p，而不是-lc
+<ul>
+<li>$ gcc example1.c –pg -lc_p -o example1</li>
+</ul>
+</li>
+<li>若只有部分代码在编译时指定了<code>-pg</code>参数，则生成的gmon.out文件中将缺少部分函数，也没有这些函数的调用关系，但是并不影响gprof对其它函数进行记录</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>gprof使用示例</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// test.c
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">int</span> <span class="nf">fast_multiply</span><span class="p">(</span><span class="kt">int</span> <span class="n">x</span><span class="p">,</span> <span class="kt">int</span> <span class="n">y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">slow_multiply</span><span class="p">(</span><span class="kt">int</span> <span class="n">x</span><span class="p">,</span> <span class="kt">int</span> <span class="n">y</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">z</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">z</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">x</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="n">z</span> <span class="o">=</span> <span class="n">z</span> <span class="o">+</span> <span class="n">y</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">z</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">200</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">x</span> <span class="o">=</span> <span class="n">fast_multiply</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">y</span> <span class="o">=</span> <span class="n">slow_multiply</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">printf</span><span class="p">(</span><span class="s">&#34;x=%d, y=%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>编译链接并运行程序</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gcc -pg -o <span class="nb">test</span> test.c
+</span></span><span class="line"><span class="cl">./test
+</span></span></code></pre></div><ul>
+<li>在当前目录下生成gmon.out文件，使用gprof分析</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">gprof -b <span class="nb">test</span> gmon.out &gt; gprof.out
+</span></span></code></pre></div><ul>
+<li>gprof.out文件内容如下</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Flat profile:
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Each sample counts as 0.01 seconds.
+</span></span><span class="line"><span class="cl"> no time accumulated
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  %   cumulative   self              self     total           
+</span></span><span class="line"><span class="cl"> time   seconds   seconds    calls  Ts/call  Ts/call  name    
+</span></span><span class="line"><span class="cl">  0.00      0.00     0.00     6000     0.00     0.00  fast_multiply
+</span></span><span class="line"><span class="cl">  0.00      0.00     0.00     6000     0.00     0.00  slow_multiply
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">                        Call graph
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">granularity: each sample hit covers 2 byte(s) no time propagated
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">index % time    self  children    called     name
+</span></span><span class="line"><span class="cl">                0.00    0.00    6000/6000        main [8]
+</span></span><span class="line"><span class="cl">[1]      0.0    0.00    0.00    6000         fast_multiply [1]
+</span></span><span class="line"><span class="cl">-----------------------------------------------
+</span></span><span class="line"><span class="cl">                0.00    0.00    6000/6000        main [8]
+</span></span><span class="line"><span class="cl">[2]      0.0    0.00    0.00    6000         slow_multiply [2]
+</span></span><span class="line"><span class="cl">-----------------------------------------------
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Index by function name
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">   [1] fast_multiply           [2] slow_multiply
+</span></span></code></pre></div><ul>
+<li>可以看到：程序中只有两个函数，fast_multiply和slow_multiply，gprof分析结果中也只有这两个函数，但是这两个函数的调用次数都是6000次，这是因为gprof默认的采样周期是0.01秒，而程序运行时间很短，所以两个函数的调用次数都是6000次，如果程序运行时间更长，那么两个函数的调用次数就会不一样了。</li>
+</ul>
+<h3 id="2-perf">2. perf</h3>
+<ul>
+<li>
+<p>Perf是内置于Linux内核源码树中的性能剖析(profiling)工具，基于事件采样原理，以性能事件为基础，支持针对处理器相关性能指标与操作系统相关性能指标的性能剖析，常用于性能瓶颈的查找与热点代码的定位。</p>
+</li>
+<li>
+<p>Perf包含22种子工具的工具集，以下是最常用的5种：</p>
+<ul>
+<li>perf list：列出当前系统支持的所有性能事件。包括硬件性能事件、软件性能事件以及检查点</li>
+<li>perf top：类似于Linux的top命令，对系统性能进行实时分析</li>
+<li>perf stat：剖析某个特定进程的性能概况，包括CPI、Cache丢失率等</li>
+<li>perf record：收集采样信息，并将其记录在数据文件中</li>
+<li>perf report：读取perf record创建的数据文件，并给出热点分析结果</li>
+</ul>
+</li>
+<li>
+<p>perf list</p>
+<ul>
+<li>查看当前软硬件平台支持的性能事件列表</li>
+<li>事件分为以下三种：
+<ul>
+<li><strong>Hardware Event</strong>: 由PMU硬件产生的事件，比如cache命中，当要了解程序对硬件特性的使用情况时，便需要对这些事件进行采样</li>
+<li><strong>Software Event</strong>: 内核软件产生的事件，比如进程切换、tick数等</li>
+<li><strong>Tracepoint event</strong>: 内核中的静态tracepoint所触发的事件，这些tracepoint用来判断程序运行期间内核的行为细节，比如slab分配器的分配次数等</li>
+</ul>
+</li>
+<li>命令格式：<code>perf list [hw | sw | cache | tracepoint]</code></li>
+<li>perf list工具仅列出了具有字符描述的硬件性能事件</li>
+</ul>
+</li>
+<li>
+<p>perf top</p>
+<ul>
+<li>主要用于实时分析各个函数在某个性能事件上的热度，能够快速的定位热点函数，包括应用程序函数、模块函数与内核函数，甚至能够定位到热点指令，默认的性能事件为cpu cycles</li>
+<li>命令格式： <code>perf top [&lt;options&gt;]</code></li>
+<li>常用命令行参数
+<ul>
+<li>-e <!-- raw HTML omitted -->：指明要分析的性能事件</li>
+<li>-p <!-- raw HTML omitted -->：仅分析目标进程及其创建的线程</li>
+<li>-k <!-- raw HTML omitted -->：带符号表的内核映像所在的路径</li>
+<li>-K：不显示属于内核或模块的符号</li>
+<li>-U：不显示属于用户态程序的符号</li>
+<li>-d <!-- raw HTML omitted -->：界面的刷新周期，默认为2s</li>
+<li>-G：得到函数的调用关系图</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>perf stat</p>
+<ul>
+<li>用于分析指定程序的性能概况</li>
+<li>命令格式：<code>perf stat [&lt;options&gt;] [&lt;command&gt;]</code></li>
+<li>常用命令行参数
+<ul>
+<li>-p <!-- raw HTML omitted -->：仅分析目标进程及其创建的线程</li>
+<li>-a：从所有CPU上收集性能数据</li>
+<li>-r <!-- raw HTML omitted -->：重复执行命令求平均</li>
+<li>-C <!-- raw HTML omitted -->：从指定CPU上收集性能数据</li>
+<li>-v：显示更多性能数据</li>
+<li>-n：只显示任务的执行时间</li>
+<li>-x <!-- raw HTML omitted -->：指定输出列的分隔符</li>
+<li>-o <!-- raw HTML omitted -->：指定输出文件。&ndash;append指定追加模式，&ndash;pre <!-- raw HTML omitted -->执行目标程序前先执行的程序，&ndash;post <!-- raw HTML omitted -->执行目标程序后再执行的程序</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>perf record</p>
+<ul>
+<li>收集采样信息，并将其记录在数据文件中</li>
+<li>随后可以通过其它工具(perf report)对数据文件进行分析，结果类似于perf top</li>
+<li>命令格式：<code>perf record [&lt;options&gt;] [&lt;command&gt;]</code></li>
+</ul>
+</li>
+<li>
+<p>perf report</p>
+<ul>
+<li>读取perf record创建的数据文件，并给出热点分析结果</li>
+<li>命令格式：<code>perf report [&lt;options&gt;] [&lt;datafile&gt;]</code></li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>perf使用示例</p></div>
+
+<ul>
+<li>apt-get安装perf</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo apt-get install linux-tools-common linux-tools-generic linux-tools-<span class="sb">`</span>uname -r<span class="sb">`</span>
+</span></span></code></pre></div><ul>
+<li>使用perf list查看当前系统支持的性能事件</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf list
+</span></span></code></pre></div><ul>
+<li>perf list结果：</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230803181340.png" alt="20230803181340"  /></p>
+<ul>
+<li>使用perf top查看当前系统的热点函数</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf top
+</span></span></code></pre></div><ul>
+<li>perf top结果：</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230803181307.png" alt="20230803181307"  /></p>
+<ul>
+<li>
+<p>使用perf stat查看测试程序的性能概况</p>
+</li>
+<li>
+<p>使用在gprof时的程序代码test.c</p>
+</li>
+<li>
+<p>执行perf stat</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf stat ./test
+</span></span></code></pre></div><ul>
+<li>perf stat结果：</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230803182003.png" alt="20230803182003"  /></p>
+<ul>
+<li>使用perf record和perf report查看热点函数</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf record ./test
+</span></span><span class="line"><span class="cl">perf report
+</span></span></code></pre></div><ul>
+<li>perf report结果：</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230803182110.png" alt="20230803182110"  /></p>
+<ul>
+<li>
+<p>进阶：火炬图FlameGraph：基于perf record和perf report的结果绘制火炬图</p>
+<ul>
+<li>
+<p>下载FlameGraph工具：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">git clone https://github.com/brendangregg/FlameGraph.git
+</span></span></code></pre></div></li>
+<li>
+<p>收集性能数据：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf record -g ./test
+</span></span></code></pre></div><ul>
+<li>对可执行文件test进行采样，每秒99次，采样结果保存在perf.data文件中</li>
+</ul>
+</li>
+<li>
+<p>使用FlameGraph生成火炬图：运行以下命令使用FlameGraph生成火炬图：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">perf script <span class="p">|</span> ./FlameGraph/stackcollapse-perf.pl &gt; out.perf-folded
+</span></span><span class="line"><span class="cl">./FlameGraph/flamegraph.pl out.perf-folded &gt; perf.svg
+</span></span></code></pre></div></li>
+</ul>
+</li>
+<li>
+<p>FlameGrpah绘制结果：</p>
+</li>
+</ul>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230803191123.png" alt="20230803191123"  /></p>
+<h3 id="3-vtune">3. Vtune</h3>
+<ul>
+<li>Intel VTune Amplifier XE是Intel针对其处理器的性能测试分析工具，支持Windows/Linux，提供图形用户界面和命令行接口，支持C、C++、Fortran、C#、Java、.NET 等多种语言。</li>
+<li>Vtune基于硬件性能监视部件(PMU)性能测试，获得微体系结构级数据
+<ul>
+<li>指令类型与数目</li>
+<li>存储访问事件</li>
+<li>指令流水线事件</li>
+</ul>
+</li>
+<li>Vtune性能分析粒度包括：进程、线程、子程序、代码行</li>
+<li>Vtune可以帮助用户分析算法选择，标识出应用程序怎样更好的利用可用的硬件资源，可以帮助用户如下性能方面问题：
+<ul>
+<li>程序中或者整个系统中时间消耗最多的函数</li>
+<li>没有有效利用处理器时间的代码片段</li>
+<li>优化串行和线程化性能的最好代码片段</li>
+<li>影响程序性能的同步对象</li>
+<li>程序的I/O操作是否花费很多时间，以及在哪里、为什么花费时间</li>
+<li>不同的同步方法，不同的线程数量或者不同算法对于性能的影响</li>
+<li>线程活跃性和变迁</li>
+<li>代码中硬件相关的瓶颈</li>
+</ul>
+</li>
+<li>Vtune还可以提供寻找热点、分析锁和等待以及标识硬件问题等功能</li>
+<li>Vtune命令格式为：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">amplxe-cl &lt;-action&gt; <span class="o">[</span>-action-option<span class="o">]</span> <span class="o">[</span>-global-option<span class="o">]</span> <span class="o">[[</span>--<span class="o">]</span> &lt;target&gt; <span class="o">[</span>target-options<span class="o">]]</span>
+</span></span></code></pre></div><ul>
+<li>
+<p>amplxe-cl：VTune Amplifier命令行工具名称</p>
+</li>
+<li>
+<p>&lt;-action&gt; ：要执行的操作，如collect或report。每个命令必须只有一个操作。如，一个命令中不能同时有收集数据和生成报表</p>
+</li>
+<li>
+<p>[-action-option] ：操作选项，用于修改特定操作的行为。每个操作可以有多个操作选项，操作选项使用不当会导致使用错误</p>
+</li>
+<li>
+<p>[-global-option] ：全局选项，用于以相同的方式修改所有操作的行为。每个操作可以有多个全局选项</p>
+</li>
+<li>
+<p>[&ndash;] <!-- raw HTML omitted --> ：要分析的目标程序</p>
+</li>
+<li>
+<p>[target-options] ：目标程序参数选项</p>
+</li>
+<li>
+<p>Actions：amplxe-cl支持不同的命令选项</p>
+<ul>
+<li>collect：运行指定的分析类型并将数据收集到结果中</li>
+<li>collect-with：运行用户设置的基于事件的硬件采样或用户模式采样，并跟踪收集</li>
+<li>command：向正在运行的收集操作发出命令</li>
+<li>finalize：执行符号解析以完成或重新获得结果</li>
+<li>help： 显示命令行参数的简短解释</li>
+<li>import：导入一个或多个收集数据文件/目录</li>
+<li>report：从分析结果中生成指定类型的报表</li>
+<li>version：显示amplxe-cl版本信息</li>
+</ul>
+</li>
+<li>
+<p>Action Options</p>
+<ul>
+<li>定义适用于指定操作的行为，如“-result-dir”选项是指定收集操作结果的目录路径</li>
+<li>若要访问操作的可用操作选项列表，请使用命令“amplxe-cl –help<!-- raw HTML omitted -->” ，其中 <!-- raw HTML omitted --> 是可用操作之一；要查看所有可用的操作, 请使用命令“amplxe-cl –help”</li>
+<li>如果在同一命令行上使用了相反的操作选项，则将应用最后的操作选项</li>
+<li>忽略上下文中冗余或没有意义的操作选项</li>
+<li>使用不适当的操作选项，会导致意外行为返回使用错误</li>
+</ul>
+</li>
+<li>
+<p>Global Options</p>
+<ul>
+<li>定义适用于所有操作的行为，如“-quiet”选项会取消所有操作的非必需消息。每个命令可能有一个或多个全局选项</li>
+</ul>
+</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>Vtune使用示例：</p></div>
+
+<ul>
+<li>
+<p>同样使用在gprof时的程序代码test.c，但是需要使用icc编译器编译，因为Vtune只支持icc编译器编译的程序</p>
+</li>
+<li>
+<p>安装icc编译器：<a class="link" href="https://software.intel.com/content/www/us/en/develop/tools/oneapi/components/dpc-compiler.html"  target="_blank" rel="noopener"
+    >Intel C++ Compiler</a></p>
+<ul>
+<li>注：icc编译器是收费的，需要购买或者申请学生许可</li>
+</ul>
+</li>
+<li>
+<p>安装Vtune：<a class="link" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler-download.html?operatingsystem=linux&amp;distributions=online"  target="_blank" rel="noopener"
+    >Intel Vtune</a></p>
+</li>
+<li>
+<p>Ubuntu下apt安装Vtune</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">wget -O- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB <span class="se">\ </span>
+</span></span><span class="line"><span class="cl"><span class="p">|</span> gpg --dearmor <span class="p">|</span> sudo tee /usr/share/keyrings/oneapi-archive-keyring.gpg &gt; /dev/null
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nb">echo</span> <span class="s2">&#34;deb [signed-by=/usr/share/keyrings/oneapi-archive-keyring.gpg] https://apt.repos.intel.com/oneapi all main&#34;</span> <span class="p">|</span> sudo tee /etc/apt/sources.list.d/oneAPI.list
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo apt update
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">sudo apt install intel-oneapi-vtune
+</span></span></code></pre></div><ul>
+<li>编译程序：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">icc test.c -o <span class="nb">test</span>
+</span></span></code></pre></div><ul>
+<li>激活vtune环境：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">source</span> /opt/intel/oneapi/vtune/latest/amplxe-vars.sh
+</span></span></code></pre></div><ul>
+<li>收集hosspot数据：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">ampxel-cl -collect hotspots -result-dir res ./test
+</span></span></code></pre></div><h2 id="总结">总结</h2>
+<p>本文介绍了几种常用的程序调试与优化分析工具，这些工具在软件开发过程中发挥着重要的作用。调试工具如gdb和Valgrind帮助开发人员快速定位和解决程序中的错误和问题，保障了代码的质量和稳定性。而优化分析工具，如gprof、perf和Vtune，则专注于提升程序性能，帮助开发人员找到性能瓶颈并进行优化。</p>
+<p>通过合理使用这些工具，开发人员可以更高效地开发和维护代码，减少调试时间，提高软件性能，并且为用户提供更好的使用体验。在今后的软件开发过程中，了解和掌握这些工具将是提高开发技能和水平的重要一步。同时，不断了解新的调试与优化工具也是跟上技术发展的必要途径。</p>
+<h2 id="参考资料">参考资料</h2>
+<p>[1] <a class="link" href="https://www.gnu.org/software/gdb/"  target="_blank" rel="noopener"
+    >gdb官方网站</a></p>
+<p>[2] <a class="link" href="https://www.valgrind.org/"  target="_blank" rel="noopener"
+    >valgrind官方网站</a></p>
+<p>[3] <a class="link" href="https://sourceware.org/binutils/docs/gprof/"  target="_blank" rel="noopener"
+    >gprof官方文档</a></p>
+<p>[4] <a class="link" href="https://perf.wiki.kernel.org/index.php/Main_Page"  target="_blank" rel="noopener"
+    >perf文档</a></p>
+<p>[5] <a class="link" href="https://www.intel.com/content/www/us/en/developer/tools/oneapi/vtune-profiler.html"  target="_blank" rel="noopener"
+    >Intel Vtune Profiler</a></p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+    
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
+    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
+    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
+    crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
+    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
+    onload="StackLaTeX()"></script>
+
+<script>
+    function StackLaTeX() {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ]
+        });
+    }
+</script>
+    
+</article>
+
+    <aside class="related-contents--wrapper">
+    
+    
+        <h2 class="section-title">相关文章</h2>
+        <div class="related-contents">
+            <div class="flex article-list--tile">
+                
+                    
+<article class="has-image">
+    <a href="/p/efficient-liburing/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230801145236.png" loading="lazy" data-key="efficient-liburing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230801145236.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">高性能异步I/O框架：io_uring</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-stream/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/bridge-5621201_1920.6p53ez4buso0.jpg" loading="lazy" data-key="java-stream" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/bridge-5621201_1920.6p53ez4buso0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java-Stream常见用法</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/jvm/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/naples-122698_1920.2vb750rs8te0.jpg" loading="lazy" data-key="jvm" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/naples-122698_1920.2vb750rs8te0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JVM知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-se/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/river-6021951_1920.4hwe8w8ugb20.jpg" loading="lazy" data-key="java-se" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/river-6021951_1920.4hwe8w8ugb20.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">JavaSE知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+                    
+<article class="has-image">
+    <a href="/p/java-collection/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/antarctica-1987579_1920.4sf6q29twew0.jpg" loading="lazy" data-key="java-collection" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/antarctica-1987579_1920.4sf6q29twew0.jpg"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Java容器知识点笔记</h2>
+        </div>
+    </a>
+</article>
+                
+            </div>
+        </div>
+    
+</aside>
+
+
+    
+        
+    <script src="https://utteranc.es/client.js" 
+        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+        issue-term="title"
+        theme="preferred-color-scheme" 
+        
+        crossorigin="anonymous" 
+        async>
+</script>
+
+<style>
+    .utterances {
+        max-width: unset;
+    }
+</style>
+
+<script>
+    window.addEventListener('onColorSchemeChange', (e) => {
+        let utterances = document.querySelector('.utterances iframe');
+        if (utterances) {
+            utterances.contentWindow.postMessage(
+                {
+                    type: 'set-theme',
+                    theme: `github-${e.detail}`
+                },
+                'https://utteranc.es'
+            );
+        }
+    })
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2023 cuterwrite
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+    </section>
+</footer>
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+      
+      Array.from(document.getElementsByClassName("language-mermaid")).forEach(
+        (el) => {
+          el.parentElement.outerHTML = `<div class="mermaid">${el.innerText}</div>`;
+        }
+      );
+    </script>
+    <style>
+       
+      .mermaid svg {
+        display: block;
+        margin: auto;
+      }
+    </style>
+
+
+            </main>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
+    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+    </body>
+</html>
