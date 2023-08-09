@@ -581,6 +581,28 @@
 <li>对于非重复非阻塞通信，<code>MPI_Wait</code>系列函数调用的返回，还意味着request对象被释放了，程序员不用再显式释放request变量。</li>
 <li>对于重复非阻塞通信，<code>MPI_Wait</code>系列函数调用的返回，意味着将于request对象关联的非阻塞通信处于不激活状态，并不释放request</li>
 </ol>
+<ul>
+<li>MPI_Wait会迫使进程进入“阻塞模式”。发送过程将简单地等待请求完成。如果进程在MPI_Isend之后立即等待，则Send与调用MPI_Send相同。等待MPI_WAIT和MPI_WAITANY有两种方式</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Wait</span><span class="p">(</span><span class="n">MPI_Request</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Waitany</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="n">MPI_Request</span> <span class="n">array_of_requests</span><span class="p">[],</span> <span class="kt">int</span> <span class="o">*</span><span class="n">index</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
+</span></span></code></pre></div><ul>
+<li>
+<p>前者MPI_WAIT只是等待给定请求的完成。请求一完成，就会返回一个状态为MPI_STATUS的实例。后者<code>MPI_Waitany</code>等待一系列请求中的第一个完成的请求继续。一旦请求完成，INDEX的值被设置为存储ARRAY_OF_REQUESTS中已完成请求的索引。该调用还存储已完成请求的状态。</p>
+</li>
+<li>
+<p>对于阻塞通信，如果不想跟踪此信息，可以将指向MPI_STATUS实例的指针替换为MPI_STATUS_IGNORE。</p>
+</li>
+<li>
+<p>正如我们之前看到的，等待会阻止进程，直到请求（或某个请求）被满足。测试则是检查请求是否可以完成。如果可以，请求将自动完成并传输数据。关于等待，有两种测试等待：MPI_Test 和 MPI_Testany。它们的调用方式如下</p>
+</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Test</span><span class="p">(</span><span class="n">MPI_Request</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Testany</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="n">MPI_Request</span> <span class="n">array_of_requests</span><span class="p">[],</span> <span class="kt">int</span> <span class="o">*</span><span class="n">index</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
+</span></span></code></pre></div><ul>
+<li>让我们从 MPI_Test 开始。至于 MPI_Wait，参数 request 和 status 并不神秘。请记住，测试是非阻塞的，因此在任何情况下，调用后进程都会继续执行。变量 flag 的作用是告诉你请求是否在测试过程中完成。如果 flag != 0 表示请求已完成</li>
+<li>MPI_Testany现在应该是完全显而易见的。如果有任何请求可完成，它会将FLAG设置为非零值。如果是这样的话，状态和索引也被赋予一个值</li>
+</ul>
 <h2 id="7-非阻塞的发送和接收">7. 非阻塞的发送和接收</h2>
 <ul>
 <li><code>int MPI_Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)</code>
@@ -597,7 +619,132 @@
 <li><code>MPI_Ibsend/MPI_Issend/MPI_Irsend</code>: 缓冲/同步/就绪通信的非阻塞发送</li>
 <li><code>int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)</code></li>
 </ul>
-<h2 id="8-总结">8. 总结</h2>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例5：非阻塞通信</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">play_non_blocking_scenario</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Request</span> <span class="n">request</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">request_finished</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Initialising buffer :
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">:</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Barrier</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">// Starting the chronometer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">double</span> <span class="n">time</span> <span class="o">=</span> <span class="o">-</span><span class="n">MPI_Wtime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 1- Initialise the non-blocking send to process 1
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Isend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="kt">double</span> <span class="n">time_left</span> <span class="o">=</span> <span class="mf">6000.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">time_left</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">usleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>  <span class="c1">// We work for 1ms
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// 2- Test if the request is finished (only if not already finished)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">MPI_Test</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request_finished</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// 1ms left to work
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">time_left</span> <span class="o">-=</span> <span class="mf">1000.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 3- If the request is not yet complete, wait here.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Modifying the buffer for second step
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">i</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 4- Prepare another request for process 1 with a different tag
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Isend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">time_left</span> <span class="o">=</span> <span class="mf">3000.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">time_left</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">usleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>  <span class="c1">// We work for 1ms
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// 5- Test if the request is finished (only if not already finished)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="c1">// 1ms left to work
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">time_left</span> <span class="o">-=</span> <span class="mf">1000.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 6- Wait for it to finish
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// Work for 5 seconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 7- Initialise the non-blocking receive from process 0
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Irecv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 8- Wait here for the request to be completed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">print_buffer</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// Work for 3 seconds
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 9- Initialise another non-blocking receive
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Irecv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="c1">// 10- Wait for it to be completed
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="n">print_buffer</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// Stopping the chronometer
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">time</span> <span class="o">+=</span> <span class="n">MPI_Wtime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// This line gives us the maximum time elapsed on each process.
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">double</span> <span class="n">final_time</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Reduce</span><span class="p">(</span><span class="o">&amp;</span><span class="n">time</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">final_time</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="n">MPI_MAX</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Total time for non-blocking scenario : &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">final_time</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;s&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="8-总结">8. 总结</h2>
 <p>理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的Send实际利用了MPI环境提供的默认缓冲区；Bsend实际相当于将MPI环境提供的buffer放在用户空间管理；Rsend实际相当于不要缓冲区，但发送端不能提前等待；Ssend实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为MPI环境会另起一个线程在后台做实际的消息传输，通过MPI_Waitxxxx,MPI_Testxxx等机制与MPI进程的主线程进行通信和同步。</p>
 <table>
 <thead>
