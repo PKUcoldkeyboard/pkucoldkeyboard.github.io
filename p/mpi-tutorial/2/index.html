@@ -260,7 +260,8 @@
 <li><a class="link" href="#5-%E5%90%8C%E6%AD%A5%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8F" >5. 同步通信模式</a></li>
 <li><a class="link" href="#6-%E9%98%BB%E5%A1%9E%E9%80%9A%E4%BF%A1%E4%B8%8E%E9%9D%9E%E9%98%BB%E5%A1%9E%E9%80%9A%E4%BF%A1" >6. 阻塞通信与非阻塞通信</a></li>
 <li><a class="link" href="#7-%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8F%91%E9%80%81%E5%92%8C%E6%8E%A5%E6%94%B6" >7. 非阻塞的发送和接收</a></li>
-<li><a class="link" href="#8-%E6%80%BB%E7%BB%93" >8. 总结</a></li>
+<li><a class="link" href="#8-%E6%8E%A2%E6%B5%8Bprobe" >8. 探测Probe</a></li>
+<li><a class="link" href="#9-%E6%80%BB%E7%BB%93" >9. 总结</a></li>
 </ul>
 </li>
 </ul>
@@ -744,8 +745,42 @@
 </span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Total time for non-blocking scenario : &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">final_time</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;s&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h2 id="8-总结">8. 总结</h2>
-<p>理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的Send实际利用了MPI环境提供的默认缓冲区；Bsend实际相当于将MPI环境提供的buffer放在用户空间管理；Rsend实际相当于不要缓冲区，但发送端不能提前等待；Ssend实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为MPI环境会另起一个线程在后台做实际的消息传输，通过MPI_Waitxxxx,MPI_Testxxx等机制与MPI进程的主线程进行通信和同步。</p>
+</span></span></code></pre></div><h2 id="8-探测probe">8. 探测Probe</h2>
+<ul>
+<li>探测实际上非常有用，它有很多用途，例如获取即将接收的元素数量、接收进程的 ID 和标记，或者是否真的接收到了任何信息。</li>
+<li>用于探测的函数有两个：MPI_Probe 和 MPI_IProbe。第一个是阻塞调用，而第二个则不是。现在，MPI_Probe 只会给出与收到的下一条消息相关的 MPI_Status 值，该消息对应于某个标签和 ID。如果想探测任何类型或来自任何来源的消息接收情况，可以使用 MPI_ANY_SOURCE 和 MPI_ANY_TAG。然后，可以将生成的 MPI_Status 对象与其他函数结合使用，以获取更多信息。</li>
+</ul>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例6：探测</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">probing_process</span><span class="p">(</span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">int_sum</span><span class="p">,</span> <span class="kt">float</span> <span class="o">&amp;</span><span class="n">float_sum</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  
+</span></span><span class="line"><span class="cl">  <span class="c1">// 1- Probe the incoming message
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">MPI_Probe</span><span class="p">(</span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span> <span class="n">MPI_ANY_TAG</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// 2- Get the tag and the source
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">tag</span> <span class="o">=</span> <span class="n">status</span><span class="p">.</span><span class="n">MPI_TAG</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">source</span> <span class="o">=</span> <span class="n">status</span><span class="p">.</span><span class="n">MPI_SOURCE</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// Printing the message
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Received a message from process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">source</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; with tag &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">tag</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1">// 3- Add to int_sum or float_sum depending on the tag of the message
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">tag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">other</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Recv</span><span class="p">(</span><span class="o">&amp;</span><span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">int_sum</span> <span class="o">+=</span> <span class="n">other</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">tag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">other</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">MPI_Recv</span><span class="p">(</span><span class="o">&amp;</span><span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_FLOAT</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">float_sum</span> <span class="o">+=</span> <span class="n">other</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="9-总结">9. 总结</h2>
+<p>理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的Send实际利用了MPI环境提供的默认缓冲区；Bsend实际相当于将MPI环境提供的buffer放在用户空间管理；Rsend实际相当于不要缓冲区，但发送端不能提前等待；Ssend实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为MPI环境会另起一个线程在后台做实际的消息传输，通过Wait、Test等机制与MPI进程的主线程进行通信和同步。</p>
 <table>
 <thead>
 <tr>
