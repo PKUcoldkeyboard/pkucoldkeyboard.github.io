@@ -244,7 +244,7 @@
         <time class="article-time--published">2023-08-12</time>
     </footer></div>
 </header>
-
+    <div id="top"></div>
     <section class="article-content">
     <!-- raw HTML omitted -->
 <!-- raw HTML omitted -->
@@ -293,7 +293,13 @@
 <li><a class="link" href="#2-%E9%81%BF%E5%85%8D%E6%89%A7%E8%A1%8C%E8%AE%A1%E7%AE%97%E5%BC%80%E9%94%80%E5%BE%88%E5%A4%A7%E7%9A%84%E5%88%86%E6%94%AF" >2. 避免执行计算开销很大的分支</a></li>
 </ul>
 </li>
-<li><a class="link" href="#%E4%B8%83%E6%80%BB%E7%BB%93" >七、总结</a></li>
+<li><a class="link" href="#%E4%B8%83%E6%95%B0%E6%8D%AE%E5%AF%B9%E9%BD%90" >七、数据对齐</a>
+<ul>
+<li><a class="link" href="#1-%E6%95%B0%E6%8D%AE%E5%AF%B9%E9%BD%90" >1. 数据对齐</a></li>
+<li><a class="link" href="#2-%E9%80%9A%E7%9F%A5%E7%BC%96%E8%AF%91%E5%99%A8%E6%95%B0%E6%8D%AE%E5%AF%B9%E9%BD%90" >2. 通知编译器数据对齐</a></li>
+</ul>
+</li>
+<li><a class="link" href="#%E5%85%AB%E6%80%BB%E7%BB%93" >八、总结</a></li>
 <li><a class="link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99" >参考资料</a></li>
 </ul>
 </li>
@@ -854,7 +860,114 @@
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">validateResult</span><span class="p">(</span><span class="n">turn</span><span class="p">,</span> <span class="n">bestScore</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h2 id="七总结">七、总结</h2>
+</span></span></code></pre></div><h2 id="七数据对齐">七、数据对齐</h2>
+<p>数据对齐是一种强制编译器在特定字节边界的内存中创建数据对象的方法。这样做的目的是为了提高从处理器加载和存储数据的效率。无需赘述，当数据可以在特定字节边界的内存地址之间移动时，处理器就可以高效地移动数据。对于支持英特尔® AVX-512 指令的英特尔® 处理器来说，当数据起始地址位于 64 字节边界时，内存移动效果最佳。因此，需要强制编译器创建起始地址为 64 字节模的数据对象。</p>
+<p>除了在对齐边界上创建数据（使基指针对齐）外，编译器还能在已知数据访问（包括基指针和索引）对齐 64 字节时执行优化。在通常情况下，如果没有用户的帮助，编译器并不知道循环内部的数据是对齐的。这可能迫使编译器在生成代码时采取保守做法，从而影响性能。因此还必须通过编译指示(C/C++)或指令(Fortran)、选项(如Fortran中的-Align array64byte)以及子句/属性的组合来通知编译器进行对齐，以便英特尔编译器能够生成最佳代码。</p>
+<p>总而言之，需要两个步骤：</p>
+<ol>
+<li>数据对齐</li>
+<li>在性能关键区域(使用数据的区域)中使用pragma/directives/clauses来告诉编译器内存访问是对齐的</li>
+</ol>
+<h3 id="1-数据对齐">1. 数据对齐</h3>
+<p>调整数据以提高应用性能非常重要。这通常意味着两点：</p>
+<ol>
+<li>在为数组（或指针）分配空间时对齐基指针</li>
+<li>确保每个向量化循环（对于每个线程）的起始索引具有良好的对齐属性</li>
+</ol>
+<p><strong>对齐静态数组（基指针）</strong></p>
+<ul>
+<li>静态数组的对齐十分简单，不过在Windows上与Linux上的声明有所区别，以64字节边界上静态声明1000元素单精度浮点数组为例</li>
+<li>在Windows上，使用 <code>__declspec(align(64))</code> 修饰符：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kr">__declspec</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span> <span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
+</span></span></code></pre></div><ul>
+<li>在Linux上，使用 <code>__attribute__((aligned(64)))</code> 修饰符：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
+</span></span></code></pre></div><p><strong>对齐动态数据</strong></p>
+<ul>
+<li>动态数据的对齐相对复杂，需要使用特殊的内存分配函数，如 <code>_mm_malloc</code> 和 <code>_mm_free</code> 来替代 <code>malloc</code> 和 <code>free</code> 函数。其中，这些函数的第二个参数是对齐参数（以字节为单位），比如 <code>mm_malloc(p, 64)</code> 返回的数据将是64字节对齐的。</li>
+</ul>
+
+
+
+<div class="notice notice-info" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z"/></svg></div><p>对于动态分配的 C/C++ 数组，仅仅在创建时使用 mm_malloc 对齐数据是不够的（这是一个必要条件），还需要在相关循环之前添加一个__assume_aligned(a, 64) 形式的子句。如果没有这一步，编译器将无法检测使用此类数组进行访问时的最佳对齐方式。</p></div>
+
+<ul>
+<li>在C++17中，还可以使用 <code>std::aligned_alloc</code> 函数来分配对齐的内存，但是这个函数只能在C++17中使用，而且只能在Linux上使用。使用方式如下：</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">float</span> <span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span> <span class="o">*&gt;</span><span class="n">std</span><span class="o">::</span><span class="n">aligned_alloc</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 使用完毕后，需要释放内存
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
+</span></span></code></pre></div><p><strong>对齐循环索引</strong></p>
+<p>对于内存访问形式为 <strong>a[i+n1]</strong> 的循环，必须满足特定的对齐要求。具体来说，用户必须确保 （i-loop 的下界 + n1）是 16 的倍数（假设数据类型为 float）。</p>
+<p>此外，除非在编译时信息可以在静态情况下获得（例如访问形式为 <strong>x[i]</strong> ，并且所有线程的循环下界都是常数 0，或者在循环内部存在形式为 <strong>b[i+16*k]</strong> 的访问），用户还必须通知编译器关于这个对齐要求。否则，这一步还需要在循环前添加一个 <strong>__assume(n1%16==0)</strong> 或者 <strong>#pragma vector aligned</strong> 的语句（ <strong>仅限于Windows平台</strong> ）。以下是一个不满足数据对齐要求的例子：</p>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="n">N</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">process_array</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">float</span> <span class="n">result</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">4</span><span class="p">];</span> <span class="c1">// 访问 a[i+n1]，其中 n1 = 4
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// 其它计算操作...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><ul>
+<li>如果我们要确保内存访问的性能最佳，我们需要确保 i 和 n1 的组合是对齐的，以便在向量化指令集中能够更有效地执行。在上面的代码中，循环的下界是 i 的初始值 0 ，所以 (0 + 4) 不是 16 的倍数。为了满足对齐要求，我们需要进行调整，并且通知编译器这个对齐属性。</li>
+</ul>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="n">N</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">process_array</span><span class="p">(</span><span class="kt">int</span> <span class="n">n1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="mi">16</span><span class="p">)</span>  <span class="c1">// 调整循环的步长。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">{</span>   
+</span></span><span class="line"><span class="cl">        <span class="kr">__assume</span><span class="p">((</span><span class="n">n1</span> <span class="o">%</span> <span class="mi">16</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">float</span> <span class="n">result</span> <span class="o">=</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n1</span><span class="p">];</span> <span class="c1">// 访问 a[i+n1]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// 其它计算操作...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h3 id="2-通知编译器数据对齐">2. 通知编译器数据对齐</h3>
+<p>既然已经对齐了数据，那么在程序中实际使用数据时，就有必要告知编译器这些数据是对齐的。例如，将数据作为参数传递给性能关键的函数或子程序时，编译器如何知道参数是对齐的还是未对齐的？例如，数据通常在一个源文件中声明，但在许多其他源文件中使用。因此，这一信息必须由用户提供，因为编译器往往没有关于参数的信息。</p>
+<p>有两种方法可以告知编译器数据对齐情况。 一种方法是使用 <strong>OpenMP SIMD ALIGNED</strong> 子句通知编译器在使用数据时的数据对齐情况。另一种方法则是使用英特尔专有子句在代码中指定数据对齐方式。</p>
+<p>编译器要为 i 循环内的（浮点数组）内存访问（如 <strong>a[i+n1]</strong> 和 <strong>X[i]</strong>）生成对齐的加载/存储，就必须知道：</p>
+<ol>
+<li>基数指针（a 和 X）已对齐。对于静态数组，可以使用上面讨论的技术实现对齐，例如使用 <code>__declspec(align(64))</code> 。对于动态分配的数组，仅仅在创建时使用 <code>mm_malloc</code> 或 <code>aligned_alloc</code> 对齐数据是不够的，还需要如下所示的子句 <code>__assume_aligned(a, 64)</code> 。</li>
+<li>编译器必须知道（i-loop 的下界 + n1）是 16 的倍数（假设数据类型为 float）。如果循环下界为 0 ，那么所需的信息就是 n1 是 16 的倍数。一种方法是添加一个 <strong>__assume(n1%16==0)</strong> 形式的子句。</li>
+</ol>
+
+
+
+<div class="notice notice-note" >
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>代码示例4： 在Windows上使用 __assume_aligned 和 __assume 指令来告知编译器数据对齐情况。</p></div>
+
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// compile options: -O3 -xcore-avx512 -qopt-report-phase=vec -qopt-report=5 -qopt-report-file=stdout -restrict -c
+</span></span></span><span class="line"><span class="cl"><span class="c1">// 该编译指令将生成一个名为 stdout 的文件，其中包含有关向量化的信息。
+</span></span></span><span class="line"><span class="cl"><span class="c1">// restrict关键字：提示编译器：在该指针的生命周期内，其指向的对象不会被别的指针所引用。
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#define N 1000
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kr">__declspec</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span> <span class="kt">float</span> <span class="n">X</span><span class="p">[</span><span class="n">N</span><span class="p">],</span> <span class="n">X2</span><span class="p">[</span><span class="n">N</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">foo</span><span class="p">(</span><span class="kt">float</span> <span class="o">*</span> <span class="k">restrict</span> <span class="n">a</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">__assume_aligned</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="mi">64</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">__assume</span><span class="p">((</span><span class="n">n1</span> <span class="o">%</span> <span class="mi">16</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">__assume</span><span class="p">((</span><span class="n">n2</span> <span class="o">%</span> <span class="mi">16</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n1</span><span class="p">]</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">n1</span><span class="p">]</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="n">n2</span><span class="p">]</span> <span class="o">+</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="n">n2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">X2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></div><h2 id="八总结">八、总结</h2>
 <p>本文主要介绍了SIMD的基本概念，以及SIMD的优化思路，最后通过一些简单的示例代码，介绍了SIMD的使用方法。主要内容如下：</p>
 <ul>
 <li>在代码中使用SSE和AVX指令的硬件和软件要求。</li>
@@ -863,6 +976,7 @@
 <li>C++中的SSE/AVX框架。</li>
 <li>掩码和条件加载。</li>
 <li>数据流控制。</li>
+<li>数据对齐。</li>
 </ul>
 <p>SIMD的优势和劣势：</p>
 <p><strong>优势</strong></p>
@@ -896,6 +1010,8 @@
     >Avoiding AVX-SSE Transition Penalties</a></p>
 <p>[8] <a class="link" href="https://stackoverflow.com/questions/41303780/why-is-this-sse-code-6-times-slower-without-vzeroupper-on-skylake"  target="_blank" rel="noopener"
     >Why is this SSE code 6 times slower without VZEROUPPER on Skylake?</a></p>
+<p>[9] <a class="link" href="https://www.intel.com/content/www/us/en/developer/articles/technical/data-alignment-to-assist-vectorization.html"  target="_blank" rel="noopener"
+    >Intel Data Alignment Guide</a></p>
 
 </section>
 
@@ -951,6 +1067,23 @@
 </script>
     
 </article>
+
+<a href="#top" class="back-to-top">回到顶部</a>
+
+<script>
+    window.addEventListener('scroll', function () {
+        if (window.scrollY > 200) {
+        document.querySelector('.back-to-top').style.display = 'block';
+        } else {
+        document.querySelector('.back-to-top').style.display = 'none';
+        }
+    });
+
+    document.querySelector('.back-to-top').addEventListener('click', function (e) {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+</script>
 
     <aside class="related-contents--wrapper">
     
@@ -1073,7 +1206,9 @@
 </style>
 
 <script>
+    let utterancesLoaded = false;
     window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
         let utterances = document.querySelector('.utterances iframe');
         if (utterances) {
             utterances.contentWindow.postMessage(
