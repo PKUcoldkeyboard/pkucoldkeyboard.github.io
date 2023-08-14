@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。'><title>MPI与并行计算（三）：集合通信</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。'>
+<title>MPI与并行计算（三）：集合通信</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/mpi-tutorial/3/'>
 
-<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='MPI与并行计算（三）：集合通信'>
+<link rel="stylesheet" href="/scss/style.min.e5c08dcda5ae84fa81474ee4a17f2ab02f45d76a8017c2d4da3c5292049da928.css"><meta property='og:title' content='MPI与并行计算（三）：集合通信'>
 <meta property='og:description' content='集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。'>
 <meta property='og:url' content='https://cuterwrite.top/p/mpi-tutorial/3/'>
 <meta property='og:site_name' content='cuterwrite'>
@@ -33,22 +34,24 @@
         if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
             
 
-            document.body.dataset.scheme = 'dark';
+            document.documentElement.dataset.scheme = 'dark';
         } else {
-            document.body.dataset.scheme = 'light';
+            document.documentElement.dataset.scheme = 'light';
         }
     })();
-</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
-            <aside class="sidebar left-sidebar sticky">
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
     <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
         <span class="hamburger-box">
             <span class="hamburger-inner"></span>
         </span>
     </button>
 
-    <header class="site-info">
+    <header>
         
+            
             <figure class="site-avatar">
+                <a href="/">
                 
                     
                     
@@ -58,23 +61,62 @@
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
-
+                </a>
                 
                     <span class="emoji">😉</span>
                 
             </figure>
+            
         
-        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
-        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-    </header>
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
+            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/PKUcoldkeyboard'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
 
-    <ol class="menu" id="main-menu">
-        
-        
-        
 
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
+                        target="_blank"
+                        title="zhihu"
+                        rel="me"
+                    >
+                        
+                        
+                            <?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg t="1692033650071" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="11696" xmlns:xlink="http://www.w3.org/1999/xlink" width="250" height="200"><path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" p-id="11697"></path></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
         <li >
-            <a href='/'>
+            <a href='/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -91,9 +133,10 @@
         </li>
         
         
-
         <li >
-            <a href='/about'>
+            <a href='/about/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -109,9 +152,10 @@
         </li>
         
         
-
         <li >
-            <a href='/archives'>
+            <a href='/archives/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -128,9 +172,10 @@
         </li>
         
         
-
         <li >
-            <a href='/tags'>
+            <a href='/tags/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-tag" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -146,9 +191,10 @@
         </li>
         
         
-
         <li >
-            <a href='/search'>
+            <a href='/search/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -164,9 +210,11 @@
         </li>
         
 
-        
-            <li id="dark-mode-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -174,7 +222,7 @@
 
 
 
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -182,9 +230,10 @@
 
 
 
-                <span>暗色模式</span>
-            </li>
-        
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
     </ol>
 </aside>
 
@@ -224,16 +273,41 @@
     </header>
     
 
-    <h2 class="article-title">
-        <a href="/p/mpi-tutorial/3/">MPI与并行计算（三）：集合通信</a>
-    </h2>
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/mpi-tutorial/3/">MPI与并行计算（三）：集合通信</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。
+        </h3>
+        
+    </div>
 
     
-    <h3 class="article-subtitle">
-        集合通信是进程集合里的所有进程进行数据交换的同时操作，实现了一对多，多对一，全体对全体的数据交换。本文深入讨论了一对多通信如广播和散播，多对一通信如收集，以及如何聚合所有进程的数据。然后，本文介绍了如何进行同步以确保所有进程在相同的执行点进行数据交换。接着，本文介绍了规约，一种特殊的集合通信操作，它将所有进程的数据聚合并进行运算，得出一个单一结果。总的来说，本文为读者提供了关于MPI集合通信的深入解析，包括其定义、功能和几种主要的通信模式。
-    </h3>
+    
+    
+    
     <footer class="article-time">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2023-07-19</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="12" cy="12" r="9" />
   <polyline points="12 7 12 12 15 15" />
@@ -241,12 +315,22 @@
 
 
 
-        <time class="article-time--published">2023-07-19</time>
-    </footer></div>
-</header>
+                <time class="article-time--reading">
+                    阅读时长: 6 分钟
+                </time>
+            </div>
+        
+    </footer>
     
-    <div id="top"></div>
-<section class="article-content">
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
     <!-- raw HTML omitted -->
 <!-- raw HTML omitted -->
 <p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
@@ -281,25 +365,61 @@
 <ul>
 <li>Broadcast</li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcast_p2p.gif" alt="bcast_p2p"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcast_p2p.gif"
+	
+	
+	
+	loading="lazy"
+	
+		alt="bcast_p2p"
+	
+	
+></p>
 <ul>
 <li>Scatter</li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/scatter.png" alt="scatter"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/scatter.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="scatter"
+	
+	
+></p>
 <ul>
 <li>Gather</li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/gather.png" alt="gather"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/gather.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="gather"
+	
+	
+></p>
 <ul>
 <li>AllGather</li>
 <li>Alltoall</li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720003014.png" alt="20230720003014"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720003014.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230720003014"
+	
+	
+></p>
 <h2 id="2-集合通信实现的功能">2. 集合通信实现的功能</h2>
 <ul>
 <li>
 <p>集合通信一般实现三个功能：通信、聚合和同步</p>
-<table>
+<div class="table-wrapper"><table>
 <thead>
 <tr>
 <th style="text-align:center">类型</th>
@@ -379,7 +499,7 @@
 <td style="text-align:center">路障同步</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 </li>
 <li>
 <p>通信：集合通信，按照通信方向的不同，又可以分为三种：一对多通信，多对一通信和多对多通信。</p>
@@ -404,7 +524,32 @@
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例1：广播</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// bcast.c
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// bcast.c
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span>
@@ -425,14 +570,26 @@
 </span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>结果：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc bcast.c -o bcast
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc bcast.c -o bcast
 </span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./bcast
 </span></span><span class="line"><span class="cl">Process <span class="m">0</span> got data <span class="m">123</span>
 </span></span><span class="line"><span class="cl">Process <span class="m">1</span> got data <span class="m">123</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>广播的特点
 <ul>
 <li>标号为Root的进程发送相同的消息给通信域Comm中的所有进程。</li>
@@ -445,14 +602,65 @@
 <ul>
 <li>收集是多对一通信的典型例子，其调用格式为：<code>MPI_Gather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)</code></li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720004519.png" alt="20230720004519"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720004519.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230720004519"
+	
+	
+></p>
 
 
 
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例2：收集</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// gather.c
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// gather.c
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
@@ -490,13 +698,24 @@
 </span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>结果：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc gather.c -o gather
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc gather.c -o gather
 </span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./gather
 </span></span><span class="line"><span class="cl"><span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">5</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>收集的特点
 <ul>
 <li>在收集操作中，Root进程从进程域Comm的所有进程(包括它自已)接收消息。</li>
@@ -509,14 +728,60 @@
 <ul>
 <li>散播是一个一对多操作，其调用格式为：<code>MPI_Scatter(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)</code></li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720005711.png" alt="20230720005711"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230720005711.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230720005711"
+	
+	
+></p>
 
 
 
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例3：散播</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// scatter.c
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// scatter.c
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
@@ -549,14 +814,26 @@
 </span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>结果：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc scatter.c -o scatter
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicc scatter.c -o scatter
 </span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./scatter
 </span></span><span class="line"><span class="cl"><span class="nv">rank</span> <span class="o">=</span> 0, <span class="nv">data</span> <span class="o">=</span> <span class="m">0</span> <span class="m">1</span>
 </span></span><span class="line"><span class="cl"><span class="nv">rank</span> <span class="o">=</span> 1, <span class="nv">data</span> <span class="o">=</span> <span class="m">2</span> <span class="m">3</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>散播的特点
 <ul>
 <li>Scatter执行与Gather相反的操作。</li>
@@ -591,7 +868,7 @@
 <p>MPI_REDUCE将组内每个进程输入缓冲区中的数据按给定的操作op进行运算，并将其结果返回到序列号为root的进程的输出缓冲区中，输入缓冲区由参数sendbuf、count和datatype定义，输出缓冲区由参数recvbuf count和datatype定义，要求两者的元素数目和类型都必须相同，因为所有组成员都用同样的参数count、datatype、op、root和comm来调用此例程 故而所有进程都提供长度相同、元素类型相同的输入和输出缓冲区，每个进程可能提供一个元素或一系列元素 组合操作依次针对每个元素进行。</p>
 <p>操作op始终被认为是可结合的 并且所有MPI定义的操作被认为是可交换的，用户自定义的操作被认为是可结合的，但可以不是可交换的。MPI中已经定义好的一些操作,它们是为函数<code>MPI_Reduce</code>和一些其他的相关函数,如<code>MPI_Allreduce</code>、<code>MPI_Reduce_scatter</code>和<code>MPI_Scan</code>而定义的 这些操作用来设定相应的op。</p>
 <p>MPI预定的归约操作如下:</p>
-<table>
+<div class="table-wrapper"><table>
 <thead>
 <tr>
 <th style="text-align:center">操作</th>
@@ -638,14 +915,77 @@
 <td style="text-align:center">最小值和位置</td>
 </tr>
 </tbody>
-</table>
+</table></div>
 
 
 
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>示例4：计算pi值</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// reduce.c
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// reduce.c
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;math.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
@@ -704,7 +1044,9 @@
 </span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div>
+</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </section>
 
 
@@ -733,60 +1075,38 @@
     </section>
     </footer>
 
-    
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
-    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
-    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
-    crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
-    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
-    onload="StackLaTeX()"></script>
 
-<script>
-    function StackLaTeX() {
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
         renderMathInElement(document.querySelector(`.article-content`), {
             delimiters: [
                 { left: "$$", right: "$$", display: true },
                 { left: "$", right: "$", display: false },
                 { left: "\\(", right: "\\)", display: false },
                 { left: "\\[", right: "\\]", display: true }
-            ]
-        });
-    }
+            ],
+            ignoredClasses: ["gist"]
+        });})
 </script>
     
-
 </article>
-
-<a href="#" class="back-to-top"><span>回到顶部</span></a>
-
-<script>
-    window.addEventListener('scroll', function () {
-        if (window.scrollY > 200) {
-        document.querySelector('.back-to-top').style.display = 'block';
-        } else {
-        document.querySelector('.back-to-top').style.display = 'none';
-        }
-    });
-
-    document.querySelector('.back-to-top').addEventListener('click', function (e) {
-        e.preventDefault();
-        
-        
-        const targetElement = document.getElementById('top');
-        const targetRect = targetElement.getBoundingClientRect();
-        const targetTop = window.pageYOffset + targetRect.top;
-        
-        
-        window.scrollTo({ top: targetTop, behavior: 'smooth' });
-    });
-</script>
 
     <aside class="related-contents--wrapper">
     
     
-        <h2 class="section-title">相关文章</h2>
+        <h2 class="section-title"></h2>
         <div class="related-contents">
             <div class="flex article-list--tile">
                 
@@ -807,6 +1127,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -825,6 +1146,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -843,6 +1165,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -861,6 +1184,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -879,6 +1203,7 @@
         </div>
     </a>
 </article>
+
                 
             </div>
         </div>
@@ -891,10 +1216,10 @@
     <script src="https://utteranc.es/client.js" 
         repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
         issue-term="title"
-        theme="preferred-color-scheme" 
         
-        crossorigin="anonymous" 
-        async>
+        crossorigin="anonymous"
+        async
+        >
 </script>
 
 <style>
@@ -905,20 +1230,34 @@
 
 <script>
     let utterancesLoaded = false;
-    window.addEventListener('onColorSchemeChange', (e) => {
-        if (!utterancesLoaded) return;
+
+    function setUtterancesTheme(theme) {
         let utterances = document.querySelector('.utterances iframe');
         if (utterances) {
             utterances.contentWindow.postMessage(
                 {
                     type: 'set-theme',
-                    theme: `github-${e.detail}`
+                    theme: `github-${theme}`
                 },
                 'https://utteranc.es'
             );
         }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
     })
 </script>
+
 
     
 
@@ -935,9 +1274,10 @@
         
             欢迎来到Cuterwrite的博客网站 <br/>
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
 </footer>
+
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
     
@@ -999,13 +1339,21 @@
 
     </div>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            ><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
       
       Array.from(document.getElementsByClassName("language-mermaid")).forEach(
@@ -1025,8 +1373,11 @@
 
             </main>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
-    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
 <script>
     (function () {
         const customFont = document.createElement('link');

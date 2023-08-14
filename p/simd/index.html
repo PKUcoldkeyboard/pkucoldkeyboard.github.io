@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-cn">
+<html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。'><title>SSE与AVE向量化编程</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。'>
+<title>SSE与AVE向量化编程</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/simd/'>
 
-<link rel="stylesheet" href="/scss/style.min.css"><meta property='og:title' content='SSE与AVE向量化编程'>
+<link rel="stylesheet" href="/scss/style.min.e5c08dcda5ae84fa81474ee4a17f2ab02f45d76a8017c2d4da3c5292049da928.css"><meta property='og:title' content='SSE与AVE向量化编程'>
 <meta property='og:description' content='本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。'>
 <meta property='og:url' content='https://cuterwrite.top/p/simd/'>
 <meta property='og:site_name' content='cuterwrite'>
@@ -33,22 +34,24 @@
         if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
             
 
-            document.body.dataset.scheme = 'dark';
+            document.documentElement.dataset.scheme = 'dark';
         } else {
-            document.body.dataset.scheme = 'light';
+            document.documentElement.dataset.scheme = 'light';
         }
     })();
-</script><div class="container main-container flex on-phone--column extended article-page with-toolbar">
-            <aside class="sidebar left-sidebar sticky">
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
     <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
         <span class="hamburger-box">
             <span class="hamburger-inner"></span>
         </span>
     </button>
 
-    <header class="site-info">
+    <header>
         
+            
             <figure class="site-avatar">
+                <a href="/">
                 
                     
                     
@@ -58,23 +61,62 @@
                             height="300" class="site-logo" loading="lazy" alt="Avatar">
                     
                 
-
+                </a>
                 
                     <span class="emoji">😉</span>
                 
             </figure>
+            
         
-        <h1 class="site-name"><a href="https://cuterwrite.top">cuterwrite</a></h1>
-        <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-    </header>
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
+            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/PKUcoldkeyboard'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
 
-    <ol class="menu" id="main-menu">
-        
-        
-        
 
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
+                        target="_blank"
+                        title="zhihu"
+                        rel="me"
+                    >
+                        
+                        
+                            <?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg t="1692033650071" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="11696" xmlns:xlink="http://www.w3.org/1999/xlink" width="250" height="200"><path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" p-id="11697"></path></svg>
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
         <li >
-            <a href='/'>
+            <a href='/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -91,9 +133,10 @@
         </li>
         
         
-
         <li >
-            <a href='/about'>
+            <a href='/about/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -109,9 +152,10 @@
         </li>
         
         
-
         <li >
-            <a href='/archives'>
+            <a href='/archives/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -128,9 +172,10 @@
         </li>
         
         
-
         <li >
-            <a href='/tags'>
+            <a href='/tags/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-tag" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -146,9 +191,10 @@
         </li>
         
         
-
         <li >
-            <a href='/search'>
+            <a href='/search/' >
+                
+                
                 
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
@@ -164,9 +210,11 @@
         </li>
         
 
-        
-            <li id="dark-mode-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="8" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -174,7 +222,7 @@
 
 
 
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="16" cy="12" r="2" />
   <rect x="2" y="6" width="20" height="12" rx="6" />
@@ -182,9 +230,10 @@
 
 
 
-                <span>暗色模式</span>
-            </li>
-        
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
     </ol>
 </aside>
 
@@ -224,16 +273,41 @@
     </header>
     
 
-    <h2 class="article-title">
-        <a href="/p/simd/">SSE与AVE向量化编程</a>
-    </h2>
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/simd/">SSE与AVE向量化编程</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。
+        </h3>
+        
+    </div>
 
     
-    <h3 class="article-subtitle">
-        本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。
-    </h3>
+    
+    
+    
     <footer class="article-time">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2023-08-12</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <path stroke="none" d="M0 0h24v24H0z"/>
   <circle cx="12" cy="12" r="9" />
   <polyline points="12 7 12 12 15 15" />
@@ -241,12 +315,22 @@
 
 
 
-        <time class="article-time--published">2023-08-12</time>
-    </footer></div>
-</header>
+                <time class="article-time--reading">
+                    阅读时长: 24 分钟
+                </time>
+            </div>
+        
+    </footer>
     
-    <div id="top"></div>
-<section class="article-content">
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
     <!-- raw HTML omitted -->
 <!-- raw HTML omitted -->
 <p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
@@ -320,7 +404,16 @@
 <p>SSE和AVX各有16个寄存器。在SSE中，它们被称为XMM0-XMM15，而在AVX中，它们被称为YMM0-YMM15。XMM寄存器长度为128位，而YMM为256位。</p>
 <p>SSE增加了三个类型定义： <code>__m128</code> 、 <code>__m128d</code> 和 <code>__m128i</code> 。分别为浮点型、双精度型(D)和整型(I)。</p>
 <p>AVE增加了三个类型定义： <code>__m256</code> 、 <code>__m256d</code> 和 <code>__m256i</code> 。分别为浮点型、双精度型(D)和整型(I)。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810233117.png" alt="20230810233117"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810233117.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230810233117"
+	
+	
+></p>
 
 
 
@@ -328,14 +421,32 @@
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 576 512"><path d="M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>XMM和YMM是重叠的：XMM 寄存器被视为相应 YMM 寄存器的下半部分。这可能会在混合使用 SSE 和 AVX 代码时带来一些性能问题。</p></div>
 
 <p>浮点数据类型（如__m128、__m128d、__m256和__m256d）在GCC编译器中被视为具有相同数据结构的类型。因此，GCC允许以数组的形式访问这些数据类型的组件。即：下面代码是合法的。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">__m256</span> <span class="n">myvar</span> <span class="o">=</span> <span class="n">_mm256_set1_ps</span><span class="p">(</span><span class="mf">6.665f</span><span class="p">);</span>  <span class="c1">// Set all vector values to a single float
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">__m256</span> <span class="n">myvar</span> <span class="o">=</span> <span class="n">_mm256_set1_ps</span><span class="p">(</span><span class="mf">6.665f</span><span class="p">);</span>  <span class="c1">// Set all vector values to a single float
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">myvar</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.22f</span><span class="p">;</span>                       <span class="c1">// This is valid in GCC compiler
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">float</span> <span class="n">f</span> <span class="o">=</span> <span class="p">(</span><span class="mf">3.4f</span> <span class="o">+</span> <span class="n">myvar</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">myvar</span><span class="p">[</span><span class="mi">7</span><span class="p">];</span> <span class="c1">// This is valid in GCC compiler
-</span></span></span></code></pre></div><p>例如，对于__m128类型的变量，可以通过索引来访问其中的四个单精度浮点数组件。对于__m128d类型的变量，可以通过索引来访问其中的两个双精度浮点数组件。类似地，对于__m256和__m256d类型的变量，可以通过索引来访问其中的八个单精度浮点数或四个双精度浮点数组件。</p>
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>例如，对于__m128类型的变量，可以通过索引来访问其中的四个单精度浮点数组件。对于__m128d类型的变量，可以通过索引来访问其中的两个双精度浮点数组件。类似地，对于__m256和__m256d类型的变量，可以通过索引来访问其中的八个单精度浮点数或四个双精度浮点数组件。</p>
 <p>而在GCC编译器中，__m128i和__m256i是用于处理整数向量的数据类型。它们被定义为联合体（union），可以表示不同长度的整数向量。然而，由于联合体的特性，访问其中的具体数据成员可能会有一些困难。为了从整数向量中提取单个数据值，可以使用 <code>_mm_extract_epiXX()</code> 函数。这些函数允许从整数向量中提取指定位置的数据值，并将其作为标量返回。 <code>_mm_extract_epiXX()</code> 函数中的XX表示整数向量的位宽，例如， <code>_mm_extract_epi32()</code> 用于从32位整数向量中提取单个32位整数值。</p>
 <h3 id="2-ave操作例子">2. AVE操作例子</h3>
 <p>执行 AVX 指令的过程如下：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810234918.png" alt="20230810234918"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810234918.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230810234918"
+	
+	
+></p>
 <p>所有操作同时进行。就性能而言，在AVX中对浮点数执行单个 <code>Add</code> 的消耗与在AVX中对8个浮点数执行 <code>VAdd</code> 的消耗近似。在<a class="link" href="https://www.agner.org/optimize/instruction_tables.pdf"  target="_blank" rel="noopener"
     >Agner Fog&rsquo;s instruction tables</a>中，可以获得更多有关指令延迟和吞吐量的信息。在 Sandy Bridge 架构上，<code>VADDPS/D</code> 的延迟为 3，吞吐量为 1，就像 <code>FADD(P)</code> 一样。</p>
 <h3 id="3-先决条件">3. 先决条件</h3>
@@ -347,7 +458,21 @@
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z"/></svg></div><p>注意：编译后的二进制文件在没有 AVX 功能的计算机上将失败。如果需要适应不同CPU的二进制代码，则需要利用CPU Flag并调用不同的函数，或者针对不同的指令集生成不同的二进制代码。</p></div>
 
 <p>由于操作系统、编译器和 CPU 都必须允许 SSE/AVX 扩展。我们可以运行以下脚本来检测系统功能：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="cp">#!/bin/bash 
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="cp">#!/bin/bash 
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1">#CPU flag detection </span>
 </span></span><span class="line"><span class="cl"><span class="nb">echo</span> -e <span class="s2">&#34;\e[32m&gt;&gt;&gt; Getting CPU flag capabilities and number of cores\e[0m&#34;</span> 
 </span></span><span class="line"><span class="cl">cat /proc/cpuinfo <span class="p">|</span> egrep <span class="s2">&#34;(flags|model name|vendor)&#34;</span> <span class="p">|</span> sort <span class="p">|</span> uniq -c 
@@ -357,7 +482,9 @@
 </span></span><span class="line"><span class="cl"><span class="c1">#OS kernel version </span>
 </span></span><span class="line"><span class="cl"><span class="nb">echo</span> -e <span class="s2">&#34;\e[32m&gt;&gt;&gt; Getting OS Kernel Version\e[0m&#34;</span> 
 </span></span><span class="line"><span class="cl">uname -a
-</span></span></code></pre></div><p>在 CPU Flag 中，我们可以看到 SSE 和 AVX 的支持。我们将搜索 avx 标志。这表明 CPU 兼容 AVX。如果有 avx2，则表示 CPU 允许 AVX2 扩展。AVX 足以支持 8x32 位浮点矢量。AVX2 为整数增加了 256 位向量（例如 8x32 位整数）。尽管如此，256 位整数向量的执行速度似乎与两个 128 位向量相同，因此与 SSE 128 位整数向量相比，性能并没有显著提高。</p>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在 CPU Flag 中，我们可以看到 SSE 和 AVX 的支持。我们将搜索 avx 标志。这表明 CPU 兼容 AVX。如果有 avx2，则表示 CPU 允许 AVX2 扩展。AVX 足以支持 8x32 位浮点矢量。AVX2 为整数增加了 256 位向量（例如 8x32 位整数）。尽管如此，256 位整数向量的执行速度似乎与两个 128 位向量相同，因此与 SSE 128 位整数向量相比，性能并没有显著提高。</p>
 <p>在 GCC 的输出中，我们可以看到 #define __AVX__ 1 等。这表明 GCC 允许使用 AVX 指令集扩展。</p>
 
 
@@ -384,7 +511,50 @@
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z"/></svg></div><p>注意：还有类似的 -fopt-info-[options]-optimized 标志用于其他编译器优化，如内联： -fopt-info-inline-optimized</p></div>
 
 <p>在以下示例中，我们将使用 -O3 和 -fopt-info-vec-optimized 启用 GCC 自动向量化。当然也可以更改编译器标志以查看不同的日志记录选项。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// autovector.cpp
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// autovector.cpp
 </span></span></span><span class="line"><span class="cl"><span class="c1">// compile: g++ -fopt-info-vec-optimized -o autovector autovector.cpp
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>
 </span></span><span class="line"><span class="cl"><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  </span><span class="c1">// 优化选项
@@ -423,9 +593,18 @@
 </span></span><span class="line"><span class="cl">              <span class="o">&lt;&lt;</span> <span class="s">&#34;s, N * numTests=&#34;</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">N</span> <span class="o">*</span> <span class="n">numTests</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p>如果一切正常，将看到编译器测试结果：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">autovector.cpp:15:23: optimized: loop vectorized using 32 byte vectors
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>如果一切正常，将看到编译器测试结果：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">autovector.cpp:15:23: optimized: loop vectorized using 32 byte vectors
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>将编译选项更改为 <code>-fopt-info-vec-all</code>，可以看到更多的信息，包括向量化的循环的行号。</li>
 <li>在 autovector.cpp 第 1 行，将 O3 改为 O2 , 然后重新运行。将不会看到 loop vectorized ，而且非向量化编译会比向量化编译慢。</li>
 </ul>
@@ -438,7 +617,19 @@
 <li>循环不应该有数据依赖关系。</li>
 <li>条件句 (if/Else) 可以在不改变控制流的情况下使用，并且只用于有条件地将 A 或 B 值加载到 C 变量中。选择 A 或 B 是在编译器中使用掩码完成的，因此它同时计算分支 A 和 B ，而 C 将存储一个或另一个值：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"> <span class="k">if</span> <span class="p">(</span> <span class="n">s</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"> <span class="k">if</span> <span class="p">(</span> <span class="n">s</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">   <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0f</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
 </span></span><span class="line"><span class="cl">   <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-</span><span class="n">s</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="mf">2.0f</span><span class="o">*</span><span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
 </span></span><span class="line"><span class="cl"> <span class="p">}</span>
@@ -446,7 +637,9 @@
 </span></span><span class="line"><span class="cl">   <span class="n">x</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0f</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">   <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0f</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"> <span class="p">}</span>
-</span></span></code></pre></div><p>这是一个可向量循环。控制流从未改变，x[i] 和 y[i] 值总是设置为其中一个或另一个值。</p>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这是一个可向量循环。控制流从未改变，x[i] 和 y[i] 值总是设置为其中一个或另一个值。</p>
 <p>有关自动向量化的更多信息，请阅读<a class="link" href="https://software.intel.com/sites/default/files/m/4/8/8/2/a/31848-CompilerAutovectorizationGuide.pdf"  target="_blank" rel="noopener"
     >Intel C++编译器的矢量化</a>。该文档虽然面向Intel编译器，但它提供了有关自动向量化的有趣而完整的信息。</p>
 <p>自动向量化的好处是，它是自动完成的。编译器会尝试向量化循环，开发人员不需要做任何事情。但是有时(尤其是在高性能计算应用中)需要微调循环和向量化，通过使用手动AVX向量化来确保最大吞吐量。</p>
@@ -455,8 +648,15 @@
 <h3 id="1-内置函数">1. 内置函数</h3>
 <p>编译器将汇编指令封装为函数，使用它们就像调用带有正确参数的函数一样简单。有时，如果 CPU 不支持指令集，些内置函数就会被模拟。</p>
 <p>SSE/AVX内置函数使用以下命名约定：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">_</span><span class="o">&lt;</span><span class="n">vector_size</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">intrin_op</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">suffix</span><span class="o">&gt;</span>
-</span></span></code></pre></div><ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">_</span><span class="o">&lt;</span><span class="n">vector_size</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">intrin_op</span><span class="o">&gt;</span><span class="n">_</span><span class="o">&lt;</span><span class="n">suffix</span><span class="o">&gt;</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li><code>&lt;vector_size&gt;</code> 是指向量的大小。对于 128 位的 SSE， 它为 <code>mm</code>，对于 256 位的 AVX/AVX2，它为 <code>mm256</code>，对于512位的 AVX512， 它为 <code>mm512</code> 。</li>
 <li><code>&lt;intrin_op&gt;</code> 是指内置函数的名称，例如 <code>add</code> 或 <code>sub</code>，<code>mul</code>等 。</li>
 <li><code>&lt;suffix&gt;</code> 是指内置函数的参数类型，例如 <code>ps</code> 表示 float ，<code>pd</code> 表示 double ，<code>epi8</code> 表示 int8_t，<code>epi32</code> 表示 int32_t , <code>epu16</code> 表示 uint16_t 等。</li>
@@ -517,7 +717,98 @@
 <ul>
 <li>下面程序是对浮点数的SQRT计算进行向量化，显式使用 <code>__m256</code> 数据类型来存储浮点数，从而减少数据加载的开销。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// vectorized_sqrt.cpp
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// vectorized_sqrt.cpp
 </span></span></span><span class="line"><span class="cl"><span class="c1">// compile: g++ -o vectorized_sqrt vectorized_sqrt.cpp
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  </span><span class="c1">// 优化选项
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#pragma GCC option(&#34;arch=native&#34;, &#34;tune=native&#34;, &#34;no-zero-upper&#34;)           </span><span class="c1">// 启用AVX
@@ -604,24 +895,51 @@
 </span></span><span class="line"><span class="cl">          <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>可能会看到 600% 或更高的性能提升。也就是说，一旦加载了数据，AVX 的运行速度将是普通 sqrtf 的 7 倍。理论极限是 800%，但很少能达到。一般来说可以预期平均提高 300% 到 600%。运行结果如下：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Normal sqrtf: 1.51901
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">Normal sqrtf: 1.51901
 </span></span><span class="line"><span class="cl">AVX sqrtf: 0.374871
 </span></span><span class="line"><span class="cl">Linear to AVX improvement : 405.209%
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>可以看到：运行速度提高了 405%。</li>
 </ul>
 <h2 id="四c中的sseavx框架">四、C++中的SSE/AVX框架</h2>
 <h3 id="1-内置函数的复杂性">1. 内置函数的复杂性</h3>
 <p>直接使用内置函数会使代码编写和维护变得复杂。问题在于内置函数名很长，比如算术运算用函数符号书写：<code>add(a,b)</code> 而不是 <code>a + b</code>。导致下面的代码很难阅读：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">x</span> <span class="o">=</span> <span class="n">_mm256_div_ps</span><span class="p">(</span><span class="n">_mm256_add_ps</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">_mm256_sqrt_ps</span><span class="p">(</span><span class="n">_mm256_sub_ps</span><span class="p">(</span><span class="n">_mm256_mul_ps</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">x</span> <span class="o">=</span> <span class="n">_mm256_div_ps</span><span class="p">(</span><span class="n">_mm256_add_ps</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">_mm256_sqrt_ps</span><span class="p">(</span><span class="n">_mm256_sub_ps</span><span class="p">(</span><span class="n">_mm256_mul_ps</span><span class="p">(</span><span class="n">b</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span>
 </span></span><span class="line"><span class="cl"> <span class="n">_mm256_mul_ps</span><span class="p">(</span><span class="n">_mm256_mul_ps</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">c</span><span class="p">),</span> 
 </span></span><span class="line"><span class="cl"> <span class="n">_mm256_set1_ps</span><span class="p">(</span><span class="mf">4.0f</span><span class="p">)))))</span> <span class="p">,</span> <span class="n">_mm256_mul_ps</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">_mm256_set1_ps</span><span class="p">(</span><span class="mf">2.0f</span><span class="p">)));</span>
-</span></span></code></pre></div><p>而以下封装版本的可读性非常好：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">b</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">c</span> <span class="o">*</span> <span class="mf">4.0f</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="mf">2.0f</span><span class="p">);</span>
-</span></span></code></pre></div><h3 id="2-用于simd计算的c框架">2. 用于SIMD计算的C++框架</h3>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>而以下封装版本的可读性非常好：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">x</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">+</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">b</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="n">c</span> <span class="o">*</span> <span class="mf">4.0f</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="mf">2.0f</span><span class="p">);</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2-用于simd计算的c框架">2. 用于SIMD计算的C++框架</h3>
 <p>现有的一些框架在新的类中封装了向量数据类型。然后，它们重载算术、逻辑和赋值运算符，以简化计算。其中，可以使用这两个框架：</p>
 <ul>
 <li><a class="link" href="http://www.agner.org/optimize/#vectorclass"  target="_blank" rel="noopener"
@@ -663,7 +981,16 @@
 <h3 id="1-向量中的掩码">1. 向量中的掩码</h3>
 <p>掩码是向量之间逻辑运算的结果。它与布尔运算有许多相似之处（它们是对单个数字或其他布尔运算的逻辑运算结果），但在内部，每个掩码组件必须全部为 0 位或全部为 1 位。</p>
 <p>让我们比较具有大于运算符的两个AVX浮点向量：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811173734.png" alt="20230811173734"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811173734.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230811173734"
+	
+	
+></p>
 <p>输入是两个带有浮点分量的向量。逻辑运算的输出也是一个带浮点分量的向量，但其值的位数被设置为全 0 或全 1。全 1 表示 &ldquo;真&rdquo;，全 0 表示 &ldquo;假&rdquo;。对于浮点数，全 1 的值打印为-nan，对于整数，则打印为-1。存储的实际值并不重要。我们只需要知道它保存的是真值和假值。</p>
 <ul>
 <li>
@@ -686,7 +1013,16 @@
 
 <h3 id="2-条件加载">2. 条件加载</h3>
 <p>掩码可用于有条件地将值加载到向量中。比如可以使用掩码来有条件地控制值向量的加载：<code>if_select(mask,value_true,value_false)</code> 可以表示为：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811174342.png" alt="20230811174342"  /></p>
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811174342.png"
+	
+	
+	
+	loading="lazy"
+	
+		alt="20230811174342"
+	
+	
+></p>
 <ul>
 <li>当掩码设置为 <code>FALSE</code> 时，数据从 <code>value_false</code> 向量加载；当设置为 <code>TRUE</code> 时，数据从 <code>value_true</code> 向量加载。这个概念简单而有效。</li>
 </ul>
@@ -696,7 +1032,72 @@
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>代码示例1：使用掩码和 SIMD-Framework 中的 v8f.h 实现条件加载。（主要使用 if_select(mask,value_true,value_false) 方法，该函数是 _mm256_blendv_ps的封装）</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  
 </span></span></span><span class="line"><span class="cl"><span class="cp">#pragma GCC option(&#34;arch=native&#34;, &#34;tune=native&#34;, &#34;no-zeroupper&#34;)           
 </span></span></span><span class="line"><span class="cl"><span class="cp">#pragma GCC target(&#34;avx&#34;)                                                   
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;bits/stdc++.h&gt;                                                   </span><span class="cp">
@@ -757,7 +1158,9 @@
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>    
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h3 id="3-性能">3. 性能</h3>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="3-性能">3. 性能</h3>
 <p>使用掩码的条件加载不是真正的分支，因此它们不会有误预测，并且CPU可以更好地利用无序执行。但这是有代价的。因为它们是无分支的，并且所有条件执行都是通过掩码操作完成的，所以总是计算和执行这两个分支。如果要对 <code>value_false</code> 进行非常复杂的计算，那么即使只有 0.00001% 的时间会发生，也会一直进行计算。如果代码中有些部分很少需要，但计算成本很高，这可能会导致性能问题。在下一章数据流控制中，可以通过控制数据流的方法，根据某些条件提前退出循环。</p>
 <h2 id="六数据流控制">六、数据流控制</h2>
 <h3 id="1-共享数据流问题">1. 共享数据流问题</h3>
@@ -777,7 +1180,26 @@
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>代码示例2：使用 horizontal_or(mask) 函数判断掩码内是否有任何值为真，减少分支计算</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">v8f</span> <span class="nf">result</span><span class="p">(</span><span class="mf">0.0f</span><span class="p">);</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">v8f</span> <span class="nf">result</span><span class="p">(</span><span class="mf">0.0f</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">2000</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="n">v8f</span> <span class="nf">test</span><span class="p">(</span><span class="mf">1.4f</span><span class="p">,</span> <span class="mf">3.3f</span><span class="p">,</span> <span class="o">-</span><span class="mf">12.5f</span><span class="p">,</span> <span class="o">-</span><span class="mf">33.4f</span><span class="p">,</span> <span class="mf">7.9f</span><span class="p">,</span> <span class="o">-</span><span class="mf">70.2f</span><span class="p">,</span> <span class="mf">15.1f</span><span class="p">,</span> <span class="mf">22.6f</span><span class="p">);</span>  
@@ -792,7 +1214,9 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">result</span> <span class="o">+=</span> <span class="n">test</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>通过使用 <code>horizontal_or</code> ，还可以提前跳出循环。自动向量化无法实现这种优化，但手动向量化可以，而且是首选。</li>
 </ul>
 
@@ -801,7 +1225,71 @@
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>代码示例3：使用 horizontal_or提前跳出循环，该程序需要同时进行 8 次并行模拟，以 200 个回合为限，计算最大连击得分。一旦在任何一次并行模拟中得分超过 1700 分，就结束模拟，并返回最大得分（一个浮点数值，不是包含所有得分的整个向量，只是最大值）和获得该得分的回合。</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#pragma GCC optimize(&#34;O3&#34;, &#34;unroll-loops&#34;, &#34;omit-frame-pointer&#34;, &#34;inline&#34;)  
 </span></span></span><span class="line"><span class="cl"><span class="cp">#pragma GCC option(&#34;arch=native&#34;, &#34;tune=native&#34;, &#34;no-zeroupper&#34;)           
 </span></span></span><span class="line"><span class="cl"><span class="cp">#pragma GCC target(&#34;avx&#34;)                                                  
 </span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;bits/stdc++.h&gt;                                                    </span><span class="cp">
@@ -861,7 +1349,9 @@
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">validateResult</span><span class="p">(</span><span class="n">turn</span><span class="p">,</span> <span class="n">bestScore</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h2 id="七数据对齐">七、数据对齐</h2>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="七数据对齐">七、数据对齐</h2>
 <p>数据对齐是一种强制编译器在特定字节边界的内存中创建数据对象的方法。这样做的目的是为了提高从处理器加载和存储数据的效率。无需赘述，当数据可以在特定字节边界的内存地址之间移动时，处理器就可以高效地移动数据。对于支持英特尔® AVX-512 指令的英特尔® 处理器来说，当数据起始地址位于 64 字节边界时，内存移动效果最佳。因此，需要强制编译器创建起始地址为 64 字节模的数据对象。</p>
 <p>除了在对齐边界上创建数据（使基指针对齐）外，编译器还能在已知数据访问（包括基指针和索引）对齐 64 字节时执行优化。在通常情况下，如果没有用户的帮助，编译器并不知道循环内部的数据是对齐的。这可能迫使编译器在生成代码时采取保守做法，从而影响性能。因此还必须通过编译指示(C/C++)或指令(Fortran)、选项(如Fortran中的-Align array64byte)以及子句/属性的组合来通知编译器进行对齐，以便英特尔编译器能够生成最佳代码。</p>
 <p>总而言之，需要两个步骤：</p>
@@ -880,12 +1370,26 @@
 <li>静态数组的对齐十分简单，不过在Windows上与Linux上的声明有所区别，以64字节边界上静态声明1000元素单精度浮点数组为例</li>
 <li>在Windows上，使用 <code>__declspec(align(64))</code> 修饰符：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kr">__declspec</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span> <span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
-</span></span></code></pre></div><ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kr">__declspec</span><span class="p">(</span><span class="n">align</span><span class="p">(</span><span class="mi">64</span><span class="p">))</span> <span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">];</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>在Linux上，使用 <code>__attribute__((aligned(64)))</code> 修饰符：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
-</span></span></code></pre></div><p><strong>对齐动态数据</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="mi">1000</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>对齐动态数据</strong></p>
 <ul>
 <li>动态数据的对齐相对复杂，需要使用特殊的内存分配函数，如 <code>_mm_malloc</code> 和 <code>_mm_free</code> 来替代 <code>malloc</code> 和 <code>free</code> 函数。其中，这些函数的第二个参数是对齐参数（以字节为单位），比如 <code>mm_malloc(p, 64)</code> 返回的数据将是64字节对齐的。</li>
 </ul>
@@ -898,14 +1402,39 @@
 <ul>
 <li>在C++17中，还可以使用 <code>std::aligned_alloc</code> 函数来分配对齐的内存，但是这个函数只能在C++17中使用，而且只能在Linux上使用。使用方式如下：</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">float</span> <span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span> <span class="o">*&gt;</span><span class="n">std</span><span class="o">::</span><span class="n">aligned_alloc</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">float</span> <span class="o">*</span><span class="n">a</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span> <span class="o">*&gt;</span><span class="n">std</span><span class="o">::</span><span class="n">aligned_alloc</span><span class="p">(</span><span class="mi">64</span><span class="p">,</span> <span class="mi">1000</span> <span class="o">*</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="c1">// 使用完毕后，需要释放内存
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">std</span><span class="o">::</span><span class="n">free</span><span class="p">(</span><span class="n">a</span><span class="p">);</span>
-</span></span></code></pre></div><p><strong>对齐循环索引</strong></p>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p><strong>对齐循环索引</strong></p>
 <p>对于内存访问形式为 <strong>a[i+n1]</strong> 的循环，必须满足特定的对齐要求。具体来说，用户必须确保 （i-loop 的下界 + n1）是 16 的倍数（假设数据类型为 float）。</p>
 <p>此外，除非在编译时信息可以在静态情况下获得（例如访问形式为 <strong>x[i]</strong> ，并且所有线程的循环下界都是常数 0，或者在循环内部存在形式为 <strong>b[i+16*k]</strong> 的访问），用户还必须通知编译器关于这个对齐要求。否则，这一步还需要在循环前添加一个 <strong>__assume(n1%16==0)</strong> 或者 <strong>#pragma vector aligned</strong> 的语句（ <strong>仅限于Windows平台</strong> ）。以下是一个不满足数据对齐要求的例子：</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="n">N</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">process_array</span><span class="p">()</span>
@@ -916,10 +1445,28 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// 其它计算操作...
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><ul>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><ul>
 <li>如果我们要确保内存访问的性能最佳，我们需要确保 i 和 n1 的组合是对齐的，以便在向量化指令集中能够更有效地执行。在上面的代码中，循环的下界是 i 的初始值 0 ，所以 (0 + 4) 不是 16 的倍数。为了满足对齐要求，我们需要进行调整，并且通知编译器这个对齐属性。</li>
 </ul>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#define N 1000
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="kt">float</span> <span class="n">a</span><span class="p">[</span><span class="n">N</span><span class="p">]</span> <span class="n">__attribute__</span><span class="p">((</span><span class="n">aligned</span><span class="p">(</span><span class="mi">64</span><span class="p">)));</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">process_array</span><span class="p">(</span><span class="kt">int</span> <span class="n">n1</span><span class="p">)</span>
@@ -931,7 +1478,9 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// 其它计算操作...
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h3 id="2-通知编译器数据对齐">2. 通知编译器数据对齐</h3>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="2-通知编译器数据对齐">2. 通知编译器数据对齐</h3>
 <p>既然已经对齐了数据，那么在程序中实际使用数据时，就有必要告知编译器这些数据是对齐的。例如，将数据作为参数传递给性能关键的函数或子程序时，编译器如何知道参数是对齐的还是未对齐的？例如，数据通常在一个源文件中声明，但在许多其他源文件中使用。因此，这一信息必须由用户提供，因为编译器往往没有关于参数的信息。</p>
 <p>有两种方法可以告知编译器数据对齐情况。 一种方法是使用 <strong>OpenMP SIMD ALIGNED</strong> 子句通知编译器在使用数据时的数据对齐情况。另一种方法则是使用英特尔专有子句在代码中指定数据对齐方式。</p>
 <p>编译器要为 i 循环内的（浮点数组）内存访问（如 <strong>a[i+n1]</strong> 和 <strong>X[i]</strong>）生成对齐的加载/存储，就必须知道：</p>
@@ -945,7 +1494,34 @@
 <div class="notice notice-note" >
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>代码示例4： 在Windows上使用 __assume_aligned 和 __assume 指令来告知编译器数据对齐情况。</p></div>
 
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// compile options: -O3 -xcore-avx512 -qopt-report-phase=vec -qopt-report=5 -qopt-report-file=stdout -restrict -c
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="c1">// compile options: -O3 -xcore-avx512 -qopt-report-phase=vec -qopt-report=5 -qopt-report-file=stdout -restrict -c
 </span></span></span><span class="line"><span class="cl"><span class="c1">// 该编译指令将生成一个名为 stdout 的文件，其中包含有关向量化的信息。
 </span></span></span><span class="line"><span class="cl"><span class="c1">// restrict关键字：提示编译器：在该指针的生命周期内，其指向的对象不会被别的指针所引用。
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>
@@ -968,7 +1544,9 @@
 </span></span><span class="line"><span class="cl">        <span class="n">X2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><h2 id="八总结">八、总结</h2>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="八总结">八、总结</h2>
 <p>本文主要介绍了SIMD的基本概念，以及SIMD的优化思路，最后通过一些简单的示例代码，介绍了SIMD的使用方法。主要内容如下：</p>
 <ul>
 <li>在代码中使用SSE和AVX指令的硬件和软件要求。</li>
@@ -1044,60 +1622,38 @@
     </section>
     </footer>
 
-    
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css"
-    integrity="sha384-AfEj0r4/OFrOo5t7NnNe46zW/tFgW6x/bCJG8FqQCEo3+Aro6EYUG4+cU+KJWu/X" crossorigin="anonymous">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.js"
-    integrity="sha384-g7c+Jr9ZivxKLnZTDUhnkOnsh30B4H0rpLUpJ4jAIKs4fnJI+sEnkvrMWph2EDg4"
-    crossorigin="anonymous"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/contrib/auto-render.min.js"
-    integrity="sha384-mll67QQFJfxn0IYznZYonOWZ644AWYC+Pt2cHqMaRhXVrursRwvLnLaebdGIlYNa" crossorigin="anonymous"
-    onload="StackLaTeX()"></script>
 
-<script>
-    function StackLaTeX() {
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
+            ><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/katex@0.15.6/dist/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
         renderMathInElement(document.querySelector(`.article-content`), {
             delimiters: [
                 { left: "$$", right: "$$", display: true },
                 { left: "$", right: "$", display: false },
                 { left: "\\(", right: "\\)", display: false },
                 { left: "\\[", right: "\\]", display: true }
-            ]
-        });
-    }
+            ],
+            ignoredClasses: ["gist"]
+        });})
 </script>
     
-
 </article>
-
-<a href="#" class="back-to-top"><span>回到顶部</span></a>
-
-<script>
-    window.addEventListener('scroll', function () {
-        if (window.scrollY > 200) {
-        document.querySelector('.back-to-top').style.display = 'block';
-        } else {
-        document.querySelector('.back-to-top').style.display = 'none';
-        }
-    });
-
-    document.querySelector('.back-to-top').addEventListener('click', function (e) {
-        e.preventDefault();
-        
-        
-        const targetElement = document.getElementById('top');
-        const targetRect = targetElement.getBoundingClientRect();
-        const targetTop = window.pageYOffset + targetRect.top;
-        
-        
-        window.scrollTo({ top: targetTop, behavior: 'smooth' });
-    });
-</script>
 
     <aside class="related-contents--wrapper">
     
     
-        <h2 class="section-title">相关文章</h2>
+        <h2 class="section-title"></h2>
         <div class="related-contents">
             <div class="flex article-list--tile">
                 
@@ -1118,6 +1674,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -1136,6 +1693,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -1154,6 +1712,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -1172,6 +1731,7 @@
         </div>
     </a>
 </article>
+
                 
                     
 <article class="has-image">
@@ -1190,6 +1750,7 @@
         </div>
     </a>
 </article>
+
                 
             </div>
         </div>
@@ -1202,10 +1763,10 @@
     <script src="https://utteranc.es/client.js" 
         repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
         issue-term="title"
-        theme="preferred-color-scheme" 
         
-        crossorigin="anonymous" 
-        async>
+        crossorigin="anonymous"
+        async
+        >
 </script>
 
 <style>
@@ -1216,20 +1777,34 @@
 
 <script>
     let utterancesLoaded = false;
-    window.addEventListener('onColorSchemeChange', (e) => {
-        if (!utterancesLoaded) return;
+
+    function setUtterancesTheme(theme) {
         let utterances = document.querySelector('.utterances iframe');
         if (utterances) {
             utterances.contentWindow.postMessage(
                 {
                     type: 'set-theme',
-                    theme: `github-${e.detail}`
+                    theme: `github-${theme}`
                 },
                 'https://utteranc.es'
             );
         }
+    }
+
+    addEventListener('message', event => {
+        if (event.origin !== 'https://utteranc.es') return;
+
+        
+        utterancesLoaded = true;
+        setUtterancesTheme(document.documentElement.dataset.scheme)
+    });
+
+    window.addEventListener('onColorSchemeChange', (e) => {
+        if (!utterancesLoaded) return;
+        setUtterancesTheme(e.detail)
     })
 </script>
+
 
     
 
@@ -1246,9 +1821,10 @@
         
             欢迎来到Cuterwrite的博客网站 <br/>
         Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        Theme <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="2.0.1">Stack</a></b> designed by <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a>
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
     </section>
 </footer>
+
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
 
     
@@ -1310,13 +1886,21 @@
 
     </div>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"></script>
-
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.css"><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</div><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css"crossorigin="anonymous"
+            ><script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
       
       Array.from(document.getElementsByClassName("language-mermaid")).forEach(
@@ -1336,8 +1920,11 @@
 
             </main>
         </div>
-        <script src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.5/dist/vibrant.min.js"
-    integrity="sha256-5NovOZc4iwiAWTYIFiIM7DxKUXKWvpVEuMEPLzcm5/g=" crossorigin="anonymous"></script><script type="text/javascript" src="/ts/main.js" defer></script>
+        <script 
+                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
 <script>
     (function () {
         const customFont = document.createElement('link');

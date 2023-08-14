@@ -1,7 +1,314 @@
-&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;?&gt;<rss version="2.0">
-     <channel>
-       <title>cuterwrite</title>
-       <link>https://cuterwrite.top</link>
-       <description></description>
-       <lastBuildDate>Tue, 11 Jul 2023 00:00:00 UTC</lastBuildDate></channel>
-   </rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Python数据分析 on cuterwrite</title>
+        <link>https://cuterwrite.top/categories/python%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/</link>
+        <description>Recent content in Python数据分析 on cuterwrite</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Tue, 11 Jul 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/python%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>SVD与NMF：矩阵分解的两种方法</title>
+        <link>https://cuterwrite.top/p/matrix-factorization/</link>
+        <pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/matrix-factorization/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.jpg" alt="Featured image of post SVD与NMF：矩阵分解的两种方法" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#svd%E4%B8%8Enmf%E7%9F%A9%E9%98%B5%E5%88%86%E8%A7%A3%E7%9A%84%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%B3%95&#34; &gt;SVD与NMF：矩阵分解的两种方法&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%80%E5%A5%87%E5%BC%82%E5%80%BC%E5%88%86%E8%A7%A3svd&#34; &gt;一、奇异值分解（SVD）&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%8C%E9%9D%9E%E8%B4%9F%E7%9F%A9%E9%98%B5%E5%88%86%E8%A7%A3nmf&#34; &gt;二、非负矩阵分解（NMF）&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%89svd%E4%B8%8Enmf%E7%9A%84%E6%AF%94%E8%BE%83&#34; &gt;三、SVD与NMF的比较&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%9B%9B%E5%AE%9E%E6%88%98%E5%9B%BE%E5%83%8F%E5%8E%8B%E7%BC%A9&#34; &gt;四、实战：图像压缩&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%94%E7%BB%93%E8%AE%BA&#34; &gt;五、结论&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99&#34; &gt;参考资料&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;svd与nmf矩阵分解的两种方法&#34;&gt;SVD与NMF：矩阵分解的两种方法&lt;/h1&gt;
+&lt;p&gt;在数据科学中，矩阵分解技术是一种强大的工具，可以用于各种应用，如推荐系统、图像处理和自然语言处理。在这篇文章中，我们将深入探讨两种流行的矩阵分解技术：奇异值分解（SVD）和非负矩阵分解（NMF）。我们将详细解析它们的理论基础，以及如何在实际问题中应用它们。&lt;/p&gt;
+&lt;h2 id=&#34;一奇异值分解svd&#34;&gt;一、奇异值分解（SVD）&lt;/h2&gt;
+&lt;p&gt;奇异值分解是一种在线性代数中常用的矩阵分解方法。对于给定的 $m\times n$ 矩阵A，我们可以将其分解为三个矩阵的乘积：&lt;/p&gt;
+&lt;p&gt;$$
+A = U\Sigma V^T
+$$&lt;/p&gt;
+&lt;p&gt;这里，$U$ 是一个 $m\times m$ 的正交矩阵，$V$ 是一个 $n\times n$ 的正交矩阵，$\Sigma$ 是一个 $m\times n$ 的对角矩阵。对角线上的元素称为奇异值，它们是 $A^T A$ 的特征值的平方根。它们是按降序排列的，代表了原始矩阵中的“能量”或信息量。。我们可以将奇异值分解看作是一种特征值分解，其中 $U$ 和 $V$ 是特征向量，$\Sigma$ 是特征值的对角矩阵。&lt;/p&gt;
+&lt;p&gt;计算SVD的基本步骤如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造矩阵A的Gram矩阵&lt;!-- raw HTML omitted --&gt;：对于给定的 $m\times n$ 矩阵A，我们可以构造一个 $n\times n$ 的矩阵 $A^T A$，称为A的Gram矩阵。Gram矩阵是一个对称半正定矩阵，因此它的特征值都是非负的。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;计算Gram矩阵的特征值和特征向量&lt;!-- raw HTML omitted --&gt;：我们可以使用任何标准的特征值分解算法来计算Gram矩阵的特征值和特征向量。这些特征值就是A的奇异值的平方，特征向量则构成了右奇异向量和左奇异向量。我们将特征值按降序排列，将特征向量按相同的顺序排列。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造奇异值矩阵 $\Sigma$ &lt;!-- raw HTML omitted --&gt;：我将特征值的平方根按照从大到小的顺序排列在对角线上，构成 $m\times n $ 的对角矩阵 $\Sigma$ 。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造左奇异向量矩阵 $U$ 和右奇异向量矩阵 $V$ &lt;!-- raw HTML omitted --&gt;：将对应于特征值的特征向量按照特征值的顺序排列，构成 $n\times n$ 的矩阵 $V$ 和 $m\times m$ 的矩阵 $U$ 。这些特征向量是标准化的，即它们的长度为1，并且互相正交。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这样，我们就得到了A的奇异值分解。在Python中，我们可以使用NumPy的&lt;code&gt;np.linalg.svd&lt;/code&gt;函数来计算SVD，这个函数会自动执行上述步骤，并返回 $ U, \Sigma, V^T $ 。如下所示：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;numpy&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;as&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;np&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;S&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Vt&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;linalg&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;svd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;需要注意的是，虽然理论上SVD总是存在的，但在实际计算中可能会遇到数值稳定性的问题。此外，对于非常大的矩阵，计算SVD可能会非常耗时。在这些情况下，我们可能需要使用一些更高效的算法或者近似方法，如随机SVD。&lt;/p&gt;
+&lt;p&gt;SVD的一个重要应用是在推荐系统中进行矩阵补全。在推荐系统中，我们通常有一个用户-商品评分矩阵，但这个矩阵通常是非常稀疏的，因为大多数用户只评价了少数商品。SVD可以用于预测用户对未评价商品的评分，从而提供个性化的推荐。&lt;/p&gt;
+&lt;h2 id=&#34;二非负矩阵分解nmf&#34;&gt;二、非负矩阵分解（NMF）&lt;/h2&gt;
+&lt;p&gt;由于维度的复杂性和维度诅咒，直接处理高维数据需要大量的计算资源。非负矩阵分解（NMF）作为一种降维技术被提出，在图像处理中得到了重要的应用。通过采用NMF，非负的高维矩阵可以被分解成两个非负的低维矩阵，其中一个包括列向量，可以被视为数据空间中的基向量，另一个则包含缩放这些基向量的系数行。此外，NMF也可用于文本数据处理。我们可以检查系数矩阵中的每一列，并确定具有最大系数的行号，其中行号表示原始矩阵中各列的聚类ID。这种聚类特性意味着NMF可以用于数据聚类。&lt;/p&gt;
+&lt;p&gt;NMF对矩阵的元素有一个额外的非负约束。对于给定的 $K\times N$ 非负矩阵 $M\in R^{K\times N}$ ，我们可以找到两个非负矩阵 $W$ 和 $H$ ，使得 $M\approx WH$ 。其中 $W\in R^{K\times r}$ 和 $H\in R^{r\times N}$ 是两个非负矩阵，即 $W\geq 0$ 和 $H\geq 0$ 。矩阵 $W$ 代表捕捉数据特征的基向量，而矩阵 $H$ 是表示每个基向量对重建原始数据的贡献的权重。NMF中的非负约束允许学习整体数据的部分表征，而这种约束在SVD中是不允许的。为了找到 $M\approx WH$的近似解，定义基于欧氏距离的成本函数来量化近似的质量，即:&lt;/p&gt;
+&lt;p&gt;$$
+Q=\Vert M-WH\Vert^2_F=\sum_{i,j}(M_{ij}-(WH)_{ij})^2
+$$&lt;/p&gt;
+&lt;p&gt;由于成本函数 $Q$ 在 $W$ 和 $H$ 中都是非凸的，所以在求解 $Q$ 的最小值过程中找到全局最小值是不现实的。一些数值优化技术，如梯度下降和共轭梯度，可以被用来寻找局部最小值。然而，梯度下降的收敛速度很慢，共轭梯度的实现很复杂。此外，基于梯度的方法对步长的参数设置很敏感，这对现实应用来说并不方便。为此，可以利用 $W$ 和 $H$ 的multiplicative update rules，作为收敛速度和实现复杂性之间的折中方案，具体如下:&lt;/p&gt;
+&lt;p&gt;$$
+H_{aj} \leftarrow H_{aj} \frac{W^T M_{aj}}{W^T W H_{aj}}, W_{ia} \leftarrow W_{ia} \frac{M H^T_{ia}}{W H H^T_{ia}}
+$$&lt;/p&gt;
+&lt;p&gt;其中，矩阵 $W$ 和 $H$ 可以被随机初始化，然后通过迭代更新来优化 $Q$ 。这些更新规则可以保证 $Q$ 在每次迭代中都会减少，因此可以保证收敛到局部最小值。&lt;/p&gt;
+&lt;p&gt;在Python中，我们可以使用&lt;code&gt;sklearn.decomposition.NMF&lt;/code&gt;类来计算NMF。如下所示：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;sklearn.decomposition&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;NMF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;model&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;NMF&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;n_components&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;init&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;random&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;random_state&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;W&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;model&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fit_transform&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;X&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;H&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;model&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;components_&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;三svd与nmf的比较&#34;&gt;三、SVD与NMF的比较&lt;/h2&gt;
+&lt;p&gt;虽然SVD和NMF都是矩阵分解技术，但它们有一些重要的区别。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;数据类型和约束&lt;!-- raw HTML omitted --&gt;：SVD可以应用于任何矩阵，而NMF只能应用于非负矩阵。其次，SVD提供了一种最优的低秩近似，而NMF则没有这种保证。然而，NMF的非负约束使得它的分解更具解释性，这在许多应用中是非常有用的。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;分解的解释性&lt;!-- raw HTML omitted --&gt;：虽然SVD和NMF都可以将原始矩阵分解为一些基本的“构成元素”，但NMF的分解通常更具解释性。这是因为NMF的非负约束使得分解的结果更容易解释和理解。在许多应用中，如主题模型或社区发现，NMF的分解可以直接解释为数据的一些基本模式或特征。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;优化和稳定性&lt;!-- raw HTML omitted --&gt;：SVD的优化问题有闭式解，这意味着我们可以直接计算出最优解。而NMF的优化问题通常需要使用迭代方法来求解，如梯度下降或坐标下降。这使得NMF的计算过程可能更复杂，而且可能需要更多的时间。而且SVD的结果是唯一的（除了奇异向量的符号），而NMF的结果可能依赖于初始化和优化算法。这意味着对同一个数据集，NMF可能会给出不同的结果。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;近似质量&lt;!-- raw HTML omitted --&gt;：SVD提供了一种最优的低秩近似，即它可以找到最接近原始矩阵的低秩矩阵。而NMF则没有这种保证，它的近似质量可能会比SVD差。然而，NMF的非负约束使得它的近似可能更符合实际的需求，尤其是在那些原始数据是非负的情况下。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;计算复杂性&lt;!-- raw HTML omitted --&gt;：SVD和NMF的计算复杂性也有所不同。对于一个 $m\times n$ 的矩阵，SVD的计算复杂性大约为 $\mathbf{O}(\min {m^2n, mn^2})$ ，而NMF的计算复杂性则取决于迭代次数和所选的优化算法。在实践中，NMF通常比SVD更慢，但也有一些高效的NMF算法可以缩短计算时间。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;总的来说，SVD和NMF各有优势，选择使用哪一种技术取决于具体的应用和需求。&lt;/p&gt;
+&lt;h2 id=&#34;四实战图像压缩&#34;&gt;四、实战：图像压缩&lt;/h2&gt;
+&lt;p&gt;让我们通过一个实战演示来看看如何使用SVD和NMF进行图像压缩。我们将使用Python的NumPy和scikit-learn库来执行这些任务。&lt;/p&gt;
+&lt;p&gt;首先，我们需要导入必要的库，并加载一张图像：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;numpy&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;as&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;np&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;sklearn.decomposition&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;NMF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;PIL&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 加载图像&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;image.jpg&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;width&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;height&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;size&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;array&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img_matrix&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;[]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img_matrix&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;extend&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;([&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;flatten&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;flatten&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;flatten&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()])&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;M&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;array&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img_matrix&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;T&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，我们可以使用NumPy的&lt;code&gt;np.linalg.svd&lt;/code&gt;函数来进行SVD，得到 $U, S, V^T$ ：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 执行SVD&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;s&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Vt&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;linalg&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;svd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;M&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;full_matrices&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;kc&#34;&gt;False&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;我们可以选择前 $r$ 个奇异值和对应的 $U$ 和 $V^T$ 的列来进行低秩近似：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;16&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;U_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;U&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;s_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;s&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;Vt_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Vt&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;:]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;U_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;@&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;diag&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;s_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;@&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Vt_d&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dstack&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;((&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;))&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;reshape&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;height&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;width&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;255&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;255&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fromarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;uint8&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;RGB&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;show&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;同样，我们也可以使用scikit-learn的NMF类来进行NMF：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;# 执行NMF&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;model&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;NMF&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;n_components&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;16&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;init&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;random&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;random_state&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;W&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;model&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fit_transform&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;M&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;H&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;model&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;components_&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;W&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;@&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;H&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;M_d&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[:,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dstack&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;((&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;r&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;g&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;))&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;reshape&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;height&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;width&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;255&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;255&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fromarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;np&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;uint8&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;mode&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;RGB&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;img&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;show&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;()&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;最后，我们可以比较原始图像和重构图像的差异，以及SVD和NMF的压缩效果。这种压缩方法的优点是可以大大减少存储和传输图像所需的数据量，而且如果选择的秩r足够大，压缩后的图像的质量也可以接受。&lt;/p&gt;
+&lt;h2 id=&#34;五结论&#34;&gt;五、结论&lt;/h2&gt;
+&lt;p&gt;总的来说，SVD和NMF都是强大的矩阵分解技术，它们在许多数据科学应用中都有广泛的用途。虽然SVD提供了一种最优的低秩近似，但NMF的非负约束使得它的分解更具解释性。在选择使用哪一种技术时，我们需要考虑我们的具体需求，以及我们的数据是否满足这些技术的要求。&lt;/p&gt;
+&lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
+&lt;p&gt;[1] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Unsupervised learning by convex and conic coding. &amp;quot; Advances in neural information processing systems 9 (1996).&lt;/p&gt;
+&lt;p&gt;[2] Lee, Daniel D., and H. Sebastian Seung. &amp;ldquo;Learning the parts of objects by non-negative matrix factorization.&amp;rdquo; Nature 401.6755 (1999): 788-791.&lt;/p&gt;
+&lt;p&gt;[3] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Algorithms for non-negative matrix factorization. &amp;quot; Advances in neural information processing systems 13 (2000).&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>机器学习重要术语词汇表</title>
+        <link>https://cuterwrite.top/p/machine-learning-terms/</link>
+        <pubDate>Thu, 15 Jul 2021 00:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/machine-learning-terms/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/image.2lqvb7dnlg80.png" alt="Featured image of post 机器学习重要术语词汇表" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%9C%BA%E5%99%A8%E5%AD%A6%E4%B9%A0%E9%87%8D%E8%A6%81%E6%9C%AF%E8%AF%AD%E8%AF%8D%E6%B1%87%E8%A1%A8&#34; &gt;机器学习重要术语词汇表&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%B2%BE%E7%A1%AE%E5%BA%A6accuracy&#34; &gt;精确度Accuracy&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%9B%B2%E7%BA%BF%E4%B8%8B%E9%9D%A2%E7%A7%AF-auc&#34; &gt;曲线下面积 (AUC)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%8C%E5%85%83%E5%88%86%E7%B1%BB&#34; &gt;二元分类&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%A0%A1%E5%87%86&#34; &gt;校准&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%88%86%E7%B1%BB&#34; &gt;分类&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%86%B3%E5%AE%9A%E7%B3%BB%E6%95%B0&#34; &gt;决定系数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%89%B9%E5%BE%81%E5%B7%A5%E7%A8%8B&#34; &gt;特征工程&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#f-score&#34; &gt;F-score&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E8%B6%85%E5%8F%82%E6%95%B0&#34; &gt;超参数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#label&#34; &gt;Label&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%AF%B9%E6%95%B0%E6%8D%9F%E5%A4%B1&#34; &gt;对数损失&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%8D%9F%E5%A4%B1%E5%87%BD%E6%95%B0&#34; &gt;损失函数&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%B9%B3%E5%9D%87%E7%BB%9D%E5%AF%B9%E8%AF%AF%E5%B7%AE-mae&#34; &gt;平均绝对误差 (MAE)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%A4%9A%E7%B1%BB%E5%88%86%E7%B1%BB&#34; &gt;多类分类&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#n-%E5%85%83%E8%AF%AD%E6%B3%95&#34; &gt;N 元语法&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%A0%87%E5%87%86%E5%8C%96&#34; &gt;标准化&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%AE%A1%E9%81%93&#34; &gt;管道&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#precision&#34; &gt;Precision&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#recall&#34; &gt;Recall&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E6%AD%A3%E5%88%99%E5%8C%96&#34; &gt;正则化&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%9B%9E%E5%BD%92&#34; &gt;回归&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%9B%B8%E5%AF%B9%E7%BB%9D%E5%AF%B9%E8%AF%AF%E5%B7%AE&#34; &gt;相对绝对误差&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%9B%B8%E5%AF%B9%E5%B9%B3%E6%96%B9%E8%AF%AF%E5%B7%AE&#34; &gt;相对平方误差&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%9D%87%E6%96%B9%E8%AF%AF%E5%B7%AE%E6%A0%B9-rmse&#34; &gt;均方误差根 (RMSE)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;机器学习重要术语词汇表&#34;&gt;机器学习重要术语词汇表&lt;/h1&gt;
+&lt;h2 id=&#34;精确度accuracy&#34;&gt;精确度Accuracy&lt;/h2&gt;
+&lt;p&gt;在分类中，准确性是正确分类的项数目除以测试集内的项总数。 范围从 0（最不准确）到 1（最准确）。 准确性是模型性能的评估指标之一。 将其与Precision、Recall和F-score结合考虑。&lt;/p&gt;
+&lt;h2 id=&#34;曲线下面积-auc&#34;&gt;曲线下面积 (AUC)&lt;/h2&gt;
+&lt;p&gt;二元分类的一项评估指标，即曲线下面积值，它绘制真阳性率（y 轴）与误报率（x 轴）进行对照。 范围从 0.5（最差）到 1（最佳）。 也称为 ROC 曲线下面积。&lt;/p&gt;
+&lt;h2 id=&#34;二元分类&#34;&gt;二元分类&lt;/h2&gt;
+&lt;p&gt;一个分类任务，其中标签仅为两个类中的一个。&lt;/p&gt;
+&lt;h2 id=&#34;校准&#34;&gt;校准&lt;/h2&gt;
+&lt;p&gt;校准是将原始分数映射到类成员身份的过程，用于二元和多类分类。&lt;/p&gt;
+&lt;h2 id=&#34;分类&#34;&gt;分类&lt;/h2&gt;
+&lt;p&gt;当使用这些数据来预测某一类别，有监督学习任务被称为“分类”。 二分类指的是仅预测两个类别（例如，将图像划分为“猫”或“狗”图片）。 多分类指的是预测多个类别（例如，当将图像划分为特定品种狗的图片）。&lt;/p&gt;
+&lt;h2 id=&#34;决定系数&#34;&gt;决定系数&lt;/h2&gt;
+&lt;p&gt;回归中的一项评估指标，表明数据与模型的匹配程度。 范围从 0 到 1。 值 0 表示数据是随机的，否则就无法与模型相匹配。 1 表示模型与数据完全匹配。 这通常称 r 平方值。&lt;/p&gt;
+&lt;h2 id=&#34;特征工程&#34;&gt;特征工程&lt;/h2&gt;
+&lt;p&gt;特征工程是涉及定义一组特征和开发软件以从可用现象数据中生成特征向量（即特征提取）的过程。&lt;/p&gt;
+&lt;h2 id=&#34;f-score&#34;&gt;F-score&lt;/h2&gt;
+&lt;p&gt;分类的一项评估指标，用于平衡Precision和Recall&lt;/p&gt;
+&lt;h2 id=&#34;超参数&#34;&gt;超参数&lt;/h2&gt;
+&lt;p&gt;机器学习算法的参数。 示例包括在决策林中学习的树的数量，或者梯度下降算法中的步长。 在对模型进行定型之前，先设置超参数 的值，并控制查找预测函数参数的过程，例如，决策树中的比较点或线性回归模型中的权重。&lt;/p&gt;
+&lt;h2 id=&#34;label&#34;&gt;Label&lt;/h2&gt;
+&lt;p&gt;使用机器学习模型进行预测的元素。 例如，狗的品种或将来的股票价格。&lt;/p&gt;
+&lt;h2 id=&#34;对数损失&#34;&gt;对数损失&lt;/h2&gt;
+&lt;p&gt;在分类中，描述分类器准确性的评估指标。 对数损失越小，分类器越准确。&lt;/p&gt;
+&lt;h2 id=&#34;损失函数&#34;&gt;损失函数&lt;/h2&gt;
+&lt;p&gt;损失函数是指训练标签值与模型所做预测之间的差异。 通过最小化损失函数来估算模型参数。&lt;/p&gt;
+&lt;p&gt;可以为不同的训练程序配置不同的损失函数。&lt;/p&gt;
+&lt;h2 id=&#34;平均绝对误差-mae&#34;&gt;平均绝对误差 (MAE)&lt;/h2&gt;
+&lt;p&gt;回归中的一项评估指标，即所有模型误差的平均值，其中模型误差是预测&lt;a class=&#34;link&#34; href=&#34;https://docs.microsoft.com/zh-cn/dotnet/machine-learning/resources/glossary?WT.mc_id=academic-15963-cxa#label&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;标签&lt;/a&gt;值和正确标签值之间的差距。&lt;/p&gt;
+&lt;h2 id=&#34;多类分类&#34;&gt;多类分类&lt;/h2&gt;
+&lt;p&gt;一种分类任务，其中标签为三个或三个以上类中的一个。&lt;/p&gt;
+&lt;h2 id=&#34;n-元语法&#34;&gt;N 元语法&lt;/h2&gt;
+&lt;p&gt;文本数据的特征提取方案：N 个单词的任何序列都将转变为特征值&lt;/p&gt;
+&lt;h2 id=&#34;标准化&#34;&gt;标准化&lt;/h2&gt;
+&lt;p&gt;标准化是将浮点数据缩放到 0 到 1 之间的值的过程。&lt;/p&gt;
+&lt;h2 id=&#34;管道&#34;&gt;管道&lt;/h2&gt;
+&lt;p&gt;要将模型与数据集相匹配所需的所有操作。 管道由数据导入、转换、特征化和学习步骤组成。 对管道进行定型后，它会转变为模型。&lt;/p&gt;
+&lt;h2 id=&#34;precision&#34;&gt;Precision&lt;/h2&gt;
+&lt;p&gt;在分类中，Precision是正确预测为属于该类的项目的数量，除以预测为属于该类的项目的总数。&lt;/p&gt;
+&lt;h2 id=&#34;recall&#34;&gt;Recall&lt;/h2&gt;
+&lt;p&gt;在分类中，Recall是正确预测为属于该类的项目的数量，除以实际属于该类的项目的总数。&lt;/p&gt;
+&lt;h2 id=&#34;正则化&#34;&gt;正则化&lt;/h2&gt;
+&lt;p&gt;正则化会对过于复杂的线性模型进行惩罚。 正则化有两种类型：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;L1正则化将无意义特征的权重归零。 进行这种正则化之后，所保存模型的大小可能会变小。&lt;/li&gt;
+&lt;li&gt;L2正则化将无意义特征的权重范围最小化。 这是一种更通用的过程，并且对离群值不太敏感。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;回归&#34;&gt;回归&lt;/h2&gt;
+&lt;p&gt;有监督学习任务，其中输出是一个实际值，例如，双精度值。 示例包括预测股票价格。&lt;/p&gt;
+&lt;h2 id=&#34;相对绝对误差&#34;&gt;相对绝对误差&lt;/h2&gt;
+&lt;p&gt;回归中的一项评估指标，即所有绝对误差总和除以正确标签值和所有正确标签值的平均值之间的差值总和。&lt;/p&gt;
+&lt;h2 id=&#34;相对平方误差&#34;&gt;相对平方误差&lt;/h2&gt;
+&lt;p&gt;回归中的一项评估指标，即所有绝对平方误差总和除以正确标签值和所有正确标签值的平均值之间的平方差值总和。&lt;/p&gt;
+&lt;h2 id=&#34;均方误差根-rmse&#34;&gt;均方误差根 (RMSE)&lt;/h2&gt;
+&lt;p&gt;误差平方平均值的平方根。&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

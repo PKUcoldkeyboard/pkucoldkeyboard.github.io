@@ -1,7 +1,1767 @@
-&lt;?xml version=&#39;1.0&#39; encoding=&#39;UTF-8&#39;?&gt;<rss version="2.0">
-     <channel>
-       <title>cuterwrite</title>
-       <link>https://cuterwrite.top</link>
-       <description></description>
-       <lastBuildDate>Thu, 27 Jul 2023 01:00:00 UTC</lastBuildDate></channel>
-   </rss>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>RDMA on cuterwrite</title>
+        <link>https://cuterwrite.top/tags/rdma/</link>
+        <description>Recent content in RDMA on cuterwrite</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Thu, 27 Jul 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/rdma/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>RDMA技术及其编程方法（二）：编程指导</title>
+        <link>https://cuterwrite.top/p/rdma-tutorial/2/</link>
+        <pubDate>Thu, 27 Jul 2023 01:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/rdma-tutorial/2/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230725145210.png" alt="Featured image of post RDMA技术及其编程方法（二）：编程指导" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#rdma%E6%8A%80%E6%9C%AF%E5%8F%8A%E5%85%B6%E7%BC%96%E7%A8%8B%E6%96%B9%E6%B3%95%E4%BA%8C%E7%BC%96%E7%A8%8B%E6%8C%87%E5%AF%BC&#34; &gt;RDMA技术及其编程方法（二）：编程指导&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%80libibverbs%E7%AE%80%E4%BB%8B&#34; &gt;一、libibverbs简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%8Cverbs-api%E8%AF%A6%E8%A7%A3&#34; &gt;二、Verbs API详解&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E7%AE%80%E4%BB%8B&#34; &gt;1. 简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-verbs%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%B1%82%E6%AC%A1&#34; &gt;2. Verbs对象创建层次&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E4%B8%A4%E4%B8%AA%E5%8A%A8%E6%80%81%E5%BA%93&#34; &gt;3. 两个动态库&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%89connection-manager&#34; &gt;三、Connection Manager&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%BB%BA%E7%AB%8B&#34; &gt;1. 连接的建立&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-cm%E7%9A%84%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%9E%8Brdmacm&#34; &gt;2. CM的抽象类型（RDMACM）&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%9B%9B-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E8%A2%AB%E5%8A%A8%E6%96%B9&#34; &gt;四、 RDMACM程序解析——被动方&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel&#34; &gt;1. 创建事件channel&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id&#34; &gt;2. 创建连接ID&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80&#34; &gt;3. 绑定地址&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E5%88%9B%E5%BB%BAlistener%E8%BF%94%E5%9B%9E%E7%AB%AF%E5%8F%A3%E5%9C%B0%E5%9D%80&#34; &gt;4. 创建Listener，返回端口/地址&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E7%AD%89%E5%BE%85%E8%BF%9E%E6%8E%A5%E8%AF%B7%E6%B1%82&#34; &gt;5. 等待连接请求&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-%E5%88%9B%E5%BB%BApdcq%E5%92%8Csend-receive-qp&#34; &gt;6. 创建PD、CQ和Send-Receive QP&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C&#34; &gt;7. 最后的操作&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%94-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E4%B8%BB%E5%8A%A8%E6%96%B9&#34; &gt;五、 RDMACM程序解析——主动方&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel-1&#34; &gt;1. 创建事件channel&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id-1&#34; &gt;2. 创建连接ID&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80-1&#34; &gt;3. 绑定地址&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E5%88%9B%E5%BB%BAqp&#34; &gt;4. 创建QP&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E8%A7%A3%E6%9E%90%E8%B7%AF%E7%94%B1&#34; &gt;5. 解析路由&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5&#34; &gt;6. 建立连接&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C-1&#34; &gt;7. 最后的操作&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%85%AD%E5%AE%9E%E6%88%98%E5%9F%BA%E4%BA%8Erdma%E7%9A%84client-server%E7%A8%8B%E5%BA%8F&#34; &gt;六、实战：基于RDMA的client-server程序&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-server%E7%AB%AF&#34; &gt;1. server端&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-client%E7%AB%AF&#34; &gt;2. client端&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E9%A1%B9%E7%9B%AE%E5%AE%9E%E7%8E%B0&#34; &gt;3. 项目实现&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE&#34; &gt;参考文献&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;rdma技术及其编程方法二编程指导&#34;&gt;RDMA技术及其编程方法（二）：编程指导&lt;/h1&gt;
+&lt;h2 id=&#34;一libibverbs简介&#34;&gt;一、libibverbs简介&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;libibverbs由Roland Dreier自2006年开始开发和维护，实际上是*nix中的Verbs API标准
+&lt;ul&gt;
+&lt;li&gt;开源&lt;/li&gt;
+&lt;li&gt;Verbs的核心部分自2005年起集成到Linux内核中&amp;ndash;内核2.6.11&lt;/li&gt;
+&lt;li&gt;Inbox in several *nix distributions&lt;/li&gt;
+&lt;li&gt;目前有多个硬件供应商提供的级别较低的库&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;对所有启用RDMA的传输协议使用相同的API
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;InfiniBand&lt;/strong&gt;： 支持RDMA的网络体系结构
+&lt;ul&gt;
+&lt;li&gt;需要支持它的网卡和InfiniBand交换机。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;RoCE&lt;/strong&gt;：基于以太网/IP帧的RDMA数据包封装
+&lt;ul&gt;
+&lt;li&gt;需要支持它的网卡和标准以太网交换机&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;iWARP&lt;/strong&gt;：提供基于流控制传输协议(SCTP)和传输控制协议(TCP)的RDMA
+&lt;ul&gt;
+&lt;li&gt;需要支持它的网卡和标准以太网交换机&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;libibverbs是完全线程安全的
+&lt;ul&gt;
+&lt;li&gt;libibverbs本身是线程安全的&lt;/li&gt;
+&lt;li&gt;用户态空间低级驱动程序库也是线程安全的&lt;/li&gt;
+&lt;li&gt;应用程序可以在多线程中使用RDMA资源&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+
+
+
+&lt;div class=&#34;notice notice-warning&#34; &gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 576 512&#34;&gt;&lt;path d=&#34;M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;销毁一个线程中的资源并在另一个线程中使用它将导致segmentation fault，这个问题在非多线程代码中也会发生&lt;/p&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;使用libibverbs的基本须知
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;tips&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;头文件引入&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;#include&amp;lt;infiniband/verbs.h&amp;gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;编译时链接&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;-libverbs&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;所有的input structures需要为zeroed&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;使用memset()或结构初始化、如果该structure有扩充的需求，则零值将保留遗留行为&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;大多数资源句柄都是指针，因此使用错误的句柄可能会导致分段错误&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;使用NULL检查句柄&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;返回指针的Verbs成功时返回有效值，失败时返回NULL&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;检查返回值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;返回整形变量的Verbs如果成功则返回零，如果成功则返回-1或errno&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;检查返回值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;二verbs-api详解&#34;&gt;二、Verbs API详解&lt;/h2&gt;
+&lt;h3 id=&#34;1-简介&#34;&gt;1. 简介&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;在内核和用户态空间均可使用&lt;/li&gt;
+&lt;li&gt;Verbs中的类
+&lt;ul&gt;
+&lt;li&gt;资源管理：Qps、CQs、SRQs等等&lt;/li&gt;
+&lt;li&gt;WR处理：post send, 轮询CQ等等&lt;/li&gt;
+&lt;li&gt;内存注册&lt;/li&gt;
+&lt;li&gt;地址句柄&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Verbs中的操作
+&lt;ul&gt;
+&lt;li&gt;Device操作&lt;/li&gt;
+&lt;li&gt;上下文操作&lt;/li&gt;
+&lt;li&gt;PD操作&lt;/li&gt;
+&lt;li&gt;QP bringup&lt;/li&gt;
+&lt;li&gt;活跃QP操作&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-verbs对象创建层次&#34;&gt;2. Verbs对象创建层次&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;获取devide列表&lt;/li&gt;
+&lt;li&gt;打开请求的device&lt;/li&gt;
+&lt;li&gt;查询device功能&lt;/li&gt;
+&lt;li&gt;分配PD内存空间&lt;/li&gt;
+&lt;li&gt;注册内存域MR&lt;/li&gt;
+&lt;li&gt;关联并创建完成队列CQ&lt;/li&gt;
+&lt;li&gt;创建QP&lt;/li&gt;
+&lt;li&gt;Bring up a QP&lt;/li&gt;
+&lt;li&gt;Post WR并且轮询CQ&lt;/li&gt;
+&lt;li&gt;清理资源
+&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230724235009.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230724235009&#34;
+	
+	
+&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230724235116.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230724235116&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h3 id=&#34;3-两个动态库&#34;&gt;3. 两个动态库&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;libibverbs.so
+&lt;ul&gt;
+&lt;li&gt;用于直接通过用户态空间访问InfiniBand硬件的库&lt;/li&gt;
+&lt;li&gt;Infiniband(根据Infiniband规范)和iWarp(iWARP动词规范)的RDMA Verbs的实现&lt;/li&gt;
+&lt;li&gt;它处理创建、修改、查询和销毁资源的控制路径，如保护域(PD)、完成队列(CQ)、队列对(QP)、共享接收队列(SRQ)、地址句柄(AH)、内存区域(MR)&lt;/li&gt;
+&lt;li&gt;它还处理发送和接收发布到QPS和SRQ的数据，使用轮询和完成事件从CQs获取完成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;librdmacm.so
+&lt;ul&gt;
+&lt;li&gt;用户态空间的RDMA连接管理器&lt;/li&gt;
+&lt;li&gt;使用Socket语义的RDMA(InfiniBand、ROCE和iWARP)通信管理库&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;三connection-manager&#34;&gt;三、Connection Manager&lt;/h2&gt;
+&lt;h3 id=&#34;1-连接的建立&#34;&gt;1. 连接的建立&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;基于Infiniband通信管理(CM)协议（在通用服务接口(GSI)上定义的协议QP：QP1）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;提供以下服务&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在对等RC和QP之间交换必要的参数，使它们为通信做好准备
+&lt;ul&gt;
+&lt;li&gt;初始化器请求连接到远程上的服务ID（服务ID映射）&lt;/li&gt;
+&lt;li&gt;类TCP握手：请求/响应/即用消息&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;查找给定服务ID的远程UD和QP序号
+&lt;ul&gt;
+&lt;li&gt;服务ID请求/响应消息&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;加载备用路径&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;连接管理器（Connection Manager，CM）是一个用户态空间的库，它提供了一个通用的接口，用于在RDMA网络中建立连接。它可以用于建立连接，也可以用于查找远程QP的地址，以便在不建立连接的情况下发送数据。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;需要在对等QP之间交换信息&lt;/li&gt;
+&lt;li&gt;负责RC、UC、RD连接的建立&lt;/li&gt;
+&lt;li&gt;应用程序使用SA来获取其他信息(例如路径记录)&lt;/li&gt;
+&lt;li&gt;SIDR用于UD&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-cm的抽象类型rdmacm&#34;&gt;2. CM的抽象类型（RDMACM）&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;类似于Socket连接模式的语义&lt;/li&gt;
+&lt;li&gt;对IB和ROCE都使用基于IP的寻址模式&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;类&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_create/destroy_id&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;creates/destroys a connection identifier (equivalent to a socket)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_create/destroy_qp&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;allocate/destroy a qp for communication&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_bind_addr&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;set local port to listen on&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_resolve_addr&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;obtain local RDMA device to reach remote address&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_resolve_route&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;determine route to remote address&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_get_src_port&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;query local port&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_get_local_addr&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;query local ip&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_get_peer_addr&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;query remote ip&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_connect/disconnect&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;connect/disconnect rc qps, or resolve service id to qp for ud qps&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_listen&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;listen for incoming connections&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_accept/reject&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;accept/reject incoming connection requests&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_create/destroy_event_channel&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;allocate/destroy an event channel&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_get_cm_event&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;get next event&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_ack_cm_event&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;acknowledge event(s) to rdmacm&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;&lt;strong&gt;rdma_join/leave_multicast&lt;/strong&gt;&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;join/leave multicast addresses&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;使用rdmacm的基本须知
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;tips&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;头文件引入&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;#include&amp;lt;rdma/rdma_cma.h&amp;gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;编译时链接&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;-lrdmacm&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;四-rdmacm程序解析被动方&#34;&gt;四、 RDMACM程序解析——被动方&lt;/h2&gt;
+&lt;p&gt;流程如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;创建事件channel，以便我们可以接收rdmacm事件，如连接请求和连接建立通知。&lt;/li&gt;
+&lt;li&gt;创建连接ID并绑定到地址。&lt;/li&gt;
+&lt;li&gt;创建Listener并返回端口/地址。&lt;/li&gt;
+&lt;li&gt;等待连接请求&lt;/li&gt;
+&lt;li&gt;创建PD、CQ和Send-Receive QP&lt;/li&gt;
+&lt;li&gt;接受连接请求&lt;/li&gt;
+&lt;li&gt;等待建立连接&lt;/li&gt;
+&lt;li&gt;视情况发布操作&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id=&#34;1-创建事件channel&#34;&gt;1. 创建事件channel&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;打开用于报告通信事件的channel。异步事件将通过事件channel报告给用户，对应方法为&lt;code&gt;struct rdma_event_channel * rdma_create_event_channel(void)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;事件channel用于定向rdma_cm_id上的所有事件。对于许多客户端来说，单个事件channel可能就足够了，然而，当管理大量的连接或cm_id时，用户可能会发现将不同cm_id的事件定向到不同的channel进行处理是有用的。&lt;/li&gt;
+&lt;li&gt;必须通过调用&lt;code&gt;rdma_destroy_event_channel&lt;/code&gt;销毁所有创建的事件channel。用户应该调用&lt;code&gt;rdma_get_cm_event&lt;/code&gt;来检索事件channel上的事件。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_event_channel&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_create_event_channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;!&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_create_event_channel&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_cm_event&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 此处会阻塞，直到有事件发生
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_get_cm_event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_get_cm_event&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 中间处理代码...
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rdma_destroy_event_channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;ul&gt;
+&lt;li&gt;每个事件channel都映射到一个文件描述符。可以像使用和操作任何其他FD一样使用和操作关联的文件描述符，以更改其行为。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-创建连接id&#34;&gt;2. 创建连接ID&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;创建用于跟踪通信信息的标识符，对应方法为&lt;code&gt;int rdma_create_id(struct rdma_event_channel *channel, struct rdma_cm_id **id, void *context, enum rdma_port_space ps)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;输入参数：
+&lt;ul&gt;
+&lt;li&gt;channel：事件channel&lt;/li&gt;
+&lt;li&gt;id：指向rdma_cm_id指针的指针，用于返回新创建的rdma_cm_id&lt;/li&gt;
+&lt;li&gt;context：用户上下文，将在事件中返回给用户&lt;/li&gt;
+&lt;li&gt;ps：RDMA端口空间，指定要使用的端口空间&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;rdma_cm_id在概念上等同于用于RDMA通信的套接字。不同之处在于，RDMA通信需要显式绑定到指定的RDMA设备，然后才能进行通信，并且大多数操作本质上是异步的。&lt;/li&gt;
+&lt;li&gt;端口空间
+&lt;ul&gt;
+&lt;li&gt;RDMA_PS_TCP：提供可靠、面向连接的QP通信。与TCP不同，RDMA端口空间提供基于消息的通信，而不是基于流的通信。&lt;/li&gt;
+&lt;li&gt;RDMA_PS_UDP：提供不可靠、无连接的QP通信。支持数据报和组播通信。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;销毁：在调用此函数并确认相关事件之前，用户必须释放任何与rdma_cm_id相关的QP。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_cm_id&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_create_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nb&#34;&gt;NULL&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;RDMA_PS_TCP&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_create_id&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 中间处理代码...
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rdma_destroy_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;3-绑定地址&#34;&gt;3. 绑定地址&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;将源地址与rdma_cm_id相关联。对应方法为&lt;code&gt;int rdma_bind_addr(struct rdma_cm_id *id, struct sockaddr *addr)&lt;/code&gt;。
+&lt;ul&gt;
+&lt;li&gt;地址中可以包含通配符。&lt;/li&gt;
+&lt;li&gt;如果绑定到特定本地地址，则rdma_cm_id也将绑定到本地RDMA设备。&lt;/li&gt;
+&lt;li&gt;通常，在调用&lt;code&gt;rdma_listen&lt;/code&gt;以绑定到特定端口号之前调用此函数，但也可以在调用&lt;code&gt;rdma_resolve_addr&lt;/code&gt;以绑定到特定地址之前在主动方调用该函数。&lt;/li&gt;
+&lt;li&gt;如果用于绑定到端口0，rdma_cm将选择一个可用端口，可以使用&lt;code&gt;rdma_get_src_port&lt;/code&gt;检索该端口。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;/*  sockaddr_in是IPV4的地址结构体
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;*   AF_INET：IPV4
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;*   htons：将主机字节序转换为网络字节序（小端存储）, 20079是端口号
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;*   INADDR_ANY：表示任意地址
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cm&#34;&gt;*/&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sockaddr_in&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;addr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin_family&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;AF_INET&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin_port&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;htons&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;20079&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin_addr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;s_addr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INADDR_ANY&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;},&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;};&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_bind_addr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sockaddr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;addr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_bind_addr&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;4-创建listener返回端口地址&#34;&gt;4. 创建Listener，返回端口/地址&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;初始化传入连接请求或数据报服务查找的Listener。对应方法为&lt;code&gt;int rdma_listen(struct rdma_cm_id *id, int backlog)&lt;/code&gt;。
+&lt;ul&gt;
+&lt;li&gt;侦听将被限制为本地绑定源地址&lt;/li&gt;
+&lt;li&gt;在调用此函数之前，用户必须已通过调用&lt;code&gt;rdma_bind_addr&lt;/code&gt;将&lt;code&gt;rdma_cm_id&lt;/code&gt;绑定到本地地址。&lt;/li&gt;
+&lt;li&gt;如果&lt;code&gt;rdma_cm_id&lt;/code&gt;绑定到特定的IP地址，则侦听将仅限于该地址和关联的RDMA设备。&lt;/li&gt;
+&lt;li&gt;如果&lt;code&gt;rdma_cm_id&lt;/code&gt;仅绑定到RDMA端口号，则将在所有RDMA设备上进行侦听。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;返回已绑定到本地地址的&lt;code&gt;rdma_cm_id&lt;/code&gt;的本地端口号。对应方法为&lt;code&gt;uint16_t rdma_get_src_port(struct rdma_cm_id *id)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;返回已绑定到本地设备的&lt;code&gt;rdma_cm_id&lt;/code&gt;的本地IP地址。对应方法为&lt;code&gt;struct sockaddr * rdma_get_local_addr(struct rdma_cm_id *id)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;解析目的节点和服务地址，并返回建立通信所需的信息。提供与getaddrinfo等效的RDMA功能(配合&lt;code&gt;rdma_create_ep&lt;/code&gt;使用)。对应方法为&lt;code&gt;int rdma_getaddrinfo (char *node, char *service, struct rdma_addrinfo *hints, struct rdma_addrinfo **res)&lt;/code&gt;。
+&lt;ul&gt;
+&lt;li&gt;node: 可选，目的节点的主机名，或者点分十进制的IPv4/IPv6十六进制地址&lt;/li&gt;
+&lt;li&gt;service：地址的服务名称或端口号。&lt;/li&gt;
+&lt;li&gt;hints：一个包含有关调用方支持的服务类型的提示的rdma_addrinfo结构的引用。&lt;/li&gt;
+&lt;li&gt;res：指向包含响应信息的rdma_addrinfo结构的LinkedList的指针。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;26
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;27
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;28
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;29
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;30
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;31
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;32
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;33
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;34
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;35
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 等待连接请求的最大数量
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;backlog&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_listen&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;backlog&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_listen&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;uint16_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;port&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_get_src_port&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;port&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ntohs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;port&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;listening on port %u.&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;port&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sockaddr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;local_addr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_get_local_addr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;listen_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;local_addr&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sa_family&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;AF_INET&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sockaddr_in&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sockaddr_in&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;local_addr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;INET_ADDRSTRLEN&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;// 需要加上头文件 #include &amp;lt;arpa/inet.h&amp;gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;inet_ntop&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;AF_INET&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin_addr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;),&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;INET_ADDRSTRLEN&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Local IP address is: %s&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ip&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Local port is: %d&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ntohs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sin_port&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_addrinfo&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;memset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;sizeof&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ai_flags&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;RAI_PASSIVE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ai_port_space&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;RDMA_PS_TCP&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_addrinfo&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;res&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_getaddrinfo&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nb&#34;&gt;NULL&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;20079&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;hints&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;res&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rdma_getaddrinfo&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;err&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// do something with struct rdma_addrinfo *cur = res...
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;5-等待连接请求&#34;&gt;5. 等待连接请求&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;检索通信事件。如果没有挂起的事件，默认情况下，调用将阻塞，直到接收到事件。对应方法为&lt;code&gt;int rdma_get_cm_event(struct rdma_event_channel *channel, struct rdma_cm_event **event)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;通过修改与给定通道相关联的文件描述符，可以更改此函数的默认同步行为。&lt;/li&gt;
+&lt;li&gt;所有报告的事件都必须通过调用&lt;code&gt;rdma_ack_cm_event&lt;/code&gt;进行确认。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rdma_cm_id&lt;/code&gt; 的销毁将被阻塞，直到相关事件被确认。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_cm_event&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;// 此处会阻塞，直到有事件发生
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;err&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_get_cm_event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;event&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;6-创建pdcq和send-receive-qp&#34;&gt;6. 创建PD、CQ和Send-Receive QP&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;分配与指定的&lt;code&gt;rdma_cm_id&lt;/code&gt;相关联的QP，并将其转换为用于发送和接收。对应方法为&lt;code&gt;int rdma_create_qp(struct rdma_cm_id *id, struct ibv_pd *pd, struct ibv_qp_init_attr *qp_init_attr)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;在调用此函数之前，&lt;code&gt;rdma_cm_id&lt;/code&gt;必须绑定到本地RDMA设备，且保护域PD必须用于同一设备。&lt;/li&gt;
+&lt;li&gt;被分配给&lt;code&gt;rdma_cm_id&lt;/code&gt;的QP会由 librdmacm 自动转换状态.&lt;/li&gt;
+&lt;li&gt;分配完毕后，QP 将准备就绪，处理接收信息的发布。如果 QP 未连接，它将准备好发布发送。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;26
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;27
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;28
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;29
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;30
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;31
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;32
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;33
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;34
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;35
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;36
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;37
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;38
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;39
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;40
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;pd&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ibv_alloc_pd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cm_client_id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;verbs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;!&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;pd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Failed to allocate a protection domain&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;io_completion_channel&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ibv_create_comp_channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cm_client_id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;verbs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;!&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;io_completion_channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Failed to create an I/O completion event channel&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;cq&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ibv_create_cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cm_client_id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;verbs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nb&#34;&gt;NULL&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;io_completion_channel&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;!&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Failed to create a completion queue&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ibv_req_notify_cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Failed to request notifications&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;bzero&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;sizeof&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;qp_type&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;IBV_QPT_RC&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cap&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;max_send_wr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cap&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;max_recv_wr&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cap&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;max_send_sge&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cap&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;max_recv_sge&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;send_cq&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;recv_cq&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;cq&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rdma_create_qp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cm_client_id&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;qp_init_attr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Failed to create QP&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;client_qp&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;cm_client_id&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;qp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;7-最后的操作&#34;&gt;7. 最后的操作&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;Accept请求连接&lt;/li&gt;
+&lt;li&gt;等待连接建立&lt;/li&gt;
+&lt;li&gt;发布操作&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725224928.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725224928&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;五-rdmacm程序解析主动方&#34;&gt;五、 RDMACM程序解析——主动方&lt;/h2&gt;
+&lt;h3 id=&#34;1-创建事件channel-1&#34;&gt;1. 创建事件channel&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;与被动方相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-创建连接id-1&#34;&gt;2. 创建连接ID&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;与被动方相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;3-绑定地址-1&#34;&gt;3. 绑定地址&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;将目的地址和可选源地址从IP地址解析为RDMA地址。如果成功，则指定的rdma_cm_id将绑定到本地设备。对应方法为&lt;code&gt;int rdma_resolve_addr (struct rdma_cm_id *id, struct sockaddr *src_addr, struct sockaddr *dst_addr, int timeout_ms)&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;此方法用于将给定的目标IP地址映射到可用的RDMA地址。&lt;/li&gt;
+&lt;li&gt;IP到RDMA地址的映射使用本地路由表或通过ARP完成。&lt;/li&gt;
+&lt;li&gt;如果给定源地址，则将&lt;code&gt;rdma_cm_id&lt;/code&gt;绑定到该地址，就像调用&lt;code&gt;rdma_ind_addr&lt;/code&gt;一样。&lt;/li&gt;
+&lt;li&gt;如果没有给出源地址，并且&lt;code&gt;rdma_cm_id&lt;/code&gt;尚未绑定到设备，则&lt;code&gt;rdma_cm_id&lt;/code&gt;将根据本地路由表绑定到源地址。&lt;/li&gt;
+&lt;li&gt;在此方法调用之后，&lt;code&gt;rdma_cm_id&lt;/code&gt;将绑定到RDMA设备。&lt;/li&gt;
+&lt;li&gt;该方法调用通常在调用 &lt;code&gt;rdma_resolve_route&lt;/code&gt; 和 &lt;code&gt;rdma_connect&lt;/code&gt; 之前在主动方上进行。&lt;/li&gt;
+&lt;/ul&gt;
+
+
+
+&lt;div class=&#34;notice notice-note&#34; &gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;InfiniBand特定&lt;/p&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+&lt;li&gt;此方法还会将目标IP地址和源IP地址(如果给定)映射到GID。&lt;/li&gt;
+&lt;li&gt;为了执行映射，IPoIB必须同时在本地和远程节点上运行。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;4-创建qp&#34;&gt;4. 创建QP&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;与被动方相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;5-解析路由&#34;&gt;5. 解析路由&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;解析指向目标地址的 RDMA 路由，以建立连接。目标地址必须已通过调用 rdma_resolve_addr 解析。对应方法为&lt;code&gt;int rdma_resolve_route (struct rdma_cm_id *id, int timeout_ms);&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;6-建立连接&#34;&gt;6. 建立连接&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;对应方法为&lt;code&gt;int rdma_connect (struct rdma_cm_id *id, struct rdma_conn_param *conn_param);&lt;/code&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;id：指向rdma_cm_id的指针&lt;/li&gt;
+&lt;li&gt;conn_param：指向rdma_conn_param结构的指针，包含连接参数&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;对于 &lt;code&gt;RDMA_PS_TCP&lt;/code&gt; 类型的 &lt;code&gt;rdma_cm_id&lt;/code&gt;，该调用会向远程目的地发起连接请求&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;对于 &lt;code&gt;RDMA_PS_UDP&lt;/code&gt; 类型的 &lt;code&gt;rdma_cm_id&lt;/code&gt;，它会启动对提供数据报服务的远程 QP 的查询&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;7-最后的操作-1&#34;&gt;7. 最后的操作&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;等待连接建立&lt;/li&gt;
+&lt;li&gt;发布操作&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725225927.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725225927&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725225943.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725225943&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;六实战基于rdma的client-server程序&#34;&gt;六、实战：基于RDMA的client-server程序&lt;/h2&gt;
+&lt;h3 id=&#34;1-server端&#34;&gt;1. server端&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;工作流程：
+&lt;ol&gt;
+&lt;li&gt;初始化RDMA资源&lt;/li&gt;
+&lt;li&gt;等待client连接&lt;/li&gt;
+&lt;li&gt;分配并固定服务器缓冲区buffer&lt;/li&gt;
+&lt;li&gt;接受客户端连接&lt;/li&gt;
+&lt;li&gt;将有关本地服务器缓冲区的信息发送到客户端&lt;/li&gt;
+&lt;li&gt;等待断开连接&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-client端&#34;&gt;2. client端&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;工作流程：
+&lt;ol&gt;
+&lt;li&gt;初始化RDMA资源&lt;/li&gt;
+&lt;li&gt;连接server&lt;/li&gt;
+&lt;li&gt;通过发送/接收exchange接收服务器端缓冲区信息&lt;/li&gt;
+&lt;li&gt;从（第一个）本地缓冲区向服务器缓冲区进行 RDMA 写入。&lt;/li&gt;
+&lt;li&gt;进行 RDMA 读取，将服务器缓冲区的内容读入第二个本地缓冲区。&lt;/li&gt;
+&lt;li&gt;比较第一缓冲区和第二缓冲区的内容，并进行匹配&lt;/li&gt;
+&lt;li&gt;断开连接&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;3-项目实现&#34;&gt;3. 项目实现&lt;/h3&gt;
+&lt;div class=&#34;github&#34;&gt;
+    &lt;div class=&#34;logo&#34;&gt;
+        &lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon github-icon&#34; viewBox=&#34;0 0 16 16&#34;&gt;&lt;path fill-rule=&#34;evenodd&#34; clip-rule=&#34;evenodd&#34; d=&#34;M2 2.5C2 1.83696 2.26339 1.20107 2.73223 0.732233C3.20108 0.263392 3.83696 0 4.5 0L13.25 0C13.4489 0 13.6397 0.0790176 13.7803 0.21967C13.921 0.360322 14 0.551088 14 0.75V13.25C14 13.4489 13.921 13.6397 13.7803 13.7803C13.6397 13.921 13.4489 14 13.25 14H10.75C10.5511 14 10.3603 13.921 10.2197 13.7803C10.079 13.6397 10 13.4489 10 13.25C10 13.0511 10.079 12.8603 10.2197 12.7197C10.3603 12.579 10.5511 12.5 10.75 12.5H12.5V10.5H4.5C4.30308 10.5 4.11056 10.5582 3.94657 10.6672C3.78257 10.7762 3.65442 10.9312 3.57816 11.1128C3.50191 11.2943 3.48096 11.4943 3.51793 11.6878C3.5549 11.8812 3.64816 12.0594 3.786 12.2C3.92524 12.3422 4.0023 12.5338 4.00024 12.7328C3.99818 12.9318 3.91716 13.1218 3.775 13.261C3.63285 13.4002 3.4412 13.4773 3.24222 13.4752C3.04325 13.4732 2.85324 13.3922 2.714 13.25C2.25571 12.7829 1.99929 12.1544 2 11.5V2.5ZM12.5 1.5V9H4.5C4.144 9 3.806 9.074 3.5 9.208V2.5C3.5 2.23478 3.60536 1.98043 3.79289 1.79289C3.98043 1.60536 4.23478 1.5 4.5 1.5H12.5ZM5 12.25V15.5C5 15.5464 5.01293 15.5919 5.03734 15.6314C5.06175 15.6709 5.09667 15.7028 5.1382 15.7236C5.17972 15.7444 5.22621 15.7532 5.27245 15.749C5.31869 15.7448 5.36286 15.7279 5.4 15.7L6.85 14.613C6.89328 14.5805 6.94591 14.563 7 14.563C7.05409 14.563 7.10673 14.5805 7.15 14.613L8.6 15.7C8.63714 15.7279 8.68131 15.7448 8.72755 15.749C8.77379 15.7532 8.82028 15.7444 8.8618 15.7236C8.90333 15.7028 8.93826 15.6709 8.96266 15.6314C8.98707 15.5919 9 15.5464 9 15.5V12.25C9 12.1837 8.97366 12.1201 8.92678 12.0732C8.87989 12.0263 8.81631 12 8.75 12H5.25C5.1837 12 5.12011 12.0263 5.07322 12.0732C5.02634 12.1201 5 12.1837 5 12.25Z&#34;/&gt;&lt;/svg&gt;
+        &lt;a class=&#34;name&#34; href=https://github.com/PKUcoldkeyboard/RDMA-examples target=&#34;_blank&#34;&gt;RDMA-examples&lt;/a&gt;
+    &lt;/div&gt;
+    &lt;div class=&#34;description&#34;&gt;RDMA-examples: A repository of practical code examples showcasing the fundamental concepts and usage of RDMA (Remote Direct Memory Access) technology.&lt;/div&gt; 
+    &lt;div class=&#34;language&#34;&gt;
+        &lt;span class=&#34;language-color&#34; style=&#34;background-color: #555555&#34;&gt;&lt;/span&gt;
+        &lt;span class=&#34;language-name&#34;&gt;C&lt;/span&gt;
+    &lt;/div&gt;
+&lt;/div&gt;
+&lt;h3 id=&#34;4-补充rdma应用程序标准流程&#34;&gt;4. 补充：RDMA应用程序标准流程&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230729185145.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230729185145&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;参考文献&#34;&gt;参考文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        </item>
+        <item>
+        <title>RDMA技术及其编程方法（一）：RDMA简介与原理</title>
+        <link>https://cuterwrite.top/p/rdma-tutorial/1/</link>
+        <pubDate>Fri, 21 Jul 2023 01:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/rdma-tutorial/1/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230722162905.png" alt="Featured image of post RDMA技术及其编程方法（一）：RDMA简介与原理" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#rdma%E6%8A%80%E6%9C%AF%E5%8F%8A%E5%85%B6%E7%BC%96%E7%A8%8B%E6%96%B9%E6%B3%95%E4%B8%80rdma%E6%8A%80%E6%9C%AF&#34; &gt;RDMA技术及其编程方法（一）：RDMA技术&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%80-rdma%E6%8A%80%E6%9C%AF%E7%AE%80%E4%BB%8B&#34; &gt;一、 RDMA技术简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%8C-rdma%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86&#34; &gt;二、 RDMA工作原理&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-infiband%E4%B8%8E%E4%BB%A5%E5%A4%AA%E7%BD%91%E7%9A%84%E5%AF%B9%E6%AF%94&#34; &gt;1. Infiband与以太网的对比&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-rdma%E4%B8%AD%E7%9A%84%E9%87%8D%E8%A6%81%E6%A6%82%E5%BF%B5&#34; &gt;2. RDMA中的重要概念&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-qpswrs%E6%89%A7%E8%A1%8C%E6%A8%A1%E5%9E%8B&#34; &gt;3. QPs/WRs执行模型&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E9%80%9A%E4%BF%A1%E8%AF%AD%E4%B9%89&#34; &gt;4. 通信语义&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E4%BC%A0%E8%BE%93%E6%9C%8D%E5%8A%A1&#34; &gt;5. 传输服务&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-rdma%E6%9E%B6%E6%9E%84%E5%B1%82%E7%BA%A7%E7%BB%93%E6%9E%84&#34; &gt;6. RDMA架构层级结构&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%89verbs%E4%B8%8Eofa-verbs-api&#34; &gt;三、Verbs与OFA Verbs API&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-verbs%E7%AE%80%E4%BB%8B&#34; &gt;1. Verbs简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-ofa-verbs-api%E6%94%AF%E6%8C%81%E5%BA%94%E7%94%A8&#34; &gt;2. OFA Verbs API支持应用&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%9B%9B%E6%80%BB%E7%BB%93&#34; &gt;四、总结&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE&#34; &gt;参考文献&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;rdma技术及其编程方法一rdma技术&#34;&gt;RDMA技术及其编程方法（一）：RDMA技术&lt;/h1&gt;
+&lt;h2 id=&#34;一-rdma技术简介&#34;&gt;一、 RDMA技术简介&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;RDMA: Remote Direct Memory Access
+&lt;ul&gt;
+&lt;li&gt;RDMA就是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过CPU的参与，从而大大减少了CPU的开销，提高了数据传输的效率。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;术语&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;含义&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Remote&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;数据在同一网络中的节点之间传输&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Direct&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;（1）传输过程没有操作系统内核的参与 （2）所有关于传输的协议都负载在网卡上&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Memory&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;（1）在用户态的应用程序的虚拟内存之间传输（2）没有额外的内存拷贝或缓存&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Access&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;send、receive、read、write、原子操作&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;RDMA的各种协议
+&lt;ul&gt;
+&lt;li&gt;InfiniBand - (41.8% of top 500 supercomputers)
+&lt;ul&gt;
+&lt;li&gt;InfiniBand是一个工业标准的分组交换网络&lt;/li&gt;
+&lt;li&gt;在高性能计算机系统中越来越多地被采用&lt;/li&gt;
+&lt;li&gt;用户层网络，可绕过操作系统内核&lt;/li&gt;
+&lt;li&gt;SDR 4x - 8 Gbps&lt;/li&gt;
+&lt;li&gt;DDR 4x - 16 Gbps&lt;/li&gt;
+&lt;li&gt;QDR 4x - 32 Gbps&lt;/li&gt;
+&lt;li&gt;FDQ 4x - 54 Gbps&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;RoCE - RDMA over Converged Ethernet
+&lt;ul&gt;
+&lt;li&gt;允许在以太网络上执行RDMA的网络协议&lt;/li&gt;
+&lt;li&gt;RoCE v1 - 10 Gbps&lt;/li&gt;
+&lt;li&gt;RoCE v2 - 25 Gbps&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;iWarp - internet Wide Area RDMA Protocol
+&lt;ul&gt;
+&lt;li&gt;运行在TCP/IP协议栈上的RDMA协议&lt;/li&gt;
+&lt;li&gt;10 Gbps&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;RDMA的支持嵌入在内核之中：Kernel中的drivers/infiniband&lt;/li&gt;
+&lt;li&gt;RDMA协议优势
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Zero-copy&lt;/strong&gt;：零拷贝，能够读写远程内存，能够直接访问远程缓冲区，无需在不同软件层之间复制数据&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Kernel bypass&lt;/strong&gt;：跳过内核，可在相同的代码上下文（即用户空间或内核）中收发数据，节省了上下文切换时间&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;No CPU involvement&lt;/strong&gt;：无CPU参与，可使用专用硬件收发数据，而不需要CPU干预。可降低远程端的CPU使用率，因为不需要它执行任何主动操作&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Message based transactions&lt;/strong&gt;：基于消息的事务，可在不同的连接上同时执行多个事务，而无需等待任何事务完成&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Scatter/gather entries support&lt;/strong&gt;：支持分散/聚集条目，可在单个操作中传输多个缓冲区，而无需将它们合并到单个缓冲区中&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;二-rdma工作原理&#34;&gt;二、 RDMA工作原理&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722174248.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722174248&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h3 id=&#34;1-infiband与以太网的对比&#34;&gt;1. Infiband与以太网的对比&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;Feature/Network Type&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;InfiniBand&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;Ethernet&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Addressing&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;lids, gid&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;macs, IP addresses&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Path resolution&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Path queries&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;ARP&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Lossless network&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Credit-based flow control&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Pause frames/PFC&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;QoS&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;SLs/VLs&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Priorities/TC&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Virtual networks&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Pkeys&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;VLANs&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;可以看到，InfiniBand与以太网的区别首先在于网络地址的表示方式不同，以太网使用mac地址和IP地址，而InfiniBand使用lid和gid&lt;/li&gt;
+&lt;li&gt;其次，网络的路径解析方式不同，以太网使用ARP地址解析协议，而InfiniBand使用path queries；&lt;/li&gt;
+&lt;li&gt;然后，在网络的可靠性方面，以太网使用Pause frames/PFC（Priority-based Flow Control，基于优先级的流量控制），而InfiniBand使用的是Credit-based flow control(基于信用的流量控制)&lt;/li&gt;
+&lt;li&gt;接着在网络的服务质量方面，以太网使用Priorities/TC（Traffic Class，流量类别），而InfiniBand使用SLs/VLs（Service Level，服务等级）&lt;/li&gt;
+&lt;li&gt;最后，在网络的虚拟化方面，以太网使用VLANs（Virtual Local Area Network，虚拟局域网），而InfiniBand使用Pkeys（Partition Keys，分区键）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-rdma中的重要概念&#34;&gt;2. RDMA中的重要概念&lt;/h3&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;缩写&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;全称&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;说明&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;PD&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Protection Domain&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;保护域，是RDMA中的一种资源管理机制。PD定义了一组内存区域和访问权限，用于控制RDMA操作的安全性。PD与QP、MR均有关联。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MR&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Memory Region&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;内存区域，是RDMA中的一种抽象，用于描述应用程序中的内存区域。MR定义了一块内存区域的起始地址、大小和访问权限，并与PD关联。包含R_Key和L_Key。MR的配套机制用来解决RDMA操作中的两个问题：（1）APP提供的地址都是虚拟地址，经过MMU的转换才能得到真实的物理地址，RDMA网卡是如何得到真实物理地址从而去内存中读取或写入数据的？（2）假设网卡有能力获取目的地址，但如果用户恶意指定了一个非法的虚拟地址，网卡就有可能被指使去读写系统关键内存，如何预防？因此，MR的作用之一就是实现虚拟地址与物理地址的转换，APP只能看到虚拟地址，而且会在发起RDMA Write时把本地和对端的内存的虚拟地址传递给RDMA网卡。网卡需要知道APP提供的虚拟地址所对应的物理地址才能访问系统内存。在注册MR的过程中，软件会在内存中创建并填写一个虚拟地址到物理地址的映射表供网卡查询。MR的第二个作用是控制HCA访问内存的权限，程序在注册MR时会产生两把钥匙L_KEY（Local）和R_KEY（Remote）。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;QP&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Queue Pair&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;队列对，是RDMA中的一种通信机制。QR由发送队列（Send Queue, SQ）和接收队列（Receive Queue, RQ）组成，用于发送和接收RDMA操作的请求和数据。SQ专门用来存放发送任务，RQ专门用来存放接收任务。在一次SEND-RECV流程中，发送端需要把表示一次发送任务的WR放到SQ里面(这种操作称为Post Send)，接收端需要把表示一次接收任务的WR放到QP里面（称为Post Receive），这样硬件才知道收到数据之后放到内存中的哪个位置。在RDMA中，通信的基本对象是QP，而不是节点。对于每个节点来说，每个进程都可以申请和使用若干个QP，而每个本地QP可以连接到一个远端的QP。每个节点中的QP都有一个唯一的编号，称为QPN，通过QPN可以唯一确定一个节点上的QP。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;CQ&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Completion Queue&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;完成队列，用于存储RDMA操作的完成事件。当RDMA操作完成时，相关的完成事件会被放入CQ中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ与QP相关联。CQ中有很多元素，称为CQE。CQE是硬件完成任务之后返回给软件的“完成报告”，与WR相反。每个CQE都包含某个WR的完成信息。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;WR&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Work Request&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;工作请求，用于描述RDMA操作的请求。WR包含了操作类型、源地址、目的地址等信息，应用程序通过将WR放入QP的发送队列来触发RDMA操作。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;SGE&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Scatter/Gather Element&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;即将读或写的内存地址。必须提供L_Key或R_Key来认证MR的连接&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;WC&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Work Completion&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;工作完成，用于描述RDMA操作的完成事件。WC包含了操作类型、状态、传输长度等信息，应用程序可以通过读取CQ中的WC来获取RDMA操作的结果。&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;3-qpswrs执行模型&#34;&gt;3. QPs/WRs执行模型&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722225719.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722225719&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;硬件提供
+&lt;ul&gt;
+&lt;li&gt;针对每个QP上下文&lt;/li&gt;
+&lt;li&gt;虚拟到物理内存的转换&lt;/li&gt;
+&lt;li&gt;安全的进程控制机制&lt;/li&gt;
+&lt;li&gt;可靠性(取决于传输服务)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;操作系统管理资源创建
+&lt;ul&gt;
+&lt;li&gt;但不发布WR和轮询CQ&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;结果
+&lt;ul&gt;
+&lt;li&gt;应用程序以安全的方式直接访问硬件&lt;/li&gt;
+&lt;li&gt;软件处理缓冲区而不是信息包&lt;/li&gt;
+&lt;li&gt;在快速路径中不需要操作系统干预。&lt;/li&gt;
+&lt;li&gt;完全异步的过程&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;4-通信语义&#34;&gt;4. 通信语义&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Channel（消息传递）
+&lt;ul&gt;
+&lt;li&gt;请求者提供源缓冲区&lt;/li&gt;
+&lt;li&gt;接收者提供目的缓冲区&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Remote Direct Memory Access（RDMA）
+&lt;ul&gt;
+&lt;li&gt;请求者同时提供源缓冲区和目标缓冲区&lt;/li&gt;
+&lt;li&gt;同时支持RDMA读取和写入&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;5-传输服务&#34;&gt;5. 传输服务&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;分类：Connected（连接）与Datagram（数据报）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;分类：Reliable（可靠）与Unreliable（不可靠）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;两两组合形成四种类型的传输：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Reliable Connected（RC），例如TCP&lt;/li&gt;
+&lt;li&gt;Unreliable Datagram（UD），例如UDP&lt;/li&gt;
+&lt;li&gt;UC也可以实现&lt;/li&gt;
+&lt;li&gt;RD不支持，虽然它是由规范定义的，但在API/DIVER/硬件中不支持&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;QP的传输类型：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;可靠连接RC
+&lt;ul&gt;
+&lt;li&gt;QP仅与一个远程QP关联&lt;/li&gt;
+&lt;li&gt;由一个QP的发送队列发送的消息被可靠地递送到另一个QP的接收队列。&lt;/li&gt;
+&lt;li&gt;数据包按顺序发送&lt;/li&gt;
+&lt;li&gt;发送端，每条消息都被划分为长度为路径MTU的数据包，接收方将数据包重组为消息。支持发送、RDMA write/read&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;不可靠连接RC
+&lt;ul&gt;
+&lt;li&gt;QP仅与一个远程QP关联&lt;/li&gt;
+&lt;li&gt;连接是不可靠的，即发送的数据包可能会丢失&lt;/li&gt;
+&lt;li&gt;消息出错时不会重传，错误处理必须由更高级别的协议提供。&lt;/li&gt;
+&lt;li&gt;支持发送、RDMA write&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;不可靠数据报UD
+&lt;ul&gt;
+&lt;li&gt;队列对可以向/从任何其他多个QP发送和接收单数据包消息。&lt;/li&gt;
+&lt;li&gt;不能保证有序和数据包到达，并且发送的数据包可能会被接收方丢弃。&lt;/li&gt;
+&lt;li&gt;支持广播消息(一对多)&lt;/li&gt;
+&lt;li&gt;只支持发送操作&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;RDMA支持的传输操作&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Send（立即）
+&lt;ul&gt;
+&lt;li&gt;发送方需要加上时间戳&lt;/li&gt;
+&lt;li&gt;接收方也需要在某些地方加上该时间戳用来标识该消息&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;RDMA Write（立即）&lt;/li&gt;
+&lt;li&gt;RDMA Read（异步）&lt;/li&gt;
+&lt;li&gt;Atomic operations（原子操作）
+&lt;ul&gt;
+&lt;li&gt;发送方发送读/写请求，并指定其将访问读写的本地和远程地址&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Send操作流程：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;接收方需要发送接收请求（Receive Request, RR）给发送方&lt;/li&gt;
+&lt;li&gt;发送方发送Send操作请求（Send Request, SR）给接收方&lt;/li&gt;
+&lt;li&gt;只在可靠连接中发送ACK&lt;/li&gt;
+&lt;li&gt;接收方轮询CQ，获取SR的完成事件&lt;/li&gt;
+&lt;li&gt;发送方轮询CQ，获取RR的完成事件&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232438.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722232438&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;RDMA Write操作流程：
+&lt;ul&gt;
+&lt;li&gt;请求方发送Send操作请求（Send Request, SR）加上远程地址与key给接收方&lt;/li&gt;
+&lt;li&gt;只在可靠连接中发送ACK&lt;/li&gt;
+&lt;li&gt;请求方轮询CQ，获取SR的完成事件&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;RDMA Write操作是一端应用主动写入远端内存的行为，除了准备阶段，远端CPU不需要参与，也不感知何时有数据写入、数据在何时接收完毕，所以这是一种单端操作。&lt;/li&gt;
+&lt;li&gt;需要注意的是，操作发起端的应用程序是通过虚拟地址来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址——物理地址的转换由RDMA网卡完成。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232556.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722232556&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;RDMA Read与Atomic操作流程：
+&lt;ul&gt;
+&lt;li&gt;请求方发送Send操作请求（Send Request, SR）加上远程地址与key给接收方&lt;/li&gt;
+&lt;li&gt;只在可靠连接中发送ACK&lt;/li&gt;
+&lt;li&gt;请求方轮询CQ，获取SR的完成事件&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722232758.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722232758&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;小结：UD、UC、RC三种QP传输方式对比，w/o-&amp;gt;with/without
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;操作原语&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;UD&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;UC&lt;/th&gt;
+&lt;th style=&#34;text-align:center&#34;&gt;RC&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Send(w/o immediate)&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;RDMA Write(w/o immediate)&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;RDMA Read&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;Atomic operations&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;连接类型&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;数据报（一对多）&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;连接（一对一）&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;连接（一对一）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;最大消息大小&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;最大路径MTU&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;2GB&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;2GB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;广播&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;不支持&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;6-rdma架构层级结构&#34;&gt;6. RDMA架构层级结构&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230722233900.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230722233900&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230728235849.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230728235849&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h2 id=&#34;三verbs与ofa-verbs-api&#34;&gt;三、Verbs与OFA Verbs API&lt;/h2&gt;
+&lt;h3 id=&#34;1-verbs简介&#34;&gt;1. Verbs简介&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Verbs是对为使用RDMA的应用程序提供的功能的抽象描述
+&lt;ul&gt;
+&lt;li&gt;Verbs不是API&lt;/li&gt;
+&lt;li&gt;Verbs有多种实现&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Verbs可以被分为两大类
+&lt;ul&gt;
+&lt;li&gt;控制：管理资源，通常需要切换上下文。
+&lt;ul&gt;
+&lt;li&gt;创建/销毁/修改/查询/处理事件&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;数据：使用资源发送/接收数据，不需要切换上下文。
+&lt;ul&gt;
+&lt;li&gt;发送Send/发送Receive/轮询CQ/请求完成事件&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;Verbs是对RDMA编程的底层描述。&lt;/li&gt;
+&lt;li&gt;Verbs旨在提供延迟、带宽、消息速率等方面的最佳性能。它可以被视作许多应用构建的基石。
+&lt;ul&gt;
+&lt;li&gt;Sockets&lt;/li&gt;
+&lt;li&gt;存储&lt;/li&gt;
+&lt;li&gt;并行计算&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;InfiniBand规范以Verbs接口形式编写
+&lt;ul&gt;
+&lt;li&gt;所需行为的语义描述&lt;/li&gt;
+&lt;li&gt;没有语法或操作系统特定的详细信息&lt;/li&gt;
+&lt;li&gt;可以自由定义实现
+&lt;ul&gt;
+&lt;li&gt;函数、结构、类型等的语法。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;OpenFabrics Alliance (OFA) Verbs API
+&lt;ul&gt;
+&lt;li&gt;一种Verbs接口，由OpenFabrics Alliance（OFA）组织定义和推广。OFA Verbs是基于RDMA Verbs的扩展，提供了更加统一和标准化的RDMA编程接口。OFA Verbs是RDMA领域的一个重要标准，被广泛应用于高性能计算、数据中心和云计算等领域。&lt;/li&gt;
+&lt;li&gt;旨在提供一个开放、跨平台的RDMA编程接口，使应用程序能够在不同的RDMA硬件和操作系统上进行移植和开发&lt;/li&gt;
+&lt;li&gt;OFA统一InfiniBand市场的战略&lt;/li&gt;
+&lt;li&gt;OFA面向Linux、FreeBSD、Windows等操作系统实现&lt;/li&gt;
+&lt;li&gt;应用程序的软件接口：支持C/C++程序的数据结构、函数原型&lt;/li&gt;
+&lt;li&gt;用户态空间和内核态空间的变体：大多数应用程序和库都在用户态空间中&lt;/li&gt;
+&lt;li&gt;客户端-服务器编程模型
+&lt;ul&gt;
+&lt;li&gt;与TCP/IP套接字有一些明显的相似之处&lt;/li&gt;
+&lt;li&gt;而许多的其它不同之处，则是由于RDMA与TCP/IP的不同导致&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-ofa-verbs-api支持应用&#34;&gt;2. OFA Verbs API支持应用&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;MPI： Message Passing Interface，支持多种版本
+&lt;ul&gt;
+&lt;li&gt;OpenMPI&lt;/li&gt;
+&lt;li&gt;MVAPICH&lt;/li&gt;
+&lt;li&gt;Intel MPI&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;文件系统：
+&lt;ul&gt;
+&lt;li&gt;Lustre&lt;/li&gt;
+&lt;li&gt;NFS_RDMA&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;DDN和NetApp公司生产的存储设备
+&lt;ul&gt;
+&lt;li&gt;SRP：SCSI RDMA (Remote) Protocol – Linux kernel&lt;/li&gt;
+&lt;li&gt;iSER – iSCSI Extensions for RDMA – Linux kernel&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;伪Socket库
+&lt;ul&gt;
+&lt;li&gt;SDP – Sockets Direct Protocol – supported by Oracle&lt;/li&gt;
+&lt;li&gt;rsockets – RDMA Sockets – supported by Intel&lt;/li&gt;
+&lt;li&gt;mva – Mellanox Messaging Accelerator&lt;/li&gt;
+&lt;li&gt;SMC-R – proposed by IBM&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;四总结&#34;&gt;四、总结&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;RDMA技术是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过CPU的参与，从而大大减少了CPU的开销，提高了数据传输的效率。&lt;/li&gt;
+&lt;li&gt;RDMA技术的各种协议：InfiniBand、RoCE、iWarp&lt;/li&gt;
+&lt;li&gt;RDMA技术的优势：Zero-copy、Kernel bypass、No CPU involvement、Message based transactions、Scatter/gather entries support&lt;/li&gt;
+&lt;li&gt;RDMA技术的传输服务：Connected（连接）与Datagram（数据报）、Reliable（可靠）与Unreliable（不可靠）&lt;/li&gt;
+&lt;li&gt;RDMA技术的QP传输类型：RC、UC、UD&lt;/li&gt;
+&lt;li&gt;RDMA技术的操作原语：Send、RDMA Write、RDMA Read、Atomic operations&lt;/li&gt;
+&lt;li&gt;RDMA技术的Verbs与OFA Verbs API&lt;/li&gt;
+&lt;li&gt;RDMA技术的应用：MPI、文件系统、存储设备、伪Socket库&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;参考文献&#34;&gt;参考文献&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        </item>
+        <item>
+        <title>RDMA：Soft-RoCE环境搭建实验</title>
+        <link>https://cuterwrite.top/p/soft-roce/</link>
+        <pubDate>Sat, 11 Feb 2023 00:00:00 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/soft-roce/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/86.png" alt="Featured image of post RDMA：Soft-RoCE环境搭建实验" /&gt;&lt;!-- raw HTML omitted --&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#rdma-soft-roce%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%AE%9E%E9%AA%8C&#34; &gt;RDMA: Soft-RoCE环境搭建实验&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-roce%E7%AE%80%E4%BB%8B&#34; &gt;1. RoCE简介&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-roce%E7%9A%84%E5%8D%8F%E8%AE%AE%E5%B1%82%E6%AC%A1&#34; &gt;2. RoCE的协议层次&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-roce%E7%9A%84%E4%BC%98%E5%8A%BF&#34; &gt;3. RoCE的优势&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-soft-roce&#34; &gt;4. Soft-RoCE&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E9%83%A8%E7%BD%B2%E5%AE%9E%E9%AA%8C&#34; &gt;5. 部署实验&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#51-%E5%AE%9E%E9%AA%8C%E7%8E%AF%E5%A2%83&#34; &gt;5.1. 实验环境&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#52-%E9%83%A8%E7%BD%B2rdma%E8%BD%AF%E4%BB%B6%E6%A0%88&#34; &gt;5.2. 部署RDMA软件栈&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#521-%E7%A1%AE%E8%AE%A4%E5%BD%93%E5%89%8D%E5%86%85%E6%A0%B8%E6%98%AF%E5%90%A6%E6%94%AF%E6%8C%81rxe&#34; &gt;5.2.1. 确认当前内核是否支持RXE&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#522-%E5%AE%89%E8%A3%85%E7%94%A8%E6%88%B7%E6%80%81%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5%E5%BA%93&#34; &gt;5.2.2. 安装用户态动态链接库&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#523-%E5%AE%89%E8%A3%85iproute2%E5%92%8Cperftest&#34; &gt;5.2.3. 安装iproute2和perftest&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#53-%E9%85%8D%E7%BD%AErxe%E7%BD%91%E5%8D%A1&#34; &gt;5.3. 配置RXE网卡&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#54-%E6%89%A7%E8%A1%8Cperftest%E6%B5%8B%E8%AF%95&#34; &gt;5.4. 执行perftest测试&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;!-- raw HTML omitted --&gt;
+&lt;h1 id=&#34;rdma-soft-roce环境搭建实验&#34;&gt;RDMA: Soft-RoCE环境搭建实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-roce简介&#34;&gt;1. RoCE简介&lt;/h2&gt;
+&lt;p&gt;RoCE是三大RDMA协议之一，全称为RDMA Over Converged Ethernet，即基于融合以太网的RDMA。它是一种基于传统以太网的部分下层协议，在其基础上实现InfiniBand的部分上层协议。&lt;/p&gt;
+&lt;p&gt;RoCE的发展历史如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;1999年，由Compaq, Dell, HP, IBM, Intel, Microsoft和Sun公司组成了IBTA组织。愿景是&lt;strong&gt;设计一种更高速的新的互联协议规范标准，来应对传统以太网在面对未来计算机行业的发展时可能遇到的瓶颈&lt;/strong&gt;。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2000年，IBTA组织设计并发布了Infiniband Architecture Specification 1.0（IB规范）。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2007年，IETF发布了iWARP（Internet Wide Area RDMA Protocol）的一系列RFC。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2010年，IBTA发布了RoCE v1规范。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;2014年，IBTA发布了RoCE v2规范。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;2-roce的协议层次&#34;&gt;2. RoCE的协议层次&lt;/h2&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/v2-106078a152d4926ac8234022bd629c79_1440w.jpg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/v2-17e04efb14c550ad0be456b7b71209b4_1440w.jpg&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;首先是二层的以太网链路帧，然后是IP报文头和UDP报文头，最后是各层级协议的校验。而Infiniband传输层报文实际上是UDP层的负载，也就是深蓝色背景的部分。UDP报文头中有一个字段Destination Port Number（目的端口号），对于RoCE v2来说固定是4791，当对端网卡收到报文后，会根据该字段识别是普通的以太网数据包，还是RoCE数据包，或者是其他协议的数据包，然后再进行解析。深蓝色背景的IB传输层部分又分成了IB报头，实际的用户数据（Payload）以及校验部分。&lt;/p&gt;
+&lt;h2 id=&#34;3-roce的优势&#34;&gt;3. RoCE的优势&lt;/h2&gt;
+&lt;p&gt;为什么我们有了Infiniband协议之后，还要设计RoCE协议呢？最主要的原因还是成本问题：由于Infiniband协议本身定义了一套全新的层次架构，从链路层到传输层，都无法与现有的以太网设备兼容。也就是说，如果某个数据中心因为性能瓶颈，想要把数据交换方式从以太网切换到Infiniband技术，那么需要购买全套的Infiniband设备，包括网卡、线缆、交换机和路由器等等。商用级设备由于对可靠性有比较高的要求，所以这一套下来是非常昂贵的。&lt;/p&gt;
+&lt;p&gt;而RoCE协议的出现解决了这一问题，如果用户想要从以太网切换到RoCE，那么只需要购买支持RoCE的网卡就可以了，线缆、交换机和路由器（RoCE v1不支持以太网路由器）等网络设备都是兼容的——因为我们只是在以太网传输层基础上又定义了一套协议而已。&lt;/p&gt;
+&lt;p&gt;所以RoCE相比于Infiniband，主要还是省钱，当然性能上相比Infiniband还是有一些损失，毕竟人家是全套重新设计的。&lt;/p&gt;
+&lt;p&gt;至于iWARP，相比于RoCE协议栈更复杂，并且由于TCP的限制，只能支持可靠传输，即无法支持UD等传输类型。所以目前iWARP的发展并不如RoCE和Infiniband。&lt;/p&gt;
+&lt;h2 id=&#34;4-soft-roce&#34;&gt;4. Soft-RoCE&lt;/h2&gt;
+&lt;p&gt;虽然RoCE相比Infiniband具有兼容性优势，价格也便宜，但是&lt;strong&gt;实际应用&lt;/strong&gt;的时候&lt;strong&gt;依然需要专用的网卡支持&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;RoCE本身确实可以由软件实现，也就是本节即将介绍的Soft-RoCE，但是商用的时候，几乎不会有人用软件实现的RoCE。RDMA技术本身的一大特点就是“硬件卸载”，即把本来软件（CPU）做的事情放到硬件中实现以达到加速的目的。CPU主要是用来计算的，让它去处理协议封包和解析以及搬运数据，这是对计算资源的浪费。所以RoCE网卡会把TCP/IP协议栈放到硬件中实现以解放CPU，让它去做更重要的事。&lt;/p&gt;
+&lt;p&gt;我们说回Soft-RoCE，它由IBM和Mellanox牵头的IBTA RoCE工作组实现。本身的设计初衷有几点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;降低RoCE部署成本：Soft-RoCE可以使不具备RoCE能力的硬件和支持RoCE的硬件间进行基于IB语义的交流，这样可以免于替换网络中的一些非关键节点的旧型号网卡。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;相比TCP提升性能：虽然软件实现IB传输层带来了一定的开销，但是相比基于Socket-TCP/IP的传统通信方式，Soft-RoCE因为减少了系统调用（只在软件通知硬件下发了新SQ WQE时才会使用系统调用），发送端的零拷贝以及接收端的只需要单次拷贝等原因，仍然带来了性能上的提升。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;便于开发和测试RDMA程序：有了Soft-RoCE，我们基于Verbs API编写的程序，就可以不依赖于硬件执行起来，可以很方便地运行程序。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;实现原理&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Soft-RoCE就是把本来应该卸载到硬件的封包和解析工作，又拿到软件来做。其本身是基于Linux内核的TCP/IP协议栈实现的，网卡本身并不感知收发的数据包是RoCE报文，其驱动程序按照IB规范中的报文格式将用户数据封装成IB传输层报文，然后把报文整体当做数据填入Socket Buffer当中，由网卡进行下一步收发包处理。&lt;/p&gt;
+&lt;h2 id=&#34;5-部署实验&#34;&gt;5. 部署实验&lt;/h2&gt;
+&lt;h3 id=&#34;51-实验环境&#34;&gt;5.1. 实验环境&lt;/h3&gt;
+&lt;p&gt;本实验主要使用Ubuntu 20.04 64位作为系统环境，采用2台2核4GB云服务器作为Soft-RoCE的部署环境。&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;节点&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;IP地址&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;RDMA设备名&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;node1&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;172.16.16.10&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;node1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;node2&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;172.16.16.6&lt;/td&gt;
+&lt;td style=&#34;text-align:left&#34;&gt;node2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;52-部署rdma软件栈&#34;&gt;5.2. 部署RDMA软件栈&lt;/h3&gt;
+&lt;h4 id=&#34;521-确认当前内核是否支持rxe&#34;&gt;5.2.1. 确认当前内核是否支持RXE&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cat /boot/config-&lt;span class=&#34;k&#34;&gt;$(&lt;/span&gt;uname -r&lt;span class=&#34;k&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;|&lt;/span&gt; grep RXE
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;如果CONFIG_RDMA_RXE的值为y或者m，表示当前的操作系统可以使用RXE。&lt;/p&gt;
+&lt;h4 id=&#34;522-安装用户态动态链接库&#34;&gt;5.2.2. 安装用户态动态链接库&lt;/h4&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install libibverbs1 ibverbs-utils librdmacm1 libibumad3 ibverbs-providers rdma-core
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这几个软件包的作用如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;软件包名&lt;/th&gt;
+&lt;th&gt;主要功能&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;libibverbs1&lt;/td&gt;
+&lt;td&gt;ibverbs动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ibverbs-utils&lt;/td&gt;
+&lt;td&gt;ibverbs示例程序&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;librdmacm1&lt;/td&gt;
+&lt;td&gt;rdmacm动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;libibumad3&lt;/td&gt;
+&lt;td&gt;ibumad动态链接库&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ibverbs-providers&lt;/td&gt;
+&lt;td&gt;ibverbs各厂商用户态驱动（包括RXE）&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;rdma-core&lt;/td&gt;
+&lt;td&gt;文档及用户态配置文件&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;安装完上述软件之后，可以执行ibv_devices看看有没有报错：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152257.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152257&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;这是个基于verbs接口编写的小程序，用来获取并打印出当前系统中的RDMA设备列表。&lt;/p&gt;
+&lt;p&gt;查看安装的版本：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;dpkg -L libibverbs1
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152107.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152107&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;可以看到安装的版本是1.14.19.0&lt;/p&gt;
+&lt;h4 id=&#34;523-安装iproute2和perftest&#34;&gt;5.2.3. 安装iproute2和perftest&lt;/h4&gt;
+&lt;p&gt;iproute2是用来替代net-tools软件包的，是一组开源的网络工具集合，比如用更强大ip命令替换了以前常用的ifconfig。我们需要其中的rdma工具来对RXE进行配置。一般的操作系统都已经包含了，安装也很简单：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install iproute2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;perftest是一个基于Verbs接口开发的开源RDMA性能测试工具，可以对支持RDMA技术的节点进行带宽和时延测试。相比于rdma-core自带的示例程序 ，功能更加强大，当然也更复杂。使用如下命令安装：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo apt-get install perftest
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;53-配置rxe网卡&#34;&gt;5.3. 配置RXE网卡&lt;/h3&gt;
+&lt;p&gt;首先我们需要加载内核驱动，modprobe会自动加载依赖的其他驱动。&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo modprobe rdma_rxe
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后进行用户态配置：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;sudo rdma link add rxe_0 &lt;span class=&#34;nb&#34;&gt;type&lt;/span&gt; rxe netdev eth0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;其中rxe_0是你希望的RDMA的设备名，可任意取名。eth0为Soft-RoCE设备所绑定的网络设备名，也就是ifconfig中看到的网卡名。&lt;/p&gt;
+&lt;p&gt;接着我们用rdma工具查看是否添加成功：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;rdma link
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152620.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152620&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;再次运行&lt;code&gt;ibv_devices&lt;/code&gt;程序，可以看到RXE网卡已经出现在设备列表里。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152728.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152728&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;也可以运行&lt;code&gt;ibv_devinfo -d node1&lt;/code&gt;命令查看虚拟RDMA设备的信息。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152801.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152801&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;h3 id=&#34;54-执行perftest测试&#34;&gt;5.4. 执行perftest测试&lt;/h3&gt;
+&lt;p&gt;分别在两端执行以下命令：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;ib_send_bw -d node2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;以及：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;ib_send_bw -d node1 172.16.16.6
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;ib_send_bw是用来测试SEND操作的带宽的程序（infiniband_send bandwidth），其中 &lt;strong&gt;&amp;lt;server_ip&amp;gt;&lt;/strong&gt; 表示对端的IP&lt;/p&gt;
+&lt;p&gt;两端的结果如下，Server端：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725152955.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725152955&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;Client端：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230725153015.png&#34;
+	
+	
+	
+	loading=&#34;lazy&#34;
+	
+		alt=&#34;20230725153015&#34;
+	
+	
+&gt;&lt;/p&gt;
+&lt;p&gt;可以看到两端都打印出了一些测试信息以及最后的测试结果，也就是带宽信息。&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>
