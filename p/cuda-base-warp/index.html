@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://cuterwrite.top/p/cuda-base-warp/'>
 
-<link rel="stylesheet" href="/scss/style.min.e5c08dcda5ae84fa81474ee4a17f2ab02f45d76a8017c2d4da3c5292049da928.css"><meta property='og:title' content='CUDA基础：线程束执行的本质'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='CUDA基础：线程束执行的本质'>
 <meta property='og:description' content='对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。'>
 <meta property='og:url' content='https://cuterwrite.top/p/cuda-base-warp/'>
 <meta property='og:site_name' content='cuterwrite'>
@@ -295,7 +295,7 @@
     
     <header class="article-category">
         
-            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #ffdb5c; color: #fff;">
+            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #FFD06F; color: #fff;">
                 高性能计算
             </a>
         
@@ -821,19 +821,19 @@ $$</p>
 <td class="lntd">
 <pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">dev</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="n">cudaDeviceProp</span> <span class="n">deviceProp</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="n">CHECK</span><span class="p">(</span><span class="n">cudaGetDeviceProperties</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deviceProp</span><span class="p">,</span> <span class="n">dev</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl"><span class="nf">CHECK</span><span class="p">(</span><span class="nf">cudaGetDeviceProperties</span><span class="p">(</span><span class="o">&amp;</span><span class="n">deviceProp</span><span class="p">,</span> <span class="n">dev</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Device %d: %s&#34;</span><span class="p">,</span> <span class="n">dev</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Number of SMs: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">multiProcessorCount</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Total amount of constant memory: %4.2f KB&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">totalConstMem</span> <span class="o">/</span> <span class="mf">1024.0</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Total amount of shared memory per block: %4.2f KB&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Device %d: %s&#34;</span><span class="p">,</span> <span class="n">dev</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">name</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Number of SMs: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">multiProcessorCount</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Total amount of constant memory: %4.2f KB&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">totalConstMem</span> <span class="o">/</span> <span class="mf">1024.0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Total amount of shared memory per block: %4.2f KB&#34;</span><span class="p">,</span>
 </span></span><span class="line"><span class="cl">          <span class="n">deviceProp</span><span class="p">.</span><span class="n">sharedMemPerBlock</span> <span class="o">/</span> <span class="mf">1024.0</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Total number of registers available per block: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">regsPerBlock</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Warp size: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">warpSize</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of threads per block: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">maxThreadsPerBlock</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of threads per multiprocessor: %d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Total number of registers available per block: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">regsPerBlock</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Warp size: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">warpSize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of threads per block: %d&#34;</span><span class="p">,</span> <span class="n">deviceProp</span><span class="p">.</span><span class="n">maxThreadsPerBlock</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of threads per multiprocessor: %d&#34;</span><span class="p">,</span>
 </span></span><span class="line"><span class="cl">          <span class="n">deviceProp</span><span class="p">.</span><span class="n">maxThreadsPerMultiProcessor</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="n">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of warps per multiprocessor: %d&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="nf">log_info</span><span class="p">(</span><span class="s">&#34;Maximum number of warps per multiprocessor: %d&#34;</span><span class="p">,</span>
 </span></span><span class="line"><span class="cl">          <span class="n">deviceProp</span><span class="p">.</span><span class="n">maxThreadsPerMultiProcessor</span> <span class="o">/</span> <span class="mi">32</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
@@ -877,7 +877,7 @@ $$</p>
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">__syncthreads</span><span class="p">();</span>
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">__syncthreads</span><span class="p">();</span>
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>这个函数完成，这个函数只能同步同一个块内的线程，不能同步不同块内的线程，想要同步不同块内的线程，就只能让核函数执行完成，控制程序交换主机，这种方式来同步所有线程。当__syncthreads被调用时，在同一个线程块中每个线程都必须等待直至该线程块中所有其他线程都已经达到这个同步点。线程产生的所有全局内存和共享内存访问，将会在栅栏后对线程块中所有其他的线程可见。该函数可以协调同一个块中线程之间的通信，但它强制线程束空闲，从而可能对性能产生负面影响。</p>
@@ -1044,18 +1044,18 @@ $$</p>
             
                 
 <article class="has-image">
-    <a href="/p/simd/">
+    <a href="/p/nest-on-hpe-install/">
         
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg" loading="lazy" data-key="simd" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png" loading="lazy" data-key="nest-on-hpe-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png"/>
                 
             </div>
         
 
         <div class="article-details">
-            <h2 class="article-title">SSE与AVE向量化编程</h2>
+            <h2 class="article-title">NEST on HPC 安装教程</h2>
         </div>
     </a>
 </article>
@@ -1068,51 +1068,56 @@ $$</p>
      
     
         
-    <script src="https://utteranc.es/client.js" 
-        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
-        issue-term="title"
-        
-        crossorigin="anonymous"
-        async
-        >
-</script>
-
-<style>
-    .utterances {
-        max-width: unset;
-    }
-</style>
-
+    <script
+    src="https://giscus.app/client.js"
+    data-repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+    data-repo-id="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI="
+    data-category="Comments"
+    data-category-id="DIC_kwDOFAUD4M4CZV4F"
+    data-mapping="title"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="light"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async
+></script>
 <script>
-    let utterancesLoaded = false;
-
-    function setUtterancesTheme(theme) {
-        let utterances = document.querySelector('.utterances iframe');
-        if (utterances) {
-            utterances.contentWindow.postMessage(
+    function setGiscusTheme(theme) {
+        let giscus = document.querySelector("iframe.giscus-frame");
+        if (giscus) {
+            giscus.contentWindow.postMessage(
                 {
-                    type: 'set-theme',
-                    theme: `github-${theme}`
+                    giscus: {
+                        setConfig: {
+                            theme: theme,
+                        },
+                    },
                 },
-                'https://utteranc.es'
+                "https://giscus.app"
             );
         }
     }
 
-    addEventListener('message', event => {
-        if (event.origin !== 'https://utteranc.es') return;
+    (function () {
+        addEventListener("message", (e) => {
+            if (event.origin !== "https://giscus.app") return;
+            handler();
+        });
+        window.addEventListener("onColorSchemeChange", handler);
 
-        
-        utterancesLoaded = true;
-        setUtterancesTheme(document.documentElement.dataset.scheme)
-    });
-
-    window.addEventListener('onColorSchemeChange', (e) => {
-        if (!utterancesLoaded) return;
-        setUtterancesTheme(e.detail)
-    })
+        function handler() {
+            if (document.documentElement.dataset.scheme === "light") {
+                setGiscusTheme('light');
+            } else {
+                setGiscusTheme('dark_dimmed');
+            }
+        }
+    })();
 </script>
-
 
     
 

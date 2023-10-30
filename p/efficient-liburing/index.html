@@ -6,7 +6,7 @@
 
 <link rel='canonical' href='https://cuterwrite.top/p/efficient-liburing/'>
 
-<link rel="stylesheet" href="/scss/style.min.e5c08dcda5ae84fa81474ee4a17f2ab02f45d76a8017c2d4da3c5292049da928.css"><meta property='og:title' content='高性能异步I/O框架：io_uring'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='高性能异步I/O框架：io_uring'>
 <meta property='og:description' content='本文介绍了高性能异步I/O框架io_uring的原理、核心数据结构和使用示例。首先，文章对比了Linux原生aio接口和io_uring接口，并介绍了liburing库。接着，详细解释了io_uring的核心数据结构和三种工作模式，以及系统调用API和高级特性。然后，文章提供了在项目中引入liburing的方法，并给出了代码示例和最佳实践。最后，文章总结了io_uring的优点和结论。'>
 <meta property='og:url' content='https://cuterwrite.top/p/efficient-liburing/'>
 <meta property='og:site_name' content='cuterwrite'>
@@ -311,11 +311,11 @@
     
     <header class="article-category">
         
-            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #ffdb5c; color: #fff;">
+            <a href="/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/" style="background-color: #FFD06F; color: #fff;">
                 高性能计算
             </a>
         
-            <a href="/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/" style="background-color: #eea2a4; color: #fff;">
+            <a href="/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/" style="background-color: #376795; color: #fff;">
                 综合技术栈
             </a>
         
@@ -611,7 +611,7 @@
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">io_uring_enter</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">to_submit</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">min_complete</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span> <span class="n">sigset_t</span> <span class="o">*</span><span class="n">sig</span><span class="p">);</span>
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">io_uring_enter</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">to_submit</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">min_complete</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">sig</span><span class="p">);</span>
 </span></span></code></pre></td></tr></table>
 </div>
 </div><ul>
@@ -863,25 +863,25 @@
 </span></span><span class="line"><span class="cl">  <span class="c1">// 1. 初始化一个 io_uring 实例
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">io_uring</span> <span class="n">ring</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="c1">// 创建一个io_uring实例，队列长度为QUEUE_DEPTH，flags为0，使用默认模式
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">ret</span> <span class="o">=</span> <span class="n">io_uring_queue_init</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_queue_init</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> 
 </span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="c1">// 2. 打开输入文件，指定 O_DIRECT 标志
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">fd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span> <span class="o">|</span> <span class="n">O_DIRECT</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">fd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span> <span class="o">|</span> <span class="n">O_DIRECT</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">stat</span> <span class="n">st</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">  <span class="c1">// 3. 初始化4个读缓冲区
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">size_t</span> <span class="n">filesize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iovecs</span> <span class="o">=</span> <span class="n">calloc</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">iovec</span><span class="p">));</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">size_t</span> <span class="n">filesize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iovecs</span> <span class="o">=</span> <span class="nf">calloc</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">iovec</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">QUEUE_DEPTH</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> 
 </span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">posix_memalign</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">))</span> 
+</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="nf">posix_memalign</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">))</span> 
 </span></span><span class="line"><span class="cl">      <span class="p">{</span>
-</span></span><span class="line"><span class="cl">          <span class="n">perror</span><span class="p">(</span><span class="s">&#34;posix_memalign&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">          <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;posix_memalign&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">      <span class="p">}</span>
 </span></span><span class="line"><span class="cl">      <span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">iov_base</span> <span class="o">=</span> <span class="n">buf</span><span class="p">;</span>
@@ -890,12 +890,12 @@
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="c1">// 4. 依次准备4个读请求，指定将随后读入的数据写入 iovecs 中
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">io_uring_sqe</span> <span class="o">*</span><span class="n">sqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">size_t</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">size_t</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="k">do</span> 
 </span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="n">io_uring_get_sqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="n">offset</span> <span class="o">+=</span> <span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">iov_len</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="n">i</span><span class="o">++</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="c1">// 如果超出文件大小，停止准备后面的 SQE
@@ -906,13 +906,13 @@
 </span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">  <span class="c1">// 5. 提交 SQE 读请求
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">ret</span> <span class="o">=</span> <span class="n">io_uring_submit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_submit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> 
 </span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">!=</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit submitted less %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">      <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit submitted less %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
@@ -923,23 +923,23 @@
 </span></span><span class="line"><span class="cl">  <span class="n">filesize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">pending</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">      <span class="c1">// 等待一个读完成事件
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">io_uring_wait_cqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nf">io_uring_wait_cqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">      <span class="n">done</span><span class="o">++</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">!=</span> <span class="mi">4096</span> <span class="o">&amp;&amp;</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">+</span> <span class="n">filesize</span> <span class="o">!=</span> <span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;cqe-&gt;res: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;cqe-&gt;res: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">      <span class="p">}</span>
 </span></span><span class="line"><span class="cl">      <span class="n">filesize</span> <span class="o">+=</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">      <span class="c1">// 更新完成队列
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="n">io_uring_cqe_seen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nf">io_uring_cqe_seen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">  <span class="c1">// 7. 打印统计信息
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">printf</span><span class="p">(</span><span class="s">&#34;Submitted = %d, completed = %d, bytes = %lu</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pending</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">filesize</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Submitted = %d, completed = %d, bytes = %lu</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pending</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">filesize</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">  <span class="c1">// 8. 销毁资源
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="n">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nf">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nf">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></td></tr></table>
@@ -1174,7 +1174,7 @@
 </span></span></span><span class="line"><span class="cl"><span class="cp"></span>
 </span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">io_data</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">size_t</span> <span class="n">offset</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">offset</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">index</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">iovec</span> <span class="n">iov</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">};</span>
@@ -1186,32 +1186,32 @@
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="n">io_uring_queue_init</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_queue_init</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">get_file_size</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">off_t</span> <span class="o">*</span><span class="n">size</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">get_file_size</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">off_t</span> <span class="o">*</span><span class="n">size</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">stat</span> <span class="n">st</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">S_ISREG</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">S_ISREG</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="n">size</span> <span class="o">=</span> <span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">S_ISBLK</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nf">S_ISBLK</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">bytes</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">BLKGETSIZE64</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bytes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="nf">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">BLKGETSIZE64</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bytes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="n">size</span> <span class="o">=</span> <span class="n">bytes</span><span class="p">;</span>
@@ -1221,32 +1221,32 @@
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">void</span> <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="n">off_t</span> <span class="n">size</span><span class="p">,</span> <span class="n">off_t</span> <span class="n">offset</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">void</span> <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring_sqe</span> <span class="o">*</span><span class="n">sqe</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_data</span> <span class="o">*</span><span class="n">data</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ptr</span>                <span class="o">=</span> <span class="n">malloc</span><span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ptr</span>                <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">    <span class="n">data</span>               <span class="o">=</span> <span class="n">ptr</span> <span class="o">+</span> <span class="n">size</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">index</span>        <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">offset</span>       <span class="o">=</span> <span class="n">offset</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_base</span> <span class="o">=</span> <span class="n">ptr</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span>  <span class="o">=</span> <span class="n">size</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="n">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="n">sqe</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">|=</span> <span class="n">IOSQE_IO_LINK</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="n">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_prep_writev</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">outfd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_writev</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">outfd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">handle_cqe</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="k">struct</span> <span class="n">io_uring_cqe</span> <span class="o">*</span><span class="n">cqe</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_data</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="n">io_uring_cqe_get_data</span><span class="p">(</span><span class="n">cqe</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_data</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="nf">io_uring_cqe_get_data</span><span class="p">(</span><span class="n">cqe</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span>              <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">index</span><span class="o">++</span><span class="p">;</span>
@@ -1255,12 +1255,12 @@
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">==</span> <span class="o">-</span><span class="n">ECANCELED</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">offset</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">            <span class="n">inflight</span> <span class="o">+=</span> <span class="mi">2</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="p">}</span>
 </span></span><span class="line"><span class="cl">        <span class="k">else</span>
 </span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">printf</span><span class="p">(</span><span class="s">&#34;cqe error: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;cqe error: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">            <span class="n">ret</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="p">}</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
@@ -1269,17 +1269,17 @@
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">data</span> <span class="o">-</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">free</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">free</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_cqe_seen</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_cqe_seen</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">copy_file</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="n">off_t</span> <span class="n">insize</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">copy_file</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">insize</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring_cqe</span> <span class="o">*</span><span class="n">cqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">off_t</span> <span class="n">this_size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">off_t</span> <span class="n">offset</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">this_size</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">offset</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">insize</span><span class="p">)</span>
@@ -1292,14 +1292,14 @@
 </span></span><span class="line"><span class="cl">            <span class="n">this_size</span> <span class="o">=</span> <span class="n">BS</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">this_size</span> <span class="o">&gt;</span> <span class="n">insize</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">                <span class="n">this_size</span> <span class="o">=</span> <span class="n">insize</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="n">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">this_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">this_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">            <span class="n">offset</span> <span class="o">+=</span> <span class="n">this_size</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">            <span class="n">insize</span> <span class="o">-=</span> <span class="n">this_size</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">            <span class="n">inflight</span> <span class="o">+=</span> <span class="mi">2</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">has_inflight</span> <span class="o">!=</span> <span class="n">inflight</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">io_uring_submit</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="nf">io_uring_submit</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">insize</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">            <span class="n">depth</span> <span class="o">=</span> <span class="n">QD</span><span class="p">;</span>
@@ -1309,13 +1309,13 @@
 </span></span><span class="line"><span class="cl">        <span class="p">{</span>
 </span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">            <span class="n">ret</span> <span class="o">=</span> <span class="n">io_uring_wait_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_wait_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">printf</span><span class="p">(</span><span class="s">&#34;wait cqe: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">                <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;wait cqe: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
 </span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">handle_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="nf">handle_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">))</span>
 </span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">            <span class="n">inflight</span><span class="o">--</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="p">}</span>
@@ -1327,38 +1327,38 @@
 </span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring</span> <span class="n">ring</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">off_t</span> <span class="n">insize</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">insize</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">printf</span><span class="p">(</span><span class="s">&#34;%s: infile outfile</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s: infile outfile</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">infd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">infd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">infd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">perror</span><span class="p">(</span><span class="s">&#34;open infile&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;open infile&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">outfd</span> <span class="o">=</span> <span class="n">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_TRUNC</span><span class="p">,</span> <span class="mo">0644</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">outfd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_TRUNC</span><span class="p">,</span> <span class="mo">0644</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">outfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
 </span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">perror</span><span class="p">(</span><span class="s">&#34;open outfile&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;open outfile&#34;</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">setup_context</span><span class="p">(</span><span class="n">QD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">setup_context</span><span class="p">(</span><span class="n">QD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">))</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">get_file_size</span><span class="p">(</span><span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">insize</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">get_file_size</span><span class="p">(</span><span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">insize</span><span class="p">))</span>
 </span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="n">copy_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">insize</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="nf">copy_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">insize</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">close</span><span class="p">(</span><span class="n">infd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">close</span><span class="p">(</span><span class="n">outfd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">infd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">outfd</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></td></tr></table>
@@ -1514,6 +1514,25 @@
             
                 
 <article class="has-image">
+    <a href="/p/nest-on-hpe-install/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png" loading="lazy" data-key="nest-on-hpe-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">NEST on HPC 安装教程</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
     <a href="/p/cuda-base-memory-access-mode/">
         
         
@@ -1588,25 +1607,6 @@
 </article>
 
             
-                
-<article class="has-image">
-    <a href="/p/simd/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg" loading="lazy" data-key="simd" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">SSE与AVE向量化编程</h2>
-        </div>
-    </a>
-</article>
-
-            
         </div>
     </div>
 </aside>
@@ -1614,51 +1614,56 @@
      
     
         
-    <script src="https://utteranc.es/client.js" 
-        repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
-        issue-term="title"
-        
-        crossorigin="anonymous"
-        async
-        >
-</script>
-
-<style>
-    .utterances {
-        max-width: unset;
-    }
-</style>
-
+    <script
+    src="https://giscus.app/client.js"
+    data-repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
+    data-repo-id="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI="
+    data-category="Comments"
+    data-category-id="DIC_kwDOFAUD4M4CZV4F"
+    data-mapping="title"
+    data-strict="0"
+    data-reactions-enabled="1"
+    data-emit-metadata="0"
+    data-input-position="top"
+    data-theme="light"
+    data-lang="zh-CN"
+    data-loading="lazy"
+    crossorigin="anonymous"
+    async
+></script>
 <script>
-    let utterancesLoaded = false;
-
-    function setUtterancesTheme(theme) {
-        let utterances = document.querySelector('.utterances iframe');
-        if (utterances) {
-            utterances.contentWindow.postMessage(
+    function setGiscusTheme(theme) {
+        let giscus = document.querySelector("iframe.giscus-frame");
+        if (giscus) {
+            giscus.contentWindow.postMessage(
                 {
-                    type: 'set-theme',
-                    theme: `github-${theme}`
+                    giscus: {
+                        setConfig: {
+                            theme: theme,
+                        },
+                    },
                 },
-                'https://utteranc.es'
+                "https://giscus.app"
             );
         }
     }
 
-    addEventListener('message', event => {
-        if (event.origin !== 'https://utteranc.es') return;
+    (function () {
+        addEventListener("message", (e) => {
+            if (event.origin !== "https://giscus.app") return;
+            handler();
+        });
+        window.addEventListener("onColorSchemeChange", handler);
 
-        
-        utterancesLoaded = true;
-        setUtterancesTheme(document.documentElement.dataset.scheme)
-    });
-
-    window.addEventListener('onColorSchemeChange', (e) => {
-        if (!utterancesLoaded) return;
-        setUtterancesTheme(e.detail)
-    })
+        function handler() {
+            if (document.documentElement.dataset.scheme === "light") {
+                setGiscusTheme('light');
+            } else {
+                setGiscusTheme('dark_dimmed');
+            }
+        }
+    })();
 </script>
-
 
     
 
