@@ -7,7 +7,97 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
-        <lastBuildDate>Sat, 02 Dec 2023 02:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Thu, 21 Dec 2023 11:45:14 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/%E7%BB%BC%E5%90%88%E6%8A%80%E6%9C%AF%E6%A0%88/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片</title>
+        <link>https://cuterwrite.top/p/processing-avif-heic-images-pillow-plugins/</link>
+        <pubDate>Thu, 21 Dec 2023 11:45:14 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/processing-avif-heic-images-pillow-plugins/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22.png" alt="Featured image of post 使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片" /&gt;&lt;h2 id=&#34;一引言&#34;&gt;一、引言&lt;/h2&gt;
+&lt;p&gt;随着图片格式的不断发展，AVIF和HEIC这两种高效的图片格式逐渐受到了开发者的关注。AVIF（AV1 Image File Format）是一种基于 AV1 视频编码的图像格式，具有高压缩率和高质量的特点。HEIC（High Efficiency Image Format）是一种基于 HEVC（High Efficiency Video Coding）编码的图像格式，同样具有高压缩率和高质量的优势。为了方便处理这两种格式的图片，我们可以使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库。&lt;/p&gt;
+&lt;h2 id=&#34;二安装&#34;&gt;二、安装&lt;/h2&gt;
+&lt;p&gt;首先，我们需要安装 Pillow 库，它是一个强大的 Python 图像处理库。使用以下命令安装：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，安装 Pillow-AVIF-Plugin 和 Pillow-HEIC 库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow-avif-plugin
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow-heic
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;三使用方法&#34;&gt;三、使用方法&lt;/h2&gt;
+&lt;h3 id=&#34;1-处理avif图片&#34;&gt;1. 处理AVIF图片&lt;/h3&gt;
+&lt;p&gt;使用 Pillow-AVIF-Plugin 处理 AVIF 图片非常简单。首先，导入所需的库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;PIL&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开AVIF图片：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example.avif&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，可以对图片进行各种操作，例如调整大小、旋转等。最后，使用 &lt;code&gt;save()&lt;/code&gt; 方法将图片保存为其他格式：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;save&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example_converted.jpg&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s1&#34;&gt;&amp;#39;JPEG&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;2-处理heic图片&#34;&gt;2. 处理HEIC图片&lt;/h3&gt;
+&lt;p&gt;处理 HEIC 图片的方法与处理 AVIF 图片类似。首先，导入所需的库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;PIL&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开 HEIC 图片：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example.heic&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，可以对图片进行各种操作，例如调整大小、旋转等。最后，使用 &lt;code&gt;save()&lt;/code&gt; 方法将图片保存为其他格式：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;save&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example_converted.jpg&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s1&#34;&gt;&amp;#39;JPEG&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;四结论&#34;&gt;四、结论&lt;/h2&gt;
+&lt;p&gt;通过使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库，我们可以轻松地处理 AVIF 和 HEIC 格式的图片。这两个库为开发者提供了简单易用的接口，使得在实际项目中处理这些高效的图片格式变得更加方便。希望本文能对你有所帮助。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Ring buffer详解</title>
         <link>https://cuterwrite.top/p/ring-buffer/</link>
         <pubDate>Sat, 02 Dec 2023 02:00:00 +0000</pubDate>
@@ -4660,371 +4750,6 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;9-泛型注解新特性&#34;&gt;9 泛型、注解、新特性&lt;/h2&gt;
 &lt;p&gt;略。&lt;/p&gt;
-&lt;hr&gt;
-&lt;p&gt;本文转载自：&lt;a class=&#34;link&#34; href=&#34;https://github.com/CyC2018/CS-Notes&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;https://github.com/CyC2018/CS-Notes&lt;/a&gt;，用于个人复习。&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>Java并发知识点笔记</title>
-        <link>https://cuterwrite.top/p/java-concurrent/</link>
-        <pubDate>Tue, 04 May 2021 00:00:00 +0000</pubDate>
-        
-        <guid>https://cuterwrite.top/p/java-concurrent/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/20210503/santorini-1578440_1920.3ldusy6rm1k0.jpg" alt="Featured image of post Java并发知识点笔记" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#java%E5%B9%B6%E5%8F%91%E7%9F%A5%E8%AF%86%E7%82%B9%E7%AC%94%E8%AE%B0&#34; &gt;Java并发知识点笔记&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E4%BD%BF%E7%94%A8%E7%BA%BF%E7%A8%8B%E7%9A%84%E6%96%B9%E6%B3%95&#34; &gt;1 使用线程的方法&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E5%9F%BA%E7%A1%80%E7%BA%BF%E7%A8%8B%E6%9C%BA%E5%88%B6&#34; &gt;2 基础线程机制&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#21-executor&#34; &gt;2.1 Executor&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#22-daemon&#34; &gt;2.2 Daemon&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#23-sleep&#34; &gt;2.3 sleep()&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#24-yield&#34; &gt;2.4 yield()&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E7%BA%BF%E7%A8%8B%E4%B8%AD%E6%96%AD&#34; &gt;3 线程中断&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#31-interruptedexception&#34; &gt;3.1 InterruptedException&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#32-interrupted&#34; &gt;3.2 interrupted()&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#33-executor-%E7%9A%84%E4%B8%AD%E6%96%AD%E6%93%8D%E4%BD%9C&#34; &gt;3.3 Executor 的中断操作&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E4%BA%92%E6%96%A5%E9%94%81&#34; &gt;4 互斥锁&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#41-synchronized&#34; &gt;4.1 synchronized&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#42-reentrantlock&#34; &gt;4.2 ReentrantLock&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#43-%E6%AF%94%E8%BE%83&#34; &gt;4.3 比较&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#44-%E9%80%89%E6%8B%A9&#34; &gt;4.4 选择&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E7%BA%BF%E7%A8%8B%E5%8D%8F%E4%BD%9C&#34; &gt;5 线程协作&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#51-join&#34; &gt;5.1 join&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#52-waitnotify&#34; &gt;5.2 wait/notify&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#53-awaitsignal&#34; &gt;5.3 await/signal&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-%E7%BA%BF%E7%A8%8B%E7%8A%B6%E6%80%81&#34; &gt;6 线程状态&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-juc%E5%8C%85aqs&#34; &gt;7 JUC包/AQS&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#71-countdownlatch&#34; &gt;7.1 CountDownLatch&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#72-cyclicbarrier&#34; &gt;7.2 CyclicBarrier&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#73-semaphore&#34; &gt;7.3 Semaphore&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#8-juc%E5%8C%85%E5%85%B6%E5%AE%83%E7%BB%84%E4%BB%B6&#34; &gt;8 JUC包其它组件&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#81-futuretask&#34; &gt;8.1 FutureTask&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#82-blockingqueue&#34; &gt;8.2 BlockingQueue&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#83-forkjoin&#34; &gt;8.3 ForkJoin&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#9-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B&#34; &gt;9 内存模型&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#91-%E4%B8%BB%E5%86%85%E5%AD%98%E4%B8%8E%E5%B7%A5%E4%BD%9C%E5%86%85%E5%AD%98&#34; &gt;9.1 主内存与工作内存&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#92-%E5%86%85%E5%AD%98%E9%97%B4%E4%BA%A4%E4%BA%92%E6%93%8D%E4%BD%9C&#34; &gt;9.2 内存间交互操作&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#93-%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E4%B8%89%E5%A4%A7%E7%89%B9%E6%80%A7&#34; &gt;9.3 内存模型三大特性&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#931-%E5%8E%9F%E5%AD%90%E6%80%A7&#34; &gt;9.3.1. 原子性&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#932-%E5%8F%AF%E8%A7%81%E6%80%A7&#34; &gt;9.3.2. 可见性&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#933-%E6%9C%89%E5%BA%8F%E6%80%A7&#34; &gt;9.3.3. 有序性&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#94-%E5%85%88%E8%A1%8C%E5%8F%91%E7%94%9F%E5%8E%9F%E5%88%99&#34; &gt;9.4 先行发生原则&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#10-%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5&#34; &gt;10 线程安全策略&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#101-%E4%B8%8D%E5%8F%AF%E5%8F%98&#34; &gt;10.1 不可变&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#102-%E4%BA%92%E6%96%A5%E5%90%8C%E6%AD%A5&#34; &gt;10.2 互斥同步&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#103-%E9%9D%9E%E9%98%BB%E5%A1%9E%E5%90%8C%E6%AD%A5&#34; &gt;10.3 非阻塞同步&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#104-%E6%97%A0%E5%90%8C%E6%AD%A5&#34; &gt;10.4 无同步&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1041-%E6%A0%88%E5%B0%81%E9%97%AD&#34; &gt;10.4.1 栈封闭&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1042-%E7%BA%BF%E7%A8%8B%E6%9C%AC%E5%9C%B0%E5%AD%98%E5%82%A8&#34; &gt;10.4.2 线程本地存储&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1043-%E5%8F%AF%E9%87%8D%E5%85%A5%E4%BB%A3%E7%A0%81&#34; &gt;10.4.3 可重入代码&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#11-%E9%94%81%E4%BC%98%E5%8C%96&#34; &gt;11 锁优化&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#111-%E8%87%AA%E6%97%8B%E9%94%81&#34; &gt;11.1 自旋锁&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#112-%E9%94%81%E6%B6%88%E9%99%A4&#34; &gt;11.2 锁消除&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#113-%E9%94%81%E7%B2%97%E5%8C%96&#34; &gt;11.3 锁粗化&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#114-%E8%BD%BB%E9%87%8F%E7%BA%A7%E9%94%81&#34; &gt;11.4 轻量级锁&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#115-%E5%81%8F%E5%90%91%E9%94%81&#34; &gt;11.5 偏向锁&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;java并发知识点笔记&#34;&gt;Java并发知识点笔记&lt;/h1&gt;
-&lt;h2 id=&#34;1-使用线程的方法&#34;&gt;1 使用线程的方法&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;实现 Runnable 接口；&lt;/li&gt;
-&lt;li&gt;实现 Callable 接口；&lt;/li&gt;
-&lt;li&gt;继承 Thread 类。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;2-基础线程机制&#34;&gt;2 基础线程机制&lt;/h2&gt;
-&lt;h3 id=&#34;21-executor&#34;&gt;2.1 Executor&lt;/h3&gt;
-&lt;p&gt;Executor 管理多个异步任务的执行，而无需程序员显式地管理线程的生命周期。这里的异步是指多个任务的执行互不干扰，不需要进行同步操作。&lt;/p&gt;
-&lt;p&gt;主要有三种 Executor：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;CachedThreadPool：一个任务创建一个线程；&lt;/li&gt;
-&lt;li&gt;FixedThreadPool：所有任务只能使用固定大小的线程；&lt;/li&gt;
-&lt;li&gt;SingleThreadExecutor：相当于大小为 1 的 FixedThreadPool。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;22-daemon&#34;&gt;2.2 Daemon&lt;/h3&gt;
-&lt;p&gt;守护线程是程序运行时在后台提供服务的线程，不属于程序中不可或缺的部分。&lt;/p&gt;
-&lt;p&gt;当所有非守护线程结束时，程序也就终止，同时会杀死所有守护线程。&lt;/p&gt;
-&lt;p&gt;main() 属于非守护线程。&lt;/p&gt;
-&lt;p&gt;在线程启动之前使用 setDaemon() 方法可以将一个线程设置为守护线程。&lt;/p&gt;
-&lt;h3 id=&#34;23-sleep&#34;&gt;2.3 sleep()&lt;/h3&gt;
-&lt;p&gt;Thread.sleep(millisec) 方法会休眠当前正在执行的线程，millisec 单位为毫秒。&lt;/p&gt;
-&lt;p&gt;sleep() 可能会抛出 InterruptedException，因为异常不能跨线程传播回 main() 中，因此必须在本地进行处理。线程中抛出的其它异常也同样需要在本地进行处理。&lt;/p&gt;
-&lt;h3 id=&#34;24-yield&#34;&gt;2.4 yield()&lt;/h3&gt;
-&lt;p&gt;对静态方法 Thread.yield() 的调用声明了当前线程已经完成了生命周期中最重要的部分，可以切换给其它线程来执行。该方法只是对线程调度器的一个建议，而且也只是建议具有相同优先级的其它线程可以运行。&lt;/p&gt;
-&lt;h2 id=&#34;3-线程中断&#34;&gt;3 线程中断&lt;/h2&gt;
-&lt;p&gt;一个线程执行完毕之后会自动结束，如果在运行过程中发生异常也会提前结束。&lt;/p&gt;
-&lt;h3 id=&#34;31-interruptedexception&#34;&gt;3.1 InterruptedException&lt;/h3&gt;
-&lt;p&gt;通过调用一个线程的 interrupt() 来中断该线程，如果该线程处于阻塞、限期等待或者无限期等待状态，那么就会抛出 InterruptedException，从而提前结束该线程。但是不能中断 I/O 阻塞和 synchronized 锁阻塞。&lt;/p&gt;
-&lt;h3 id=&#34;32-interrupted&#34;&gt;3.2 interrupted()&lt;/h3&gt;
-&lt;p&gt;如果一个线程的 run() 方法执行一个无限循环，并且没有执行 sleep() 等会抛出 InterruptedException 的操作，那么调用线程的 interrupt() 方法就无法使线程提前结束。&lt;/p&gt;
-&lt;p&gt;但是调用 interrupt() 方法会设置线程的中断标记，此时调用 interrupted() 方法会返回 true。因此可以在循环体中使用 interrupted() 方法来判断线程是否处于中断状态，从而提前结束线程。&lt;/p&gt;
-&lt;h3 id=&#34;33-executor-的中断操作&#34;&gt;3.3 Executor 的中断操作&lt;/h3&gt;
-&lt;p&gt;调用 Executor 的 shutdown() 方法会等待线程都执行完毕之后再关闭，但是如果调用的是 shutdownNow() 方法，则相当于调用每个线程的 interrupt() 方法。&lt;/p&gt;
-&lt;h2 id=&#34;4-互斥锁&#34;&gt;4 互斥锁&lt;/h2&gt;
-&lt;p&gt;Java 提供了两种锁机制来控制多个线程对共享资源的互斥访问，第一个是 JVM 实现的 synchronized，而另一个是 JDK 实现的 ReentrantLock。&lt;/p&gt;
-&lt;h3 id=&#34;41-synchronized&#34;&gt;4.1 synchronized&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;同步代码块：锁对象&lt;/li&gt;
-&lt;li&gt;同步一个方法：锁对象&lt;/li&gt;
-&lt;li&gt;同步一个类：锁整个类&lt;/li&gt;
-&lt;li&gt;同步一个静态方法：锁整个类&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;42-reentrantlock&#34;&gt;4.2 ReentrantLock&lt;/h3&gt;
-&lt;p&gt;ReentrantLock 是 java.util.concurrent（J.U.C）包中的锁。&lt;/p&gt;
-&lt;p&gt;通过lock和unlock操作&lt;/p&gt;
-&lt;h3 id=&#34;43-比较&#34;&gt;4.3 比较&lt;/h3&gt;
-&lt;p&gt;&lt;strong&gt;1. 锁的实现&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;synchronized 是 JVM 实现的，而 ReentrantLock 是 JDK 实现的。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;2. 性能&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;新版本 Java 对 synchronized 进行了很多优化，例如自旋锁等，synchronized 与 ReentrantLock 大致相同。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;3. 等待可中断&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;当持有锁的线程长期不释放锁的时候，正在等待的线程可以选择放弃等待，改为处理其他事情。&lt;/p&gt;
-&lt;p&gt;ReentrantLock 可中断，而 synchronized 不行。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;4. 公平锁&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;公平锁是指多个线程在等待同一个锁时，必须按照申请锁的时间顺序来依次获得锁。&lt;/p&gt;
-&lt;p&gt;synchronized 中的锁是非公平的，ReentrantLock 默认情况下也是非公平的，但是也可以是公平的。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;5. 锁绑定多个条件&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;一个 ReentrantLock 可以同时绑定多个 Condition 对象。&lt;/p&gt;
-&lt;h3 id=&#34;44-选择&#34;&gt;4.4 选择&lt;/h3&gt;
-&lt;p&gt;除非需要使用 ReentrantLock 的高级功能，否则优先使用 synchronized。这是因为 synchronized 是 JVM 实现的一种锁机制，JVM 原生地支持它，而 ReentrantLock 不是所有的 JDK 版本都支持。并且使用 synchronized 不用担心没有释放锁而导致死锁问题，因为 JVM 会确保锁的释放。&lt;/p&gt;
-&lt;h2 id=&#34;5-线程协作&#34;&gt;5 线程协作&lt;/h2&gt;
-&lt;h3 id=&#34;51-join&#34;&gt;5.1 join&lt;/h3&gt;
-&lt;p&gt;在线程中调用另一个线程的 join() 方法，会将当前线程挂起，而不是忙等待，直到目标线程结束。&lt;/p&gt;
-&lt;h3 id=&#34;52-waitnotify&#34;&gt;5.2 wait/notify&lt;/h3&gt;
-&lt;p&gt;调用 wait() 使得线程等待某个条件满足，线程在等待时会被挂起，当其他线程的运行使得这个条件满足时，其它线程会调用 notify() 或者 notifyAll() 来唤醒挂起的线程。&lt;/p&gt;
-&lt;p&gt;它们都属于 Object 的一部分，而不属于 Thread。&lt;/p&gt;
-&lt;p&gt;只能用在同步方法或者同步控制块中使用，否则会在运行时抛出 IllegalMonitorStateException。&lt;/p&gt;
-&lt;p&gt;使用 wait() 挂起期间，线程会释放锁。这是因为，如果没有释放锁，那么其它线程就无法进入对象的同步方法或者同步控制块中，那么就无法执行 notify() 或者 notifyAll() 来唤醒挂起的线程，造成死锁&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;wait() 和 sleep() 的区别&lt;/strong&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;wait() 是 Object 的方法，而 sleep() 是 Thread 的静态方法；&lt;/li&gt;
-&lt;li&gt;wait() 会释放锁，sleep() 不会。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;53-awaitsignal&#34;&gt;5.3 await/signal&lt;/h3&gt;
-&lt;p&gt;java.util.concurrent 类库中提供了 Condition 类来实现线程之间的协调，可以在 Condition 上调用 await() 方法使线程等待，其它线程调用 signal() 或 signalAll() 方法唤醒等待的线程。&lt;/p&gt;
-&lt;p&gt;相比于 wait() 这种等待方式，await() 可以指定等待的条件，因此更加灵活。&lt;/p&gt;
-&lt;p&gt;使用 Lock 来获取一个 Condition 对象。&lt;/p&gt;
-&lt;h2 id=&#34;6-线程状态&#34;&gt;6 线程状态&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;new&lt;/li&gt;
-&lt;li&gt;runable&lt;/li&gt;
-&lt;li&gt;blocked&lt;/li&gt;
-&lt;li&gt;waiting&lt;/li&gt;
-&lt;li&gt;timed_waiting&lt;/li&gt;
-&lt;li&gt;terminated&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;7-juc包aqs&#34;&gt;7 JUC包/AQS&lt;/h2&gt;
-&lt;h3 id=&#34;71-countdownlatch&#34;&gt;7.1 CountDownLatch&lt;/h3&gt;
-&lt;p&gt;用来控制一个或者多个线程等待多个线程。&lt;/p&gt;
-&lt;p&gt;维护了一个计数器 cnt，每次调用 countDown() 方法会让计数器的值减 1，减到 0 的时候，那些因为调用 await() 方法而在等待的线程就会被唤醒。&lt;/p&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h3 id=&#34;72-cyclicbarrier&#34;&gt;7.2 CyclicBarrier&lt;/h3&gt;
-&lt;p&gt;用来控制多个线程互相等待，只有当多个线程都到达时，这些线程才会继续执行。&lt;/p&gt;
-&lt;p&gt;和 CountdownLatch 相似，都是通过维护计数器来实现的。线程执行 await() 方法之后计数器会减 1，并进行等待，直到计数器为 0，所有调用 await() 方法而在等待的线程才能继续执行。&lt;/p&gt;
-&lt;p&gt;CyclicBarrier 和 CountdownLatch 的一个区别是，CyclicBarrier 的计数器通过调用 reset() 方法可以循环使用，所以它才叫做循环屏障。&lt;/p&gt;
-&lt;p&gt;CyclicBarrier 有两个构造函数，其中 parties 指示计数器的初始值，barrierAction 在所有线程都到达屏障的时候会执行一次。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/f71af66b-0d54-4399-a44b-f47b58321984.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;h3 id=&#34;73-semaphore&#34;&gt;7.3 Semaphore&lt;/h3&gt;
-&lt;p&gt;Semaphore 类似于操作系统中的信号量，可以控制对互斥资源的访问线程数。&lt;/p&gt;
-&lt;h2 id=&#34;8-juc包其它组件&#34;&gt;8 JUC包其它组件&lt;/h2&gt;
-&lt;h3 id=&#34;81-futuretask&#34;&gt;8.1 FutureTask&lt;/h3&gt;
-&lt;p&gt;在介绍 Callable 时我们知道它可以有返回值，返回值通过 Future&amp;lt;V&amp;gt; 进行封装。FutureTask 实现了 RunnableFuture 接口，该接口继承自 Runnable 和 Future&amp;lt;V&amp;gt; 接口，这使得 FutureTask 既可以当做一个任务执行，也可以有返回值。&lt;/p&gt;
-&lt;p&gt;FutureTask 可用于异步获取执行结果或取消执行任务的场景。当一个计算任务需要执行很长时间，那么就可以用 FutureTask 来封装这个任务，主线程在完成自己的任务之后再去获取结果。&lt;/p&gt;
-&lt;h3 id=&#34;82-blockingqueue&#34;&gt;8.2 BlockingQueue&lt;/h3&gt;
-&lt;p&gt;java.util.concurrent.BlockingQueue 接口有以下阻塞队列的实现：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;strong&gt;FIFO 队列&lt;/strong&gt;  ：LinkedBlockingQueue、ArrayBlockingQueue（固定长度）&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;优先级队列&lt;/strong&gt;  ：PriorityBlockingQueue&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;提供了阻塞的 take() 和 put() 方法：如果队列为空 take() 将阻塞，直到队列中有内容；如果队列为满 put() 将阻塞，直到队列有空闲位置。&lt;/p&gt;
-&lt;h3 id=&#34;83-forkjoin&#34;&gt;8.3 ForkJoin&lt;/h3&gt;
-&lt;p&gt;主要用于并行计算中，和 MapReduce 原理类似，都是把大的计算任务拆分成多个小任务并行计算。&lt;/p&gt;
-&lt;p&gt;ForkJoinPool 实现了工作窃取算法来提高 CPU 的利用率。每个线程都维护了一个双端队列，用来存储需要执行的任务。工作窃取算法允许空闲的线程从其它线程的双端队列中窃取一个任务来执行。窃取的任务必须是最晚的任务，避免和队列所属线程发生竞争。例如下图中，Thread2 从 Thread1 的队列中拿出最晚的 Task1 任务，Thread1 会拿出 Task2 来执行，这样就避免发生竞争。但是如果队列中只有一个任务时还是会发生竞争。&lt;/p&gt;
-&lt;h2 id=&#34;9-内存模型&#34;&gt;9 内存模型&lt;/h2&gt;
-&lt;p&gt;Java 内存模型试图屏蔽各种硬件和操作系统的内存访问差异，以实现让 Java 程序在各种平台下都能达到一致的内存访问效果。&lt;/p&gt;
-&lt;h3 id=&#34;91-主内存与工作内存&#34;&gt;9.1 主内存与工作内存&lt;/h3&gt;
-&lt;p&gt;处理器上的寄存器的读写的速度比内存快几个数量级，为了解决这种速度矛盾，在它们之间加入了高速缓存。&lt;/p&gt;
-&lt;p&gt;加入高速缓存带来了一个新的问题：缓存一致性。如果多个缓存共享同一块主内存区域，那么多个缓存的数据可能会不一致，需要一些协议来解决这个问题。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/942ca0d2-9d5c-45a4-89cb-5fd89b61913f.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;所有的变量都存储在主内存中，每个线程还有自己的工作内存，工作内存存储在高速缓存或者寄存器中，保存了该线程使用的变量的主内存副本拷贝。&lt;/p&gt;
-&lt;p&gt;线程只能直接操作工作内存中的变量，不同线程之间的变量值传递需要通过主内存来完成。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/15851555-5abc-497d-ad34-efed10f43a6b.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;h3 id=&#34;92-内存间交互操作&#34;&gt;9.2 内存间交互操作&lt;/h3&gt;
-&lt;p&gt;Java 内存模型定义了 8 个操作来完成主内存和工作内存的交互操作。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/8b7ebbad-9604-4375-84e3-f412099d170c.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;read：把一个变量的值从主内存传输到工作内存中&lt;/li&gt;
-&lt;li&gt;load：在 read 之后执行，把 read 得到的值放入工作内存的变量副本中&lt;/li&gt;
-&lt;li&gt;use：把工作内存中一个变量的值传递给执行引擎&lt;/li&gt;
-&lt;li&gt;assign：把一个从执行引擎接收到的值赋给工作内存的变量&lt;/li&gt;
-&lt;li&gt;store：把工作内存的一个变量的值传送到主内存中&lt;/li&gt;
-&lt;li&gt;write：在 store 之后执行，把 store 得到的值放入主内存的变量中&lt;/li&gt;
-&lt;li&gt;lock：作用于主内存的变量&lt;/li&gt;
-&lt;li&gt;unlock&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h3 id=&#34;93-内存模型三大特性&#34;&gt;9.3 内存模型三大特性&lt;/h3&gt;
-&lt;h4 id=&#34;931-原子性&#34;&gt;9.3.1. 原子性&lt;/h4&gt;
-&lt;p&gt;Java 内存模型保证了 read、load、use、assign、store、write、lock 和 unlock 操作具有原子性，例如对一个 int 类型的变量执行 assign 赋值操作，这个操作就是原子性的。但是 Java 内存模型允许虚拟机将没有被 volatile 修饰的 64 位数据（long，double）的读写操作划分为两次 32 位的操作来进行，即 load、store、read 和 write 操作可以不具备原子性。&lt;/p&gt;
-&lt;p&gt;有一个错误认识就是，int 等原子性的类型在多线程环境中不会出现线程安全问题。前面的线程不安全示例代码中，cnt 属于 int 类型变量，1000 个线程对它进行自增操作之后，得到的值为 997 而不是 1000。&lt;/p&gt;
-&lt;p&gt;为了方便讨论，将内存间的交互操作简化为 3 个：load、assign、store。&lt;/p&gt;
-&lt;p&gt;下图演示了两个线程同时对 cnt 进行操作，load、assign、store 这一系列操作整体上看不具备原子性，那么在 T1 修改 cnt 并且还没有将修改后的值写入主内存，T2 依然可以读入旧值。可以看出，这两个线程虽然执行了两次自增运算，但是主内存中 cnt 的值最后为 1 而不是 2。因此对 int 类型读写操作满足原子性只是说明 load、assign、store 这些单个操作具备原子性。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/2797a609-68db-4d7b-8701-41ac9a34b14f.jpg&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;AtomicInteger 能保证多个线程修改的原子性。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/dd563037-fcaa-4bd8-83b6-b39d93a12c77.jpg&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;除了使用原子类之外，也可以使用 synchronized 互斥锁来保证操作的原子性。它对应的内存间交互操作为：lock 和 unlock，在虚拟机实现上对应的字节码指令为 monitorenter 和 monitorexit。&lt;/p&gt;
-&lt;h4 id=&#34;932-可见性&#34;&gt;9.3.2. 可见性&lt;/h4&gt;
-&lt;p&gt;可见性指当一个线程修改了共享变量的值，其它线程能够立即得知这个修改。Java 内存模型是通过在变量修改后将新值同步回主内存，在变量读取前从主内存刷新变量值来实现可见性的。&lt;/p&gt;
-&lt;p&gt;主要有三种实现可见性的方式：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;volatile&lt;/li&gt;
-&lt;li&gt;synchronized，对一个变量执行 unlock 操作之前，必须把变量值同步回主内存。&lt;/li&gt;
-&lt;li&gt;final，被 final 关键字修饰的字段在构造器中一旦初始化完成，并且没有发生 this 逃逸（其它线程通过 this 引用访问到初始化了一半的对象），那么其它线程就能看见 final 字段的值。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;对前面的线程不安全示例中的 cnt 变量使用 volatile 修饰，不能解决线程不安全问题，因为 volatile 并不能保证操作的原子性。&lt;/p&gt;
-&lt;h4 id=&#34;933-有序性&#34;&gt;9.3.3. 有序性&lt;/h4&gt;
-&lt;p&gt;有序性是指：在本线程内观察，所有操作都是有序的。在一个线程观察另一个线程，所有操作都是无序的，无序是因为发生了指令重排序。在 Java 内存模型中，允许编译器和处理器对指令进行重排序，重排序过程不会影响到单线程程序的执行，却会影响到多线程并发执行的正确性。&lt;/p&gt;
-&lt;p&gt;volatile 关键字通过添加内存屏障的方式来禁止指令重排，即重排序时不能把后面的指令放到内存屏障之前。&lt;/p&gt;
-&lt;p&gt;也可以通过 synchronized 来保证有序性，它保证每个时刻只有一个线程执行同步代码，相当于是让线程顺序执行同步代码。&lt;/p&gt;
-&lt;h3 id=&#34;94-先行发生原则&#34;&gt;9.4 先行发生原则&lt;/h3&gt;
-&lt;p&gt;上面提到了可以用 volatile 和 synchronized 来保证有序性。除此之外，JVM 还规定了先行发生原则，让一个操作无需控制就能先于另一个操作完成。&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;单一线程原则：在一个线程内，在程序前面的操作先行发生于后面的操作。&lt;/li&gt;
-&lt;li&gt;管程锁定规则：一个 unlock 操作先行发生于后面对同一个锁的 lock 操作。&lt;/li&gt;
-&lt;li&gt;volatile 变量规则：对一个 volatile 变量的写操作先行发生于后面对这个变量的读操作。&lt;/li&gt;
-&lt;li&gt;线程启动规则：Thread 对象的 start() 方法调用先行发生于此线程的每一个动作。&lt;/li&gt;
-&lt;li&gt;线程加入规则：Thread 对象的结束先行发生于 join() 方法返回。&lt;/li&gt;
-&lt;li&gt;线程中断规则：对线程 interrupt() 方法的调用先行发生于被中断线程的代码检测到中断事件的发生，可以通过 interrupted() 方法检测到是否有中断发生。&lt;/li&gt;
-&lt;li&gt;对象终结规则：一个对象的初始化完成（构造函数执行结束）先行发生于它的 finalize() 方法的开始。&lt;/li&gt;
-&lt;li&gt;传递性：如果操作 A 先行发生于操作 B，操作 B 先行发生于操作 C，那么操作 A 先行发生于操作 C。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;h2 id=&#34;10-线程安全策略&#34;&gt;10 线程安全策略&lt;/h2&gt;
-&lt;h3 id=&#34;101-不可变&#34;&gt;10.1 不可变&lt;/h3&gt;
-&lt;p&gt;不可变的类型：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;final 关键字修饰的基本数据类型&lt;/li&gt;
-&lt;li&gt;String&lt;/li&gt;
-&lt;li&gt;枚举类型&lt;/li&gt;
-&lt;li&gt;Number 部分子类，如 Long 和 Double 等数值包装类型，BigInteger 和 BigDecimal 等大数据类型。但同为 Number 的原子类 AtomicInteger 和 AtomicLong 则是可变的。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;对于集合类型，可以使用 Collections.unmodifiableXXX() 方法来获取一个不可变的集合。&lt;/p&gt;
-&lt;h3 id=&#34;102-互斥同步&#34;&gt;10.2 互斥同步&lt;/h3&gt;
-&lt;p&gt;synchronized 和 ReentrantLock。&lt;/p&gt;
-&lt;h3 id=&#34;103-非阻塞同步&#34;&gt;10.3 非阻塞同步&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;CAS&lt;/li&gt;
-&lt;li&gt;AtomicInteger&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;ABA问题：如果一个变量初次读取的时候是 A 值，它的值被改成了 B，后来又被改回为 A，那 CAS 操作就会误认为它从来没有被改变过。&lt;/p&gt;
-&lt;p&gt;解决方法：J.U.C 包提供了一个带有标记的原子引用类 AtomicStampedReference 来解决这个问题，它可以通过控制变量值的版本来保证 CAS 的正确性。大部分情况下 ABA 问题不会影响程序并发的正确性，如果需要解决 ABA 问题，改用传统的互斥同步可能会比原子类更高效。&lt;/p&gt;
-&lt;h3 id=&#34;104-无同步&#34;&gt;10.4 无同步&lt;/h3&gt;
-&lt;h4 id=&#34;1041-栈封闭&#34;&gt;10.4.1 栈封闭&lt;/h4&gt;
-&lt;p&gt;多个线程访问同一个方法的&lt;strong&gt;局部变量&lt;/strong&gt;时，不会出现线程安全问题，因为局部变量存储在虚拟机栈中，属于线程私有的。&lt;/p&gt;
-&lt;h4 id=&#34;1042-线程本地存储&#34;&gt;10.4.2 线程本地存储&lt;/h4&gt;
-&lt;p&gt;如果一段代码中所需要的数据必须与其他代码共享，那就看看这些共享数据的代码是否能保证在同一个线程中执行。如果能保证，我们就可以把共享数据的可见范围&lt;strong&gt;限制在同一个线程之内&lt;/strong&gt;，这样，无须同步也能保证线程之间不出现数据争用的问题。&lt;/p&gt;
-&lt;p&gt;它提供了线程本地变量，也就是如果你创建了一个ThreadLocal变量，那么访问这个变量的每个线程都会有这个变量的一个本地拷贝，多个线程操作这个变量的时候，实际是操作的自己本地内存里面的变量，从而避免了线程安全问题&lt;/p&gt;
-&lt;p&gt;每个 Thread 都有一个 ThreadLocal.ThreadLocalMap 对象。&lt;/p&gt;
-&lt;p&gt;当调用一个 ThreadLocal 的 set(T value) 方法时，先得到当前线程的 ThreadLocalMap 对象，然后将 ThreadLocal-&amp;gt;value 键值对插入到该 Map 中。&lt;/p&gt;
-&lt;h4 id=&#34;1043-可重入代码&#34;&gt;10.4.3 可重入代码&lt;/h4&gt;
-&lt;p&gt;这种代码也叫做纯代码（Pure Code），可以在代码执行的任何时刻中断它，转而去执行另外一段代码（包括递归调用它本身），而在控制权返回后，原来的程序不会出现任何错误。&lt;/p&gt;
-&lt;p&gt;可重入代码有一些共同的特征，例如不依赖存储在堆上的数据和公用的系统资源、用到的状态量都由参数中传入、不调用非可重入的方法等。&lt;/p&gt;
-&lt;h2 id=&#34;11-锁优化&#34;&gt;11 锁优化&lt;/h2&gt;
-&lt;h3 id=&#34;111-自旋锁&#34;&gt;11.1 自旋锁&lt;/h3&gt;
-&lt;p&gt;自旋锁的思想是让一个线程在请求一个共享数据的锁时执行忙循环（自旋）一段时间，如果在这段时间内能获得锁，就可以避免进入阻塞状态。&lt;/p&gt;
-&lt;p&gt;自旋锁虽然能避免进入阻塞状态从而减少开销，但是它需要进行忙循环操作占用 CPU 时间，它只适用于&lt;strong&gt;共享数据的锁定状态很短&lt;/strong&gt;的场景。&lt;/p&gt;
-&lt;p&gt;在 JDK 1.6 中引入了自适应的自旋锁。自适应意味着自旋的次数不再固定了，而是由前一次在同一个锁上的自旋次数及锁的拥有者的状态来决定。&lt;/p&gt;
-&lt;h3 id=&#34;112-锁消除&#34;&gt;11.2 锁消除&lt;/h3&gt;
-&lt;p&gt;锁消除是指对于被检测出不可能存在竞争的共享数据的锁进行消除。&lt;/p&gt;
-&lt;p&gt;锁消除主要是通过逃逸分析来支持，如果堆上的共享数据不可能逃逸出去被其它线程访问到，那么就可以把它们当成私有数据对待，也就可以将它们的锁进行消除。&lt;/p&gt;
-&lt;h3 id=&#34;113-锁粗化&#34;&gt;11.3 锁粗化&lt;/h3&gt;
-&lt;p&gt;如果一系列的连续操作都对同一个对象反复加锁和解锁，频繁的加锁操作就会导致性能损耗。&lt;/p&gt;
-&lt;p&gt;如果虚拟机探测到由这样的一串零碎的操作都对同一个对象加锁，将会把加锁的范围扩展（粗化）到整个操作序列的外部。&lt;/p&gt;
-&lt;h3 id=&#34;114-轻量级锁&#34;&gt;11.4 轻量级锁&lt;/h3&gt;
-&lt;p&gt;JDK 1.6 引入了偏向锁和轻量级锁，从而让锁拥有了四个状态：无锁状态（unlocked）、偏向锁状态（biasble）、轻量级锁状态（lightweight locked）和重量级锁状态（inflated）。&lt;/p&gt;
-&lt;p&gt;轻量级锁是相对于传统的重量级锁而言，它使用 CAS 操作来避免重量级锁使用互斥量的开销。对于绝大部分的锁，在整个同步周期内都是不存在竞争的，因此也就不需要都使用互斥量进行同步，可以先采用 CAS 操作进行同步，如果 CAS 失败了再改用互斥量进行同步。&lt;/p&gt;
-&lt;h3 id=&#34;115-偏向锁&#34;&gt;11.5 偏向锁&lt;/h3&gt;
-&lt;p&gt;偏向锁的思想是偏向于让第一个获取锁对象的线程，这个线程在之后获取该锁就不再需要进行同步操作，甚至连 CAS 操作也不再需要。&lt;/p&gt;
 &lt;hr&gt;
 &lt;p&gt;本文转载自：&lt;a class=&#34;link&#34; href=&#34;https://github.com/CyC2018/CS-Notes&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://github.com/CyC2018/CS-Notes&lt;/a&gt;，用于个人复习。&lt;/p&gt;

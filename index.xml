@@ -7,7 +7,97 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
-        <lastBuildDate>Sat, 02 Dec 2023 02:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Thu, 21 Dec 2023 11:45:14 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片</title>
+        <link>https://cuterwrite.top/p/processing-avif-heic-images-pillow-plugins/</link>
+        <pubDate>Thu, 21 Dec 2023 11:45:14 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/processing-avif-heic-images-pillow-plugins/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22.png" alt="Featured image of post 使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片" /&gt;&lt;h2 id=&#34;一引言&#34;&gt;一、引言&lt;/h2&gt;
+&lt;p&gt;随着图片格式的不断发展，AVIF和HEIC这两种高效的图片格式逐渐受到了开发者的关注。AVIF（AV1 Image File Format）是一种基于 AV1 视频编码的图像格式，具有高压缩率和高质量的特点。HEIC（High Efficiency Image Format）是一种基于 HEVC（High Efficiency Video Coding）编码的图像格式，同样具有高压缩率和高质量的优势。为了方便处理这两种格式的图片，我们可以使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库。&lt;/p&gt;
+&lt;h2 id=&#34;二安装&#34;&gt;二、安装&lt;/h2&gt;
+&lt;p&gt;首先，我们需要安装 Pillow 库，它是一个强大的 Python 图像处理库。使用以下命令安装：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，安装 Pillow-AVIF-Plugin 和 Pillow-HEIC 库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow-avif-plugin
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install pillow-heic
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;三使用方法&#34;&gt;三、使用方法&lt;/h2&gt;
+&lt;h3 id=&#34;1-处理avif图片&#34;&gt;1. 处理AVIF图片&lt;/h3&gt;
+&lt;p&gt;使用 Pillow-AVIF-Plugin 处理 AVIF 图片非常简单。首先，导入所需的库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;PIL&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开AVIF图片：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example.avif&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，可以对图片进行各种操作，例如调整大小、旋转等。最后，使用 &lt;code&gt;save()&lt;/code&gt; 方法将图片保存为其他格式：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;save&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example_converted.jpg&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s1&#34;&gt;&amp;#39;JPEG&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id=&#34;2-处理heic图片&#34;&gt;2. 处理HEIC图片&lt;/h3&gt;
+&lt;p&gt;处理 HEIC 图片的方法与处理 AVIF 图片类似。首先，导入所需的库：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;from&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;PIL&lt;/span&gt; &lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开 HEIC 图片：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;Image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example.heic&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;接下来，可以对图片进行各种操作，例如调整大小、旋转等。最后，使用 &lt;code&gt;save()&lt;/code&gt; 方法将图片保存为其他格式：&lt;/p&gt;
+&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
+&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class=&#34;lntd&#34;&gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;image&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;save&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;example_converted.jpg&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s1&#34;&gt;&amp;#39;JPEG&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id=&#34;四结论&#34;&gt;四、结论&lt;/h2&gt;
+&lt;p&gt;通过使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库，我们可以轻松地处理 AVIF 和 HEIC 格式的图片。这两个库为开发者提供了简单易用的接口，使得在实际项目中处理这些高效的图片格式变得更加方便。希望本文能对你有所帮助。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>Ring buffer详解</title>
         <link>https://cuterwrite.top/p/ring-buffer/</link>
         <pubDate>Sat, 02 Dec 2023 02:00:00 +0000</pubDate>
@@ -2248,202 +2338,6 @@ $$&lt;/p&gt;
 &lt;li&gt;线程块最内层维度的大小对性能起着关键的作用&lt;/li&gt;
 &lt;li&gt;在所有其它情况下，线程块的数量越多，一般性能越高。因此，增大并行性仍然是性能优化的一个重要因素。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>CUDA基础：内存管理</title>
-        <link>https://cuterwrite.top/p/cuda-base-memory-manage/</link>
-        <pubDate>Sat, 02 Sep 2023 05:55:55 +0000</pubDate>
-        
-        <guid>https://cuterwrite.top/p/cuda-base-memory-manage/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.jpg" alt="Featured image of post CUDA基础：内存管理" /&gt;&lt;h1 id=&#34;cuda基础内存管理&#34;&gt;CUDA基础：内存管理&lt;/h1&gt;
-&lt;p&gt;CUDA 编程的内存管理与C语言的类似，需要程序员显式地管理主机和设备之间的数据移动。随着CUDA版本的升级，NVIDIA正系统地实现主机和设备内存空间的统一，但对于大多数应用程序来说，仍需要手动移动数据。本文重点在于如何使用CUDA函数来显式地管理内存和数据移动。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;分配和释放设备内存&lt;/li&gt;
-&lt;li&gt;在主机和设备之间传输数据&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;为了达到最优性能，CUDA提供了在主机端准备设备内存的函备内存的函数，并且显式地向设备传输数据和从设备中获取数据。&lt;/p&gt;
-&lt;h2 id=&#34;一内存分配和释放&#34;&gt;一、内存分配和释放&lt;/h2&gt;
-&lt;p&gt;CUDA编程模型假设了一个包含一个主机和一个设备的异构系统，每一个异构系统都有自己独立的内存空间。核函数在设备内存空间中运行，CUDA运行时提供函数以分配和释放设备内存。用户可以在主机上使下列函数分配全局内存：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMalloc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数在设备上分配了 count 字节的全局内存，并用 devptr 指针返回该内存的地址。所分配的内存支持任何变量类型，包括整型、浮点类型变量、布尔类型等。如果 cudaMalloc 函数执行失败则返回 cudaErrorMemoryAllocation 。在已分配的全局内存中的值不会被清除。用户需要用从主机上传输的数据来填充所分配的全局内存，或用下列函数将其初始化：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMemset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;count&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数用存储在变量value中的值来填充从设备内存地址 devPtr 处开始的count字节。&lt;/p&gt;
-&lt;p&gt;一旦一个应用程序不再使用已分配的全局内存，那么可以以下代码释放该内存空间：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaFree&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数释放了 devPtr 指向的全局内存，该内存必须在此前使用了一个设备分配函数（如cudaMalloc）来进行分配。否则，它将返回一个错误 cudaErrorInvalidDevicePointer 。如果地址空间已经被释放，那么 cudaFree 也返回一个错误。&lt;/p&gt;
-&lt;p&gt;设备内存的分配和释放操作成本较高，所以应用程序应&lt;strong&gt;重利用设备内存&lt;/strong&gt;，以减少对整体性能的影响。&lt;/p&gt;
-&lt;h2 id=&#34;二内存传输&#34;&gt;二、内存传输&lt;/h2&gt;
-&lt;p&gt;一旦分配好了全局内存，就可以使用下列函数从主机向设备传输数据：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMemcpy&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dst&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;const&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;src&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;count&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;cudaMemcpyKind&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;kind&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数从内存位置 src 复制了 count 字节到内存位置 dst 。变量 kind 指定了复制的方向，可以有下列取值：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;cudaMemcpyHostToHost：从主机内存复制到主机内存&lt;/li&gt;
-&lt;li&gt;cudaMemcpyHostToDevice：从主机内存复制到设备内存&lt;/li&gt;
-&lt;li&gt;cudaMemcpyDeviceToHost：从设备内存复制到主机内存&lt;/li&gt;
-&lt;li&gt;cudaMemcpyDeviceToDevice：从设备内存复制到设备内存&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;如果指针 dst 和 src 与 kind 指定的复制方向不一致，那么 cudaMemcpy 的行为就是未定义行为。这个函数在大多数情况下都是同步的。&lt;/p&gt;
-&lt;p&gt;下图为 CPU 内存和 GPU 内存间的连接性能。从图中可以看到 GPU 芯片和板载 GDDR5 GPU 内存之间的理论峰值带宽非常高，对于 Fermi C2050 GPU 来说为 144GB/s 。CPU 和 GPU 之间通过 PCIe Gen2 总线相连，这种连接的理论带宽要低得多，为 8GB/s（ PCIe Gen3 总线最大理论限制值是16GB/s）。这种差距意味着如果管理不当的话，主机和设备间的数据传输会降低应用程序的整体性能。因此，CUDA编程的一个基本原则应是尽可能地减少主机与设备之间的传输。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230902212815-2023-09-02.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230902212815-2023-09-02&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;h2 id=&#34;三固定内存&#34;&gt;三、固定内存&lt;/h2&gt;
-&lt;p&gt;分配的主机内存默认是pageable（可分页），它的意思也就是因页面错误导致的操作，该操作按照操作系统的要求将主机虚拟内存上的数据移动到不同的物理位置。虚拟内存给人一种比实际可用内存大得多的假象，就如同一级缓存好像比实际可用的片上内存大得多一样。&lt;/p&gt;
-&lt;p&gt;GPU &lt;strong&gt;不能在可分页主机内存上安全地访问数据&lt;/strong&gt;，因为当主机操作系统在物理位置上移动该数据时，它无法控制。当从可分页主机内存传输数据到设备内存时，CUDA驱动程序首先分配&lt;strong&gt;临时页面锁定的或固定的&lt;/strong&gt;主机内存，将主机源数据复制到固定内存中，然后从固定内存传输数据给设备内存，如下图左边部分所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230903003123-2023-09-03.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230903003123-2023-09-03&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;左边是正常分配内存，传输过程是：锁页-复制到固定内存-复制到设备&lt;/p&gt;
-&lt;p&gt;右边是分配时就是固定内存，直接传输到设备上。&lt;/p&gt;
-&lt;p&gt;下面函数用来分配固定内存：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMallocHost&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;count&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数分配了 count 字节的主机内存，这些内存是页面锁定的并且对设备来说是可访问的。由于固定内存能被设备直接访问，所以它能用比可分页内存高得多的带宽进行读写。然而，分配过多的固定内存可能会降低主机系统的性能，因为它减少了用于存储虚拟内存数据的可分页内存的数量，其中分页内存对主机系统是可用的。&lt;/p&gt;
-&lt;p&gt;固定的主机内存释放使用：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaFreeHost&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;总的来说，固定内存的释放和分配成本比可分页内存要高很多，但是传输速度更快，所以对于大规模数据，固定内存效率更高。应该尽量使用流来使内存传输和计算之间同时进行。&lt;/p&gt;
-&lt;h2 id=&#34;四零拷贝内存&#34;&gt;四、零拷贝内存&lt;/h2&gt;
-&lt;p&gt;通常来说，主机不能直接访问设备变量，同时设备也不能直接访问主机变量。但有一个例外：零拷贝内存。&lt;strong&gt;主机和设备都可以访问零拷贝内存&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;GPU 线程可以直接访问零拷贝内存。在CUDA核函数中使用零拷贝内存有以下几个优势。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;当设备内存不足时可利用主机内存&lt;/li&gt;
-&lt;li&gt;避免主机和设备间的显式数据传输&lt;/li&gt;
-&lt;li&gt;提高PCIe传输率&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;当使用零拷贝内存来共享主机和设备间的数据时，用户必须同步主机和设备间的内存访问，同时更改主机和设备的零拷贝内存中的数据将导致不可预知的后果。&lt;/p&gt;
-&lt;p&gt;零拷贝内存是固定内存，不可分页，该内存映射到设备地址空间中。用户可以通过下列函数创建零拷贝内存：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaHostAlloc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pHost&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;count&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;flags&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;最后一个标志参数，可以选择以下值：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;cudaHostAllocDefalt：和cudaMallocHost函数一致&lt;/li&gt;
-&lt;li&gt;cudaHostAllocPortable：返回能被所有CUDA上下文使用的固定内存&lt;/li&gt;
-&lt;li&gt;cudaHostAllocMapped：产生零拷贝内存，可以实现主机写入和设备读取被映射到设备地址空间中的主机内存&lt;/li&gt;
-&lt;li&gt;cudaHostAllocWriteCombined：返回写结合内存，在某些设备上这种内存传输效率更高&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;注意，零拷贝内存虽然不需要显式的传递到设备上，但是设备还不能通过 pHost 直接访问对应的内存地址，设备需要访问主机上的零拷贝内存，需要先获得另一个地址，这个地址帮助设备访问到主机对应的内存，方法是：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaHostGetDevicePointer&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pDevice&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pHost&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;flags&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;pDevice 就是设备上访问主机零拷贝内存的指针了，此处 flags 必须设置为 0 。&lt;/p&gt;
-&lt;p&gt;在进行频繁的读写操作时，使用零拷贝内存作为设备内存的补充将显著降低性能。因为每一次映射到内存的传输必须经过 PCIe 总线。与全局内存相比，延迟也显著增加。&lt;/p&gt;
-&lt;p&gt;注意不要过度使用零拷贝内存。由于其延迟较高，从零拷贝内存中读取设备核函数可能很慢。&lt;/p&gt;
-&lt;h2 id=&#34;五统一虚拟寻址&#34;&gt;五、统一虚拟寻址&lt;/h2&gt;
-&lt;p&gt;计算能力为 2.0 及以上版本的设备支持一种特殊的寻址方式，称为&lt;strong&gt;统一虚拟寻址（UVA）&lt;/strong&gt;。UVA，在CUDA 4.0中被引入，支持64位Linux系统。有了UVA，主机内存和设备内存可以共享同一个虚拟地址空间，如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20230903004449-2023-09-03.png&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230903004449-2023-09-03&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;UVA之前，我们要管理所有的设备和主机内存，尤其是它们的指针，零拷贝内存尤其麻烦。有了UVA，由指针指向的内存空间对应用程序代码来说是透明的。&lt;/p&gt;
-&lt;p&gt;通过UVA，由 cudaHostAlloc 分配的固定主机内存具有相同的主机和设备指针。因此，可以将返回的指针直接传递给核函数。&lt;/p&gt;
-&lt;p&gt;前面的零拷贝内存，可以知道以下几个方面：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;分配映射的固定主机内存&lt;/li&gt;
-&lt;li&gt;使用CUDA运行时函数获取映射到固定内存的设备指针&lt;/li&gt;
-&lt;li&gt;将设备指针传递给核函数&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;有了 UVA ，可以不用上面的那个获得设备上访问零拷贝内存的函数了：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaHostGetDevicePointer&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pDevice&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;pHost&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;flags&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;因为 UVA 之后，主机和设备的指针都是一样的，所以可以直接传递给核函数了。&lt;/p&gt;
-&lt;h2 id=&#34;六统一内存寻址&#34;&gt;六、统一内存寻址&lt;/h2&gt;
-&lt;p&gt;在CUDA 6.0中，引入了&lt;strong&gt;统一内存寻址&lt;/strong&gt;这一新特性，它用于简化 CUDA 编程模型中的内存管理。统一内存中创建了一个托管内存池，内存池中已分配的空间可以用相同的内存地址（即指针）在 CPU 和 GPU 上进行访问。底层系统在统一内存空间中自动在主机和设备之间进行数据传输。这种数据传输对应用程序是透明的，这大大简化了程序代码。&lt;/p&gt;
-&lt;p&gt;统一内存寻址依赖于 UVA 的支持，但它们是完全不同的技术。 UVA 为系统中的所有处理器提供了一个单一的虚拟内存地址空间。但是， UVA 不会自动将数据从一个物理位置转移到另一个位置，这是统一内存寻址的一个特有功能。&lt;/p&gt;
-&lt;p&gt;统一内存寻址提供了一个&lt;strong&gt;单指针到数据&lt;/strong&gt;模型，在概念上它类似于零拷贝内存。但是零拷贝内存在主机内存中进行分配，因此，由于受到在 PCIe 总线上访问零拷贝内存的影响，核函数的性能将具有较高的延迟。另一方面，统一内存寻址将内存和执行空间分离，因此可以根据需要将数据透明地传输到主机或设备上，以提升局部性和性能。&lt;/p&gt;
-&lt;p&gt;托管内存指的是由底层系统自动分配的统一内存，未托管内存就是用户自己分配的内存，这时候对于核函数，可以传递给它两种类型的内存，已托管和未托管内存，可以同时传递。&lt;/p&gt;
-&lt;p&gt;托管内存可以是静态的，也可以是动态的，添加 managed 关键字修饰托管内存变量。静态声明的托管内存作用域是文件，这一点可以注意一下。&lt;/p&gt;
-&lt;p&gt;托管内存分配方式：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMallocManaged&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;unsigned&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;flags&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数分配 size 字节的托管内存，并用 devPtr 返回一个指针。该指针在所有设备和主机上都是有效的。使用托管内存的程序行为与使用未托管内存的程序副本行为在功能上是一致的。但是，使用托管内存的程序可以利用自动数据传输和重复指针消除功能。&lt;/p&gt;
-&lt;p&gt;在CUDA 6.0中，设备代码不能调用 cudaMallocManaged 函数。所有的托管内存必须在主机端动态声明或者在全局范围内静态声明。&lt;/p&gt;
 &lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
 &lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
 </description>
