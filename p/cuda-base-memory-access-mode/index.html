@@ -383,7 +383,7 @@
 <p>为了在读写数据时达到最佳的性能，内存访问操作必须满足一定的条件。CUDA 执行模型的显著特征之一就是指令必须以线程束为单位进行发布和执行。存储操作也是同样。在执行内存指令时，线程束中的每个线程都提供了一个正在加载或存储的内存地址。在线程束的 32 个线程中，每个线程都提出了一个包含请求地址的单一内存访问请求，它并由一个或多个设备内存传输提供服务。根据线程束中内存地址的分布，内存访问可以被分成不同的模式。</p>
 <h2 id="一对齐与合并访问">一、对齐与合并访问</h2>
 <p>全局内存通过缓存实现加载和存储的过程如下图所示：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904151729-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904151729-2023-09-04.webp"
 	
 	
 	
@@ -406,7 +406,7 @@
 <p>当一个线程束内的线程访问的内存都在一个内存块里的时候，就会出现合并访问。</p>
 <p><strong>对齐合并访问的状态是理想化的，也是最高速的访问方式</strong>，当线程束内的所有线程访问的数据在一个内存块，并且数据是从内存块的首地址开始被需要的，那么对齐合并访问出现了。为了最大化全局内存访问的理想状态，尽量将线程束访问内存组织成对齐合并的方式，这样的效率是最高的。下面看一个例子。</p>
 <p>一个线程束加载数据，使用一级缓存，并且这个事务所请求的所有数据在一个 128 字节的对齐的地址段上，如下图所示：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904152703-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152703-2023-09-04.webp"
 	
 	
 	
@@ -422,7 +422,7 @@
 <li>连续的，但是不在一个对齐的段上，比如，请求访问的数据分布在内存地址 1~128 ，那么 0~127 和 128~255 这两段数据要传递两次到 SM 。</li>
 <li>不连续的，也不在一个对齐的段上，比如，请求访问的数据分布在内存地址 0~63 和 128~191 上，明显这也需要两次加载。</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904152901-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152901-2023-09-04.webp"
 	
 	
 	
@@ -465,7 +465,7 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>设置这个标志后，全局内存加载请求首先尝试通过一级缓存。如果一级缓存缺失，该请求转向二级缓存。如果二级缓存缺失，则请求由 DRAM 完成。在这种模式下，一个内存加载请求由一个 128 字节的设备内存事务实现。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904164822-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904164822-2023-09-04.webp"
 	
 	
 	
@@ -492,7 +492,7 @@
 <ol>
 <li>对齐合并的访问，总线利用率 $100\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904165226-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165226-2023-09-04.webp"
 	
 	
 	
@@ -505,7 +505,7 @@
 <ol start="2">
 <li>对齐的，但是不是连续的，每个线程访问的数据都在一个块内，但是位置是交叉的，总线利用率 $100\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904165245-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165245-2023-09-04.webp"
 	
 	
 	
@@ -518,7 +518,7 @@
 <ol start="3">
 <li>连续非对齐的，线程束请求一个连续的非对齐的，32 个 4 字节数据，那么会出现，数据横跨两个块，但是没有对齐，当启用一级缓存的时候，就要两个 128 字节的事务来完成，总线利用率为 $50\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904165306-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165306-2023-09-04.webp"
 	
 	
 	
@@ -531,7 +531,7 @@
 <ol start="4">
 <li>线程束所有线程请求同一个地址，那么肯定落在一个缓存行范围内，那么如果按照请求的是 4 字节数据来说，总线利用率是 $\frac{4}{128}=3.125\% $</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904165516-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165516-2023-09-04.webp"
 	
 	
 	
@@ -544,7 +544,7 @@
 <ol start="5">
 <li>比较坏的情况，前面提到过最坏的，就是每个线程束内的线程请求的都是不同的缓存行内，这里比较坏的情况就是，所有数据分布在 $N$ 个缓存行，其中 $1\leq N \leq 32$ ，那么请求 32 个 4 字节的数据，就需要 $N$ 个事务来完成，总线利用率也是 $\frac{1}{N}$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904165524-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165524-2023-09-04.webp"
 	
 	
 	
@@ -561,7 +561,7 @@
 <ol>
 <li>对齐合并访问 128 字节，不用说，还是最理想的情况，使用 4 个段，总线利用率 $100\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904170430-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170430-2023-09-04.webp"
 	
 	
 	
@@ -574,7 +574,7 @@
 <ol start="2">
 <li>对齐不连续访问 128 字节，都在四个段内，且互不相同，这样的总线利用率也是 $100\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904170454-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170454-2023-09-04.webp"
 	
 	
 	
@@ -587,7 +587,7 @@
 <ol start="3">
 <li>连续不对齐，一个段 32 字节，所以，一个连续的 128 字节的请求，即使不对齐，最多也不会超过五个段，总线利用率至少为 $\frac{4}{5}=80\%$</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904170542-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170542-2023-09-04.webp"
 	
 	
 	
@@ -600,7 +600,7 @@
 <ol start="4">
 <li>所有线程访问一个 4 字节的数据，那么此时的总线利用率是 $\frac{4}{32} = 12.5\%$ ，在这种情况下，非缓存加载性能也是优于缓存加载的性能。</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904170609-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170609-2023-09-04.webp"
 	
 	
 	
@@ -613,7 +613,7 @@
 <ol start="5">
 <li>最坏的情况：所有目标数据分散在内存的各个角落，那么需要 $N$ 个内存段，由于请求的 128 个字节最多落在 $N$ 个 32 字节的内存分段内而不是 $N$ 个 128 字节的缓存行内，所以相比于缓存加载，即便是最坏的情况也有所改善。需要注意这里比较的前提是$N$ 不变，然而在实际情况下，当使用大粒度的缓存行时，$N$ 有可能会减少。</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904170847-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170847-2023-09-04.webp"
 	
 	
 	
@@ -673,7 +673,7 @@
 <ol>
 <li>对齐的，访问一个连续的 128 字节范围。存储操作使用一个四段事务完成：</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904172018-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172018-2023-09-04.webp"
 	
 	
 	
@@ -686,7 +686,7 @@
 <ol start="2">
 <li>分散在一个 192 字节的范围内，不连续，使用 3 个一段事务完成：</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904172036-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172036-2023-09-04.webp"
 	
 	
 	
@@ -699,7 +699,7 @@
 <ol start="3">
 <li>对齐的，在一个 64 字节的范围内，使用一个两段事务完成：</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904172052-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172052-2023-09-04.webp"
 	
 	
 	
@@ -768,7 +768,7 @@
 </div>
 </div><p>下图说明了 AoS 和 SoA 方法的内存布局。用 AoS 模式在 GPU 上存储示例数据并执行一个只有 $x$ 字段的应用程序，将导致 $50\%$ 的带宽损失，因为 $y$ 值在每 32 个字节段或 128 个字节缓存行上隐式地被加载。 AoS格式也在不需要的 $y$ 值上浪费了二级缓存空间。</p>
 <p>用 SoA 模式存储数据充分利用了 GPU 的内存带宽。由于没有相同字段元素的交叉存取， GPU 上的 SoA 布局提供了合并内存访问，并且可以对全局内存实现更高效的利用。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230904173436-2023-09-04.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904173436-2023-09-04.webp"
 	
 	
 	
@@ -918,7 +918,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.jpg" loading="lazy" data-key="cuda-base-memory-manage" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.jpg"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" loading="lazy" data-key="cuda-base-memory-manage" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp"/>
                 
             </div>
         
@@ -937,7 +937,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.jpg" loading="lazy" data-key="cuda-base-memory-model" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.jpg"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" loading="lazy" data-key="cuda-base-memory-model" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp"/>
                 
             </div>
         
@@ -956,7 +956,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230831184001-2023-08-31.png" loading="lazy" data-key="cuda-base-warp" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20230831184001-2023-08-31.png"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp" loading="lazy" data-key="cuda-base-warp" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp"/>
                 
             </div>
         
@@ -994,7 +994,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.png" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.png"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp"/>
                 
             </div>
         

@@ -10,10 +10,10 @@
 <meta property='og:description' content='本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。'>
 <meta property='og:url' content='https://cuterwrite.top/p/simd/'>
 <meta property='og:site_name' content='cuterwrite'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='向量化编程' /><meta property='article:tag' content='SIMD' /><meta property='article:tag' content='并行计算' /><meta property='article:published_time' content='2023-08-12T08:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-08-12T08:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg' />
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='向量化编程' /><meta property='article:tag' content='SIMD' /><meta property='article:tag' content='并行计算' /><meta property='article:published_time' content='2023-08-12T08:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-08-12T08:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.webp' />
 <meta name="twitter:title" content="SSE与AVE向量化编程">
 <meta name="twitter:description" content="本文深入探讨了SSE与AVX指令集的向量化编程优化，详述了寄存器的作用、自动向量化的原理、SSE/AVX在实际应用中的重要性，以及C&#43;&#43;编程框架如何充分发挥这些指令集的优势。此外，还探讨了Masking技术及条件加载的技巧，以及数据流控制的优化策略。通过丰富的示例和技术解析，读者将深入理解如何有效利用向量化优化来提升程序性能。"><meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg' />
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.webp' />
     <link rel="shortcut icon" href="/favicon.ico" />
 
         
@@ -334,7 +334,7 @@
         <div class="article-image">
             <a href="/p/simd/">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.jpg" loading="lazy" alt="Featured image of post SSE与AVE向量化编程" />
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/173b9c0b3728e5e9e05d12a4f6dda9a2a7560722.jpg@1256w_1776h_!web-article-pic.webp" loading="lazy" alt="Featured image of post SSE与AVE向量化编程" />
                 
             </a>
         </div>
@@ -482,7 +482,7 @@
 <p>SSE和AVX各有16个寄存器。在SSE中，它们被称为XMM0-XMM15，而在AVX中，它们被称为YMM0-YMM15。XMM寄存器长度为128位，而YMM为256位。</p>
 <p>SSE增加了三个类型定义： <code>__m128</code> 、 <code>__m128d</code> 和 <code>__m128i</code> 。分别为浮点型、双精度型(D)和整型(I)。</p>
 <p>AVE增加了三个类型定义： <code>__m256</code> 、 <code>__m256d</code> 和 <code>__m256i</code> 。分别为浮点型、双精度型(D)和整型(I)。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810233117.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230810233117.webp"
 	
 	
 	
@@ -515,7 +515,7 @@
 <p>而在GCC编译器中，__m128i和__m256i是用于处理整数向量的数据类型。它们被定义为联合体（union），可以表示不同长度的整数向量。然而，由于联合体的特性，访问其中的具体数据成员可能会有一些困难。为了从整数向量中提取单个数据值，可以使用 <code>_mm_extract_epiXX()</code> 函数。这些函数允许从整数向量中提取指定位置的数据值，并将其作为标量返回。 <code>_mm_extract_epiXX()</code> 函数中的XX表示整数向量的位宽，例如， <code>_mm_extract_epi32()</code> 用于从32位整数向量中提取单个32位整数值。</p>
 <h3 id="2-ave操作例子">2. AVE操作例子</h3>
 <p>执行 AVX 指令的过程如下：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230810234918.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230810234918.webp"
 	
 	
 	
@@ -1059,7 +1059,7 @@
 <h3 id="1-向量中的掩码">1. 向量中的掩码</h3>
 <p>掩码是向量之间逻辑运算的结果。它与布尔运算有许多相似之处（它们是对单个数字或其他布尔运算的逻辑运算结果），但在内部，每个掩码组件必须全部为 0 位或全部为 1 位。</p>
 <p>让我们比较具有大于运算符的两个AVX浮点向量：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811173734.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230811173734.webp"
 	
 	
 	
@@ -1091,7 +1091,7 @@
 
 <h3 id="2-条件加载">2. 条件加载</h3>
 <p>掩码可用于有条件地将值加载到向量中。比如可以使用掩码来有条件地控制值向量的加载：<code>if_select(mask,value_true,value_false)</code> 可以表示为：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20230811174342.png"
+<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230811174342.webp"
 	
 	
 	
@@ -1744,7 +1744,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.png" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.png"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp"/>
                 
             </div>
         
@@ -1763,7 +1763,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png" loading="lazy" data-key="nest-on-hpe-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/20231031002508-2023-10-31.png"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031002508-2023-10-31.webp" loading="lazy" data-key="nest-on-hpe-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031002508-2023-10-31.webp"/>
                 
             </div>
         
@@ -1801,7 +1801,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.jpg" loading="lazy" data-key="cuda-base-memory-manage" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.jpg"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" loading="lazy" data-key="cuda-base-memory-manage" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp"/>
                 
             </div>
         
@@ -1820,7 +1820,7 @@
         
             <div class="article-image">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.jpg" loading="lazy" data-key="cuda-base-memory-model" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.jpg"/>
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" loading="lazy" data-key="cuda-base-memory-model" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp"/>
                 
             </div>
         
