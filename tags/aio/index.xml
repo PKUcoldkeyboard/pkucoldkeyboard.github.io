@@ -8,133 +8,86 @@
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
         <lastBuildDate>Tue, 01 Aug 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/aio/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>高性能异步I/O框架：io_uring</title>
+        <title>高性能异步 I/O 框架：io_uring</title>
         <link>https://cuterwrite.top/p/efficient-liburing/</link>
         <pubDate>Tue, 01 Aug 2023 01:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/efficient-liburing/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" alt="Featured image of post 高性能异步I/O框架：io_uring" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E9%AB%98%E6%80%A7%E8%83%BD%E5%BC%82%E6%AD%A5io%E6%A1%86%E6%9E%B6io_uring&#34; &gt;高性能异步I/O框架：io_uring&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%80-%E5%BC%95%E8%A8%80&#34; &gt;一、 引言&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-linux%E5%8E%9F%E7%94%9Faio%E6%8E%A5%E5%8F%A3&#34; &gt;1. Linux原生aio接口&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-io_uring%E6%8E%A5%E5%8F%A3&#34; &gt;2. io_uring接口&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-liburing%E5%BA%93&#34; &gt;3. liburing库&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%BA%8Cio_uring%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E5%8E%9F%E7%90%86&#34; &gt;二、io_uring的核心数据结构与原理&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-io_uring%E7%9A%84%E6%A0%B8%E5%BF%83%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84&#34; &gt;1. io_uring的核心数据结构&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-io_uring%E7%9A%84%E4%B8%89%E7%A7%8D%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F&#34; &gt;2. io_uring的三种工作模式：&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-io_uring%E7%9A%84%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8api&#34; &gt;3. io_uring的系统调用API&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-io_uring%E7%9A%84%E9%AB%98%E7%BA%A7%E7%89%B9%E6%80%A7&#34; &gt;4. io_uring的高级特性&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E4%B8%89io_uring%E7%9A%84%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B&#34; &gt;三、io_uring的使用示例&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E5%9C%A8%E9%A1%B9%E7%9B%AE%E4%B8%AD%E5%BC%95%E5%85%A5liburing&#34; &gt;1. 在项目中引入liburing&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E4%BB%A3%E7%A0%81%E7%A4%BA%E4%BE%8B&#34; &gt;2. 代码示例&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5&#34; &gt;3. 最佳实践&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E7%BB%93%E8%AE%BA&#34; &gt;结论&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE&#34; &gt;参考文献&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;高性能异步io框架io_uring&#34;&gt;高性能异步I/O框架：io_uring&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" alt="Featured image of post 高性能异步 I/O 框架：io_uring" /&gt;&lt;h1 id=&#34;高性能异步-io-框架io_uring&#34;&gt;高性能异步 I/O 框架：io_uring&lt;/h1&gt;
 &lt;h2 id=&#34;一-引言&#34;&gt;一、 引言&lt;/h2&gt;
-&lt;h3 id=&#34;1-linux原生aio接口&#34;&gt;1. Linux原生aio接口&lt;/h3&gt;
-&lt;p&gt;在Linux中，有很多方法可以进行基于文件的I/O。最早的和最基本的就是系统调用read(2)和write(2)。后来增加了允许传入偏移量的pread(2)和pwrite(2)，以及基于vector的preadv(2)和pwrite(2)。再后来，Linux提供了preadv2(2)和pwritev2(2)。它们进一步扩展了API以允许修饰符标志。抛开这些系统调用的不同点不谈，它们有一个共同的特点：都是同步接口。这意味着当数据准备好读（或写入）时，系统调用才会返回。对于某些场景，这远远不够，因此还需要异步接口。POSIX提供了aio_read(3)和aio_write(3)来满足这种需求，但是它们的实现通常性能不佳。Linux原生aio接口是Linux内核中提供的一种异步I/O接口，它使用io_submit(2)、io_getevents(2)等系统调用来提交和获取I/O请求，并使用struct iocb来描述每个I/O请求。它支持O_DIRECT（或非缓冲）访问的异步I/O，并且可以使用信号或回调函数来通知I/O完成事件。&lt;/p&gt;
-&lt;p&gt;然而，Linux原生aio接口存在着许多的限制与不足之处：&lt;/p&gt;
+&lt;h3 id=&#34;1-linux-原生-aio-接口&#34;&gt;1. Linux 原生 aio 接口&lt;/h3&gt;
+&lt;p&gt;在 Linux 中，有很多方法可以进行基于文件的 I/O。最早的和最基本的就是系统调用 read(2)和 write(2)。后来增加了允许传入偏移量的 pread(2)和 pwrite(2)，以及基于 vector 的 preadv(2)和 pwrite(2)。再后来，Linux 提供了 preadv2(2)和 pwritev2(2)。它们进一步扩展了 API 以允许修饰符标志。抛开这些系统调用的不同点不谈，它们有一个共同的特点：都是同步接口。这意味着当数据准备好读（或写入）时，系统调用才会返回。对于某些场景，这远远不够，因此还需要异步接口。POSIX 提供了 aio_read(3)和 aio_write(3)来满足这种需求，但是它们的实现通常性能不佳。Linux 原生 aio 接口是 Linux 内核中提供的一种异步 I/O 接口，它使用 io_submit(2)、io_getevents(2)等系统调用来提交和获取 I/O 请求，并使用 struct iocb 来描述每个 I/O 请求。它支持 O_DIRECT（或非缓冲）访问的异步 I/O，并且可以使用信号或回调函数来通知 I/O 完成事件。&lt;/p&gt;
+&lt;p&gt;然而，Linux 原生 aio 接口存在着许多的限制与不足之处：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;最大的限制是它只能支持O_DIRECT（或非缓冲）访问的异步I/O。由于O_DIRECT的限制（缓存绕过和大小/对齐限制），这使得原生aio接口在大多数情况下都无法使用。对于普遍的缓冲I/O，接口会以同步方式运行。&lt;/li&gt;
-&lt;li&gt;即使满足了I/O 异步的所有约束条件，有时也会出现阻塞。I/O 提交可能会通过多种方式导致阻塞：
+&lt;li&gt;最大的限制是它只能支持 O_DIRECT（或非缓冲）访问的异步 I/O。由于 O_DIRECT 的限制（缓存绕过和大小/对齐限制），这使得原生 aio 接口在大多数情况下都无法使用。对于普遍的缓冲 I/O，接口会以同步方式运行。&lt;/li&gt;
+&lt;li&gt;即使满足了 I/O 异步的所有约束条件，有时也会出现阻塞。I/O 提交可能会通过多种方式导致阻塞：
 &lt;ol&gt;
 &lt;li&gt;如果执行 I/O 时需要元数据，提交就会阻塞，等待元数据。&lt;/li&gt;
 &lt;li&gt;对于存储设备，有固定数量的请求槽可用。如果这些插槽目前都在使用中，提交就会阻塞，等待有一个插槽可用。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
-&lt;li&gt;I/O请求元数据开销大：每次I/O提交都需要复制64 + 8字节的数据，而每次完成则需要复制32字节的数据。这意味着对于所谓的零拷贝I/O来说，每次操作都需要复制104字节的内存。根据I/O的大小不同，这种内存复制的开销可能是明显可见的。而且，暴露的完成事件环缓冲区实际上会妨碍完成操作的速度，并且很难（甚至不可能）从应用程序中正确地使用。这可能意味着使用这个API进行I/O操作时，完成操作的效率会受到影响。此外，在Spectre/Meltdown漏洞修复后，I/O总是需要至少两个系统调用（提交+等待完成），这会导致严重的性能下降。这可能是因为在修复这些漏洞后，系统对于系统调用的处理变得更加复杂和缓慢。&lt;/li&gt;
-&lt;li&gt;IOPOLL支持不好。&lt;/li&gt;
+&lt;li&gt;I/O 请求元数据开销大：每次 I/O 提交都需要复制 64 + 8 字节的数据，而每次完成则需要复制 32 字节的数据。这意味着对于所谓的零拷贝 I/O 来说，每次操作都需要复制 104 字节的内存。根据 I/O 的大小不同，这种内存复制的开销可能是明显可见的。而且，暴露的完成事件环缓冲区实际上会妨碍完成操作的速度，并且很难（甚至不可能）从应用程序中正确地使用。这可能意味着使用这个 API 进行 I/O 操作时，完成操作的效率会受到影响。此外，在 Spectre/Meltdown 漏洞修复后，I/O 总是需要至少两个系统调用（提交+等待完成），这会导致严重的性能下降。这可能是因为在修复这些漏洞后，系统对于系统调用的处理变得更加复杂和缓慢。&lt;/li&gt;
+&lt;li&gt;IOPOLL 支持不好。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;随着时间的推移，尽管有一些努力试图解决这些限制，但没有成功。随着具备亚10微秒延迟和非常高IOPS的设备的出现，这个接口开始显现出其性能缺陷。对于这些类型的设备来说，慢速和非确定性的提交延迟是一个很大的问题，而且单个核心无法提供足够的性能。此外，由于前面提到的限制，可以说原生的Linux aio接口用途并不广泛。它被限制在应用程序的一小部分领域中，并且伴随着一些问题。&lt;/p&gt;
-&lt;h3 id=&#34;2-io_uring接口&#34;&gt;2. io_uring接口&lt;/h3&gt;
-&lt;p&gt;io_uring是Linux内核中的一种新的异步I/O接口，旨在提供高效和可扩展的I/O操作。它通过使用一对环形队列（提交队列和完成队列）作为应用程序和内核之间的通信通道，实现了零拷贝的I/O操作。&lt;/p&gt;
-&lt;p&gt;io_uring的设计目标是在提供高性能的同时解决传统异步I/O接口的一些限制和问题。它避免了内存复制和内存方向性，通过共享数据结构和内存来优雅地实现应用程序和内核之间的协调。这种设计使得io_uring能够更高效地处理I/O请求，并且不需要频繁的系统调用来同步和通信。&lt;/p&gt;
-&lt;p&gt;通过io_uring，应用程序可以作为生产者将I/O请求提交到提交队列，而内核作为消费者处理这些请求。一旦请求完成，内核会生成相应的完成事件，并将其放入完成队列中，应用程序可以从完成队列中消费这些事件。这种异步的方式使得应用程序能够更好地利用系统资源，提高I/O操作的效率和性能。&lt;/p&gt;
-&lt;p&gt;io_uring的优势主要在于：&lt;/p&gt;
+&lt;p&gt;随着时间的推移，尽管有一些努力试图解决这些限制，但没有成功。随着具备亚 10 微秒延迟和非常高 IOPS 的设备的出现，这个接口开始显现出其性能缺陷。对于这些类型的设备来说，慢速和非确定性的提交延迟是一个很大的问题，而且单个核心无法提供足够的性能。此外，由于前面提到的限制，可以说原生的 Linux aio 接口用途并不广泛。它被限制在应用程序的一小部分领域中，并且伴随着一些问题。&lt;/p&gt;
+&lt;h3 id=&#34;2-io_uring-接口&#34;&gt;2. io_uring 接口&lt;/h3&gt;
+&lt;p&gt;io_uring 是 Linux 内核中的一种新的异步 I/O 接口，旨在提供高效和可扩展的 I/O 操作。它通过使用一对环形队列（提交队列和完成队列）作为应用程序和内核之间的通信通道，实现了零拷贝的 I/O 操作。&lt;/p&gt;
+&lt;p&gt;io_uring 的设计目标是在提供高性能的同时解决传统异步 I/O 接口的一些限制和问题。它避免了内存复制和内存方向性，通过共享数据结构和内存来优雅地实现应用程序和内核之间的协调。这种设计使得 io_uring 能够更高效地处理 I/O 请求，并且不需要频繁的系统调用来同步和通信。&lt;/p&gt;
+&lt;p&gt;通过 io_uring，应用程序可以作为生产者将 I/O 请求提交到提交队列，而内核作为消费者处理这些请求。一旦请求完成，内核会生成相应的完成事件，并将其放入完成队列中，应用程序可以从完成队列中消费这些事件。这种异步的方式使得应用程序能够更好地利用系统资源，提高 I/O 操作的效率和性能。&lt;/p&gt;
+&lt;p&gt;io_uring 的优势主要在于：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;使用方便：简单且强大的系统调用，提供三个系统调用，liburing用户态库编程友好 (io_uring_setup, io_uring_enter, io_uring_register)。&lt;/li&gt;
-&lt;li&gt;通用性强：提供内核统一的异步编程框架，既支持传统I/O (Buffer I/O + Direct I/O)，也支持类epoll型编程。&lt;/li&gt;
+&lt;li&gt;使用方便：简单且强大的系统调用，提供三个系统调用，liburing 用户态库编程友好 (io_uring_setup, io_uring_enter, io_uring_register)。&lt;/li&gt;
+&lt;li&gt;通用性强：提供内核统一的异步编程框架，既支持传统 I/O (Buffer I/O + Direct I/O)，也支持类 epoll 型编程。&lt;/li&gt;
 &lt;li&gt;特性丰富：支持非常多的高级特性。&lt;/li&gt;
-&lt;li&gt;高性能：I/O请求overhead小。&lt;/li&gt;
+&lt;li&gt;高性能：I/O 请求 overhead 小。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3 id=&#34;3-liburing库&#34;&gt;3. liburing库&lt;/h3&gt;
-&lt;p&gt;liburing是一个基于io_uring接口的用户空间库，它是Linux内核开发者Axboe于2019年发布的一个开源项目。io_uring是一种新的Linux异步I/O接口，它通过使用一对环形缓冲区（ring buffer）来实现用户空间和内核空间之间的通信，从而避免了传统异步I/O接口（如AIO）所需的系统调用、信号、回调等机制。这样，用户空间可以直接向内核提交I/O请求，并从内核获取I/O结果，而无需等待或切换上下文。这大大提高了异步I/O操作的效率和性能。&lt;/p&gt;
-&lt;p&gt;liburing是对io_uring接口的封装和扩展，它提供了一套简洁和灵活的API，让开发者可以方便地使用io_uring的功能，而无需关心底层的细节和复杂性。liburing主要包括以下几个组件：&lt;/p&gt;
+&lt;h3 id=&#34;3-liburing-库&#34;&gt;3. liburing 库&lt;/h3&gt;
+&lt;p&gt;liburing 是一个基于 io_uring 接口的用户空间库，它是 Linux 内核开发者 Axboe 于 2019 年发布的一个开源项目。io_uring 是一种新的 Linux 异步 I/O 接口，它通过使用一对环形缓冲区（ring buffer）来实现用户空间和内核空间之间的通信，从而避免了传统异步 I/O 接口（如 AIO）所需的系统调用、信号、回调等机制。这样，用户空间可以直接向内核提交 I/O 请求，并从内核获取 I/O 结果，而无需等待或切换上下文。这大大提高了异步 I/O 操作的效率和性能。&lt;/p&gt;
+&lt;p&gt;liburing 是对 io_uring 接口的封装和扩展，它提供了一套简洁和灵活的 API，让开发者可以方便地使用 io_uring 的功能，而无需关心底层的细节和复杂性。liburing 主要包括以下几个组件：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;liburing.h：定义了liburing库的主要数据结构和函数&lt;/li&gt;
-&lt;li&gt;liburing.a：提供了liburing库的静态链接版本&lt;/li&gt;
-&lt;li&gt;liburing.so：提供了liburing库的动态链接版本&lt;/li&gt;
-&lt;li&gt;liburing/io_uring.h：定义了io_uring接口相关的数据结构和常量&lt;/li&gt;
+&lt;li&gt;liburing.h：定义了 liburing 库的主要数据结构和函数&lt;/li&gt;
+&lt;li&gt;liburing.a：提供了 liburing 库的静态链接版本&lt;/li&gt;
+&lt;li&gt;liburing.so：提供了 liburing 库的动态链接版本&lt;/li&gt;
+&lt;li&gt;liburing/io_uring.h：定义了 io_uring 接口相关的数据结构和常量&lt;/li&gt;
 &lt;li&gt;liburing/compat.h：提供了一些兼容性相关的宏定义&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;二io_uring的核心数据结构与原理&#34;&gt;二、io_uring的核心数据结构与原理&lt;/h2&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802172119.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230802172119&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;h3 id=&#34;1-io_uring的核心数据结构&#34;&gt;1. io_uring的核心数据结构&lt;/h3&gt;
+&lt;h2 id=&#34;二io_uring-的核心数据结构与原理&#34;&gt;二、io_uring 的核心数据结构与原理&lt;/h2&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802172119.webp&#34;
+         alt=&#34;20230802172119&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;1-io_uring-的核心数据结构&#34;&gt;1. io_uring 的核心数据结构&lt;/h3&gt;
 &lt;ul&gt;
-&lt;li&gt;每个io_uring实例都有两个环形队列(称为ring)，在内核和应用程序之间共享：
+&lt;li&gt;每个 io_uring 实例都有两个环形队列(称为 ring)，在内核和应用程序之间共享：
 &lt;ol&gt;
 &lt;li&gt;提交队列：submission queue( SQ )&lt;/li&gt;
 &lt;li&gt;完成队列：completion queue( CQ )&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802000924.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230802000924&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802000924.webp&#34;
+         alt=&#34;20230802000924&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
 &lt;li&gt;这两个队列：
 &lt;ol&gt;
-&lt;li&gt;都是单生产者、单消费者的队列，size为2的幂次方。&lt;/li&gt;
+&lt;li&gt;都是单生产者、单消费者的队列，size 为 2 的幂次方。&lt;/li&gt;
 &lt;li&gt;提供无锁接口，内部使用内存屏障来进行同步。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;li&gt;请求时：
 &lt;ol&gt;
-&lt;li&gt;应用创建SQ Entries (SQE)，更新SQ tail&lt;/li&gt;
-&lt;li&gt;内核消费SQE，更新SQ head&lt;/li&gt;
+&lt;li&gt;应用创建 SQ Entries (SQE)，更新 SQ tail&lt;/li&gt;
+&lt;li&gt;内核消费 SQE，更新 SQ head&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;li&gt;完成后：
 &lt;ol&gt;
-&lt;li&gt;内核为完成的一个或多个请求创建CQ Entries (CQE)，更新CQ tail&lt;/li&gt;
-&lt;li&gt;应用消费CQE，更新CQ head&lt;/li&gt;
-&lt;li&gt;完成事件可能以任意顺序到达，到总是与特定的SQE相关联的&lt;/li&gt;
-&lt;li&gt;消费CQE过程无需切换内核态&lt;/li&gt;
+&lt;li&gt;内核为完成的一个或多个请求创建 CQ Entries (CQE)，更新 CQ tail&lt;/li&gt;
+&lt;li&gt;应用消费 CQE，更新 CQ head&lt;/li&gt;
+&lt;li&gt;完成事件可能以任意顺序到达，到总是与特定的 SQE 相关联的&lt;/li&gt;
+&lt;li&gt;消费 CQE 过程无需切换内核态&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;li&gt;这样做的好处在于：
@@ -144,33 +97,33 @@
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3 id=&#34;2-io_uring的三种工作模式&#34;&gt;2. io_uring的三种工作模式：&lt;/h3&gt;
+&lt;h3 id=&#34;2-io_uring-的三种工作模式&#34;&gt;2. io_uring 的三种工作模式：&lt;/h3&gt;
 &lt;ol&gt;
 &lt;li&gt;中断驱动模式 (interrupt-driven)
 &lt;ul&gt;
-&lt;li&gt;默认模式, 可通过io_uring_enter()提交I/O请求，然后直接检查CQ状态判断是否完成。&lt;/li&gt;
+&lt;li&gt;默认模式, 可通过 io_uring_enter()提交 I/O 请求，然后直接检查 CQ 状态判断是否完成。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;轮询模式 (polling)
 &lt;ul&gt;
-&lt;li&gt;Busy waiting for I/O completion，而不是通过异步IRQ(Interrupt Request)来接收通知&lt;/li&gt;
-&lt;li&gt;这种模式需要文件系统和块设备支持轮询功能。相比中断驱动模式，这种方式延迟更低，但是CPU占用率可能会更高。&lt;/li&gt;
-&lt;li&gt;目前，只有指定了O_DIRECT标志打开的文件描述符才能使用这种模式。当一个读或写请求提交给轮询上下文之后，应用必须调用io_uring_enter()来轮询CQ队列，判断请求是否完成。&lt;/li&gt;
-&lt;li&gt;对于一个io_uring实例来说，不支持混合使用轮询和非轮询模式。&lt;/li&gt;
+&lt;li&gt;Busy waiting for I/O completion，而不是通过异步 IRQ(Interrupt Request)来接收通知&lt;/li&gt;
+&lt;li&gt;这种模式需要文件系统和块设备支持轮询功能。相比中断驱动模式，这种方式延迟更低，但是 CPU 占用率可能会更高。&lt;/li&gt;
+&lt;li&gt;目前，只有指定了 O_DIRECT 标志打开的文件描述符才能使用这种模式。当一个读或写请求提交给轮询上下文之后，应用必须调用 io_uring_enter()来轮询 CQ 队列，判断请求是否完成。&lt;/li&gt;
+&lt;li&gt;对于一个 io_uring 实例来说，不支持混合使用轮询和非轮询模式。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;内核轮询模式 (kernel polling)
 &lt;ul&gt;
-&lt;li&gt;这种模式会创建一个内核线程来执行SQ的轮询工作。&lt;/li&gt;
-&lt;li&gt;使用这种模式的io_uring实例，应用无需切到内核态就能触发I/O操作。通过SQ来提交SQE，以及监控CQ的完成状态，应用无需任何系统调用，就能提交和收割I/O。&lt;/li&gt;
-&lt;li&gt;如果内核线程的空闲事件超过了用户的配置值，它会通知应用，然后进入idle状态。这种情况下，应用必须调用io_uring_enter()来唤醒内核线程。如果I/O一直很繁忙，内核线程是不会sleep的。&lt;/li&gt;
+&lt;li&gt;这种模式会创建一个内核线程来执行 SQ 的轮询工作。&lt;/li&gt;
+&lt;li&gt;使用这种模式的 io_uring 实例，应用无需切到内核态就能触发 I/O 操作。通过 SQ 来提交 SQE，以及监控 CQ 的完成状态，应用无需任何系统调用，就能提交和收割 I/O。&lt;/li&gt;
+&lt;li&gt;如果内核线程的空闲事件超过了用户的配置值，它会通知应用，然后进入 idle 状态。这种情况下，应用必须调用 io_uring_enter()来唤醒内核线程。如果 I/O 一直很繁忙，内核线程是不会 sleep 的。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;h3 id=&#34;3-io_uring的系统调用api&#34;&gt;3. io_uring的系统调用API&lt;/h3&gt;
+&lt;h3 id=&#34;3-io_uring-的系统调用-api&#34;&gt;3. io_uring 的系统调用 API&lt;/h3&gt;
 &lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;io_uring的系统调用API有三个，分别是：&lt;/p&gt;
+&lt;p&gt;io_uring 的系统调用 API 有三个，分别是：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;io_uring_setup(2)&lt;/li&gt;
 &lt;li&gt;io_uring_register(2)&lt;/li&gt;
@@ -178,7 +131,7 @@
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;首先是io_uring_setup(2)：&lt;/p&gt;
+&lt;p&gt;首先是 io_uring_setup(2)：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -188,20 +141,20 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;用于创建一个io_uring实例，返回一个文件描述符，用于后续的io_uring系统调用。&lt;/li&gt;
+&lt;li&gt;用于创建一个 io_uring 实例，返回一个文件描述符，用于后续的 io_uring 系统调用。&lt;/li&gt;
 &lt;li&gt;参数：
 &lt;ul&gt;
-&lt;li&gt;entries：SQ和CQ的大小，必须是2的幂次方&lt;/li&gt;
-&lt;li&gt;params：io_uring的参数，包括flags、sq_thread_cpu等&lt;/li&gt;
+&lt;li&gt;entries：SQ 和 CQ 的大小，必须是 2 的幂次方&lt;/li&gt;
+&lt;li&gt;params：io_uring 的参数，包括 flags、sq_thread_cpu 等&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;返回值：
 &lt;ul&gt;
 &lt;li&gt;成功：返回一个文件描述符&lt;/li&gt;
-&lt;li&gt;失败：返回-1，并设置errno&lt;/li&gt;
+&lt;li&gt;失败：返回-1，并设置 errno&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;创建一个SQ和一个CQ，它们的大小都是entries。如果entries是0，那么SQ和CQ的大小都是默认值(4096)。SQ和CQ在应用和内核之间共享，避免了在初始化和完成I/O时拷贝数据&lt;/li&gt;
+&lt;li&gt;创建一个 SQ 和一个 CQ，它们的大小都是 entries。如果 entries 是 0，那么 SQ 和 CQ 的大小都是默认值(4096)。SQ 和 CQ 在应用和内核之间共享，避免了在初始化和完成 I/O 时拷贝数据&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;
@@ -215,26 +168,26 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;注册用于异步I/O的文件或用户缓冲区，使内核能长时间持有对该文件在内核内部的数据结构引用，或创建应用内存的长期映射，这个操作只会在注册时执行一次，而不是每个I/O操作都会处理，因此减少了per-I/O的overhead开销。&lt;/li&gt;
+&lt;li&gt;注册用于异步 I/O 的文件或用户缓冲区，使内核能长时间持有对该文件在内核内部的数据结构引用，或创建应用内存的长期映射，这个操作只会在注册时执行一次，而不是每个 I/O 操作都会处理，因此减少了 per-I/O 的 overhead 开销。&lt;/li&gt;
 &lt;li&gt;参数：
 &lt;ul&gt;
 &lt;li&gt;fd：文件描述符&lt;/li&gt;
-&lt;li&gt;opcode：操作码，用于指定注册的类型，如IORING_REGISTER_BUFFERS、IORING_REGISTER_FILES等&lt;/li&gt;
+&lt;li&gt;opcode：操作码，用于指定注册的类型，如 IORING_REGISTER_BUFFERS、IORING_REGISTER_FILES 等&lt;/li&gt;
 &lt;li&gt;arg：指向一个数组，数组中的每个元素都是一个指向用户缓冲区或文件描述符的指针&lt;/li&gt;
-&lt;li&gt;nr_args：arg数组的大小&lt;/li&gt;
+&lt;li&gt;nr_args：arg 数组的大小&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;返回值：
 &lt;ul&gt;
-&lt;li&gt;成功：返回0&lt;/li&gt;
-&lt;li&gt;失败：返回-1，并设置errno&lt;/li&gt;
+&lt;li&gt;成功：返回 0&lt;/li&gt;
+&lt;li&gt;失败：返回-1，并设置 errno&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;注册的缓冲区将会被锁定到内存中，并计入用户的RLIMIT_MEMLOCK限制。如果注册的是文件描述符，那么内核会增加对该文件的引用计数，直到应用调用io_uring_unregister(2)来注销它。&lt;/li&gt;
-&lt;li&gt;每个缓冲区有1GB的大小限制。&lt;/li&gt;
-&lt;li&gt;缓冲区必须是匿名的、非文件后端的内存，例如malloc(3)或带MAP_ANONYMOUS标识的mmap(2)返回的内存。&lt;/li&gt;
-&lt;li&gt;Huge pages也是支持的。整个Huge page都会被pin到内核，即使只使用其中一部分。&lt;/li&gt;
-&lt;li&gt;已经注册的缓冲区无法调整大小，想调整只能先unregister，再重新注册。&lt;/li&gt;
+&lt;li&gt;注册的缓冲区将会被锁定到内存中，并计入用户的 RLIMIT_MEMLOCK 限制。如果注册的是文件描述符，那么内核会增加对该文件的引用计数，直到应用调用 io_uring_unregister(2)来注销它。&lt;/li&gt;
+&lt;li&gt;每个缓冲区有 1GB 的大小限制。&lt;/li&gt;
+&lt;li&gt;缓冲区必须是匿名的、非文件后端的内存，例如 malloc(3)或带 MAP_ANONYMOUS 标识的 mmap(2)返回的内存。&lt;/li&gt;
+&lt;li&gt;Huge pages 也是支持的。整个 Huge page 都会被 pin 到内核，即使只使用其中一部分。&lt;/li&gt;
+&lt;li&gt;已经注册的缓冲区无法调整大小，想调整只能先 unregister，再重新注册。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;
@@ -250,26 +203,26 @@
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;这个系统调用用于初始化和完成（initiate and complete）I/O，使用共享的 SQ 和 CQ。单次调用同时执行：
 &lt;ol&gt;
-&lt;li&gt;提交新的I/O请求&lt;/li&gt;
-&lt;li&gt;等待I/O完成&lt;/li&gt;
+&lt;li&gt;提交新的 I/O 请求&lt;/li&gt;
+&lt;li&gt;等待 I/O 完成&lt;/li&gt;
 &lt;/ol&gt;
 &lt;/li&gt;
 &lt;li&gt;参数：
 &lt;ul&gt;
-&lt;li&gt;fd：io_uring实例的文件描述符&lt;/li&gt;
-&lt;li&gt;to_submit：SQ中提交的I/O请求数量&lt;/li&gt;
-&lt;li&gt;min_complete：最少完成的I/O请求数量&lt;/li&gt;
-&lt;li&gt;flags：用于指定I/O请求的类型，如IORING_ENTER_GETEVENTS、IORING_ENTER_SQ_WAKEUP等&lt;/li&gt;
-&lt;li&gt;sig：用于指定信号集，如果flags指定了IORING_ENTER_GETEVENTS，那么sig必须是一个有效的信号集&lt;/li&gt;
+&lt;li&gt;fd：io_uring 实例的文件描述符&lt;/li&gt;
+&lt;li&gt;to_submit：SQ 中提交的 I/O 请求数量&lt;/li&gt;
+&lt;li&gt;min_complete：最少完成的 I/O 请求数量&lt;/li&gt;
+&lt;li&gt;flags：用于指定 I/O 请求的类型，如 IORING_ENTER_GETEVENTS、IORING_ENTER_SQ_WAKEUP 等&lt;/li&gt;
+&lt;li&gt;sig：用于指定信号集，如果 flags 指定了 IORING_ENTER_GETEVENTS，那么 sig 必须是一个有效的信号集&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;在默认模式下，如果指定了min_complete，那么io_uring_enter(2)会等待至少min_complete个I/O请求完成，然后返回。如果没有指定min_complete，那么io_uring_enter(2)会等待SQ中所有的I/O请求完成，然后返回。在polling模式下，如果指定了min_complete，如果min_complete为0，则要求内核返回当前以及完成的所有 events，无阻塞；如果min_complete大于0，如果有事件完成，内核仍然立即返回；如果没有完成事件，内核会 poll，等待指定的次数完成，或者这个进程的时间片用完。&lt;/li&gt;
+&lt;li&gt;在默认模式下，如果指定了 min_complete，那么 io_uring_enter(2)会等待至少 min_complete 个 I/O 请求完成，然后返回。如果没有指定 min_complete，那么 io_uring_enter(2)会等待 SQ 中所有的 I/O 请求完成，然后返回。在 polling 模式下，如果指定了 min_complete，如果 min_complete 为 0，则要求内核返回当前以及完成的所有 events，无阻塞；如果 min_complete 大于 0，如果有事件完成，内核仍然立即返回；如果没有完成事件，内核会 poll，等待指定的次数完成，或者这个进程的时间片用完。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3 id=&#34;4-io_uring的高级特性&#34;&gt;4. io_uring的高级特性&lt;/h3&gt;
+&lt;h3 id=&#34;4-io_uring-的高级特性&#34;&gt;4. io_uring 的高级特性&lt;/h3&gt;
 &lt;ul&gt;
-&lt;li&gt;io_uring还提供了一些用于特殊场景的高级特性
+&lt;li&gt;io_uring 还提供了一些用于特殊场景的高级特性
 &lt;ul&gt;
 &lt;li&gt;File registration(文件注册)：每次发起一个指定文件描述的操作，内核都需要花费一些时钟周期(cycles)文件描述符映射到内部表示。对于那些 &lt;strong&gt;针对同一文件进行重复操作&lt;/strong&gt; 的场景，io_uring 支持提前注册这些文件，后面直接查找就行了。&lt;/li&gt;
 &lt;li&gt;Buffer registration(缓冲区注册)：与 file registration 类似，Direct I/O 场景中，内核需要 map/unmap memory areas。io_uring 支持提前注册这些缓冲区（buffers）。&lt;/li&gt;
@@ -278,13 +231,13 @@
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;三io_uring的使用示例&#34;&gt;三、io_uring的使用示例&lt;/h2&gt;
-&lt;p&gt;liburing提供了一个简单的高层 API， 可用于一些基本场景，应用程序避免了直接使用更底层的系统调用。此外，这个 API 还避免了一些重复操作的代码，如设置 io_uring 实例。&lt;/p&gt;
-&lt;h3 id=&#34;1-在项目中引入liburing&#34;&gt;1. 在项目中引入liburing&lt;/h3&gt;
+&lt;h2 id=&#34;三io_uring-的使用示例&#34;&gt;三、io_uring 的使用示例&lt;/h2&gt;
+&lt;p&gt;liburing 提供了一个简单的高层 API， 可用于一些基本场景，应用程序避免了直接使用更底层的系统调用。此外，这个 API 还避免了一些重复操作的代码，如设置 io_uring 实例。&lt;/p&gt;
+&lt;h3 id=&#34;1-在项目中引入-liburing&#34;&gt;1. 在项目中引入 liburing&lt;/h3&gt;
 &lt;ol&gt;
-&lt;li&gt;apt-get安装liburing
+&lt;li&gt;apt-get 安装 liburing
 &lt;ul&gt;
-&lt;li&gt;在ubuntu系统下安装liburing十分简单，只需要执行以下命令即可 （注意：ubuntu版本需要大于等于20.04，因为内核版本需要大于等于5.4）
+&lt;li&gt;在 ubuntu 系统下安装 liburing 十分简单，只需要执行以下命令即可 （注意：ubuntu 版本需要大于等于 20.04，因为内核版本需要大于等于 5.4）
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -294,7 +247,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;在项目中引入liburing的头文件
+&lt;li&gt;在项目中引入 liburing 的头文件
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -304,7 +257,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;在项目中引入liburing的库文件
+&lt;li&gt;在项目中引入 liburing 的库文件
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -318,7 +271,7 @@
 &lt;/li&gt;
 &lt;li&gt;手动安装
 &lt;ul&gt;
-&lt;li&gt;下载liburing的源码
+&lt;li&gt;下载 liburing 的源码
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -328,7 +281,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;编译liburing
+&lt;li&gt;编译 liburing
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -344,7 +297,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;在项目中引入liburing的头文件
+&lt;li&gt;在项目中引入 liburing 的头文件
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -354,7 +307,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;在项目中引入liburing的库文件
+&lt;li&gt;在项目中引入 liburing 的库文件
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -369,7 +322,7 @@
 &lt;/ol&gt;
 &lt;h3 id=&#34;2-代码示例&#34;&gt;2. 代码示例&lt;/h3&gt;
 &lt;ul&gt;
-&lt;li&gt;使用4个SQE，从输入文件中读取最多16KB的数据。&lt;/li&gt;
+&lt;li&gt;使用 4 个 SQE，从输入文件中读取最多 16KB 的数据。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -495,9 +448,9 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 1. 初始化一个 io_uring 实例
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;io_uring&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ring&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 创建一个io_uring实例，队列长度为QUEUE_DEPTH，flags为0，使用默认模式
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 创建一个 io_uring 实例，队列长度为 QUEUE_DEPTH，flags 为 0，使用默认模式
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;io_uring_queue_init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;QUEUE_DEPTH&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ring&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;fprintf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;stderr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;io_uring_queue_init: %s&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;strerror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
@@ -507,12 +460,12 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;stat&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;st&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;nf&#34;&gt;fstat&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;st&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 3. 初始化4个读缓冲区
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 3. 初始化 4 个读缓冲区
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;filesize&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;iovec&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;iovecs&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;calloc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;QUEUE_DEPTH&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;sizeof&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;iovec&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;QUEUE_DEPTH&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;QUEUE_DEPTH&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;posix_memalign&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;buf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;))&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;posix_memalign&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;buf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;))&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;nf&#34;&gt;perror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;posix_memalign&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
@@ -521,18 +474,18 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;n&#34;&gt;iovecs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;].&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;iov_len&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;n&#34;&gt;filesize&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;4096&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 4. 依次准备4个读请求，指定将随后读入的数据写入 iovecs 中
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 4. 依次准备 4 个读请求，指定将随后读入的数据写入 iovecs 中
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;io_uring_sqe&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sqe&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;offset&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;do&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;do&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;sqe&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;io_uring_get_sqe&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ring&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;io_uring_prep_readv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sqe&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;fd&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;iovecs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;offset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;offset&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;iovecs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;].&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;iov_len&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;// 如果超出文件大小，停止准备后面的 SQE
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;offset&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;st&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;st_size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;offset&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;st&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;st_size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;k&#34;&gt;break&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
@@ -540,7 +493,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 5. 提交 SQE 读请求
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;io_uring_submit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ring&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;nf&#34;&gt;fprintf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;stderr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;io_uring_submit: %s&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;strerror&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;-&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;ret&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
@@ -578,7 +531,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;link-cp：使用io_uring高级特性 SQE chaining实现复制文件功能，将创建一个长度为2的 SQE 链，第一个 SQE 用于读，第二个 SQE 用于写。&lt;/li&gt;
+&lt;li&gt;link-cp：使用 io_uring 高级特性 SQE chaining 实现复制文件功能，将创建一个长度为 2 的 SQE 链，第一个 SQE 用于读，第二个 SQE 用于写。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1002,7 +955,7 @@
 &lt;li&gt;handle_cqe() 从 CQE 中提取之前由  queue_rw_pair() 保存的 data 描述符，并在描述符中记录处理进展（index）。 如果之前请求被取消，它还会重新提交 read-write pair。 一个 CQE pair 的两个 member 都处理完成之后（index==2），释放共享的 data descriptor。最后通知内核这个 CQE 已经被消费。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;3-最佳实践&#34;&gt;3. 最佳实践&lt;/h3&gt;
-&lt;p&gt;io_uring是一个高性能的异步I/O框架，它在Linux内核中引入了一种新的I/O模型，可以显著提高I/O操作的吞吐量和响应速度。然而，要充分发挥io_uring的优势，需要注意一些优化和最佳实践。&lt;/p&gt;
+&lt;p&gt;io_uring 是一个高性能的异步 I/O 框架，它在 Linux 内核中引入了一种新的 I/O 模型，可以显著提高 I/O 操作的吞吐量和响应速度。然而，要充分发挥 io_uring 的优势，需要注意一些优化和最佳实践。&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -1013,71 +966,71 @@
 &lt;tbody&gt;
 &lt;tr&gt;
 &lt;td&gt;批量提交（Batch Submission）&lt;/td&gt;
-&lt;td&gt;io_uring支持批量提交多个I/O请求，以减少系统调用的开销。通过一次性提交多个请求，可以减少上下文切换和系统调用的次数，提高效率。建议根据系统的负载和性能需求，合理选择批量提交的数量。&lt;/td&gt;
+&lt;td&gt;io_uring 支持批量提交多个 I/O 请求，以减少系统调用的开销。通过一次性提交多个请求，可以减少上下文切换和系统调用的次数，提高效率。建议根据系统的负载和性能需求，合理选择批量提交的数量。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;预分配I/O请求（Pre-allocate I/O Requests）&lt;/td&gt;
-&lt;td&gt;在使用io_uring之前，可以预先分配一定数量的I/O请求，避免在运行时动态分配请求的开销。这样可以减少内存分配和释放的次数，提高性能。&lt;/td&gt;
+&lt;td&gt;预分配 I/O 请求（Pre-allocate I/O Requests）&lt;/td&gt;
+&lt;td&gt;在使用 io_uring 之前，可以预先分配一定数量的 I/O 请求，避免在运行时动态分配请求的开销。这样可以减少内存分配和释放的次数，提高性能。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;使用I/O链接（I/O Linking）&lt;/td&gt;
-&lt;td&gt;io_uring支持将多个I/O请求链接在一起，形成一个链表。这样可以减少上下文切换的开销，提高效率。在链接I/O请求时，需要注意保持请求的顺序和正确处理链接的完成。&lt;/td&gt;
+&lt;td&gt;使用 I/O 链接（I/O Linking）&lt;/td&gt;
+&lt;td&gt;io_uring 支持将多个 I/O 请求链接在一起，形成一个链表。这样可以减少上下文切换的开销，提高效率。在链接 I/O 请求时，需要注意保持请求的顺序和正确处理链接的完成。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;使用I/O向量（I/O Vector）&lt;/td&gt;
-&lt;td&gt;io_uring支持使用I/O向量来进行批量的读写操作。通过使用I/O向量，可以减少系统调用的次数，提高效率。在使用I/O向量时，需要注意正确设置每个向量的偏移量和长度。&lt;/td&gt;
+&lt;td&gt;使用 I/O 向量（I/O Vector）&lt;/td&gt;
+&lt;td&gt;io_uring 支持使用 I/O 向量来进行批量的读写操作。通过使用 I/O 向量，可以减少系统调用的次数，提高效率。在使用 I/O 向量时，需要注意正确设置每个向量的偏移量和长度。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;使用事件完成通知（Event Completion Notification）&lt;/td&gt;
-&lt;td&gt;io_uring支持使用事件完成通知来提高效率。通过使用事件完成通知，可以避免轮询等待I/O完成，而是在I/O完成时立即得到通知。这样可以减少CPU的占用和响应时间。&lt;/td&gt;
+&lt;td&gt;io_uring 支持使用事件完成通知来提高效率。通过使用事件完成通知，可以避免轮询等待 I/O 完成，而是在 I/O 完成时立即得到通知。这样可以减少 CPU 的占用和响应时间。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
-&lt;td&gt;合理设置I/O队列深度（I/O Queue Depth）&lt;/td&gt;
-&lt;td&gt;io_uring的性能受到I/O队列深度的影响。较大的队列深度可以提高并发性能，但也会增加内存开销。建议根据系统的负载和性能需求，合理设置I/O队列深度。&lt;/td&gt;
+&lt;td&gt;合理设置 I/O 队列深度（I/O Queue Depth）&lt;/td&gt;
+&lt;td&gt;io_uring 的性能受到 I/O 队列深度的影响。较大的队列深度可以提高并发性能，但也会增加内存开销。建议根据系统的负载和性能需求，合理设置 I/O 队列深度。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;使用合适的内存分配策略&lt;/td&gt;
-&lt;td&gt;io_uring的性能也受到内存分配策略的影响。建议使用高效的内存分配器，如jemalloc或tcmalloc，来减少内存分配和释放的开销。&lt;/td&gt;
+&lt;td&gt;io_uring 的性能也受到内存分配策略的影响。建议使用高效的内存分配器，如 jemalloc 或 tcmalloc，来减少内存分配和释放的开销。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;避免阻塞操作&lt;/td&gt;
-&lt;td&gt;io_uring是一个异步I/O框架，应尽量避免在io_uring的上下文中进行阻塞操作。阻塞操作会导致io_uring的性能下降，甚至可能引起死锁。&lt;/td&gt;
+&lt;td&gt;io_uring 是一个异步 I/O 框架，应尽量避免在 io_uring 的上下文中进行阻塞操作。阻塞操作会导致 io_uring 的性能下降，甚至可能引起死锁。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;使用合适的文件描述符（File Descriptor）&lt;/td&gt;
-&lt;td&gt;io_uring支持对文件、套接字和管道等不同类型的文件描述符进行操作。在使用io_uring时，需要根据实际情况选择合适的文件描述符类型，并正确设置相关的参数。&lt;/td&gt;
+&lt;td&gt;io_uring 支持对文件、套接字和管道等不同类型的文件描述符进行操作。在使用 io_uring 时，需要根据实际情况选择合适的文件描述符类型，并正确设置相关的参数。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td&gt;注意错误处理&lt;/td&gt;
-&lt;td&gt;在使用io_uring时，需要注意正确处理错误。io_uring的错误码可能是负数，可以使用errno.h中定义的错误码来进行解析和处理。&lt;/td&gt;
+&lt;td&gt;在使用 io_uring 时，需要注意正确处理错误。io_uring 的错误码可能是负数，可以使用 errno.h 中定义的错误码来进行解析和处理。&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;p&gt;通过遵循上述优化和最佳实践，可以充分发挥io_uring的性能优势，提高系统的I/O性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化io_uring的性能。&lt;/p&gt;
+&lt;p&gt;通过遵循上述优化和最佳实践，可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。&lt;/p&gt;
 &lt;h2 id=&#34;结论&#34;&gt;结论&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;io_uring是一个高性能的异步I/O框架，通过在Linux内核中引入新的I/O模型，它能够显著提高I/O操作的吞吐量和响应速度。本章节我们深入探讨了io_uring的优化和最佳实践，以帮助开发者充分发挥其性能优势。&lt;/p&gt;
+&lt;p&gt;io_uring 是一个高性能的异步 I/O 框架，通过在 Linux 内核中引入新的 I/O 模型，它能够显著提高 I/O 操作的吞吐量和响应速度。本章节我们深入探讨了 io_uring 的优化和最佳实践，以帮助开发者充分发挥其性能优势。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;在使用io_uring时，我们可以采取一系列优化措施来提高性能。首先，批量提交多个I/O请求可以减少系统调用的开销，提高效率。此外，预分配I/O请求、使用I/O链接和I/O向量等技术也能够减少内存分配和系统调用的次数，进一步提升性能。&lt;/p&gt;
+&lt;p&gt;在使用 io_uring 时，我们可以采取一系列优化措施来提高性能。首先，批量提交多个 I/O 请求可以减少系统调用的开销，提高效率。此外，预分配 I/O 请求、使用 I/O 链接和 I/O 向量等技术也能够减少内存分配和系统调用的次数，进一步提升性能。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;除了以上的优化技巧，我们还介绍了一些最佳实践。合理设置I/O队列深度、使用事件完成通知和选择合适的文件描述符类型等都能够对性能产生积极影响。此外，避免阻塞操作和正确处理错误也是使用io_uring时需要注意的事项。&lt;/p&gt;
+&lt;p&gt;除了以上的优化技巧，我们还介绍了一些最佳实践。合理设置 I/O 队列深度、使用事件完成通知和选择合适的文件描述符类型等都能够对性能产生积极影响。此外，避免阻塞操作和正确处理错误也是使用 io_uring 时需要注意的事项。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;通过遵循这些优化和最佳实践，开发者可以充分发挥io_uring的性能优势，提高系统的I/O性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化io_uring的性能。&lt;/p&gt;
+&lt;p&gt;通过遵循这些优化和最佳实践，开发者可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;io_uring作为一个新兴的异步I/O框架，具有很大的潜力和广阔的应用前景。它已经在许多领域得到了广泛的应用，如数据库、网络服务器和存储系统等。随着对io_uring的进一步研究和优化，相信它将在未来发挥更大的作用，并成为开发者们的首选工具之一。&lt;/p&gt;
+&lt;p&gt;io_uring 作为一个新兴的异步 I/O 框架，具有很大的潜力和广阔的应用前景。它已经在许多领域得到了广泛的应用，如数据库、网络服务器和存储系统等。随着对 io_uring 的进一步研究和优化，相信它将在未来发挥更大的作用，并成为开发者们的首选工具之一。&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;参考文献&#34;&gt;参考文献&lt;/h2&gt;
-&lt;p&gt;[1] io_uring官方文档：&lt;a class=&#34;link&#34; href=&#34;https://kernel.dk/io_uring.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+&lt;p&gt;[1] io_uring 官方文档：&lt;a class=&#34;link&#34; href=&#34;https://kernel.dk/io_uring.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://kernel.dk/io_uring.pdf&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;[2] How io_uring and eBPF Will Revolutionize Programming in Linux[1], ScyllaDB&lt;/p&gt;
 &lt;p&gt;[3] 2020 An Introduction to the io_uring Asynchronous I/O Framework[2], Oracle, 2020&lt;/p&gt;
-&lt;p&gt;[4] liburing GitHub仓库：&lt;a class=&#34;link&#34; href=&#34;https://github.com/axboe/liburing&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+&lt;p&gt;[4] liburing GitHub 仓库：&lt;a class=&#34;link&#34; href=&#34;https://github.com/axboe/liburing&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;https://github.com/axboe/liburing&lt;/a&gt;&lt;/p&gt;
 </description>
         </item>

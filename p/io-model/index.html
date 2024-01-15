@@ -2,16 +2,16 @@
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='select、poll、epoll'>
-<title>Socket与IO模型</title>
+<title>Socket 与 IO 模型</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/io-model/'>
 
-<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='Socket与IO模型'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='Socket 与 IO 模型'>
 <meta property='og:description' content='select、poll、epoll'>
 <meta property='og:url' content='https://cuterwrite.top/p/io-model/'>
 <meta property='og:site_name' content='cuterwrite'>
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:published_time' content='2021-05-04T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2021-05-04T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/cheetah-3749168_1920.4pgxzkp625g0.webp' />
-<meta name="twitter:title" content="Socket与IO模型">
+<meta name="twitter:title" content="Socket 与 IO 模型">
 <meta name="twitter:description" content="select、poll、epoll"><meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/cheetah-3749168_1920.4pgxzkp625g0.webp' />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -270,23 +270,23 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ul>
-    <li><a href="#1-io模型">1 IO模型</a>
+    <li><a href="#1-io-模型">1 IO 模型</a>
       <ul>
-        <li><a href="#11-阻塞式io">1.1 阻塞式IO</a></li>
-        <li><a href="#12-非阻塞式io">1.2 非阻塞式IO</a></li>
-        <li><a href="#13-io复用">1.3 IO复用</a></li>
-        <li><a href="#14-信号驱动io">1.4 信号驱动IO</a></li>
-        <li><a href="#15-异步io">1.5 异步IO</a></li>
-        <li><a href="#16-io模型对比">1.6 IO模型对比</a></li>
+        <li><a href="#11-阻塞式-io">1.1 阻塞式 IO</a></li>
+        <li><a href="#12-非阻塞式-io">1.2 非阻塞式 IO</a></li>
+        <li><a href="#13-io-复用">1.3 IO 复用</a></li>
+        <li><a href="#14-信号驱动-io">1.4 信号驱动 IO</a></li>
+        <li><a href="#15-异步-io">1.5 异步 IO</a></li>
+        <li><a href="#16-io-模型对比">1.6 IO 模型对比</a></li>
       </ul>
     </li>
-    <li><a href="#2-io复用">2 IO复用</a>
+    <li><a href="#2-io-复用">2 IO 复用</a>
       <ul>
         <li><a href="#21-select">2.1 select</a></li>
         <li><a href="#22-poll">2.2 poll</a></li>
         <li><a href="#23-epoll">2.3 epoll</a></li>
-        <li><a href="#24-lt与et">2.4 LT与ET</a></li>
-        <li><a href="#25-selectpollepoll对比">2.5 select、poll、epoll对比</a></li>
+        <li><a href="#24-lt-与-et">2.4 LT 与 ET</a></li>
+        <li><a href="#25-selectpollepoll-对比">2.5 select、poll、epoll 对比</a></li>
       </ul>
     </li>
   </ul>
@@ -305,7 +305,7 @@
         <div class="article-image">
             <a href="/p/io-model/">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/cheetah-3749168_1920.4pgxzkp625g0.webp" loading="lazy" alt="Featured image of post Socket与IO模型" />
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/cheetah-3749168_1920.4pgxzkp625g0.webp" loading="lazy" alt="Featured image of post Socket 与 IO 模型" />
                 
             </a>
         </div>
@@ -324,7 +324,7 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/p/io-model/">Socket与IO模型</a>
+            <a href="/p/io-model/">Socket 与 IO 模型</a>
         </h2>
     
         
@@ -380,101 +380,71 @@
     <section class="article-content">
     
     
-    <!-- raw HTML omitted -->
-<!-- raw HTML omitted -->
-<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
-    >DocToc</a></em></p>
-<ul>
-<li><a class="link" href="#socket%E4%B8%8Eio%E6%A8%A1%E5%9E%8B" >Socket与IO模型</a>
-<ul>
-<li><a class="link" href="#1-io%E6%A8%A1%E5%9E%8B" >1 IO模型</a>
-<ul>
-<li><a class="link" href="#11-%E9%98%BB%E5%A1%9E%E5%BC%8Fio" >1.1 阻塞式IO</a></li>
-<li><a class="link" href="#12-%E9%9D%9E%E9%98%BB%E5%A1%9E%E5%BC%8Fio" >1.2 非阻塞式IO</a></li>
-<li><a class="link" href="#13-io%E5%A4%8D%E7%94%A8" >1.3 IO复用</a></li>
-<li><a class="link" href="#14-%E4%BF%A1%E5%8F%B7%E9%A9%B1%E5%8A%A8io" >1.4 信号驱动IO</a></li>
-<li><a class="link" href="#15-%E5%BC%82%E6%AD%A5io" >1.5 异步IO</a></li>
-<li><a class="link" href="#16-io%E6%A8%A1%E5%9E%8B%E5%AF%B9%E6%AF%94" >1.6 IO模型对比</a></li>
-</ul>
-</li>
-<li><a class="link" href="#2-io%E5%A4%8D%E7%94%A8" >2 IO复用</a>
-<ul>
-<li><a class="link" href="#21-select" >2.1 select</a></li>
-<li><a class="link" href="#22-poll" >2.2 poll</a></li>
-<li><a class="link" href="#23-epoll" >2.3 epoll</a></li>
-<li><a class="link" href="#24-lt%E4%B8%8Eet" >2.4 LT与ET</a></li>
-<li><a class="link" href="#25-selectpollepoll%E5%AF%B9%E6%AF%94" >2.5 select、poll、epoll对比</a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<!-- raw HTML omitted -->
-<h1 id="socket与io模型">Socket与IO模型</h1>
-<h2 id="1-io模型">1 IO模型</h2>
-<h3 id="11-阻塞式io">1.1 阻塞式IO</h3>
+    <h1 id="socket-与-io-模型">Socket 与 IO 模型</h1>
+<h2 id="1-io-模型">1 IO 模型</h2>
+<h3 id="11-阻塞式-io">1.1 阻塞式 IO</h3>
 <p>应用进程被阻塞，直到<strong>数据从内核缓冲区复制到应用进程缓冲区中</strong>才返回。</p>
 <p>应该注意到，在阻塞的过程中，其它应用进程还可以执行，因此阻塞不意味着整个操作系统都被阻塞。因为其它应用进程还可以执行，所以不消耗 CPU 时间，这种模型的 CPU 利用率会比较高。</p>
-<h3 id="12-非阻塞式io">1.2 非阻塞式IO</h3>
+<h3 id="12-非阻塞式-io">1.2 非阻塞式 IO</h3>
 <p>应用进程执行系统调用之后，内核返回一个错误码。应用进程<strong>可以继续执行</strong>，但是需要不断的执行系统调用来获知 I/O 是否完成，这种方式称为<strong>轮询</strong>（polling）。</p>
 <p>由于 CPU 要处理更多的系统调用，因此这种模型的 CPU 利用率比较低。</p>
-<h3 id="13-io复用">1.3 IO复用</h3>
+<h3 id="13-io-复用">1.3 IO 复用</h3>
 <p>使用 select 或者 poll 等待数据，并且可以等待多个套接字中的任何一个变为可读。这一过程会被阻塞，当某一个套接字可读时返回，之后再使用 recvfrom 把数据从内核复制到进程中。</p>
 <p>它可以让单个进程具有处理多个 I/O 事件的能力。又被称为 Event Driven I/O，即事件驱动 I/O。</p>
 <p>如果一个 Web 服务器没有 I/O 复用，那么每一个 Socket 连接都需要创建一个线程去处理。如果同时有几万个连接，那么就需要创建相同数量的线程。相比于多进程和多线程技术，I/O 复用<strong>不需要进程线程创建和切换的开销</strong>，系统开销更小。</p>
-<h3 id="14-信号驱动io">1.4 信号驱动IO</h3>
+<h3 id="14-信号驱动-io">1.4 信号驱动 IO</h3>
 <p>应用进程使用 sigaction 系统调用，内核立即返回，应用进程<strong>可以继续执行</strong>，也就是说等待数据阶段应用进程是非阻塞的。<strong>内核在数据到达时</strong>向应用进程<strong>发送 SIGIO 信号</strong>，应用进程收到之后在信号处理程序中调用 recvfrom 将数据从内核复制到应用进程中。</p>
 <p>相比于非阻塞式 I/O 的轮询方式，信号驱动 I/O 的 CPU 利用率更高。</p>
-<h3 id="15-异步io">1.5 异步IO</h3>
+<h3 id="15-异步-io">1.5 异步 IO</h3>
 <p>应用进程执行 aio_read 系统调用会立即返回，应用进程可以继续执行，不会被阻塞，内核会在所有操作完成之后向应用进程发送信号。</p>
 <p>异步 I/O 与信号驱动 I/O 的区别在于，异步 I/O 的信号是通知应用进程 I/O 完成，而信号驱动 I/O 的信号是通知应用进程可以开始 I/O。</p>
-<h3 id="16-io模型对比">1.6 IO模型对比</h3>
+<h3 id="16-io-模型对比">1.6 IO 模型对比</h3>
 <ul>
-<li>同步IO：将数据从内核缓冲区复制到应用进程缓冲区的阶段（第二阶段），应用进程会阻塞。</li>
-<li>异步IO：第二阶段应用进程不会阻塞。</li>
+<li>同步 IO：将数据从内核缓冲区复制到应用进程缓冲区的阶段（第二阶段），应用进程会阻塞。</li>
+<li>异步 IO：第二阶段应用进程不会阻塞。</li>
 </ul>
-<p>同步IO包括：BIO、NIO、IO复用和信号驱动IO，它们的区别在第一阶段</p>
+<p>同步 IO 包括：BIO、NIO、IO 复用和信号驱动 IO，它们的区别在第一阶段</p>
 <ul>
 <li>
-<p>BIO会直接阻塞应用进程，直到数据从内核缓冲区复制到应用进程缓冲区。</p>
+<p>BIO 会直接阻塞应用进程，直到数据从内核缓冲区复制到应用进程缓冲区。</p>
 </li>
 <li>
-<p>NIO采用轮询方式判断IO是否完成，避免阻塞。</p>
+<p>NIO 采用轮询方式判断 IO 是否完成，避免阻塞。</p>
 </li>
 <li>
-<p>信号驱动IO采用SIGIO信号方式，避免阻塞</p>
+<p>信号驱动 IO 采用 SIGIO 信号方式，避免阻塞</p>
 </li>
 <li>
-<p>IO多路复用使用select/poll/epoll等待描述符成为就绪状态，避免阻塞。</p>
+<p>IO 多路复用使用 select/poll/epoll 等待描述符成为就绪状态，避免阻塞。</p>
 </li>
 </ul>
-<p>其中，NIO、信号驱动IO和异步IO在第一阶段不会阻塞。</p>
-<h2 id="2-io复用">2 IO复用</h2>
+<p>其中，NIO、信号驱动 IO 和异步 IO 在第一阶段不会阻塞。</p>
+<h2 id="2-io-复用">2 IO 复用</h2>
 <h3 id="21-select">2.1 select</h3>
 <p>select 允许应用程序监视一组文件描述符，等待一个或者多个描述符成为就绪状态，从而完成 I/O 操作。</p>
 <p>缺点：</p>
 <ul>
-<li>单个进程所打开的FD是有限制的，通过FD_SETSIZE设置，默认1024</li>
-<li>每次调用select，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大</li>
-<li>对socket扫描时是线性扫描（对所有的fds遍历扫描），采用轮询的方法，效率较低（高并发时）</li>
+<li>单个进程所打开的 FD 是有限制的，通过 FD_SETSIZE 设置，默认 1024</li>
+<li>每次调用 select，都需要把 fd 集合从用户态拷贝到内核态，这个开销在 fd 很多时会很大</li>
+<li>对 socket 扫描时是线性扫描（对所有的 fds 遍历扫描），采用轮询的方法，效率较低（高并发时）</li>
 </ul>
 <h3 id="22-poll">2.2 poll</h3>
-<p>poll与select相比，只是没有fd的限制，其它基本一样</p>
+<p>poll 与 select 相比，只是没有 fd 的限制，其它基本一样</p>
 <p>缺点：</p>
 <ul>
-<li>每次调用poll，都需要把fd集合从用户态拷贝到内核态，这个开销在fd很多时会很大</li>
-<li>对socket扫描时是线性扫描，采用轮询的方法，效率较低（高并发时）</li>
+<li>每次调用 poll，都需要把 fd 集合从用户态拷贝到内核态，这个开销在 fd 很多时会很大</li>
+<li>对 socket 扫描时是线性扫描，采用轮询的方法，效率较低（高并发时）</li>
 </ul>
 <h3 id="23-epoll">2.3 epoll</h3>
 <p>select 和 poll 速度都比较慢，每次调用都需要将全部描述符从应用进程缓冲区复制到内核缓冲区。</p>
 <p>epoll 只需要将描述符从进程缓冲区向内核缓冲区拷贝一次，并且进程不需要通过轮询来获得事件完成的描述符。</p>
-<p>缺点：epoll只能工作在linux下</p>
-<h3 id="24-lt与et">2.4 LT与ET</h3>
+<p>缺点：epoll 只能工作在 linux 下</p>
+<h3 id="24-lt-与-et">2.4 LT 与 ET</h3>
 <ul>
-<li>LT：LT模式下，只要这个fd还有数据可读，每次 epoll_wait都会返回它的事件，提醒用户程序去操作。</li>
-<li>ET：ET模式下，它只会提示一次，直到下次再有数据流入之前都不会再提示了，无论fd中是否还有数据可读。所以在ET模式下，read一个fd的时候一定要把它的buffer读完，或者遇到EAGAIN错误。</li>
+<li>LT：LT 模式下，只要这个 fd 还有数据可读，每次 epoll_wait 都会返回它的事件，提醒用户程序去操作。</li>
+<li>ET：ET 模式下，它只会提示一次，直到下次再有数据流入之前都不会再提示了，无论 fd 中是否还有数据可读。所以在 ET 模式下，read 一个 fd 的时候一定要把它的 buffer 读完，或者遇到 EAGAIN 错误。</li>
 </ul>
-<h3 id="25-selectpollepoll对比">2.5 select、poll、epoll对比</h3>
+<h3 id="25-selectpollepoll-对比">2.5 select、poll、epoll 对比</h3>
 <div class="table-wrapper"><table>
 <thead>
 <tr>
@@ -498,10 +468,10 @@
 <td>无上限</td>
 </tr>
 <tr>
-<td>fd拷贝</td>
-<td>每次调用select拷贝</td>
-<td>每次调用poll拷贝</td>
-<td>fd首次调用epoll_ctl拷贝，每次调用epoll_wait不拷贝</td>
+<td>fd 拷贝</td>
+<td>每次调用 select 拷贝</td>
+<td>每次调用 poll 拷贝</td>
+<td>fd 首次调用 epoll_ctl 拷贝，每次调用 epoll_wait 不拷贝</td>
 </tr>
 <tr>
 <td>工作效率</td>
@@ -604,7 +574,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">Ring buffer详解</h2>
+            <h2 class="article-title">Ring buffer 详解</h2>
         </div>
     </a>
 </article>
@@ -661,7 +631,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">高性能异步I/O框架：io_uring</h2>
+            <h2 class="article-title">高性能异步 I/O 框架：io_uring</h2>
         </div>
     </a>
 </article>
@@ -733,7 +703,7 @@
         
             2021 - 
         
-        2023 cuterwrite
+        2024 cuterwrite
     </section>
     
     <section class="powerby">

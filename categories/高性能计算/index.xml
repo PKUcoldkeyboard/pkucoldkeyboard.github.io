@@ -7,7 +7,158 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
-        <lastBuildDate>Sat, 30 Dec 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 01 Jan 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/%E9%AB%98%E6%80%A7%E8%83%BD%E8%AE%A1%E7%AE%97/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>RDMA 概述</title>
+        <link>https://cuterwrite.top/p/rdma-overview/</link>
+        <pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/rdma-overview/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" /&gt;&lt;h1 id=&#34;rdma-概述&#34;&gt;RDMA 概述&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;本文欢迎非商业转载，转载请注明出处。&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+    &lt;p&gt;声明：仅用于收藏，便于阅读&lt;/p&gt;&lt;span class=&#34;cite&#34;&gt;&lt;span&gt;― &lt;/span&gt;&lt;span&gt;Savir, &lt;/span&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/138874738&#34;&gt;&lt;cite&gt;知乎专栏：1. RDMA 概述&lt;/cite&gt;&lt;/a&gt;&lt;/span&gt;&lt;/blockquote&gt;
+&lt;p&gt;本想完全靠自己的语言完成这篇概述，然而开篇并没有想象当中的好写，看样子从宏观上概括一个技术比从微观上探究细枝末节要困难不少。本文是以前人们对 RDMA 技术的介绍为主，加入了一些自己的理解。随着本专栏内容的增加，本篇概述也会更新和逐渐完善。&lt;/p&gt;
+&lt;h2 id=&#34;什么是-dma&#34;&gt;什么是 DMA&lt;/h2&gt;
+&lt;p&gt;DMA 全称为 Direct Memory Access，即直接内存访问。意思是外设对内存的读写过程可以不用 CPU 参与而直接进行。我们先来看一下没有 DMA 的时候：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203040-2024-01-14.png&#34;
+         alt=&#34;无 DMA 控制器时 I/O 设备和内存间的数据路径&#34; width=&#34;auto&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;无 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;假设 I/O 设备为一个普通网卡，为了从内存拿到需要发送的数据，然后组装数据包发送到物理链路上，网卡需要通过总线告知 CPU 自己的数据请求。然后 CPU 将会把内存缓冲区中的数据复制到自己内部的寄存器中，再复制到 I/O 设备的存储空间中。如果数据量比较大，那么很长一段时间内 CPU 都会忙于搬移数据，而无法投入到其他工作中去。&lt;/p&gt;
+&lt;p&gt;CPU 的最主要工作是计算，而不是进行数据复制，这种工作属于白白浪费了它的计算能力。为了给 CPU“减负”，让它投入到更有意义的工作中去，后来人们设计了 DMA 机制：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203114-2024-01-14.png&#34;
+         alt=&#34;有 DMA 控制器时 I/O 设备和内存间的数据路径&#34; width=&#34;auto&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;有 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;可以看到总线上又挂了一个 DMA 控制器，它是专门用来读写内存的设备。有了它以后，当我们的网卡想要从内存中拷贝数据时，除了一些必要的控制命令外，整个数据复制过程都是由 DMA 控制器完成的。过程跟 CPU 复制是一样的，只不过这次是把内存中的数据通过总线复制到 DMA 控制器内部的寄存器中，再复制到 I/O 设备的存储空间中。CPU 除了关注一下这个过程的开始和结束以外，其他时间可以去做其他事情。&lt;/p&gt;
+&lt;p&gt;DMA 控制器一般是和 I/O 设备在一起的，也就是说一块网卡中既有负责数据收发的模块，也有 DMA 模块。&lt;/p&gt;
+&lt;h2 id=&#34;什么是-rdma&#34;&gt;什么是 RDMA&lt;/h2&gt;
+&lt;p&gt;RDMA（ Remote Direct Memory Access ）意为远程直接地址访问，通过 RDMA，本端节点可以“直接”访问远端节点的内存。所谓直接，指的是可以像访问本地内存一样，绕过传统以太网复杂的 TCP/IP 网络协议栈读写远端内存，而这个过程对端是不感知的，而且这个读写过程的大部分工作是由硬件而不是软件完成的。&lt;/p&gt;
+&lt;p&gt;为了能够直观的理解这一过程，请看下面两个图（图中箭头仅做示意，不表示实际逻辑或物理关系）：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235555-2024-01-15.png&#34;
+         alt=&#34;20240115235555-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;传统网络中，“节点 A 给节点 B 发消息”实际上做的是“把节点 A 内存中的一段数据，通过网络链路搬移到节点 B 的内存中”，而这一过程无论是发端还是收段，都需要 CPU 的指挥和控制，包括网卡的控制，中断的处理，报文的封装和解析等等。&lt;/p&gt;
+&lt;p&gt;上图中左边的节点在内存用户空间中的数据，需要经过 CPU 拷贝到内核空间的缓冲区中，然后才可以被网卡访问，这期间数据会经过软件实现的 TCP/IP 协议栈，加上各层头部和校验码，比如 TCP 头，IP 头等。网卡通过 DMA 拷贝内核中的数据到网卡内部的缓冲区中，进行处理后通过物理链路发送给对端。&lt;/p&gt;
+&lt;p&gt;对端收到数据后，会进行相反的过程：从网卡内部存储空间，将数据通过 DMA 拷贝到内存内核空间的缓冲区中，然后 CPU 会通过 TCP/IP 协议栈对其进行解析，将数据取出来拷贝到用户空间中。&lt;/p&gt;
+&lt;p&gt;可以看到，即使有了 DMA 技术，上述过程还是对 CPU 有较强的依赖。&lt;/p&gt;
+&lt;p&gt;而使用了 RDMA 技术之后，这一过程可以简单的表示成下面的示意图：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235612-2024-01-15.png&#34;
+         alt=&#34;20240115235612-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;同样是把本端内存中的一段数据，复制到对端内存中，在使用了 RDMA 技术时，两端的 CPU 几乎不用参与数据传输过程（只参与控制面）。本端的网卡直接从内存的用户空间 DMA 拷贝数据到内部存储空间，然后硬件进行各层报文的组装后，通过物理链路发送到对端网卡。对端的 RDMA 网卡收到数据后，剥离各层报文头和校验码，通过 DMA 将数据直接拷贝到用户空间内存中。&lt;/p&gt;
+&lt;h2 id=&#34;rdma-的优势&#34;&gt;RDMA 的优势&lt;/h2&gt;
+&lt;p&gt;RDMA 主要应用在高性能计算（HPC）领域和大型数据中心当中，并且设备相对普通以太网卡要昂贵不少（比如 Mellanox 公司的 Connext-X 5 100Gb PCIe 网卡市价在 4000 元以上）。由于使用场景和价格的原因，RDMA 与普通开发者和消费者的距离较远，目前主要是一些大型互联网企业在部署和使用。&lt;/p&gt;
+&lt;p&gt;RDMA 技术为什么可以应用在上述场景中呢？这就涉及到它的以下几个特点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;0 拷贝：指的是不需要在用户空间和内核空间中来回复制数据。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235643-2024-01-15.png&#34;
+         alt=&#34;20240115235643-2024-01-15&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;由于 Linux 等操作系统将内存划分为用户空间和内核空间，在传统的 Socket 通信流程中 CPU 需要多次把数据在内存中来回拷贝。而通过 RDMA 技术，我们可以直接访问远端已经注册的内存区域。&lt;/p&gt;
+&lt;p&gt;关于 0 拷贝可以参考这篇文章：&lt;a class=&#34;link&#34; href=&#34;https://www.jianshu.com/p/e76e3580e356&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;浅谈 Linux 下的零拷贝机制&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;内核 Bypass：指的是 IO（数据）流程可以绕过内核，即在用户层就可以把数据准备好并通知硬件准备发送和接收。避免了系统调用和上下文切换的开销。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235721-2024-01-15.png&#34;
+         alt=&#34;20240115235721-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;上图（原图&lt;a class=&#34;link&#34; href=&#34;https://pc.nanog.org/static/published/meetings/NANOG76/1999/20190612_Cardona_Towards_Hyperscale_High_v1.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[1]&lt;/a&gt;）可以很好的解释“0 拷贝”和“内核 Bypass”的含义。上下两部分分别是基于 Socket 的和基于 RDMA 的一次收-发流程，左右分别为两个节点。可以明显的看到 Socket 流程中在软件中多了一次拷贝动作。而 RDMA 绕过了内核同时也减少了内存拷贝，数据可以直接在用户层和硬件间传递。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CPU 卸载：指的是可以在远端节点 CPU 不参与通信的情况下（当然要持有访问远端某段内存的“钥匙”才行）对内存进行读写，这实际上是 &lt;strong&gt;把报文封装和解析放到硬件中做了&lt;/strong&gt;。而传统的以太网通信，双方 CPU 都必须参与各层报文的解析，如果数据量大且交互频繁，对 CPU 来讲将是一笔不小的开销，而这些被占用的 CPU 计算资源本可以做一些更有价值的工作。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235929-2024-01-15.png&#34;
+         alt=&#34;20240115235929-2024-01-15&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;通信领域两大出场率最高的性能指标就是“带宽”和“时延”。简单的说，所谓带宽指的是指单位时间内能够传输的数据量，而时延指的是数据从本端发出到被对端接收所耗费的时间。因为上述几个特点，相比于传统以太网，RDMA 技术同时做到了更高带宽和更低时延，所以其在带宽敏感的场景——比如海量数据的交互，时延敏感——比如多个计算节点间的数据同步的场景下得以发挥其作用。&lt;/p&gt;
+&lt;h2 id=&#34;协议&#34;&gt;协议&lt;/h2&gt;
+&lt;p&gt;RDMA 本身指的是一种技术，具体协议层面，包含 Infiniband（IB），RDMA over Converged Ethernet（RoCE）和 internet Wide Area RDMA Protocol（iWARP）。三种协议都符合 RDMA 标准，使用相同的上层接口，在不同层次上有一些差别。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000000-2024-01-16.png&#34;
+         alt=&#34;20240116000000-2024-01-16&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;上图&lt;a class=&#34;link&#34; href=&#34;https://www.snia.org/sites/default/files/ESF/RoCE-vs.-iWARP-Final.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[2]g&lt;/a&gt;对于几种常见的 RDMA 技术的协议层次做了非常清晰的对比&lt;/p&gt;
+&lt;h3 id=&#34;infiniband&#34;&gt;Infiniband&lt;/h3&gt;
+&lt;p&gt;2000 年由 IBTA（InfiniBand Trade Association）提出的 IB 协议是当之无愧的核心，其规定了一整套完整的链路层到传输层（非传统 OSI 七层模型的传输层，而是位于其之上）规范，但是其无法兼容现有以太网，除了需要支持 IB 的网卡之外，企业如果想部署的话还要重新购买配套的交换设备。&lt;/p&gt;
+&lt;h3 id=&#34;roce&#34;&gt;RoCE&lt;/h3&gt;
+&lt;p&gt;RoCE 从英文全称就可以看出它是基于以太网链路层的协议，v1 版本网络层仍然使用了 IB 规范，而 v2 使用了 UDP+IP 作为网络层，使得数据包也可以被路由。RoCE 可以被认为是 IB 的“低成本解决方案”，将 IB 的报文封装成以太网包进行收发。由于 RoCE v2 可以使用以太网的交换设备，所以现在在企业中应用也比较多，但是相同场景下相比 IB 性能要有一些损失。&lt;/p&gt;
+&lt;h3 id=&#34;iwarp&#34;&gt;iWARP&lt;/h3&gt;
+&lt;p&gt;iWARP 协议是 IETF 基于 TCP 提出的，因为 TCP 是面向连接的可靠协议，这使得 iWARP 在面对有损网络场景（可以理解为网络环境中可能经常出现丢包）时相比于 RoCE v2 和 IB 具有更好的可靠性，在大规模组网时也有明显的优势。但是大量的 TCP 连接会耗费很多的内存资源，另外 TCP 复杂的流控等机制会导致性能问题，所以从性能上看 iWARP 要比 UDP 的 RoCE v2 和 IB 差。&lt;/p&gt;
+&lt;p&gt;需要注意的是，虽然有软件实现的 RoCE 和 iWARP 协议，但是真正商用时上述几种协议都需要专门的硬件（网卡）支持。&lt;/p&gt;
+&lt;p&gt;iWARP 本身不是由 Infiniband 直接发展而来的，但是它继承了一些 Infiniband 技术的设计思想。这三种协议的关系如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000125-2024-01-16.png&#34;
+         alt=&#34;20240116000125-2024-01-16&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;玩家&#34;&gt;玩家&lt;/h2&gt;
+&lt;h3 id=&#34;标准生态组织&#34;&gt;标准/生态组织&lt;/h3&gt;
+&lt;p&gt;提到 IB 协议，就不得不提到两大组织——IBTA 和 OFA。&lt;/p&gt;
+&lt;h3 id=&#34;ibta3httpswwwinfinibandtaorg&#34;&gt;IBTA&lt;a class=&#34;link&#34; href=&#34;https://www.infinibandta.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[3]&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;成立于 1999 年，负责制定和维护 Infiniband 协议标准。IBTA 独立于各个厂商，通过赞助技术活动和推动资源共享来将整个行业整合在一起，并且通过线上交流、营销和线下活动等方式积极推广 IB 和 RoCE。&lt;/p&gt;
+&lt;p&gt;IBTA 会对商用的 IB 和 RoCE 设备进行协议标准符合性和互操作性测试及认证，由很多大型的 IT 厂商组成的委员会领导，其主要成员包括博通，HPE，IBM，英特尔，Mellanox 和微软等，华为也是 IBTA 的会员。&lt;/p&gt;
+&lt;h3 id=&#34;ofa4httpswwwopenfabricsorg&#34;&gt;OFA&lt;a class=&#34;link&#34; href=&#34;https://www.openfabrics.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[4]&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;成立于 2004 年的非盈利组织，负责开发、测试、认证、支持和分发独立于厂商的开源跨平台 infiniband 协议栈，2010 年开始支持 RoCE。其对用于支撑 RDMA/Kernel bypass 应用的 OFED（OpenFabrics Enterprise Distribution）软件栈负责，保证其与主流软硬件的兼容性和易用性。OFED 软件栈包括驱动、内核、中间件和 API。&lt;/p&gt;
+&lt;p&gt;上述两个组织是配合关系，IBTA 主要负责开发、维护和增强 Infiniband 协议标准；OFA 负责开发和维护 Infiniband 协议和上层应用 API。&lt;/p&gt;
+&lt;h2 id=&#34;开发社区&#34;&gt;开发社区&lt;/h2&gt;
+&lt;h3 id=&#34;linux-社区&#34;&gt;Linux 社区&lt;/h3&gt;
+&lt;p&gt;Linux 内核的 RDMA 子系统还算比较活跃，经常会讨论一些协议细节，对框架的修改比较频繁，另外包括华为和 Mellanox 在内的一些厂商也会经常对驱动代码进行修改。&lt;/p&gt;
+&lt;p&gt;邮件订阅：http://vger.kernel.org/vger-lists.html#linux-rdma&lt;/p&gt;
+&lt;p&gt;代码位于内核 drivers/infiniband/目录下，包括框架核心代码和各厂商的驱动代码。&lt;/p&gt;
+&lt;p&gt;代码仓：https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git/&lt;/p&gt;
+&lt;h3 id=&#34;rdma-社区&#34;&gt;RDMA 社区&lt;/h3&gt;
+&lt;p&gt;对于上层用户，IB 提供了一套与 Socket 套接字类似的接口——libibverbs，前文所述三种协议都可以使用。参考着协议、API 文档和示例程序很容易就可以写一个 Demo 出来。本专栏中的 RDMA 社区专指其用户态社区，在 github 上其仓库的名字为 linux-rdma。&lt;/p&gt;
+&lt;p&gt;主要包含两个子仓库：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;rdma-core&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;用户态核心代码，API，文档以及各个厂商的用户态驱动。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;perftest
+一个功能强大的用于测试 RDMA 性能的工具。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;代码仓：https://github.com/linux-rdma/&lt;/p&gt;
+&lt;h2 id=&#34;ucx5httpswwwopenucxorg&#34;&gt;UCX&lt;a class=&#34;link&#34; href=&#34;https://www.openucx.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[5]&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;UCX 是一个建立在 RDMA 等技术之上的用于数据处理和高性能计算的通信框架，RDMA 是其底层核心之一。我们可以将其理解为是位于应用和 RDMA API 之间的中间件，向上层用户又封装了一层更易开发的接口。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000429-2024-01-16.png&#34;
+         alt=&#34;20240116000429-2024-01-16&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;笔者对其并不了解太多，只知道业界有一些企业在基于 UCX 开发应用。&lt;/p&gt;
+&lt;p&gt;代码仓：https://github.com/openucx/ucx&lt;/p&gt;
+&lt;h2 id=&#34;硬件厂商&#34;&gt;硬件厂商&lt;/h2&gt;
+&lt;p&gt;设计和生产 IB 相关硬件的厂商有不少，包括 Mellanox、华为、收购了 Qlogic 的 IB 技术的 Intel，博通、Marvell，富士通等等，这里就不逐个展开了，仅简单提一下 Mellanox 和华为。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Mellanox
+IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都能看到 Mellanox 的身影，其在社区和标准制定上上拥有最大的话语权。目前最新一代的网卡是支持 200Gb/s 的 ConnextX-6 系列。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;华为
+去年初推出的鲲鹏 920 芯片已经支持 100Gb/s 的 RoCE 协议，技术上在国内处于领先地位。但是软硬件和影响力方面距离 Mellanox 还有比较长的路要走，相信华为能够早日赶上老大哥的步伐。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;用户&#34;&gt;用户&lt;/h2&gt;
+&lt;p&gt;微软、IBM 和国内的阿里、京东都正在使用 RDMA，另外还有很多大型 IT 公司在做初步的开发和测试。在数据中心和高性能计算场景下，RDMA 代替传统网络是大势所趋。笔者对于市场接触不多，所以并不能提供更详细的应用情况。&lt;/p&gt;
+&lt;p&gt;下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>在 HPC 上运行 Apache Spark</title>
         <link>https://cuterwrite.top/p/run-spark-on-hpc/</link>
         <pubDate>Sat, 30 Dec 2023 01:00:00 +0000</pubDate>
@@ -436,7 +587,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;code&gt;http://localhost:8080/&lt;/code&gt; 访问 Spark Web UI。&lt;/li&gt;
+&lt;li&gt;然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;a class=&#34;link&#34; href=&#34;http://localhost:8080/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;http://localhost:8080/&lt;/a&gt; 访问 Spark Web UI。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -461,30 +613,24 @@
 &lt;h2 id=&#34;一前言&#34;&gt;一、前言&lt;/h2&gt;
 &lt;p&gt;在多核并发编程中，如果将互斥锁的争用比作 &lt;strong&gt;性能杀手&lt;/strong&gt; 的话，那么伪共享则相当于 &lt;strong&gt;性能刺客&lt;/strong&gt;。&lt;strong&gt;杀手&lt;/strong&gt; 与 &lt;strong&gt;刺客&lt;/strong&gt; 的区别在于杀手是可见的，遇到杀手时我们可以选择战斗、逃跑、绕路、求饶等多种手段去应付，但 &lt;strong&gt;刺客&lt;/strong&gt; 却不同， &lt;strong&gt;刺客&lt;/strong&gt; 永远隐藏在暗处，伺机给你致命一击，防不胜防。具体到我们的并发编程中，遇到锁争用影响并发性能情况时，我们可以采取多种措施（如缩短临界区，原子操作等等）去提高程序性能，但是伪共享却是我们从所写代码中看不出任何蛛丝马迹的，发现不了问题也就无法解决问题，从而导致伪共享在暗处严重拖累程序的并发性能，但我们却束手无策。&lt;/p&gt;
 &lt;h2 id=&#34;二缓存行&#34;&gt;二、缓存行&lt;/h2&gt;
-&lt;p&gt;为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU将最近使用的数据预先读取到Cache中，下次再访问同样数据的时候，可以直接从速度比较快的CPU缓存中读取，避免从内存或磁盘读取拖慢整体速度。&lt;/p&gt;
-&lt;p&gt;CPU缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 &lt;code&gt;64Byte&lt;/code&gt; 和 &lt;code&gt;32Byte&lt;/code&gt; ，CPU缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。&lt;/p&gt;
+&lt;p&gt;为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU 缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU 将最近使用的数据预先读取到 Cache 中，下次再访问同样数据的时候，可以直接从速度比较快的 CPU 缓存中读取，避免从内存或磁盘读取拖慢整体速度。&lt;/p&gt;
+&lt;p&gt;CPU 缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 &lt;code&gt;64Byte&lt;/code&gt; 和 &lt;code&gt;32Byte&lt;/code&gt; ，CPU 缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。&lt;/p&gt;
 &lt;h2 id=&#34;三缓存一致性&#34;&gt;三、缓存一致性&lt;/h2&gt;
-&lt;p&gt;在单核CPU情况下，上述方法可以正常工作，可以确保缓存到CPU缓存中的数据永远是 &lt;strong&gt;干净&lt;/strong&gt; 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 &lt;strong&gt;干净&lt;/strong&gt; 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。&lt;/p&gt;
-&lt;p&gt;Linux系统中采用 &lt;code&gt;MESI&lt;/code&gt; 协议处理缓存一致性，所谓 &lt;code&gt;MESI&lt;/code&gt; 即是指 CPU 缓存的四种状态：&lt;/p&gt;
+&lt;p&gt;在单核 CPU 情况下，上述方法可以正常工作，可以确保缓存到 CPU 缓存中的数据永远是 &lt;strong&gt;干净&lt;/strong&gt; 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 &lt;strong&gt;干净&lt;/strong&gt; 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。&lt;/p&gt;
+&lt;p&gt;Linux 系统中采用 &lt;code&gt;MESI&lt;/code&gt; 协议处理缓存一致性，所谓 &lt;code&gt;MESI&lt;/code&gt; 即是指 CPU 缓存的四种状态：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;M（修改，Modified）：本地处理器已经修改缓存行，即是脏行，它的内容与内存中的内容不一样，并且此 cache 只有本地一个拷贝(专有)；&lt;/li&gt;
 &lt;li&gt;E（专有，Exclusive）：缓存行内容和内存中的一样，而且其它处理器都没有这行数据；&lt;/li&gt;
 &lt;li&gt;S（共享，Shared）：缓存行内容和内存中的一样, 有可能其它处理器也存在此缓存行的拷贝；&lt;/li&gt;
 &lt;li&gt;I（无效，Invalid）：缓存行失效, 不能使用。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231202205445-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp&#34;
+         alt=&#34;20231202205445-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;每个 CPU 缓存行都在四个状态之间互相转换，以此决定 CPU 缓存是否失效，比如 CPU1 对一个缓存行执行了写入操作，则此操作会导致其他 CPU 的该缓存行进入 Invalid 无效状态， CPU 需要使用该缓存行的时候需要从内存中重新读取。由此就解决了多 CPU 之间的缓存一致性问题。&lt;/p&gt;
 &lt;h2 id=&#34;四伪共享&#34;&gt;四、伪共享&lt;/h2&gt;
-&lt;p&gt;何谓伪共享？上面我们提过 CPU 的缓存是 &lt;strong&gt;以缓存行为单位&lt;/strong&gt; 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 &lt;code&gt;abcdefgh&lt;/code&gt; 八个int型数据，当 CPU 读取 &lt;code&gt;d&lt;/code&gt; 这个数据时， CPU 会将 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 &lt;code&gt;a&lt;/code&gt; 这个数据进行频繁读写， CPU2 只对 &lt;code&gt;b&lt;/code&gt; 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 &lt;code&gt;a&lt;/code&gt; 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对&lt;code&gt; b&lt;/code&gt; 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个CPU之间 &lt;strong&gt;乒乓&lt;/strong&gt; ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。&lt;/p&gt;
+&lt;p&gt;何谓伪共享？上面我们提过 CPU 的缓存是 &lt;strong&gt;以缓存行为单位&lt;/strong&gt; 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 型数据，当 CPU 读取 &lt;code&gt;d&lt;/code&gt; 这个数据时， CPU 会将 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 &lt;code&gt;a&lt;/code&gt; 这个数据进行频繁读写， CPU2 只对 &lt;code&gt;b&lt;/code&gt; 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 &lt;code&gt;a&lt;/code&gt; 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对&lt;code&gt; b&lt;/code&gt; 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个 CPU 之间 &lt;strong&gt;乒乓&lt;/strong&gt; ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。&lt;/p&gt;
 &lt;p&gt;下面是维基百科的定义：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;In computer science, &lt;strong&gt;false sharing&lt;/strong&gt; is a performance-degrading usage pattern that can arise in systems with distributed, coherent caches at the size of the smallest resource block managed by the caching mechanism. When a system participant attempts to periodically access data that is not being altered by another party, but that data shares a cache block with data that is being altered, the caching protocol may force the first participant to reload the whole cache block despite a lack of logical necessity. The caching system is unaware of activity within this block and forces the first participant to bear the caching system overhead required by true shared access of a resource.&lt;/p&gt;
@@ -498,9 +644,9 @@
 &lt;/ul&gt;
 &lt;h2 id=&#34;六获取缓存行大小&#34;&gt;六、获取缓存行大小&lt;/h2&gt;
 &lt;p&gt;在 C++11 中，可以使用 &lt;code&gt;std::hardware_destructive_interference_size&lt;/code&gt; 和 &lt;code&gt;std::hardware_constructive_interference_size&lt;/code&gt; 获取缓存行大小，前者获取的是缓存行大小，后者获取的是缓存行大小的两倍，即 &lt;code&gt;2 * std::hardware_destructive_interference_size&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;在 C语言中，可以读取 &lt;code&gt;coherency_line_size&lt;/code&gt; 文件获取缓存行大小，该文件位于 &lt;code&gt;/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size&lt;/code&gt; ，该文件中存储的是缓存行大小的字节数，可以使用 &lt;code&gt;cat&lt;/code&gt; 命令查看。也可以通过 &lt;code&gt;long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)&lt;/code&gt; 的方式获取。&lt;/p&gt;
+&lt;p&gt;在 C 语言中，可以读取 &lt;code&gt;coherency_line_size&lt;/code&gt; 文件获取缓存行大小，该文件位于 &lt;code&gt;/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size&lt;/code&gt; ，该文件中存储的是缓存行大小的字节数，可以使用 &lt;code&gt;cat&lt;/code&gt; 命令查看。也可以通过 &lt;code&gt;long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)&lt;/code&gt; 的方式获取。&lt;/p&gt;
 &lt;h2 id=&#34;七通过对齐解决伪共享&#34;&gt;七、通过对齐解决伪共享&lt;/h2&gt;
-&lt;p&gt;C语言中可以使用 &lt;code&gt;posix_memalign&lt;/code&gt; 函数来实现对齐，该函数的声明如下：&lt;/p&gt;
+&lt;p&gt;C 语言中可以使用 &lt;code&gt;posix_memalign&lt;/code&gt; 函数来实现对齐，该函数的声明如下：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -670,7 +816,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;从 &lt;a class=&#34;link&#34; href=&#34;https://github.com/nest/nest-simulator/archive/refs/tags/v3.4.tar.gz&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;NEST github仓库&lt;/a&gt; 下载 NEST 3.4。&lt;/p&gt;
+    &gt;NEST github 仓库&lt;/a&gt; 下载 NEST 3.4。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -728,7 +874,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;5-运行-hpc_benchmark-测试&#34;&gt;5. 运行 hpc_benchmark 测试&lt;/h2&gt;
-&lt;p&gt;运行 NEST 前需要配置nest环境：&lt;/p&gt;
+&lt;p&gt;运行 NEST 前需要配置 nest 环境：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -739,7 +885,7 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;接着找到 &lt;code&gt;hpc_benchmark.py&lt;/code&gt; 目录，该文件位于 &lt;code&gt;$HOME/software/nest-simulator/3.4-gcc-8.4.0/share/doc/nest/examples/hpc_benchmark.py&lt;/code&gt;。修改其中的 params 以并行运行更大的模型。&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;修改 nvp 为所需 MPI 进程数 × 每进程线程数，如 2 MPI进程 × 14 线程 = 28&lt;/li&gt;
+&lt;li&gt;修改 nvp 为所需 MPI 进程数 × 每进程线程数，如 2 MPI 进程 × 14 线程 = 28&lt;/li&gt;
 &lt;li&gt;设置合适的 scale ，如 10 。更大的需要更多 nvp 。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -780,26 +926,20 @@
 </description>
         </item>
         <item>
-        <title>CUDA基础：内存访问模式</title>
+        <title>CUDA 基础：内存访问模式</title>
         <link>https://cuterwrite.top/p/cuda-base-memory-access-mode/</link>
         <pubDate>Mon, 04 Sep 2023 00:55:55 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/cuda-base-memory-access-mode/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/14ce26d6f495200cea2cfa76fefadf88eaab94e5.jpg@1256w_754h_!web-article-pic-2023-09-04.webp" alt="Featured image of post CUDA基础：内存访问模式" /&gt;&lt;h1 id=&#34;cuda基础内存访问模式&#34;&gt;CUDA基础：内存访问模式&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/14ce26d6f495200cea2cfa76fefadf88eaab94e5.jpg@1256w_754h_!web-article-pic-2023-09-04.webp" alt="Featured image of post CUDA 基础：内存访问模式" /&gt;&lt;h1 id=&#34;cuda-基础内存访问模式&#34;&gt;CUDA 基础：内存访问模式&lt;/h1&gt;
 &lt;p&gt;大多数设备端数据访问都是从全局内存开始的，并且多数 GPU 应用程序容易受内存带宽的限制。因此，最大限度地利用全局内存带宽是调控核函数性能的基本。如果不能正确地调控全局内存的使用，其他优化方案很可能也收效甚微。&lt;/p&gt;
 &lt;p&gt;为了在读写数据时达到最佳的性能，内存访问操作必须满足一定的条件。CUDA 执行模型的显著特征之一就是指令必须以线程束为单位进行发布和执行。存储操作也是同样。在执行内存指令时，线程束中的每个线程都提供了一个正在加载或存储的内存地址。在线程束的 32 个线程中，每个线程都提出了一个包含请求地址的单一内存访问请求，它并由一个或多个设备内存传输提供服务。根据线程束中内存地址的分布，内存访问可以被分成不同的模式。&lt;/p&gt;
 &lt;h2 id=&#34;一对齐与合并访问&#34;&gt;一、对齐与合并访问&lt;/h2&gt;
 &lt;p&gt;全局内存通过缓存实现加载和存储的过程如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904151729-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904151729-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904151729-2023-09-04.webp&#34;
+         alt=&#34;20230904151729-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;全局内存是一个逻辑内存空间，用户可以通过核函数访问它。所有应用程序数据最初存在于 DRAM 上，即物理设备内存中。核函数的内存请求通常是在 DRAM 设备和片上内存间以 128 字节或 32 字节内存事务来实现。&lt;/p&gt;
 &lt;p&gt;所有对全局内存的访问都会通过二级缓存，也有许多访问会通过一级缓存，这取决于访问类型和 GPU 架构。如果这两级缓存都被用到，那么内存访问是由一个 128 字节的内存事务实现的。如果只使用二级缓存，那么这个内存访问是由一个 32 字节的内存事务来实现的。对全局内存缓存其架构，如果允许使用一级缓存，那么可以在编译时选择启用或禁用一级缓存。&lt;/p&gt;
 &lt;p&gt;一行一级缓存是 128 字节，它映射到设备内存中一个 128 字节 的对齐段。如果线程束中的每个线程请求一个 4 字节的值，那么每次请求就会获取 128 字节的数据，这恰好与缓存行和设备内存段的大小相契合。&lt;/p&gt;
@@ -809,36 +949,24 @@
 &lt;li&gt;合并内存访问&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;我们把一次内存请求：也就是从核函数发起请求，到硬件响应返回数据这个过程称为一个内存事务（加载和存储都行）。&lt;/p&gt;
-&lt;p&gt;当一个内存事务的首个访问地址是缓存粒度（32或128字节）的偶数倍的时候：比如二级缓存32字节的偶数倍 64，128 字节的偶数倍 256 的时候，这个时候被称为对齐内存访问，非对齐访问就是除上述的其他情况，&lt;strong&gt;非对齐的内存访问会造成带宽浪费&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;当一个内存事务的首个访问地址是缓存粒度（32 或 128 字节）的偶数倍的时候：比如二级缓存 32 字节的偶数倍 64，128 字节的偶数倍 256 的时候，这个时候被称为对齐内存访问，非对齐访问就是除上述的其他情况，&lt;strong&gt;非对齐的内存访问会造成带宽浪费&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;当一个线程束内的线程访问的内存都在一个内存块里的时候，就会出现合并访问。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;对齐合并访问的状态是理想化的，也是最高速的访问方式&lt;/strong&gt;，当线程束内的所有线程访问的数据在一个内存块，并且数据是从内存块的首地址开始被需要的，那么对齐合并访问出现了。为了最大化全局内存访问的理想状态，尽量将线程束访问内存组织成对齐合并的方式，这样的效率是最高的。下面看一个例子。&lt;/p&gt;
 &lt;p&gt;一个线程束加载数据，使用一级缓存，并且这个事务所请求的所有数据在一个 128 字节的对齐的地址段上，如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152703-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904152703-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152703-2023-09-04.webp&#34;
+         alt=&#34;20230904152703-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;上面蓝色表示全局内存，下面橙色是线程束要的数据，绿色就是对齐的地址段。&lt;/p&gt;
 &lt;p&gt;而如果一个事务加载的数据分布在不一个对齐的地址段上，就会有以下两种情况：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;连续的，但是不在一个对齐的段上，比如，请求访问的数据分布在内存地址 1~128 ，那么 0~127 和 128~255 这两段数据要传递两次到 SM 。&lt;/li&gt;
 &lt;li&gt;不连续的，也不在一个对齐的段上，比如，请求访问的数据分布在内存地址 0~63 和 128~191 上，明显这也需要两次加载。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152901-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904152901-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152901-2023-09-04.webp&#34;
+         alt=&#34;20230904152901-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;上图就是典型的一个线程束，数据分散开了，thread 0 的请求在 128 之前，后面还有请求在 256 之后，所以需要三个内存事务，而利用率，也就是从主存取回来的数据被使用到的比例，只有 $\frac{128}{128 \times 3}$ 的比例。这个比例低会造成带宽的浪费，最极端的表现，就是如果每个线程的请求都在不同的段，也就是一个 128 字节的事务只有 1 个字节是有用的，那么利用率只有 $\frac{1}{128}$ 。&lt;/p&gt;
 &lt;p&gt;这里总结一下内存事务的优化关键：&lt;strong&gt;用最少的事务次数满足最多的内存请求&lt;/strong&gt;。事务数量和吞吐量的需求随设备的计算能力变化。&lt;/p&gt;
 &lt;h2 id=&#34;二全局内存读取&#34;&gt;二、全局内存读取&lt;/h2&gt;
@@ -872,16 +1000,10 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;设置这个标志后，全局内存加载请求首先尝试通过一级缓存。如果一级缓存缺失，该请求转向二级缓存。如果二级缓存缺失，则请求由 DRAM 完成。在这种模式下，一个内存加载请求由一个 128 字节的设备内存事务实现。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904164822-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904164822-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904164822-2023-09-04.webp&#34;
+         alt=&#34;20230904164822-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;在 Kepler K10、K20 和 K20X GPU 中一级缓存不用来缓存全局内存加载。一级缓存专门用于&lt;strong&gt;缓存寄存器溢出到本地内存中的数据&lt;/strong&gt;。&lt;/p&gt;
 &lt;p&gt;内存加载可以分为两类：&lt;/p&gt;
 &lt;ul&gt;
@@ -899,68 +1021,38 @@
 &lt;ol&gt;
 &lt;li&gt;对齐合并的访问，总线利用率 $100\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165226-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904165226-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165226-2023-09-04.webp&#34;
+         alt=&#34;20230904165226-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;2&#34;&gt;
 &lt;li&gt;对齐的，但是不是连续的，每个线程访问的数据都在一个块内，但是位置是交叉的，总线利用率 $100\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165245-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904165245-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165245-2023-09-04.webp&#34;
+         alt=&#34;20230904165245-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;3&#34;&gt;
 &lt;li&gt;连续非对齐的，线程束请求一个连续的非对齐的，32 个 4 字节数据，那么会出现，数据横跨两个块，但是没有对齐，当启用一级缓存的时候，就要两个 128 字节的事务来完成，总线利用率为 $50\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165306-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904165306-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165306-2023-09-04.webp&#34;
+         alt=&#34;20230904165306-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;4&#34;&gt;
 &lt;li&gt;线程束所有线程请求同一个地址，那么肯定落在一个缓存行范围内，那么如果按照请求的是 4 字节数据来说，总线利用率是 $\frac{4}{128}=3.125\% $&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165516-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904165516-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165516-2023-09-04.webp&#34;
+         alt=&#34;20230904165516-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;5&#34;&gt;
 &lt;li&gt;比较坏的情况，前面提到过最坏的，就是每个线程束内的线程请求的都是不同的缓存行内，这里比较坏的情况就是，所有数据分布在 $N$ 个缓存行，其中 $1\leq N \leq 32$ ，那么请求 32 个 4 字节的数据，就需要 $N$ 个事务来完成，总线利用率也是 $\frac{1}{N}$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165524-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904165524-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165524-2023-09-04.webp&#34;
+         alt=&#34;20230904165524-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;CPU 和 GPU 的一级缓存有显著的差异， GPU 的一级缓存可以通过编译选项等控制，CPU 不可以，而且 CPU 的一级缓存是的替换算法是有使用频率和时间局部性的， GPU 则没有。&lt;/p&gt;
 &lt;h3 id=&#34;2-没有缓存的加载&#34;&gt;2. 没有缓存的加载&lt;/h3&gt;
 &lt;p&gt;没有缓存的加载是指的没有通过一级缓存，二级缓存则是不得不经过的。&lt;/p&gt;
@@ -968,68 +1060,38 @@
 &lt;ol&gt;
 &lt;li&gt;对齐合并访问 128 字节，不用说，还是最理想的情况，使用 4 个段，总线利用率 $100\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170430-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904170430-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170430-2023-09-04.webp&#34;
+         alt=&#34;20230904170430-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;2&#34;&gt;
 &lt;li&gt;对齐不连续访问 128 字节，都在四个段内，且互不相同，这样的总线利用率也是 $100\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170454-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904170454-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170454-2023-09-04.webp&#34;
+         alt=&#34;20230904170454-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;3&#34;&gt;
 &lt;li&gt;连续不对齐，一个段 32 字节，所以，一个连续的 128 字节的请求，即使不对齐，最多也不会超过五个段，总线利用率至少为 $\frac{4}{5}=80\%$&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170542-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904170542-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170542-2023-09-04.webp&#34;
+         alt=&#34;20230904170542-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;4&#34;&gt;
 &lt;li&gt;所有线程访问一个 4 字节的数据，那么此时的总线利用率是 $\frac{4}{32} = 12.5\%$ ，在这种情况下，非缓存加载性能也是优于缓存加载的性能。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170609-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904170609-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170609-2023-09-04.webp&#34;
+         alt=&#34;20230904170609-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;5&#34;&gt;
 &lt;li&gt;最坏的情况：所有目标数据分散在内存的各个角落，那么需要 $N$ 个内存段，由于请求的 128 个字节最多落在 $N$ 个 32 字节的内存分段内而不是 $N$ 个 128 字节的缓存行内，所以相比于缓存加载，即便是最坏的情况也有所改善。需要注意这里比较的前提是$N$ 不变，然而在实际情况下，当使用大粒度的缓存行时，$N$ 有可能会减少。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170847-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904170847-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170847-2023-09-04.webp&#34;
+         alt=&#34;20230904170847-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;h3 id=&#34;3-只读缓存&#34;&gt;3. 只读缓存&lt;/h3&gt;
 &lt;p&gt;只读缓存最初是预留给纹理内存加载用的。对计算能力为 3.5 及以上的 GPU 来说，只读缓存也支持使用全局内存加载代替一级缓存。&lt;/p&gt;
 &lt;p&gt;只读缓存的加载粒度是 32 个字节。通常，对分散读取来说，这些更细粒度的加载要优于一级缓存。&lt;/p&gt;
@@ -1058,7 +1120,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;然后就能强制使用只读缓存了。&lt;/p&gt;
-&lt;p&gt;也可以将常量 restrict 修饰符应用到指针上。这些修饰符帮助 nvcc 编译器识别无别名指针(即专门用来访问特定数组的指针)。nvcc将自动通过只读缓存指导无别名指针的加载。&lt;/p&gt;
+&lt;p&gt;也可以将常量 restrict 修饰符应用到指针上。这些修饰符帮助 nvcc 编译器识别无别名指针(即专门用来访问特定数组的指针)。nvcc 将自动通过只读缓存指导无别名指针的加载。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1080,47 +1142,29 @@
 &lt;ol&gt;
 &lt;li&gt;对齐的，访问一个连续的 128 字节范围。存储操作使用一个四段事务完成：&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172018-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904172018-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172018-2023-09-04.webp&#34;
+         alt=&#34;20230904172018-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;2&#34;&gt;
 &lt;li&gt;分散在一个 192 字节的范围内，不连续，使用 3 个一段事务完成：&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172036-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904172036-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172036-2023-09-04.webp&#34;
+         alt=&#34;20230904172036-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;3&#34;&gt;
 &lt;li&gt;对齐的，在一个 64 字节的范围内，使用一个两段事务完成：&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172052-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904172052-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172052-2023-09-04.webp&#34;
+         alt=&#34;20230904172052-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ol start=&#34;4&#34;&gt;
 &lt;li&gt;非对齐写入示例与读取情况类似，且更简单，因为始终不经过一级缓存，这里就略过了。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h2 id=&#34;四结构体数组与数组结构体&#34;&gt;四、结构体数组与数组结构体&lt;/h2&gt;
-&lt;p&gt;数组结构体（AoS）和结构体数组（SoA）是C语言中常见的两种数组组织方式。当存储结构化数据集时，它们代表了可以采用的两种强大的数据组织方式（结构体和数组）。&lt;/p&gt;
+&lt;p&gt;数组结构体（AoS）和结构体数组（SoA）是 C 语言中常见的两种数组组织方式。当存储结构化数据集时，它们代表了可以采用的两种强大的数据组织方式（结构体和数组）。&lt;/p&gt;
 &lt;p&gt;下面是存储成对的浮点数据数据集的例子。首先，考虑这些成对数据元素集如何使用 AoS 方法进行存储。如下定义一个结构体，命名为 innerStruct ：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1157,7 +1201,7 @@
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;innerArray&lt;/span&gt; 
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;innerArray&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;x&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;N&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;y&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;N&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
@@ -1173,18 +1217,12 @@
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;struct&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;innerArray&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;mySoA&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;下图说明了 AoS 和 SoA 方法的内存布局。用 AoS 模式在 GPU 上存储示例数据并执行一个只有 $x$ 字段的应用程序，将导致 $50\%$ 的带宽损失，因为 $y$ 值在每 32 个字节段或 128 个字节缓存行上隐式地被加载。 AoS格式也在不需要的 $y$ 值上浪费了二级缓存空间。&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;下图说明了 AoS 和 SoA 方法的内存布局。用 AoS 模式在 GPU 上存储示例数据并执行一个只有 $x$ 字段的应用程序，将导致 $50\%$ 的带宽损失，因为 $y$ 值在每 32 个字节段或 128 个字节缓存行上隐式地被加载。 AoS 格式也在不需要的 $y$ 值上浪费了二级缓存空间。&lt;/p&gt;
 &lt;p&gt;用 SoA 模式存储数据充分利用了 GPU 的内存带宽。由于没有相同字段元素的交叉存取， GPU 上的 SoA 布局提供了合并内存访问，并且可以对全局内存实现更高效的利用。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904173436-2023-09-04.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230904173436-2023-09-04&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904173436-2023-09-04.webp&#34;
+         alt=&#34;20230904173436-2023-09-04&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;当 32 个线程同时访问的时候， SoA 的访问就是连续的，而 AoS 则是不连续的。&lt;/p&gt;
 &lt;p&gt;对比 AoS 和 SoA 的内存布局，我们能得到下面结论：&lt;/p&gt;
 &lt;ul&gt;
@@ -1251,24 +1289,24 @@
 &lt;li&gt;在所有其它情况下，线程块的数量越多，一般性能越高。因此，增大并行性仍然是性能优化的一个重要因素。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
+&lt;p&gt;[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
 </description>
         </item>
         <item>
-        <title>CUDA基础：内存管理</title>
+        <title>CUDA 基础：内存管理</title>
         <link>https://cuterwrite.top/p/cuda-base-memory-manage/</link>
         <pubDate>Sat, 02 Sep 2023 05:55:55 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/cuda-base-memory-manage/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" alt="Featured image of post CUDA基础：内存管理" /&gt;&lt;h1 id=&#34;cuda基础内存管理&#34;&gt;CUDA基础：内存管理&lt;/h1&gt;
-&lt;p&gt;CUDA 编程的内存管理与C语言的类似，需要程序员显式地管理主机和设备之间的数据移动。随着CUDA版本的升级，NVIDIA正系统地实现主机和设备内存空间的统一，但对于大多数应用程序来说，仍需要手动移动数据。本文重点在于如何使用CUDA函数来显式地管理内存和数据移动。&lt;/p&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" alt="Featured image of post CUDA 基础：内存管理" /&gt;&lt;h1 id=&#34;cuda-基础内存管理&#34;&gt;CUDA 基础：内存管理&lt;/h1&gt;
+&lt;p&gt;CUDA 编程的内存管理与 C 语言的类似，需要程序员显式地管理主机和设备之间的数据移动。随着 CUDA 版本的升级，NVIDIA 正系统地实现主机和设备内存空间的统一，但对于大多数应用程序来说，仍需要手动移动数据。本文重点在于如何使用 CUDA 函数来显式地管理内存和数据移动。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;分配和释放设备内存&lt;/li&gt;
 &lt;li&gt;在主机和设备之间传输数据&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;为了达到最优性能，CUDA提供了在主机端准备设备内存的函备内存的函数，并且显式地向设备传输数据和从设备中获取数据。&lt;/p&gt;
+&lt;p&gt;为了达到最优性能，CUDA 提供了在主机端准备设备内存的函备内存的函数，并且显式地向设备传输数据和从设备中获取数据。&lt;/p&gt;
 &lt;h2 id=&#34;一内存分配和释放&#34;&gt;一、内存分配和释放&lt;/h2&gt;
-&lt;p&gt;CUDA编程模型假设了一个包含一个主机和一个设备的异构系统，每一个异构系统都有自己独立的内存空间。核函数在设备内存空间中运行，CUDA运行时提供函数以分配和释放设备内存。用户可以在主机上使下列函数分配全局内存：&lt;/p&gt;
+&lt;p&gt;CUDA 编程模型假设了一个包含一个主机和一个设备的异构系统，每一个异构系统都有自己独立的内存空间。核函数在设备内存空间中运行，CUDA 运行时提供函数以分配和释放设备内存。用户可以在主机上使下列函数分配全局内存：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1286,7 +1324,7 @@
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaMemset&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;size_t&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;count&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数用存储在变量value中的值来填充从设备内存地址 devPtr 处开始的count字节。&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;这个函数用存储在变量 value 中的值来填充从设备内存地址 devPtr 处开始的 count 字节。&lt;/p&gt;
 &lt;p&gt;一旦一个应用程序不再使用已分配的全局内存，那么可以以下代码释放该内存空间：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1296,7 +1334,7 @@
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;cudaError_t&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;cudaFree&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;devPtr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数释放了 devPtr 指向的全局内存，该内存必须在此前使用了一个设备分配函数（如cudaMalloc）来进行分配。否则，它将返回一个错误 cudaErrorInvalidDevicePointer 。如果地址空间已经被释放，那么 cudaFree 也返回一个错误。&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;这个函数释放了 devPtr 指向的全局内存，该内存必须在此前使用了一个设备分配函数（如 cudaMalloc）来进行分配。否则，它将返回一个错误 cudaErrorInvalidDevicePointer 。如果地址空间已经被释放，那么 cudaFree 也返回一个错误。&lt;/p&gt;
 &lt;p&gt;设备内存的分配和释放操作成本较高，所以应用程序应&lt;strong&gt;重利用设备内存&lt;/strong&gt;，以减少对整体性能的影响。&lt;/p&gt;
 &lt;h2 id=&#34;二内存传输&#34;&gt;二、内存传输&lt;/h2&gt;
 &lt;p&gt;一旦分配好了全局内存，就可以使用下列函数从主机向设备传输数据：&lt;/p&gt;
@@ -1316,30 +1354,18 @@
 &lt;li&gt;cudaMemcpyDeviceToDevice：从设备内存复制到设备内存&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;如果指针 dst 和 src 与 kind 指定的复制方向不一致，那么 cudaMemcpy 的行为就是未定义行为。这个函数在大多数情况下都是同步的。&lt;/p&gt;
-&lt;p&gt;下图为 CPU 内存和 GPU 内存间的连接性能。从图中可以看到 GPU 芯片和板载 GDDR5 GPU 内存之间的理论峰值带宽非常高，对于 Fermi C2050 GPU 来说为 144GB/s 。CPU 和 GPU 之间通过 PCIe Gen2 总线相连，这种连接的理论带宽要低得多，为 8GB/s（ PCIe Gen3 总线最大理论限制值是16GB/s）。这种差距意味着如果管理不当的话，主机和设备间的数据传输会降低应用程序的整体性能。因此，CUDA编程的一个基本原则应是尽可能地减少主机与设备之间的传输。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230902212815-2023-09-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230902212815-2023-09-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;p&gt;下图为 CPU 内存和 GPU 内存间的连接性能。从图中可以看到 GPU 芯片和板载 GDDR5 GPU 内存之间的理论峰值带宽非常高，对于 Fermi C2050 GPU 来说为 144GB/s 。CPU 和 GPU 之间通过 PCIe Gen2 总线相连，这种连接的理论带宽要低得多，为 8GB/s（ PCIe Gen3 总线最大理论限制值是 16GB/s）。这种差距意味着如果管理不当的话，主机和设备间的数据传输会降低应用程序的整体性能。因此，CUDA 编程的一个基本原则应是尽可能地减少主机与设备之间的传输。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230902212815-2023-09-02.webp&#34;
+         alt=&#34;20230902212815-2023-09-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;h2 id=&#34;三固定内存&#34;&gt;三、固定内存&lt;/h2&gt;
-&lt;p&gt;分配的主机内存默认是pageable（可分页），它的意思也就是因页面错误导致的操作，该操作按照操作系统的要求将主机虚拟内存上的数据移动到不同的物理位置。虚拟内存给人一种比实际可用内存大得多的假象，就如同一级缓存好像比实际可用的片上内存大得多一样。&lt;/p&gt;
-&lt;p&gt;GPU &lt;strong&gt;不能在可分页主机内存上安全地访问数据&lt;/strong&gt;，因为当主机操作系统在物理位置上移动该数据时，它无法控制。当从可分页主机内存传输数据到设备内存时，CUDA驱动程序首先分配&lt;strong&gt;临时页面锁定的或固定的&lt;/strong&gt;主机内存，将主机源数据复制到固定内存中，然后从固定内存传输数据给设备内存，如下图左边部分所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903003123-2023-09-03.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230903003123-2023-09-03&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;p&gt;分配的主机内存默认是 pageable（可分页），它的意思也就是因页面错误导致的操作，该操作按照操作系统的要求将主机虚拟内存上的数据移动到不同的物理位置。虚拟内存给人一种比实际可用内存大得多的假象，就如同一级缓存好像比实际可用的片上内存大得多一样。&lt;/p&gt;
+&lt;p&gt;GPU &lt;strong&gt;不能在可分页主机内存上安全地访问数据&lt;/strong&gt;，因为当主机操作系统在物理位置上移动该数据时，它无法控制。当从可分页主机内存传输数据到设备内存时，CUDA 驱动程序首先分配&lt;strong&gt;临时页面锁定的或固定的&lt;/strong&gt;主机内存，将主机源数据复制到固定内存中，然后从固定内存传输数据给设备内存，如下图左边部分所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903003123-2023-09-03.webp&#34;
+         alt=&#34;20230903003123-2023-09-03&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;左边是正常分配内存，传输过程是：锁页-复制到固定内存-复制到设备&lt;/p&gt;
 &lt;p&gt;右边是分配时就是固定内存，直接传输到设备上。&lt;/p&gt;
 &lt;p&gt;下面函数用来分配固定内存：&lt;/p&gt;
@@ -1364,11 +1390,11 @@
 &lt;/div&gt;&lt;p&gt;总的来说，固定内存的释放和分配成本比可分页内存要高很多，但是传输速度更快，所以对于大规模数据，固定内存效率更高。应该尽量使用流来使内存传输和计算之间同时进行。&lt;/p&gt;
 &lt;h2 id=&#34;四零拷贝内存&#34;&gt;四、零拷贝内存&lt;/h2&gt;
 &lt;p&gt;通常来说，主机不能直接访问设备变量，同时设备也不能直接访问主机变量。但有一个例外：零拷贝内存。&lt;strong&gt;主机和设备都可以访问零拷贝内存&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;GPU 线程可以直接访问零拷贝内存。在CUDA核函数中使用零拷贝内存有以下几个优势。&lt;/p&gt;
+&lt;p&gt;GPU 线程可以直接访问零拷贝内存。在 CUDA 核函数中使用零拷贝内存有以下几个优势。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;当设备内存不足时可利用主机内存&lt;/li&gt;
 &lt;li&gt;避免主机和设备间的显式数据传输&lt;/li&gt;
-&lt;li&gt;提高PCIe传输率&lt;/li&gt;
+&lt;li&gt;提高 PCIe 传输率&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;当使用零拷贝内存来共享主机和设备间的数据时，用户必须同步主机和设备间的内存访问，同时更改主机和设备的零拷贝内存中的数据将导致不可预知的后果。&lt;/p&gt;
 &lt;p&gt;零拷贝内存是固定内存，不可分页，该内存映射到设备地址空间中。用户可以通过下列函数创建零拷贝内存：&lt;/p&gt;
@@ -1382,8 +1408,8 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;最后一个标志参数，可以选择以下值：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;cudaHostAllocDefalt：和cudaMallocHost函数一致&lt;/li&gt;
-&lt;li&gt;cudaHostAllocPortable：返回能被所有CUDA上下文使用的固定内存&lt;/li&gt;
+&lt;li&gt;cudaHostAllocDefalt：和 cudaMallocHost 函数一致&lt;/li&gt;
+&lt;li&gt;cudaHostAllocPortable：返回能被所有 CUDA 上下文使用的固定内存&lt;/li&gt;
 &lt;li&gt;cudaHostAllocMapped：产生零拷贝内存，可以实现主机写入和设备读取被映射到设备地址空间中的主机内存&lt;/li&gt;
 &lt;li&gt;cudaHostAllocWriteCombined：返回写结合内存，在某些设备上这种内存传输效率更高&lt;/li&gt;
 &lt;/ul&gt;
@@ -1400,23 +1426,17 @@
 &lt;p&gt;在进行频繁的读写操作时，使用零拷贝内存作为设备内存的补充将显著降低性能。因为每一次映射到内存的传输必须经过 PCIe 总线。与全局内存相比，延迟也显著增加。&lt;/p&gt;
 &lt;p&gt;注意不要过度使用零拷贝内存。由于其延迟较高，从零拷贝内存中读取设备核函数可能很慢。&lt;/p&gt;
 &lt;h2 id=&#34;五统一虚拟寻址&#34;&gt;五、统一虚拟寻址&lt;/h2&gt;
-&lt;p&gt;计算能力为 2.0 及以上版本的设备支持一种特殊的寻址方式，称为&lt;strong&gt;统一虚拟寻址（UVA）&lt;/strong&gt;。UVA，在CUDA 4.0中被引入，支持64位Linux系统。有了UVA，主机内存和设备内存可以共享同一个虚拟地址空间，如下图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903004449-2023-09-03.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230903004449-2023-09-03&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;UVA之前，我们要管理所有的设备和主机内存，尤其是它们的指针，零拷贝内存尤其麻烦。有了UVA，由指针指向的内存空间对应用程序代码来说是透明的。&lt;/p&gt;
-&lt;p&gt;通过UVA，由 cudaHostAlloc 分配的固定主机内存具有相同的主机和设备指针。因此，可以将返回的指针直接传递给核函数。&lt;/p&gt;
+&lt;p&gt;计算能力为 2.0 及以上版本的设备支持一种特殊的寻址方式，称为&lt;strong&gt;统一虚拟寻址（UVA）&lt;/strong&gt;。UVA，在 CUDA 4.0 中被引入，支持 64 位 Linux 系统。有了 UVA，主机内存和设备内存可以共享同一个虚拟地址空间，如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903004449-2023-09-03.webp&#34;
+         alt=&#34;20230903004449-2023-09-03&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;UVA 之前，我们要管理所有的设备和主机内存，尤其是它们的指针，零拷贝内存尤其麻烦。有了 UVA，由指针指向的内存空间对应用程序代码来说是透明的。&lt;/p&gt;
+&lt;p&gt;通过 UVA，由 cudaHostAlloc 分配的固定主机内存具有相同的主机和设备指针。因此，可以将返回的指针直接传递给核函数。&lt;/p&gt;
 &lt;p&gt;前面的零拷贝内存，可以知道以下几个方面：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;分配映射的固定主机内存&lt;/li&gt;
-&lt;li&gt;使用CUDA运行时函数获取映射到固定内存的设备指针&lt;/li&gt;
+&lt;li&gt;使用 CUDA 运行时函数获取映射到固定内存的设备指针&lt;/li&gt;
 &lt;li&gt;将设备指针传递给核函数&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;有了 UVA ，可以不用上面的那个获得设备上访问零拷贝内存的函数了：&lt;/p&gt;
@@ -1430,7 +1450,7 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;因为 UVA 之后，主机和设备的指针都是一样的，所以可以直接传递给核函数了。&lt;/p&gt;
 &lt;h2 id=&#34;六统一内存寻址&#34;&gt;六、统一内存寻址&lt;/h2&gt;
-&lt;p&gt;在CUDA 6.0中，引入了&lt;strong&gt;统一内存寻址&lt;/strong&gt;这一新特性，它用于简化 CUDA 编程模型中的内存管理。统一内存中创建了一个托管内存池，内存池中已分配的空间可以用相同的内存地址（即指针）在 CPU 和 GPU 上进行访问。底层系统在统一内存空间中自动在主机和设备之间进行数据传输。这种数据传输对应用程序是透明的，这大大简化了程序代码。&lt;/p&gt;
+&lt;p&gt;在 CUDA 6.0 中，引入了&lt;strong&gt;统一内存寻址&lt;/strong&gt;这一新特性，它用于简化 CUDA 编程模型中的内存管理。统一内存中创建了一个托管内存池，内存池中已分配的空间可以用相同的内存地址（即指针）在 CPU 和 GPU 上进行访问。底层系统在统一内存空间中自动在主机和设备之间进行数据传输。这种数据传输对应用程序是透明的，这大大简化了程序代码。&lt;/p&gt;
 &lt;p&gt;统一内存寻址依赖于 UVA 的支持，但它们是完全不同的技术。 UVA 为系统中的所有处理器提供了一个单一的虚拟内存地址空间。但是， UVA 不会自动将数据从一个物理位置转移到另一个位置，这是统一内存寻址的一个特有功能。&lt;/p&gt;
 &lt;p&gt;统一内存寻址提供了一个&lt;strong&gt;单指针到数据&lt;/strong&gt;模型，在概念上它类似于零拷贝内存。但是零拷贝内存在主机内存中进行分配，因此，由于受到在 PCIe 总线上访问零拷贝内存的影响，核函数的性能将具有较高的延迟。另一方面，统一内存寻址将内存和执行空间分离，因此可以根据需要将数据透明地传输到主机或设备上，以提升局部性和性能。&lt;/p&gt;
 &lt;p&gt;托管内存指的是由底层系统自动分配的统一内存，未托管内存就是用户自己分配的内存，这时候对于核函数，可以传递给它两种类型的内存，已托管和未托管内存，可以同时传递。&lt;/p&gt;
@@ -1445,20 +1465,20 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;这个函数分配 size 字节的托管内存，并用 devPtr 返回一个指针。该指针在所有设备和主机上都是有效的。使用托管内存的程序行为与使用未托管内存的程序副本行为在功能上是一致的。但是，使用托管内存的程序可以利用自动数据传输和重复指针消除功能。&lt;/p&gt;
-&lt;p&gt;在CUDA 6.0中，设备代码不能调用 cudaMallocManaged 函数。所有的托管内存必须在主机端动态声明或者在全局范围内静态声明。&lt;/p&gt;
+&lt;p&gt;在 CUDA 6.0 中，设备代码不能调用 cudaMallocManaged 函数。所有的托管内存必须在主机端动态声明或者在全局范围内静态声明。&lt;/p&gt;
 &lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
+&lt;p&gt;[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
 </description>
         </item>
         <item>
-        <title>CUDA基础：内存模型概述</title>
+        <title>CUDA 基础：内存模型概述</title>
         <link>https://cuterwrite.top/p/cuda-base-memory-model/</link>
         <pubDate>Fri, 01 Sep 2023 04:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/cuda-base-memory-model/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" alt="Featured image of post CUDA基础：内存模型概述" /&gt;&lt;h1 id=&#34;cuda基础内存模型概述&#34;&gt;CUDA基础：内存模型概述&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" alt="Featured image of post CUDA 基础：内存模型概述" /&gt;&lt;h1 id=&#34;cuda-基础内存模型概述&#34;&gt;CUDA 基础：内存模型概述&lt;/h1&gt;
 &lt;p&gt;内存的访问和管理是所有编程语言的重要部分。在现代加速器中，内存管理对高性能计算有着很大的影响。&lt;/p&gt;
-&lt;p&gt;因为多数工作负载被加载和存储数据的速度所限制，所以有大量低延迟、高带宽的内存对性能是十分有利的。然而，大容量、高性能的内存造价高且不容易生产。因此，在现有的硬件存储子系统下，必须依靠&lt;strong&gt;内存模型&lt;/strong&gt;获得最佳的延迟和带宽。CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，能显式地控制数据布局以优化性能。&lt;/p&gt;
+&lt;p&gt;因为多数工作负载被加载和存储数据的速度所限制，所以有大量低延迟、高带宽的内存对性能是十分有利的。然而，大容量、高性能的内存造价高且不容易生产。因此，在现有的硬件存储子系统下，必须依靠&lt;strong&gt;内存模型&lt;/strong&gt;获得最佳的延迟和带宽。CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，能显式地控制数据布局以优化性能。&lt;/p&gt;
 &lt;h2 id=&#34;一内存层次结构的优点&#34;&gt;一、内存层次结构的优点&lt;/h2&gt;
 &lt;p&gt;程序具有局部性特点，包括：&lt;/p&gt;
 &lt;ol&gt;
@@ -1466,20 +1486,14 @@
 &lt;li&gt;空间局部性：如果一个数据被访问，那么它附近的数据也会被访问。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;现代计算机的内存结构主要如下：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901232704-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp&#34;
+         alt=&#34;20230901232704-2023-09-01&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;一个内存层次结构由具有不同延迟、带宽和容量的多级内存组成。通常，随着从处理器到内存延迟的增加，内存的容量也在增加。&lt;/p&gt;
-&lt;p&gt;CPU 和 GPU 的主存都采用的是 DRAM（动态随机存取存储器），而低延迟内存（如CPU一级缓存）使用的则是SRAM（静态随机存取存储器）。内存层次结构中最大且最慢的级别通常使用磁盘或闪存驱动来实现。在这种内存层次结构中，当数据被处理器频繁使用时，该数据保存在低延迟、低容量的存储器中；而当该数据被存储起来以备后用时，数据就存储在高延迟、大容量的存储器中。这种内存层次结构符合大内存低延迟的设想。&lt;/p&gt;
+&lt;p&gt;CPU 和 GPU 的主存都采用的是 DRAM（动态随机存取存储器），而低延迟内存（如 CPU 一级缓存）使用的则是 SRAM（静态随机存取存储器）。内存层次结构中最大且最慢的级别通常使用磁盘或闪存驱动来实现。在这种内存层次结构中，当数据被处理器频繁使用时，该数据保存在低延迟、低容量的存储器中；而当该数据被存储起来以备后用时，数据就存储在高延迟、大容量的存储器中。这种内存层次结构符合大内存低延迟的设想。&lt;/p&gt;
 &lt;p&gt;GPU 和 CPU 的内存设计有相似的准则和模型。但它们的主要区别是，CUDA 编程模型能将内存层次结构更好地呈现给用户，能让我们显式地控制它的行为。&lt;/p&gt;
-&lt;h2 id=&#34;二cuda内存模型&#34;&gt;二、CUDA内存模型&lt;/h2&gt;
+&lt;h2 id=&#34;二cuda-内存模型&#34;&gt;二、CUDA 内存模型&lt;/h2&gt;
 &lt;p&gt;对于程序员来说，一般有两种类型的存储器：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;可编程的：你需要显式地控制哪些数据存放在可编程内存中&lt;/li&gt;
@@ -1495,20 +1509,14 @@
 &lt;li&gt;全局内存&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;下图所示为这些内存空间的层次结构，每种都有不同的作用域、生命周期和缓存行为。一个核函数中的线程都有自己私有的&lt;strong&gt;本地内存&lt;/strong&gt;。一个线程块有自己的&lt;strong&gt;共享内存&lt;/strong&gt;，对同一线程块中所有线程都可见，其内容持续线程块的整个生命周期。所有线程都可以访问&lt;strong&gt;全局内存&lt;/strong&gt;。所有线程都能访问的只读内存空间有：&lt;strong&gt;常量内存空间和纹理内存空间&lt;/strong&gt;。全局内存、常量内存和纹理内存空间有不同的用途。&lt;strong&gt;纹理内存&lt;/strong&gt;为各种数据布局提供了不同的寻址模式和滤波模式。对于一个应用程序来说， &lt;strong&gt;全局内存、常量内存和纹理内存&lt;/strong&gt;中的内容具有相同的生命周期。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901233955-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp&#34;
+         alt=&#34;20230901233955-2023-09-01&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;h3 id=&#34;1-寄存器&#34;&gt;1. 寄存器&lt;/h3&gt;
 &lt;p&gt;寄存器无论是在 CPU 还是在 GPU 都是速度最快的内存空间，但是和 CPU 不同的是 GPU 的寄存器储量要多一些，而且当我们在核函数内不加修饰的声明一个变量，此变量就存储在寄存器中，但是 CPU 运行的程序有些不同，只有当前在计算的变量存储在寄存器中，其余在主存中，使用时传输至寄存器。在核函数声明的数组中，&lt;strong&gt;如果用于引用该数组的索引是常量且能在编译时确定&lt;/strong&gt;，那么该数组也存储在寄存器中。&lt;/p&gt;
 &lt;p&gt;寄存器变量对于每个线程来说都是私有的，一个核函数通常使用寄存器来保存需要频繁访问的线程私有变量。寄存器变量与核函数的生命周期相同。一旦核函数执行完毕，就不能对寄存器变量进行访问了。&lt;/p&gt;
-&lt;p&gt;寄存器是SM中的稀缺资源，Fermi 架构中每个线程最多 63 个寄存器。Kepler 结构扩展到 255个 寄存器，一个线程如果使用更少的寄存器，那么就会有更多的常驻线程块，SM上并发的线程块越多，效率越高，性能和使用率也就越高。&lt;/p&gt;
+&lt;p&gt;寄存器是 SM 中的稀缺资源，Fermi 架构中每个线程最多 63 个寄存器。Kepler 结构扩展到 255 个 寄存器，一个线程如果使用更少的寄存器，那么就会有更多的常驻线程块，SM 上并发的线程块越多，效率越高，性能和使用率也就越高。&lt;/p&gt;
 &lt;p&gt;那么问题就来了，如果一个线程里面的变量太多，以至于寄存器完全不够呢？这时候寄存器发生溢出，本地内存就会过来帮忙存储多出来的变量，这种情况会对效率产生非常负面的影响，所以，不到万不得已，一定要避免此种情况发生。&lt;/p&gt;
 &lt;p&gt;为了避免寄存器溢出，可以在核函数的代码中配置额外的信息来辅助编译器优化，比如：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1530,7 +1538,7 @@
 &lt;/div&gt;&lt;p&gt;这里面在核函数定义前加了一个 关键字 &lt;strong&gt;lauch_bounds&lt;/strong&gt; ，然后它后面对应了两个变量：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;maxThreadaPerBlock：线程块内包含的最大线程数，线程块由核函数来启动&lt;/li&gt;
-&lt;li&gt;minBlocksPerMultiprocessor：可选参数，每个SM中预期的最小的常驻内存块参数。注意，对于一定的核函数，优化的启动边界会因为不同的结构而不同
+&lt;li&gt;minBlocksPerMultiprocessor：可选参数，每个 SM 中预期的最小的常驻内存块参数。注意，对于一定的核函数，优化的启动边界会因为不同的结构而不同
 也可以在编译选项中加入 &lt;strong&gt;-maxrregcount=32&lt;/strong&gt; 来指定每个线程使用的最大寄存器数。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h3 id=&#34;2-本地内存&#34;&gt;2. 本地内存&lt;/h3&gt;
@@ -1574,9 +1582,9 @@
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferNone    // 无参考值，默认设置
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferShared  // 48k共享内存，16k一级缓存
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferL1      // 48k一级缓存，16k共享内存
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferEqual   // 32k一级缓存，32k共享内存
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferShared  // 48k 共享内存，16k 一级缓存
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferL1      // 48k 一级缓存，16k 共享内存
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cudaFuncCachePreferEqual   // 32k 一级缓存，32k 共享内存
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;Fermi 架构支持前三种，后面的设备都支持。&lt;/p&gt;
@@ -1606,9 +1614,9 @@
 &lt;li&gt;内存事务的对齐方式&lt;/li&gt;
 &lt;/ol&gt;
 &lt;p&gt;在一般情况下，用来满足内存请求的事务越多，未使用的字节被传输回的可能性就越高，这就造成了数据吞吐率的降低。&lt;/p&gt;
-&lt;p&gt;对于一个给定的线程束内存请求，事务数量和数据吞吐率是由设备的计算能力来确定的。对于计算能力为1.0和1.1的设备，全局内存访问的要求是非常严格的。对于计算能力高于 1.1 的设备，由于内存事务被缓存，所以要求较为宽松。缓存的内存事务利用数据局部性来提高数据吞吐率。&lt;/p&gt;
-&lt;h3 id=&#34;7-gpu缓存&#34;&gt;7. GPU缓存&lt;/h3&gt;
-&lt;p&gt;与 CPU 缓存类似， GPU 缓存是不可编程的内存。在GPU上有 4 种缓存：&lt;/p&gt;
+&lt;p&gt;对于一个给定的线程束内存请求，事务数量和数据吞吐率是由设备的计算能力来确定的。对于计算能力为 1.0 和 1.1 的设备，全局内存访问的要求是非常严格的。对于计算能力高于 1.1 的设备，由于内存事务被缓存，所以要求较为宽松。缓存的内存事务利用数据局部性来提高数据吞吐率。&lt;/p&gt;
+&lt;h3 id=&#34;7-gpu-缓存&#34;&gt;7. GPU 缓存&lt;/h3&gt;
+&lt;p&gt;与 CPU 缓存类似， GPU 缓存是不可编程的内存。在 GPU 上有 4 种缓存：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;一级缓存&lt;/li&gt;
 &lt;li&gt;二级缓存&lt;/li&gt;
@@ -1618,7 +1626,7 @@
 &lt;p&gt;每个 SM 都有一个一级缓存，所有的 SM 共享一个二级缓存。一级和二级缓存都被用来在存储本地内存和全局内存中的数据，也包括寄存器溢出的部分。对 Fermi GPU 和 Kepler K40 或其后发布的 GPU 来说，CUDA 允许我们配置读操作的数据是使用一级和二级缓存，还是只使用二级缓存。&lt;/p&gt;
 &lt;p&gt;在 CPU 上，内存的加载和存储都可以被缓存。但是，在 GPU 上只有内存加载操作可以被缓存，内存存储操作不能被缓存。&lt;/p&gt;
 &lt;p&gt;每个 SM 也有一个只读常量缓存和只读纹理缓存，它们用于在设备内存中提高来自于各自内存空间内的读取性能。&lt;/p&gt;
-&lt;h3 id=&#34;8-cuda变量声明总结&#34;&gt;8. CUDA变量声明总结&lt;/h3&gt;
+&lt;h3 id=&#34;8-cuda-变量声明总结&#34;&gt;8. CUDA 变量声明总结&lt;/h3&gt;
 &lt;p&gt;用表格进行总结：&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
@@ -1692,7 +1700,7 @@
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;本地&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;片外&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;1.0以上有&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;1.0 以上有&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;R/W&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;一个线程&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;线程&lt;/td&gt;
@@ -1708,7 +1716,7 @@
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;全局&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;片外&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;1.0以上有&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;1.0 以上有&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;R/W&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;所有线程+主机&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;主机配置&lt;/td&gt;
@@ -1732,7 +1740,7 @@
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;h3 id=&#34;9-静态全局内存&#34;&gt;9. 静态全局内存&lt;/h3&gt;
-&lt;p&gt;CPU 内存有动态分配和静态分配两种类型，从内存位置来说，动态分配在堆上进行，静态分配在站上进行，在代码上的表现是一个需要 new，malloc 等类似的函数动态分配空间，并用 delete 和 free 来释放。在CUDA中也有类似的动态静态之分，需要 cudaMalloc 的就是动态分配，静态分配与动态分配相同是，也需要显式的将内存copy到设备端。下面代码是一个静态分配的例子：&lt;/p&gt;
+&lt;p&gt;CPU 内存有动态分配和静态分配两种类型，从内存位置来说，动态分配在堆上进行，静态分配在站上进行，在代码上的表现是一个需要 new，malloc 等类似的函数动态分配空间，并用 delete 和 free 来释放。在 CUDA 中也有类似的动态静态之分，需要 cudaMalloc 的就是动态分配，静态分配与动态分配相同是，也需要显式的将内存 copy 到设备端。下面代码是一个静态分配的例子：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -1835,558 +1843,10 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;cudaGetSymbolAddress&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;((&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;**&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;dptr&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;devData&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;当然也有一个例外，可以直接从主机引用GPU内存——CUDA固定内存。&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;当然也有一个例外，可以直接从主机引用 GPU 内存——CUDA 固定内存。&lt;/p&gt;
 &lt;p&gt;CUDA 运行时 API 能访问主机和设备变量，但这取决于你给正确的函数是否提供了正确的参数，使用运行时 API ，如果参数填错，尤其是主机和设备上的指针，结果是无法预测的。&lt;/p&gt;
 &lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>CUDA基础：线程束执行的本质</title>
-        <link>https://cuterwrite.top/p/cuda-base-warp/</link>
-        <pubDate>Thu, 31 Aug 2023 00:00:00 +0000</pubDate>
-        
-        <guid>https://cuterwrite.top/p/cuda-base-warp/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp" alt="Featured image of post CUDA基础：线程束执行的本质" /&gt;&lt;h1 id=&#34;cuda基础线程束执行的本质&#34;&gt;CUDA基础：线程束执行的本质&lt;/h1&gt;
-&lt;h2 id=&#34;1-线程束和线程块&#34;&gt;1. 线程束和线程块&lt;/h2&gt;
-&lt;p&gt;线程束是 SM 中基本的执行单元，当一个线程块的网格被启动后，网格中的线程块分布在 SM 中。一旦线程块被调度在一个 SM 上，线程块中的线程会被进一步划分为线程束。一个线程束由 32 个连续的线程组成（目前的 GPU 都是 32 个线程，但不保证未来是 32 个），在一个线程束中，所有的线程按照单指令多线程（SIMT）方式执行；也就是说，所有线程都执行相同的指令，每个线程在私有数据上进行操作。下图展示了线程块的逻辑视图和硬件视图之间的关系：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184443-2023-08-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230831184443-2023-08-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;然而，从硬件的角度来看，所有的线程都被组织成了一维的，线程块可以被配置为一维、二维、三维的。在一个块中，每个线程都有唯一的 ID 。对于一维的线程块，唯一的线程 ID 被存储在 CUDA 的内置变量 threadIdx.x 中，并且，threadIdx.x 中拥有连续值得线程被分组到线程束中。例如，一个有 128 个线程的一维线程块被组织到 4 个线程束里，如下所示：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;warp0: thread 0, .........., thread 31
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;warp1: thread 32, ........., thread 63
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;warp2: thread 64, ........., thread 95
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;warp3: thread 96, ........., thread 127
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;线程块是一个逻辑产物，因为在计算机里，内存总是一维线性存在的，所以执行起来也是一维的访问线程块中的线程，但是我们在写程序的时候却可以以二维三维的方式进行，原因是方便我们写程序，比如处理图像或者三维的数据，三维块就会变得很直接，很方便。&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;在块中，每个线程有唯一的编号（可能是个三维的编号），threadIdx&lt;/li&gt;
-&lt;li&gt;网格中，每个线程块也有唯一的编号(可能是个三维的编号)，blockIdx&lt;/li&gt;
-&lt;li&gt;那么每个线程就有在网格中的唯一编号。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;用 $x$ 维度作为最内层的维度， $y$ 维度作为第二个维度， $z$ 维度作为最外层的维度，则二维或三维线程块的逻辑布局可以转化为一维物理布局。例如，对于一个给定的二维线程块，在一个块中每个线程的独特标识符都可以用内置变量 threadIdx 和 blockDim 来计算：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;y&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;对于一个三维线程块，可以用下面的方式计算：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;y&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;z&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;y&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;在C语言中，假设三维数组 t 保存了所有的线程，那么 (threadIdx.x, threadIdx.y, threadIdx.z) 就相当于：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;t&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;z&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;y&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;一个线程块的线程束的数量可以根据下式确定：&lt;/p&gt;
-&lt;p&gt;$$
-\mathrm{WarpsPerBlock} = \left \lceil \frac{\mathrm{threadsPerBlock}}{\mathrm{warpSize}} \right \rceil
-$$&lt;/p&gt;
-&lt;p&gt;因此，硬件总是给一个线程块分配一定数量的线程束。线程束不会在不同的线程块之间分离。如果线程块的大小不是线程束大小的偶数倍，那么在最后的线程束里有些线程就不会活跃。比如说一个在 $x$ 轴中有 40 个线程、在 $y$ 轴中有 2 个线程的二维线程块。从应用程序的角度来看，在一个二维网格中共有 80 个线程。&lt;/p&gt;
-&lt;p&gt;硬件为这个线程块配置了 3 个线程束，使总共 96 个硬件线程去支持 80 个软件线程。注意，最后半个线程束是不活跃的。即使这些线程未被使用，它们仍然消耗 SM 的资源，如寄存器。&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-info&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;&lt;strong&gt;从逻辑角度来看：&lt;/strong&gt; 线程块是线程的集合，它们可以组织为一维、二维或三维布局。&lt;/p&gt;
-&lt;p&gt;&lt;strong&gt;从硬件角度来看：&lt;/strong&gt; 线程块是一维线程束的集合。在线程块中线程被组织成一维布局，每 32 个连续线程组成一个线程束。&lt;/p&gt;&lt;/div&gt;
-
-&lt;h2 id=&#34;2-线程束分化&#34;&gt;2. 线程束分化&lt;/h2&gt;
-&lt;p&gt;控制流是高级编程语言的基本构造中的一种。GPU支持传统的、C风格的、显式的控制流结构，例如，if···then···else、for和while。&lt;/p&gt;
-&lt;p&gt;CPU 拥有复杂的硬件以执行分支预测，也就是在每个条件检查中预测应用程序的控制流会使用哪个分支。如果预测正确，CPU 中的分支只需付出很小的性能代价。如果预测不正确，CPU可能会停止运行很多个周期，因为指令流水线被清空了。我们不必完全理解为什么 CPU 擅长处理复杂的控制流。这个解释只是作为对比的背景。当我们的程序包含大量的分支判断时，从程序角度来说，程序的逻辑是很复杂的，因为一个分支就会有两条路可以走，如果有 10 个分支，那么一共有 1024 条路走，CPU 采用流水线话作业，如果每次等到分支执行完再执行下面的指令会造成很大的延迟，所以现在处理器都采用分支预测技术，而CPU的这项技术相对于 GPU 来说高级了不止一点点，而这也是GPU与CPU的不同，设计初衷就是为了解决不同的问题。CPU适合逻辑复杂计算量不大的程序，比如操作系统，控制系统，GPU适合大量计算简单逻辑的任务，所以被用来算数。&lt;/p&gt;
-&lt;p&gt;GPU 是相对简单的设备，它没有复杂的分支预测机制。一个线程束中的所有线程在同周期中必须执行相同的指令，如果一个线程执行一条指令，那么线程束中的所有线程都必须执行该指令。如果在同一线程束中的线程使用不同的路径通过同一个应用程序，这可能会产生问题。例如，思考下面的语句:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;cond&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;...&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;else&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;...&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;假设在一个线程束中有 16 个线程执行这段代码，cond 为 true，但对于其他 16 个来说 cond 为 false 。一半的线程束需要执行 if 语句块中的指令，而另一半需要执行 else 语句块中的指令。在同一线程束中的线程执行不同的指令，被称为&lt;strong&gt;线程束分化&lt;/strong&gt;。我们已经知道，在一个线程束中所有线程在每个周期中必须执行相同的指令，所以线程束分化似乎会产生一
-个悖论。&lt;/p&gt;
-&lt;p&gt;如果一个线程束中的线程产生分化，线程束将连续执行每一个分支路径，而禁用不执行这一路径的线程。线程束分化会导致性能明显地下降。在前面的例子中可以看到，线程中并行线程的数量减少了一半: 只有 16 个线程同时活跃地执行，而其他 16 个被禁用了。条件分支越多，并行性削弱越严重。此外，线程束分化只发生在同一个线程束中。在不同的线程束中，不同的条件值不会引起线程束分化。&lt;/p&gt;
-&lt;p&gt;执行过程如下：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831205444-2023-08-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230831205444-2023-08-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;因为线程束分化导致的性能下降就应该用线程束的方法解决，根本思路是&lt;strong&gt;避免同一个线程束内的线程分化&lt;/strong&gt;，而让我们能控制线程束内线程行为的原因是线程块中线程分配到线程束是有规律的而不是随机的。这就使得我们根据线程编号来设计分支是可以的，补充说明下，当一个线程束中所有的线程都执行 if 或者，都执行 else 时，不存在性能下降；只有当线程束内有分歧产生分支的时候，性能才会急剧下降。&lt;/p&gt;
-&lt;p&gt;线程束内的线程是可以被我们控制的，那么我们就把都执行 if 的线程塞到一个线程束中，或者让一个线程束中的线程都执行 if ，另外线程都执行 else 的这种方式可以将效率提高很多。&lt;/p&gt;
-&lt;p&gt;举以下一个低效的核函数为例：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;__global__&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;mathKernel1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;0.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;100.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;else&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;200.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;c&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这种情况下，线程束内的线程会产生分化，因为线程束内的线程会有一半执行 if ，另一半执行 else ，这样就会导致性能下降。我们可以通过下面的方式来优化：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;__global__&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;mathKernel2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;c&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blockDim&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;threadIdx&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;x&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;0.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;((&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;warpSize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;%&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;100.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;else&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;200.0f&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;c&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;tid&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;+&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;假设只配置一个大小为 64 的一维线程块，那么只有 2 个线程束，第一个线程束内的线程编号 tid 从 0 到 31， tid / warpSize 都等于 0，那么都执行 if 语句；第二个线程束内的线程编号 tid 从 32 到 63， tid / warpSize 都等于 1，那么都执行 else 语句。这样就避免了线程束内的线程分化，效率较高。&lt;/p&gt;
-&lt;p&gt;在 CUDA 中，对线程束分化的评价指标为&lt;strong&gt;分支效率 (branch efficiency)&lt;/strong&gt;，它是一个 0 到 100 之间的百分比，表示线程束中的线程在同一周期中执行的分支指令的百分比。分支效率越高，性能越好。分支效率的计算公式如下：&lt;/p&gt;
-&lt;p&gt;$$
-\mathrm{branch\ efficiency} = \frac{\mathrm{branches - divergent\ branches}}{\mathrm{branches}}
-$$&lt;/p&gt;
-&lt;p&gt;以上线程束分化例子的完整代码如下：&lt;/p&gt;
-&lt;div class=&#34;github&#34;&gt;
-    &lt;div class=&#34;logo&#34;&gt;
-        &lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon github-icon&#34; viewBox=&#34;0 0 16 16&#34;&gt;&lt;path fill-rule=&#34;evenodd&#34; clip-rule=&#34;evenodd&#34; d=&#34;M2 2.5C2 1.83696 2.26339 1.20107 2.73223 0.732233C3.20108 0.263392 3.83696 0 4.5 0L13.25 0C13.4489 0 13.6397 0.0790176 13.7803 0.21967C13.921 0.360322 14 0.551088 14 0.75V13.25C14 13.4489 13.921 13.6397 13.7803 13.7803C13.6397 13.921 13.4489 14 13.25 14H10.75C10.5511 14 10.3603 13.921 10.2197 13.7803C10.079 13.6397 10 13.4489 10 13.25C10 13.0511 10.079 12.8603 10.2197 12.7197C10.3603 12.579 10.5511 12.5 10.75 12.5H12.5V10.5H4.5C4.30308 10.5 4.11056 10.5582 3.94657 10.6672C3.78257 10.7762 3.65442 10.9312 3.57816 11.1128C3.50191 11.2943 3.48096 11.4943 3.51793 11.6878C3.5549 11.8812 3.64816 12.0594 3.786 12.2C3.92524 12.3422 4.0023 12.5338 4.00024 12.7328C3.99818 12.9318 3.91716 13.1218 3.775 13.261C3.63285 13.4002 3.4412 13.4773 3.24222 13.4752C3.04325 13.4732 2.85324 13.3922 2.714 13.25C2.25571 12.7829 1.99929 12.1544 2 11.5V2.5ZM12.5 1.5V9H4.5C4.144 9 3.806 9.074 3.5 9.208V2.5C3.5 2.23478 3.60536 1.98043 3.79289 1.79289C3.98043 1.60536 4.23478 1.5 4.5 1.5H12.5ZM5 12.25V15.5C5 15.5464 5.01293 15.5919 5.03734 15.6314C5.06175 15.6709 5.09667 15.7028 5.1382 15.7236C5.17972 15.7444 5.22621 15.7532 5.27245 15.749C5.31869 15.7448 5.36286 15.7279 5.4 15.7L6.85 14.613C6.89328 14.5805 6.94591 14.563 7 14.563C7.05409 14.563 7.10673 14.5805 7.15 14.613L8.6 15.7C8.63714 15.7279 8.68131 15.7448 8.72755 15.749C8.77379 15.7532 8.82028 15.7444 8.8618 15.7236C8.90333 15.7028 8.93826 15.6709 8.96266 15.6314C8.98707 15.5919 9 15.5464 9 15.5V12.25C9 12.1837 8.97366 12.1201 8.92678 12.0732C8.87989 12.0263 8.81631 12 8.75 12H5.25C5.1837 12 5.12011 12.0263 5.07322 12.0732C5.02634 12.1201 5 12.1837 5 12.25Z&#34;/&gt;&lt;/svg&gt;
-        &lt;a class=&#34;name&#34; href=https://github.com/PKUcoldkeyboard/cuda-demo/blob/main/Chap3/simpleDivergence.cu target=&#34;_blank&#34;&gt;线程束分化示例&lt;/a&gt;
-    &lt;/div&gt;
-    &lt;div class=&#34;description&#34;&gt;CUDA编程DEMO：线程束分化&lt;/div&gt; 
-    &lt;div class=&#34;language&#34;&gt;
-        &lt;span class=&#34;language-color&#34; style=&#34;background-color: #3A4E3A&#34;&gt;&lt;/span&gt;
-        &lt;span class=&#34;language-name&#34;&gt;Cuda&lt;/span&gt;
-    &lt;/div&gt;
-&lt;/div&gt;
-&lt;p&gt;编译命令为：（强制 CUDA 编译器不利用分支预测去优化内核，使用 Tesla T4 GPU）&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-shell&#34; data-lang=&#34;shell&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;nvcc -g -G -arch&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;sm_75 -o simpleDivergence simpleDivergence.cu
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;运行结果为：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831223456-2023-08-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230831223456-2023-08-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;代码中的 Warmup 部分是提前启动一次GPU，因为第一次启动GPU时会比第二次速度慢一些，具体原因未知，可以去查一下CUDA的相关技术文档了解内容。我们可以通过 Nvidia Nsight Compute 来查看分支效率（&lt;strong&gt;旧版的 nvprof 被弃用了&lt;/strong&gt;，metrics 参数对应的修改可以参考 &lt;a class=&#34;link&#34; href=&#34;https://blog.csdn.net/weixin_44334901/article/details/128596081&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;CUDA编程性能分析工具 nvprof/ncu &amp;ndash;metrics参数含义&lt;/a&gt; ，而且运行 ncu 时候必须使用 root 权限），结果如下所示：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;19
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;20
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;21
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;22
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;23
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;24
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;25
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;26
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;27
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;28
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;29
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;30
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;31
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;32
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;33
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;34
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;35
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;36
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;37
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;38
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;39
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;40
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;[58735] simpleDivergence@127.0.0.1
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  warmingup(float *) (1, 1, 1)x(64, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Section: Command line profiler metrics
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Metric Name                                          Metric Unit Metric Value
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    smsp_sass_average_branch_targets_threads_uniform.pct                  100.00%
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  mathKernel1(float *) (1, 1, 1)x(64, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Section: Command line profiler metrics
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Metric Name                                          Metric Unit Metric Value
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    smsp_sass_average_branch_targets_threads_uniform.pct                   83.33%
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  mathKernel2(float *) (1, 1, 1)x(64, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Section: Command line profiler metrics
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Metric Name                                          Metric Unit Metric Value
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    smsp_sass_average_branch_targets_threads_uniform.pct                  100.00%
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  mathKernel3(float *) (1, 1, 1)x(64, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Section: Command line profiler metrics
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Metric Name                                          Metric Unit Metric Value
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    smsp_sass_average_branch_targets_threads_uniform.pct                   71.43%
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  mathKernel4(float *) (1, 1, 1)x(64, 1, 1), Context 1, Stream 7, Device 0, CC 7.5
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Section: Command line profiler metrics
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    Metric Name                                          Metric Unit Metric Value
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    smsp_sass_average_branch_targets_threads_uniform.pct                  100.00%
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    ---------------------------------------------------- ----------- ------------
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;CUDA 的 nvcc 编译器仍然是在 mathKernel1 和 mathKernel3 上执行有限的优化，以保证分支效率在 50% 以上。注意，mathKernel2 不报告分支分化的唯一原因是它的分支粒度是线程束大小的倍数。此外，把 mathKernel1 中的 if&amp;hellip;else 语句分离为 mathKernel3 的多个 if 语句，可以使分支分化的数量翻倍。&lt;/p&gt;
-&lt;h2 id=&#34;3-资源分配&#34;&gt;3. 资源分配&lt;/h2&gt;
-&lt;p&gt;前面提到，每个 SM 上执行的基本单位是线程束，也就是说，单指令通过指令调度器广播给某线程束的全部线程，这些线程同一时刻执行同一命令，当然也有分支情况，也有很多线程束没执行，那么这些没执行的线程束情况又如何呢？可以将这些没执行的线程束分为两类：一类是已经激活的，也就是说这类线程束其实已经在 SM 上准备就绪了，只是没轮到它执行，这时候它的状态为阻塞，另一类是可能分配到 SM 了，但是还没上片，这类就称之为未激活线程束。而每个 SM 上有多少个线程束处于激活状态，取决于以下资源：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;程序计数器&lt;/li&gt;
-&lt;li&gt;寄存器&lt;/li&gt;
-&lt;li&gt;共享内存&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;线程束一旦被激活来到片上，那么它就不会再离开 SM 直到执行结束。&lt;/p&gt;
-&lt;p&gt;每个 SM 都有 32 位的寄存器组，每个架构寄存器的数量不一样，其存储于寄存器文件中，为每个线程进行分配，同时，固定数量的共享内存，在线程块之间分配。&lt;/p&gt;
-&lt;p&gt;一个 SM 上被分配多少个线程块和线程束取决于SM中可用的寄存器和共享内存，以及内核需要的寄存器和共享内存大小。 当 kernel 占用的资源较少，那么更多的线程处于活跃状态，相反则线程越少。&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;寄存器资源的分配&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150726-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901150726-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;ol start=&#34;2&#34;&gt;
-&lt;li&gt;共享内存的分配&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150743-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901150743-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;上面讲的主要是线程束，如果从逻辑上来看线程块的话，可用资源的分配也会影响常驻线程块的数量。特别是当 SM 内的资源没办法处理一个完整块，那么程序将无法启动。&lt;/p&gt;
-&lt;p&gt;以下是资源列表：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150843-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901150843-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;当寄存器和共享内存分配给了线程块，这个线程块处于活跃状态，所包含的线程束称为活跃线程束。活跃的线程束又分为三类：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;选定的线程束&lt;/li&gt;
-&lt;li&gt;阻塞的线程束&lt;/li&gt;
-&lt;li&gt;符合条件的线程束&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;当 SM 要执行某个线程束的时候，执行的这个线程束叫做选定的线程束，准备要执行的叫符合条件的线程束，如果线程束不符合条件还没准备好就是阻塞的线程束。
-满足下面的要求，线程束才算是符合条件的：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;32 个 CUDA 核心可以用于执行&lt;/li&gt;
-&lt;li&gt;执行所需要的资源全部就位&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Kepler活跃的线程束数量从开始到结束不得大于 64，可以等于。任何周期选定的线程束小于等于 4 。由于计算资源是在线程束之间分配的，且线程束的整个生命周期都在片上，所以线程束的上下文切换是非常快速的。下一节将说明如何通过大量的活跃的线程束切换来隐藏延迟。&lt;/p&gt;
-&lt;h2 id=&#34;4-延迟隐藏&#34;&gt;4. 延迟隐藏&lt;/h2&gt;
-&lt;p&gt;SM 依赖线程级并行，以最大化功能单元的利用率，因此，利用率与常驻线程束的数量直接相关。在指令发出和完成之间的时钟周期被定义为&lt;strong&gt;指令延迟&lt;/strong&gt;。当每个时钟周期中所有的线程调度器都有一个符合条件的线程束时，可以达到计算资源的完全利用。这就可以保证，通过在其他常驻线程束中发布其他指令，可以&lt;strong&gt;隐藏每个指令的延迟&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;与在 CPU 上用C语言编程相比，&lt;strong&gt;延迟隐藏&lt;/strong&gt;在 CUDA 编程中尤为重要。CPU 核心是为同时最小化延迟一个或两个线程而设计的，而 GPU 则是为处理大量并发和轻量级线程以最大化吞吐量而设计的。GPU 的指令延迟被其他线程束的计算隐藏。&lt;/p&gt;
-&lt;p&gt;考虑到指令延迟，指令可以被分为两种基本类型：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;算术指令&lt;/li&gt;
-&lt;li&gt;内存指令&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;&lt;strong&gt;算术指令延迟&lt;/strong&gt;是一个算术操作从开始到它产生输出之间的时间。&lt;strong&gt;内存指令延迟&lt;/strong&gt;是指发送出的加载或存储操作和数据到达目的地之间的时间。对于每种情况，相应的延迟大约为：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;算术操作为 10～20 个周期&lt;/li&gt;
-&lt;li&gt;全局内存访问为 400～800 个周期&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;下图是阻塞线程束到可选线程束的过程逻辑图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151502-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901151502-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;其中线程束 0 （Warp 0） 阻塞两段时间后恢复可选模式，但是在这段等待时间中，SM 没有闲置。那么至少需要多少线程，线程束来保证最小化延迟呢？可以根据利特尔法则（Little&amp;rsquo;s Law）提供一个合理的近似值。它起源于队列理论中的一个定理，也可以用于 GPU 中：&lt;/p&gt;
-&lt;p&gt;$$
-\mathrm{所需线程束}=\mathrm{延迟}\times \mathrm{吞吐量}
-$$&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-info&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;注意带宽和吞吐量的区别，带宽一般指的是理论峰值，最大每个时钟周期能执行多少个指令，吞吐量是指实际操作过程中每分钟处理多少个指令。简单来说，带宽通常是指理论峰值，而吞吐量是指已达到的值。&lt;/p&gt;&lt;/div&gt;
-
-&lt;p&gt;这个可以想象成一个瀑布，像这样，绿箭头是线程束，只要线程束足够多，吞吐量是不会降低的：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151942-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901151942-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;假设在 kernel 里一条指令的平均延迟是5个周期。为了保持在每个周期内执行 6 个线程束的吞吐量，则至少需要 30 个未完成的线程束。&lt;/p&gt;
-&lt;p&gt;对于算术运算来说，其所需的并行可以表示成隐藏算术延迟所需要的操作数量。下面的表格出了 Fermi 和 Kepler 设备所需的操作数量。示例中的算术运算是一个 32 位的浮点数乘加运算 (a + b $\times$ c)，表示在每个 SM 中每个时钟周期内的操作数量。吞吐量因不同的算术指令而不同。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152413-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901152413-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;吞吐量由 SM 中每个周期内的操作数量确定，而执行一条指令的一个线程束对应 32 个操作。因此，为保持计算资源的充分利用，对于 Fermi GPU 而言，每个 SM 中所需的线程束数量通过计算为 $640 \div 32 = 20 $ 个线程束。因此，算术运算所需的并行可以用操作的数量或线程束的数量来表示。这个简单的单位转换表明，有两种方法可以提高并行：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;指令级并行（ILP）：一个线程中有很多独立的指令&lt;/li&gt;
-&lt;li&gt;线程级并行（TLP）：很多并发地符合条件的线程&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;同样，与指令周期隐藏延迟类似，&lt;strong&gt;内存隐藏延迟&lt;/strong&gt;是靠内存读取的并发操作来完成的，需要注意的是，指令隐藏的关键目的是使用全部的计算资源，而内存读取的延迟隐藏是为了使用全部的内存带宽，内存延迟的时候，计算资源正在被别的线程束使用，所以我们不考虑内存读取延迟的时候计算资源在做了什么，我们的根本目的是把计算资源，内存读取的带宽资源全部使用满，这样就能达到理论的最大效率。同样下表根据利特尔法则给出了需要多少线程束来最小化内存读取延迟，不过这里有个单位换算过程，机器的性能指标内存读取速度给出的是 GB/s 的单位，而我们需要的是每个时钟周期读取字节数，所以要用这个速度除以频率，例如 Tesla C2070 的内存带宽是 144 GB/s，转化成时钟周期： $\frac{144\mathrm{GB/s}}{1.566 \mathrm{GHz}}=92\mathrm{B/t}$，这样就能得到单位时间周期的内存带宽了。即下表的数据：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152915-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901152915-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;需要说明的是这个速度不是单个 SM 的而是整个GPU设备的。Fermi 需要并行的读取 74KB 的数据才能让GPU带宽满载，如果每个线程读取4个字节，我们大约需要18500个线程，大约579个线程束才能达到这个峰值。&lt;/p&gt;
-&lt;p&gt;所以，延迟的隐藏取决于活动的线程束的数量，数量越多，隐藏的越好，但是线程束的数量又受到上面的说的资源影响。所以这里就需要寻找最优的执行配置来达到最优的延迟隐藏。&lt;/p&gt;
-&lt;p&gt;那么我们怎么样确定一个线程束的下界呢，使得当高于这个数字时SM的延迟能充分的隐藏，其实这个公式很简单，也很好理解，就是SM的计算核心数乘以单条指令的延迟，比如 32 个单精度浮点计算器，每次计算延迟 20 个时钟周期，那么我需要最少 $32 \times 20 =640$ 个线程使设备处于忙碌状态。然而，这只是一个下边界。&lt;/p&gt;
-&lt;h2 id=&#34;5-占用率&#34;&gt;5. 占用率&lt;/h2&gt;
-&lt;p&gt;在每个CUDA核心里指令是顺序执行的。当一个线程束阻塞时，SM 切换执行其他符合条件的线程束。理想情况下，我们想要有足够的线程束占用设备的核心。占用率是每个 SM 中活跃的线程束占最大线程束数量的比值。即：&lt;/p&gt;
-&lt;p&gt;$$
-\mathrm{Occupancy} = \frac{\mathrm{Active\ Warps}}{\mathrm{Max\ Warps}}
-$$&lt;/p&gt;
-&lt;p&gt;通过以下代码可以查询设备的最大线程束数量：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;14
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;15
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;16
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;17
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;18
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;dev&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;cudaDeviceProp&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;CHECK&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;nf&#34;&gt;cudaGetDeviceProperties&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;dev&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Device %d: %s&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;dev&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Number of SMs: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;multiProcessorCount&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Total amount of constant memory: %4.2f KB&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;totalConstMem&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;1024.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Total amount of shared memory per block: %4.2f KB&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sharedMemPerBlock&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;1024.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Total number of registers available per block: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;regsPerBlock&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Warp size: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;warpSize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Maximum number of threads per block: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;maxThreadsPerBlock&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Maximum number of threads per multiprocessor: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;maxThreadsPerMultiProcessor&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;log_info&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Maximum number of warps per multiprocessor: %d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;n&#34;&gt;deviceProp&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;maxThreadsPerMultiProcessor&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;32&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;输出结果为：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901155126-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901155126-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;p&gt;可以看到 RTX4090 最大 64 个线程束每个 SM。&lt;/p&gt;
-&lt;p&gt;内核使用寄存器的数量会影响 SM 内线程束的数量，nvcc 的编译选项也有手动控制寄存器的使用。也可以通过调整线程块内线程的多少来提高占用率，当然要合理不能太极端：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;小的线程块：每个线程块中线程太少，会在所有资源没用完就达到了线程束的最大要求&lt;/li&gt;
-&lt;li&gt;大的线程块：每个线程块中太多线程，会导致每个 SM 中每个线程可用的硬件资源较少。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;一个确定网格和线程块大小的基本准则如下：&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;保持每个块中线程数量是线程束大小（32）的倍数&lt;/li&gt;
-&lt;li&gt;避免块太小：每个块至少要有 128 或 256 个线程&lt;/li&gt;
-&lt;li&gt;根据内核资源的需求调整块大小&lt;/li&gt;
-&lt;li&gt;块的数量要远远多于 SM 的数量，从而在设备中可以显示有足够的并行&lt;/li&gt;
-&lt;li&gt;通过实验得到最佳执行配置和资源使用情况&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;尽管在每种情况下会遇到不同的硬件限制，但它们都会导致计算资源未被充分利用，阻碍隐藏指令和内存延迟的并行的建立。占用率唯一注重的是在每个 SM 中并发线程或线程束的数量。然而，充分的占用率不是性能优化的唯一目标。内核一旦达到一定级别的占用率，进一步增加占用率可能不会改进性能。为了提高性能，可以调整很多其他因素。&lt;/p&gt;
-&lt;h2 id=&#34;6-同步&#34;&gt;6. 同步&lt;/h2&gt;
-&lt;p&gt;栅栏同步是一个原语，它在许多并行编程语言中都很常见。在 CUDA 中，同步可以在两个级别执行：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;线程块内同步&lt;/li&gt;
-&lt;li&gt;系统级别&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;块级别的就是同一个块内的线程会同时停止在某个设定的位置，用&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;__syncthreads&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;这个函数完成，这个函数只能同步同一个块内的线程，不能同步不同块内的线程，想要同步不同块内的线程，就只能让核函数执行完成，控制程序交换主机，这种方式来同步所有线程。当__syncthreads被调用时，在同一个线程块中每个线程都必须等待直至该线程块中所有其他线程都已经达到这个同步点。线程产生的所有全局内存和共享内存访问，将会在栅栏后对线程块中所有其他的线程可见。该函数可以协调同一个块中线程之间的通信，但它强制线程束空闲，从而可能对性能产生负面影响。&lt;/p&gt;
-&lt;p&gt;在不同的块之间没有线程同步。块间同步，唯一安全的方法是在每个内核执行结束端使用全局同步点；也就是说，在全局同步之后，终止当前的核函数，开始执行新的核函数。&lt;/p&gt;
-&lt;p&gt;不同块中的线程不允许相互同步，因此GPU可以以任意顺序执行块。这使得CUDA程序在大规模并行GPU上是可扩展的。&lt;/p&gt;
-&lt;h2 id=&#34;7-可扩展性&#34;&gt;7. 可扩展性&lt;/h2&gt;
-&lt;p&gt;对于任何并行应用程序而言，可扩展性是一个理想的特性。可扩展性意味着为并行应用程序提供了额外的硬件资源，相对于增加的资源，并行应用程序会产生加速。例如，若一个CUDA程序在两个 SM 中是可扩展的，则与在一个 SM 中运行相比，在两个 SM 中运行会使运行时间减半。一个可扩展的并行程序可以高效地使用所有的计算资源以提高性能。可扩展性意味着增加的计算核心可以提高性能。串行代码本身是不可扩展的，因为在成千上万的内核上运行一个串行单线程应用程序，对性能是没有影响的。并行代码有可扩展的潜能，但真正的可扩展性取决于算法设计和硬件特性。&lt;/p&gt;
-&lt;p&gt;能够在可变数量的计算核心上执行相同的应用程序代码的能力被称为&lt;strong&gt;透明可扩展性&lt;/strong&gt;。一个透明的可扩展平台拓宽了现有应用程序的应用范围，并减少了开发人员的负担，因为它们可以避免新的或不同的硬件产生的变化。可扩展性比效率更重要。一个可扩展但效率很低的系统可以通过简单添加硬件核心来处理更大的工作负载。一个效率很高但不可扩展的系统可能很快会达到可实现性能的上限。&lt;/p&gt;
-&lt;p&gt;CUDA内核启动时，线程块分布在多个 SM 中。网格中的线程块以并行或连续或任意的顺序被执行。这种独立性使得CUDA程序在任意数量的计算核心间可以扩展。&lt;/p&gt;
-&lt;p&gt;下图展示了 CUDA 架构可扩展性的一个例子。左侧的 GPU 有两个 SM，  可以同时执行两个块；右侧的 GPU 有 4 个 SM ，可以同时执行 4 个块。不修改任何代码，一个应用程序可以在不同的GPU配置上运行，并且所需的执行时间根据可用的资源而改变。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901163747-2023-09-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230901163747-2023-09-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-&lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;p&gt;[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
+&lt;p&gt;[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p&gt;
 </description>
         </item>
         

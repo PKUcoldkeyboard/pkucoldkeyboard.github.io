@@ -8,85 +8,51 @@
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
         <lastBuildDate>Thu, 20 Jul 2023 03:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/mpi/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>MPI与并行计算（五）：MPI扩展</title>
+        <title>MPI 与并行计算（五）：MPI 扩展</title>
         <link>https://cuterwrite.top/p/mpi-tutorial/5/</link>
         <pubDate>Thu, 20 Jul 2023 03:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/mpi-tutorial/5/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif" alt="Featured image of post MPI与并行计算（五）：MPI扩展" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%BA%94mpi%E6%89%A9%E5%B1%95&#34; &gt;MPI与并行计算（五）：MPI扩展&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E5%8A%A8%E6%80%81%E8%BF%9B%E7%A8%8B&#34; &gt;1. 动态进程&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E8%BF%9C%E7%A8%8B%E5%AD%98%E5%82%A8%E8%AE%BF%E9%97%AEremote-memory-accessrma&#34; &gt;2. 远程存储访问（Remote Memory Access，RMA）&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E5%B9%B6%E8%A1%8Ciompi-io&#34; &gt;3. 并行I/O（MPI-IO）&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E6%AD%A3%E7%A1%AE%E5%9C%B0%E4%BD%BF%E7%94%A8mpi-io&#34; &gt;4. 正确地使用MPI-IO&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E6%80%BB%E7%BB%93&#34; &gt;5. 总结&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;mpi与并行计算五mpi扩展&#34;&gt;MPI与并行计算（五）：MPI扩展&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif" alt="Featured image of post MPI 与并行计算（五）：MPI 扩展" /&gt;&lt;h1 id=&#34;mpi-与并行计算五mpi-扩展&#34;&gt;MPI 与并行计算（五）：MPI 扩展&lt;/h1&gt;
 &lt;h2 id=&#34;1-动态进程&#34;&gt;1. 动态进程&lt;/h2&gt;
-&lt;p&gt;MPI-1假定所有的进程都是静态的，运行时不能增加和删除进程。MPI-2引入了动态进程的概念：&lt;/p&gt;
+&lt;p&gt;MPI-1 假定所有的进程都是静态的，运行时不能增加和删除进程。MPI-2 引入了动态进程的概念：&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI-1不定义如何创建进程和如何建立通信。MPI-2中的动态进程机制以可移植的方式(平台独立)提供了这种能力。&lt;/li&gt;
-&lt;li&gt;动态进程有利于将PVM程序移植到MPI上。并且还可能支持一些重要的应用类型， 如Client/Server和Process farm。&lt;/li&gt;
+&lt;li&gt;MPI-1 不定义如何创建进程和如何建立通信。MPI-2 中的动态进程机制以可移植的方式(平台独立)提供了这种能力。&lt;/li&gt;
+&lt;li&gt;动态进程有利于将 PVM 程序移植到 MPI 上。并且还可能支持一些重要的应用类型， 如 Client/Server 和 Process farm。&lt;/li&gt;
 &lt;li&gt;动态进程允许更有效地使用资源和负载平衡。例如，所用节点数可以按需要减少和增加。&lt;/li&gt;
 &lt;li&gt;支持容错。当一个节点失效时，可以在另一个节点上创建一个新进程运行该节点上的进程的工作。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;在MPI-1中 一个MPI程序一旦启动，一直到该MPI程序结束，进程的个数是固定的，在程序运行过程中是不可能动态改变的。在MPI-2中，允许在程序运行过程中动态改变进程的数目，并提供了动态进程创建和管理的各种调用。&lt;/p&gt;
+&lt;p&gt;在 MPI-1 中 一个 MPI 程序一旦启动，一直到该 MPI 程序结束，进程的个数是固定的，在程序运行过程中是不可能动态改变的。在 MPI-2 中，允许在程序运行过程中动态改变进程的数目，并提供了动态进程创建和管理的各种调用。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;组间通信域&lt;/strong&gt;在动态进程管理中处于核心的地位，只有掌握了它的基本概念，才能准确把握和使用进程的动态特性和动态进程之间的通信。&lt;/p&gt;
-&lt;p&gt;在MPI-2中，对点到点通信和组通信都给出了使用组间通信域时的确切含义。在语法上，不管是使用组内还是组间通信域，二者没有任何区别，但其语义是不同的。&lt;/p&gt;
+&lt;p&gt;在 MPI-2 中，对点到点通信和组通信都给出了使用组间通信域时的确切含义。在语法上，不管是使用组内还是组间通信域，二者没有任何区别，但其语义是不同的。&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;对于构成组间通信域的两个进程组，调用进程把自己所在的组看作是本地组，而把另一个组称为远地组，使用组间通信域的一个特点是本地组进程发送的数据被远地组进程接收而本地组接收的数据必然来自远地组。&lt;/li&gt;
 &lt;li&gt;在使用组间通信域的点到点通信中，发送语句指定的目的进程是远地组中的进程编号，接收进程指出的源进程编号也是远地组的进程编号。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;ul&gt;
 &lt;li&gt;如图所示为组间通信域上的点到点通信
-&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171153.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720171153&#34;
-	
-	
-&gt;&lt;/li&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171153.webp&#34;
+         alt=&#34;20230720171153&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;对于组通信，如果使用组间通信域，则其含义分不同的形式而有所不同：对于多对多通信，本地进程组的所有进程向远地进程组的所有进程发送数据，同时本地进程组的所有进程从远地进程组的所有进程接收数据，如图所示：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171308.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720171308&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171308.webp&#34;
+         alt=&#34;20230720171308&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
 &lt;li&gt;此外，组间通信域上的一对多通信或多对一通信如图所示：
-&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171356.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720171356&#34;
-	
-	
-&gt;&lt;/li&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720171356.webp&#34;
+         alt=&#34;20230720171356&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例1：动态进程的创建和通信&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 1：动态进程的创建和通信&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -135,7 +101,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;在16个进程中，每两个进程一组，共8组，每组的进程编号相同，运行结果如下：&lt;/li&gt;
+&lt;li&gt;在 16 个进程中，每两个进程一组，共 8 组，每组的进程编号相同，运行结果如下：&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -183,7 +149,7 @@
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例2：更复杂的动态进程的创建和通信&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 2：更复杂的动态进程的创建和通信&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -363,13 +329,13 @@
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;2-远程存储访问remote-memory-accessrma&#34;&gt;2. 远程存储访问（Remote Memory Access，RMA）&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;在MPI-2中增加远程存储访问的能力，主要是为了使MPI在编写特定算法和通信模型的并行程序时更加自然和简洁。因为在许多情况下，都需要一个进程对另外一个进程的存储区域进行直接访问。&lt;/li&gt;
-&lt;li&gt;MPI-2对远程存储的访问主要是通过&lt;strong&gt;窗口&lt;/strong&gt;来进行的，为了进行远程存储访问，首先需要定义一个窗口，该窗口开在各个进程的一段本地进程存储空间，其目的是为了让其它的进程可以通过这一窗口来访问本地的数据。&lt;/li&gt;
-&lt;li&gt;定义好窗口之后，就可以通过窗口来访问远程存储区域的数据了。MPI-2提供了三种基本的访问形式，即读、写和累计，读操作只是从远端的窗口获取数据，并不对远端数据进行任何修改；写操作将本地的内容写入远端的窗口，它修改远端窗口的内容；累计操作就更复杂一些，它将远端窗口的数据和本地的数据进行某种指定方式的运算之后，再将运算的结果写入远端窗口。&lt;/li&gt;
-&lt;li&gt;MPI-2就是通过读、写和累计三种操作来实现对远程存储的访问和更新的。除了基本的窗口操作之外MPI-2还提供了窗口管理功能 用来实现对窗口操作的同步管理。MPI-2对窗口的同步管理有三种方式 ：
+&lt;li&gt;在 MPI-2 中增加远程存储访问的能力，主要是为了使 MPI 在编写特定算法和通信模型的并行程序时更加自然和简洁。因为在许多情况下，都需要一个进程对另外一个进程的存储区域进行直接访问。&lt;/li&gt;
+&lt;li&gt;MPI-2 对远程存储的访问主要是通过&lt;strong&gt;窗口&lt;/strong&gt;来进行的，为了进行远程存储访问，首先需要定义一个窗口，该窗口开在各个进程的一段本地进程存储空间，其目的是为了让其它的进程可以通过这一窗口来访问本地的数据。&lt;/li&gt;
+&lt;li&gt;定义好窗口之后，就可以通过窗口来访问远程存储区域的数据了。MPI-2 提供了三种基本的访问形式，即读、写和累计，读操作只是从远端的窗口获取数据，并不对远端数据进行任何修改；写操作将本地的内容写入远端的窗口，它修改远端窗口的内容；累计操作就更复杂一些，它将远端窗口的数据和本地的数据进行某种指定方式的运算之后，再将运算的结果写入远端窗口。&lt;/li&gt;
+&lt;li&gt;MPI-2 就是通过读、写和累计三种操作来实现对远程存储的访问和更新的。除了基本的窗口操作之外 MPI-2 还提供了窗口管理功能 用来实现对窗口操作的同步管理。MPI-2 对窗口的同步管理有三种方式 ：
 &lt;ul&gt;
-&lt;li&gt;栅栏方式fence：在这种方式下，对窗口的操作必须放在一对栅栏语句之间，这样可以保证当栅栏语句结束之后，其内部的窗口操作可以正确完成。&lt;/li&gt;
-&lt;li&gt;握手方式：在这种方式下，调用窗口操作的进程需要将具体的窗口调用操作放在以MPI_WIN_START开始，以MPI_WIN_COMPLETE结束的调用之间。相应的,被访问的远端进程需要以一对调用MPI_WIN_POST和MPI_WIN_WAIT与之相适应。MPI_WIN_POST允许其它的进程对自己的窗口进行访问，而MPI_WIN_WAIT调用结束之后可以保证对本窗口的调用操作全部完成。MPI_WIN_START申请对远端进程窗口的访问，&lt;strong&gt;只有当远端窗口执行了MPI_WIN_POST操作之后才可以访问远端窗口&lt;/strong&gt;，MPI_WIN_COMPLETE完成对远端窗口访问操作。&lt;/li&gt;
+&lt;li&gt;栅栏方式 fence：在这种方式下，对窗口的操作必须放在一对栅栏语句之间，这样可以保证当栅栏语句结束之后，其内部的窗口操作可以正确完成。&lt;/li&gt;
+&lt;li&gt;握手方式：在这种方式下，调用窗口操作的进程需要将具体的窗口调用操作放在以 MPI_WIN_START 开始，以 MPI_WIN_COMPLETE 结束的调用之间。相应的,被访问的远端进程需要以一对调用 MPI_WIN_POST 和 MPI_WIN_WAIT 与之相适应。MPI_WIN_POST 允许其它的进程对自己的窗口进行访问，而 MPI_WIN_WAIT 调用结束之后可以保证对本窗口的调用操作全部完成。MPI_WIN_START 申请对远端进程窗口的访问，&lt;strong&gt;只有当远端窗口执行了 MPI_WIN_POST 操作之后才可以访问远端窗口&lt;/strong&gt;，MPI_WIN_COMPLETE 完成对远端窗口访问操作。&lt;/li&gt;
 &lt;li&gt;锁方式：在这种方式下，不同的进程通过对特定的窗口加锁来实现互斥访问。当然用户根据需要可以使用共享的锁，这是就可以允许使用共享锁的进程对同一窗口同时访问。远端存储的访问窗口是具体的实现形式，通过窗口操作实现来实现单边通信，通过对窗口的管理操作来实现对窗口操作的同步控制。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
@@ -453,13 +419,13 @@
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;ul&gt;
-&lt;li&gt;小结：窗口是远程存储访问中的重要概念，其实MPI-2的远程存储访问就是各进程将自己的一部分内存区域开辟成其它所有进程都可以访问的窗口，从而使其它的进程实现对自己数据的远程访问，窗口操作是相对简单的，&lt;strong&gt;对窗口访问的同步控制&lt;/strong&gt;是需要注意的问题。&lt;/li&gt;
+&lt;li&gt;小结：窗口是远程存储访问中的重要概念，其实 MPI-2 的远程存储访问就是各进程将自己的一部分内存区域开辟成其它所有进程都可以访问的窗口，从而使其它的进程实现对自己数据的远程访问，窗口操作是相对简单的，&lt;strong&gt;对窗口访问的同步控制&lt;/strong&gt;是需要注意的问题。&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例3：远程存储访问&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 3：远程存储访问&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -531,29 +497,23 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;3-并行iompi-io&#34;&gt;3. 并行I/O（MPI-IO）&lt;/h2&gt;
-&lt;p&gt;MPI-1没有对并行文件I/O给出任何定义，原因在于并行I/O过于复杂，很难找到一个统一的标准。但是，I/O是很多应用不可缺少的部分，MPI-2在大量实践的基础上，提出了一个并行I/O的标准接口。MPI-2提供的关于并行文件I/O的调用十分丰富，根据读写定位方法的不同，可以分为三种：&lt;/p&gt;
+&lt;/div&gt;&lt;h2 id=&#34;3-并行-iompi-io&#34;&gt;3. 并行 I/O（MPI-IO）&lt;/h2&gt;
+&lt;p&gt;MPI-1 没有对并行文件 I/O 给出任何定义，原因在于并行 I/O 过于复杂，很难找到一个统一的标准。但是，I/O 是很多应用不可缺少的部分，MPI-2 在大量实践的基础上，提出了一个并行 I/O 的标准接口。MPI-2 提供的关于并行文件 I/O 的调用十分丰富，根据读写定位方法的不同，可以分为三种：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;指定显示的偏移：这种调用没有文件指针的概念 每次读写操作都必须明确指定读写文件的位置。&lt;/li&gt;
 &lt;li&gt;各进程拥有独立的文件指针：这种方式的文件操作不需要指定读写的位置每一个进程都有一个相互独立的文件指针，读写的起始位置就是当前指针的位置。读写完成后文件指针自动移到下一个有效数据的位置。这种方式的文件操作需要每一个进程都定义各自在文件中的&lt;strong&gt;文件视图（view）&lt;/strong&gt;，文件视图（view）数据是文件连续或不连续的一部分，各个进程对文件视图（view）的操作就如同是对一个打开的独立的连续文件的操作一样。&lt;/li&gt;
 &lt;li&gt;共享文件指针：在这种情况下，每一个进程对文件的操作都是从当前共享文件指针的位置开始，操作结束后共享文件指针自动转移到下一个位置。共享指针位置的变化对所有进程都是可见的，各进程使用的是同一个文件指针。任何一个进程对文件的读写操作都会引起其它所有进程文件指针的改变。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720201633.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720201633&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720201633.webp&#34;
+         alt=&#34;20230720201633&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
-&lt;li&gt;MPI-IO文件访问过程
+&lt;li&gt;MPI-IO 文件访问过程
 &lt;ul&gt;
-&lt;li&gt;在进行I/O之前，必须要通过调用MPI_File_open打开文件&lt;/li&gt;
+&lt;li&gt;在进行 I/O 之前，必须要通过调用 MPI_File_open 打开文件&lt;/li&gt;
 &lt;li&gt;每个进程都需要定义文件指针用来控制文件访问&lt;/li&gt;
-&lt;li&gt;I/O操作完成后，必须通过调用MPI_File_close来关闭文件&lt;/li&gt;
+&lt;li&gt;I/O 操作完成后，必须通过调用 MPI_File_close 来关闭文件&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;并行文件的基本操作
@@ -650,7 +610,7 @@
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例4：并行I/O - 指定显示偏移并行读&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 4：并行 I/O - 指定显示偏移并行读&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -745,7 +705,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;tesfile文件内容为：&lt;/li&gt;
+&lt;li&gt;tesfile 文件内容为：&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -776,17 +736,17 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Process 0 read: ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;4-正确地使用mpi-io&#34;&gt;4. 正确地使用MPI-IO&lt;/h2&gt;
+&lt;/div&gt;&lt;h2 id=&#34;4-正确地使用-mpi-io&#34;&gt;4. 正确地使用 MPI-IO&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;正确使用MPI-IO
+&lt;li&gt;正确使用 MPI-IO
 &lt;ul&gt;
-&lt;li&gt;根据I/O需求，每个应用都有其特定的I/O访问模式&lt;/li&gt;
-&lt;li&gt;对于不同的I/O系统，同样的I/O访问模式也可以使用不同的I/O函数和I/O方式实现&lt;/li&gt;
-&lt;li&gt;通常MPI-IO中I/O访问模式的实现方式可分为4级：&lt;strong&gt;level0-level3&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;根据 I/O 需求，每个应用都有其特定的 I/O 访问模式&lt;/li&gt;
+&lt;li&gt;对于不同的 I/O 系统，同样的 I/O 访问模式也可以使用不同的 I/O 函数和 I/O 方式实现&lt;/li&gt;
+&lt;li&gt;通常 MPI-IO 中 I/O 访问模式的实现方式可分为 4 级：&lt;strong&gt;level0-level3&lt;/strong&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;以分布式数组访问为例&lt;/li&gt;
-&lt;li&gt;level0：每个进程对本地数组的一行发出一个独立的读请求（就像在unix中一样）
+&lt;li&gt;level0：每个进程对本地数组的一行发出一个独立的读请求（就像在 unix 中一样）
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -798,17 +758,17 @@
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;7
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;      
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;n_local_rows&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_seek&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_read&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]),&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;       
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;n_local_rows&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_seek&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_read&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]),&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;level1：类似于level 0，但每个过程都使用集合I/O函数
+&lt;li&gt;level1：类似于 level 0，但每个过程都使用集合 I/O 函数
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -821,16 +781,16 @@
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;n_local_rows&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;n_local_rows&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_seek&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_read_all&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]),&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;      
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_seek&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;nf&#34;&gt;MPI_File_read_all&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;][&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]),&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;level2：每个进程创建一个派生数据类型来描述非连续访问模式，定义一个文件视图，并调用独立的I/O函数
+&lt;li&gt;level2：每个进程创建一个派生数据类型来描述非连续访问模式，定义一个文件视图，并调用独立的 I/O 函数
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -841,16 +801,16 @@
 &lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_Type_create_subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_Type_commit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_set_view&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_read&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;      
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_Type_create_subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_Type_commit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_set_view&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_read&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
-&lt;li&gt;level3：类似于level 0，但每个过程都使用集合I/O函数
+&lt;li&gt;level3：类似于 level 0，但每个过程都使用集合 I/O 函数
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -866,14 +826,14 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_open&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;file&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,...,&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_set_view&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;subarray&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_read_all&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;A&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;...);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nf&#34;&gt;MPI_File_close&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;fh&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;5-总结&#34;&gt;5. 总结&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI-IO有许多功能，可以帮助用户获得高性能I/O
+&lt;li&gt;MPI-IO 有许多功能，可以帮助用户获得高性能 I/O
 &lt;ul&gt;
 &lt;li&gt;支持非连续性访问
 &lt;ul&gt;
@@ -881,50 +841,37 @@
 &lt;li&gt;文件视图&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;集合I/O&lt;/li&gt;
+&lt;li&gt;集合 I/O&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;用户应该根据应用程序I/O特性来选择适合的I/O访问模式实现&lt;/li&gt;
-&lt;li&gt;同时，MPI-IO不是实现并行I/O的唯一选择。目前已有一些更高级的库可代替MPI-IO
+&lt;li&gt;用户应该根据应用程序 I/O 特性来选择适合的 I/O 访问模式实现&lt;/li&gt;
+&lt;li&gt;同时，MPI-IO 不是实现并行 I/O 的唯一选择。目前已有一些更高级的库可代替 MPI-IO
 &lt;ul&gt;
 &lt;li&gt;HDF5、netCDF&amp;hellip;&amp;hellip;&lt;/li&gt;
-&lt;li&gt;这些库都是基于MPI-IO实现&lt;/li&gt;
+&lt;li&gt;这些库都是基于 MPI-IO 实现&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 </description>
         </item>
         <item>
-        <title>MPI与并行计算（四）：数据类型</title>
+        <title>MPI 与并行计算（四）：数据类型</title>
         <link>https://cuterwrite.top/p/mpi-tutorial/4/</link>
         <pubDate>Thu, 20 Jul 2023 01:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/mpi-tutorial/4/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp" alt="Featured image of post MPI与并行计算（四）：数据类型" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E5%9B%9B%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B&#34; &gt;MPI与并行计算（四）：数据类型&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E9%A2%84%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B&#34; &gt;1. 预定义数据类型&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E6%B4%BE%E7%94%9F%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B&#34; &gt;2. 派生数据类型&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;mpi与并行计算四数据类型&#34;&gt;MPI与并行计算（四）：数据类型&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp" alt="Featured image of post MPI 与并行计算（四）：数据类型" /&gt;&lt;h1 id=&#34;mpi-与并行计算四数据类型&#34;&gt;MPI 与并行计算（四）：数据类型&lt;/h1&gt;
 &lt;h2 id=&#34;1-预定义数据类型&#34;&gt;1. 预定义数据类型&lt;/h2&gt;
-&lt;p&gt;MPI支持异构计算(Heterogeneous Computing)，它指在不同计算机系统上运行程序，每台计算可能有不同生产厂商，不同操作系统。
-MPI通过提供预定义数据类型来解决异构计算中的互操作性问题，建立它与具体语言的对应关系。&lt;/p&gt;
+&lt;p&gt;MPI 支持异构计算(Heterogeneous Computing)，它指在不同计算机系统上运行程序，每台计算可能有不同生产厂商，不同操作系统。
+MPI 通过提供预定义数据类型来解决异构计算中的互操作性问题，建立它与具体语言的对应关系。&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI中预定义的数据类型如下：&lt;/li&gt;
+&lt;li&gt;MPI 中预定义的数据类型如下：&lt;/li&gt;
 &lt;/ul&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
-&lt;th style=&#34;text-align:left&#34;&gt;MPI数据类型(C语言绑定)&lt;/th&gt;
-&lt;th style=&#34;text-align:left&#34;&gt;C语言数据类型&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;MPI 数据类型(C 语言绑定)&lt;/th&gt;
+&lt;th style=&#34;text-align:left&#34;&gt;C 语言数据类型&lt;/th&gt;
 &lt;/tr&gt;
 &lt;/thead&gt;
 &lt;tbody&gt;
@@ -982,7 +929,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
-&lt;p&gt;但是，对于点对点通信，仅仅使用包含一系列相同基本数据类型的缓冲区是不够的。我们经常要传递包含不同数据类型值的信息（例如一个整数变量count，然后是一串实数）；并且我们经常要发送不连续的数据（例如，矩阵的一个子块）。&lt;/p&gt;
+&lt;p&gt;但是，对于点对点通信，仅仅使用包含一系列相同基本数据类型的缓冲区是不够的。我们经常要传递包含不同数据类型值的信息（例如一个整数变量 count，然后是一串实数）；并且我们经常要发送不连续的数据（例如，矩阵的一个子块）。&lt;/p&gt;
 &lt;p&gt;OpenMPI 为发送非连续数据提供 pack/unpack 函数。用户在发送数据前要明确地将数据打包到连续的缓冲区中，并在接收数据后将其从连续的缓冲区中解包。虽然使用这些函数可以实现非连续数据的发送，但是这种方式不够灵活，而且效率低下。不过为了与以前的库或代码兼容，下面提供了这两个函数的使用方法。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1022,7 +969,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例1：Pack/Unpack&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 1：Pack/Unpack&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1094,18 +1041,18 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;string.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;stdlib.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;#34;mpi.h&amp;#34; &lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;#34;mpi.h&amp;#34;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define MASTER 0
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#define STRLEN 25
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;*&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[])&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                    
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                   
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;position&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;                 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;position&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;message&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;BUFSIZ&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;       
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;message&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;BUFSIZ&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt;  &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;          &lt;span class=&#34;c1&#34;&gt;//VALUE TO SEND
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;STRLEN&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;  &lt;span class=&#34;c1&#34;&gt;//ASSIGNED NAME
@@ -1116,7 +1063,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;nf&#34;&gt;MPI_Comm_rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MASTER&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;sprintf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;s&#34;&gt;&amp;#34;My Name&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;param&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
@@ -1147,7 +1094,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Unpack&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;message&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;BUFSIZ&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;position&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;param&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;	       &lt;span class=&#34;n&#34;&gt;MPI_INT&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rank %d:&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\t&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;%d %.1f %s&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;param&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rank %d:&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\t&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;%d %.1f %s&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;param&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;value&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;name&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;nf&#34;&gt;MPI_Finalize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
@@ -1158,7 +1105,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;2-派生数据类型&#34;&gt;2. 派生数据类型&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI提供了全面而强大的 &lt;strong&gt;构造函数(Constructor Function)&lt;/strong&gt; 来定义派生数据类型。派生数据类型是一种抽象的数据结构，可以用来描述数据的组织形式，而不是数据本身。&lt;/li&gt;
+&lt;li&gt;MPI 提供了全面而强大的 &lt;strong&gt;构造函数(Constructor Function)&lt;/strong&gt; 来定义派生数据类型。派生数据类型是一种抽象的数据结构，可以用来描述数据的组织形式，而不是数据本身。&lt;/li&gt;
 &lt;li&gt;派生数据类型可以用类型图来描述，这是一种通用的类型描述方法，它是一系列二元组&amp;lt;基类型，偏移&amp;gt;的集合，可以表示成如下格式：&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1166,25 +1113,19 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;lt;基类型1，偏移1&amp;gt;，&amp;lt;基类型2，偏移2&amp;gt;，...，&amp;lt;基类型n，偏移n&amp;gt;
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&amp;lt;基类型 1，偏移 1&amp;gt;，&amp;lt;基类型 2，偏移 2&amp;gt;，...，&amp;lt;基类型 n，偏移 n&amp;gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;在派生数据类型中，基类型可以是任何MPI预定义数据类型，也可以是其它的派生数据类型，即支持数据类型的嵌套定义。&lt;/p&gt;
+&lt;p&gt;在派生数据类型中，基类型可以是任何 MPI 预定义数据类型，也可以是其它的派生数据类型，即支持数据类型的嵌套定义。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;如图，阴影部分是基类型所占用的空间，其它空间可以是特意留下的，也可以是为了方便数据对齐。
-&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720143120.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720143120&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720143120.webp&#34;
+         alt=&#34;20230720143120&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;基类型指出了该类型图中包括哪些基本的数据类型，而偏移则指出该基类型在整个类型图中的起始位置，基类型可以是预定义类型或派生类型，偏移可正可负，没有递增或递减的顺序要求，而一个类型图中包括的所有基类型的集合称为某类型的类型表，表示为：&lt;/p&gt;
@@ -1195,12 +1136,12 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
 &lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;类型表={基类型1，基类型2，...，基类型n}
+&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-text&#34; data-lang=&#34;text&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;类型表={基类型 1，基类型 2，...，基类型 n}
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;将类型图和一个数据缓冲区的基地址结合起来 可以说明一个通信缓冲区内的数据分布情况&lt;/li&gt;
-&lt;li&gt;预定义数据类型是通用数据类型的特例，比如MPI_INT是一个预先定义好了的数据类型句柄，其类型图为&lt;code&gt;{(int, 0)}&lt;/code&gt;，有一个基类型入口项int和偏移0，其它的基本数据类型与此相似，数据类型的&lt;strong&gt;跨度&lt;/strong&gt;被定义为&lt;strong&gt;该数据类型的类型图中从第一个基类型到最后一个基类型间的距离&lt;/strong&gt;&lt;/li&gt;
+&lt;li&gt;预定义数据类型是通用数据类型的特例，比如 MPI_INT 是一个预先定义好了的数据类型句柄，其类型图为&lt;code&gt;{(int, 0)}&lt;/code&gt;，有一个基类型入口项 int 和偏移 0，其它的基本数据类型与此相似，数据类型的&lt;strong&gt;跨度&lt;/strong&gt;被定义为&lt;strong&gt;该数据类型的类型图中从第一个基类型到最后一个基类型间的距离&lt;/strong&gt;&lt;/li&gt;
 &lt;li&gt;即如果某一个类型的类型图为:&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -1249,10 +1190,10 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;p&gt;由于不同的类型有不同的对齐位置的要求 e(extent)就是&lt;strong&gt;能够使类型图的跨度满足该类型的类型表中的所有的类型都能达到下一个对齐要求所需要的最小非负整数值&lt;/strong&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;假设&lt;code&gt;type={(double, 0), (char, 8)}&lt;/code&gt;，进一步假设double型的值必须严格分配到地址为8的倍数的存储空间，则该数据类型的extent是16（(从9循环到下一个8的倍数)，一个由一个字符后面紧跟一个双精度值的数据类型,其extent也是16&lt;/p&gt;
+&lt;p&gt;假设&lt;code&gt;type={(double, 0), (char, 8)}&lt;/code&gt;，进一步假设 double 型的值必须严格分配到地址为 8 的倍数的存储空间，则该数据类型的 extent 是 16（(从 9 循环到下一个 8 的倍数)，一个由一个字符后面紧跟一个双精度值的数据类型,其 extent 也是 16&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;在MPI中，派生数据类型的构造函数有如下几种：&lt;/p&gt;
+&lt;p&gt;在 MPI 中，派生数据类型的构造函数有如下几种：&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;table&gt;
@@ -1290,16 +1231,10 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;p&gt;（1）最简单的数据类型构造函数是 &lt;code&gt;MPI_Type_contiguous&lt;/code&gt; ，它允许将数据类型复制到连续位置。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814005632.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230814005632&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814005632.webp&#34;
+         alt=&#34;20230814005632&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1317,7 +1252,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例2： MPI_Type_contiguous 的使用&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 2： MPI_Type_contiguous 的使用&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1354,21 +1289,21 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-c&#34; data-lang=&#34;c&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;#34;mpi.h&amp;#34;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;*&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[])&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;myrank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Status&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;status&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Datatype&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;type&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;buffer&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Type_contiguous&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;100&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_CHAR&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;type&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Type_commit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;type&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Comm_rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;myrank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;myrank&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;nf&#34;&gt;MPI_Send&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;buffer&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;type&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;123&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
@@ -1377,23 +1312,17 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;nf&#34;&gt;MPI_Recv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;buffer&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;type&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;123&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;status&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Finalize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;return&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;（2）函数 &lt;code&gt;MPI_Type_vector&lt;/code&gt; 是一个更通用的构造函数，它允许将数据类型复制到由等间距块组成的位置。每个块都是通过连接相同数量的旧数据类型副本来获得的。块之间的间距是旧数据类型范围的倍数。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814005859.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230814005859&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814005859.webp&#34;
+         alt=&#34;20230814005859&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1413,7 +1342,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例3： MPI_Type_vector 的使用&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 3： MPI_Type_vector 的使用&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1487,7 +1416,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Comm_size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;numtasks&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Type_vector&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;SIZE&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/*num of element in a column*/&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                     &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/*one element for row*/&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                     &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/*one element for row*/&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;                    &lt;span class=&#34;n&#34;&gt;SIZE&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/*take an element each 4*/&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_FLOAT&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;columntype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Type_commit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;columntype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
@@ -1510,16 +1439,10 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;p&gt;（3）函数 &lt;code&gt;MPI_Type_index&lt;/code&gt; 允许将旧数据类型复制到一系列块中(每个块是旧数据类型的串联)，其中每个块可以包含不同数量的副本，并且具有不同的位移。所有块位移都是旧类型范围的倍数。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814010438.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230814010438&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814010438.webp&#34;
+         alt=&#34;20230814010438&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1539,7 +1462,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例4： MPI_Type_indexed 的使用&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 4： MPI_Type_indexed 的使用&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1594,7 +1517,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;numtasks&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;source&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;dest&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;tag&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blocklengths&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;displacements&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;a&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;16&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;&lt;span class=&#34;mf&#34;&gt;1.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;2.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;3.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;4.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;5.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;6.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;7.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;8.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;9.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;10.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;11.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;12.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;13.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;14.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;15.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;16.0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;};&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;NELEMENTS&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;NELEMENTS&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Status&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;stat&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Datatype&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;indextype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;   &lt;span class=&#34;c1&#34;&gt;// required variable
@@ -1607,13 +1530,13 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;blocklengths&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;cm&#34;&gt;/*take 2 elemnets from the array*/&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;displacements&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;5&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/*start from the element index 5 the first block that is 6.0 */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;displacements&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;12&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;&lt;span class=&#34;cm&#34;&gt;/*start from the element index 12  the first block that is 13.0 */&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;c1&#34;&gt;// create indexed derived data type
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Type_indexed&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;blocklengths&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;displacements&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_FLOAT&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;indextype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Type_commit&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;indextype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;     &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;numtasks&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;     &lt;span class=&#34;k&#34;&gt;for&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;numtasks&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;++&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;      &lt;span class=&#34;c1&#34;&gt;// task 0 sends one element of indextype to all tasks
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;        &lt;span class=&#34;n&#34;&gt;MPI_Send&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;a&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;indextype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;i&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;tag&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;     &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
@@ -1622,24 +1545,18 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Recv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;NELEMENTS&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_FLOAT&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;source&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;tag&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;stat&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;rank= %d  b= %3.1f %3.1f %3.1f %3.1f %3.1f %3.1f&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;          &lt;span class=&#34;n&#34;&gt;rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;3&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;4&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;],&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;b&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;5&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;]);&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;c1&#34;&gt;// free datatype when done using it
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Type_free&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;indextype&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;n&#34;&gt;MPI_Finalize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;   &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;（4）&lt;code&gt;MPI_Type_create_struct&lt;/code&gt;是最通用的类型构造函数。允许程序员定义由组件数据类型的完全定义的映射形成的新数据类型。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814010602.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230814010602&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;（4）&lt;code&gt;MPI_Type_create_struct&lt;/code&gt; 是最通用的类型构造函数。允许程序员定义由组件数据类型的完全定义的映射形成的新数据类型。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230814010602.webp&#34;
+         alt=&#34;20230814010602&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1659,7 +1576,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例5：MPI_Type_create_struct 的使用&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 5：MPI_Type_create_struct 的使用&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -1819,31 +1736,12 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;</description>
         </item>
         <item>
-        <title>MPI与并行计算（三）：集合通信</title>
+        <title>MPI 与并行计算（三）：集合通信</title>
         <link>https://cuterwrite.top/p/mpi-tutorial/3/</link>
         <pubDate>Wed, 19 Jul 2023 15:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/mpi-tutorial/3/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp" alt="Featured image of post MPI与并行计算（三）：集合通信" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%B8%89%E9%9B%86%E5%90%88%E9%80%9A%E4%BF%A1&#34; &gt;MPI与并行计算（三）：集合通信&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E5%AE%9A%E4%B9%89&#34; &gt;1. 定义&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E9%9B%86%E5%90%88%E9%80%9A%E4%BF%A1%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD&#34; &gt;2. 集合通信实现的功能&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E4%B8%80%E5%AF%B9%E5%A4%9A%E9%80%9A%E4%BF%A1%E5%B9%BF%E6%92%AD&#34; &gt;3. 一对多通信：广播&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E5%A4%9A%E5%AF%B9%E4%B8%80%E9%80%9A%E4%BF%A1%E6%94%B6%E9%9B%86&#34; &gt;4. 多对一通信：收集&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E4%B8%80%E5%AF%B9%E5%A4%9A%E9%80%9A%E4%BF%A1%E6%95%A3%E6%92%AD&#34; &gt;5. 一对多通信：散播&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-%E8%81%9A%E9%9B%86&#34; &gt;6. 聚合&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-%E5%90%8C%E6%AD%A5&#34; &gt;7. 同步&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#8-%E8%A7%84%E7%BA%A6&#34; &gt;8. 规约&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;mpi与并行计算三集合通信&#34;&gt;MPI与并行计算（三）：集合通信&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp" alt="Featured image of post MPI 与并行计算（三）：集合通信" /&gt;&lt;h1 id=&#34;mpi-与并行计算三集合通信&#34;&gt;MPI 与并行计算（三）：集合通信&lt;/h1&gt;
 &lt;h2 id=&#34;1-定义&#34;&gt;1. 定义&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;集合通信（Collective Communication）&lt;/strong&gt;：是一个进程组中的所有进程都参加的全局通信操作。&lt;/li&gt;
@@ -1858,56 +1756,32 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;ul&gt;
 &lt;li&gt;Broadcast&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/bcast_p2p.gif&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;bcast_p2p&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/bcast_p2p.gif&#34;
+         alt=&#34;bcast_p2p&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
 &lt;li&gt;Scatter&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/scatter.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;scatter&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/scatter.webp&#34;
+         alt=&#34;scatter&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
 &lt;li&gt;Gather&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/gather.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;gather&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/gather.webp&#34;
+         alt=&#34;gather&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;ul&gt;
 &lt;li&gt;AllGather&lt;/li&gt;
 &lt;li&gt;Alltoall&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720003014.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720003014&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720003014.webp&#34;
+         alt=&#34;20230720003014&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;h2 id=&#34;2-集合通信实现的功能&#34;&gt;2. 集合通信实现的功能&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -1934,7 +1808,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Gatherv&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Gather的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Gather 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
@@ -1944,7 +1818,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Allgatherv&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Allgather的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Allgather 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
@@ -1954,7 +1828,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Scatterv&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Scatter的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Scatter 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
@@ -1964,7 +1838,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;通信&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Alltoallv&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Alltoall的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Alltoall 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;聚合&lt;/td&gt;
@@ -1974,7 +1848,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;聚合&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Allreduce&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Reduce的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Reduce 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;聚合&lt;/td&gt;
@@ -1984,7 +1858,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;聚合&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Reduce_scatter&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI_Reduce的一般化&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI_Reduce 的一般化&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;同步&lt;/td&gt;
@@ -1998,10 +1872,10 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;p&gt;通信：集合通信，按照通信方向的不同，又可以分为三种：一对多通信，多对一通信和多对多通信。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;一对多通信：一个进程向其它所有的进程发送消息，这个负责发送消息的进程叫做Root进程。&lt;/p&gt;
+&lt;p&gt;一对多通信：一个进程向其它所有的进程发送消息，这个负责发送消息的进程叫做 Root 进程。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;多对一通信：一个进程负责从其它所有的进程接收消息，这个接收的进程也叫做Root进程。&lt;/p&gt;
+&lt;p&gt;多对一通信：一个进程负责从其它所有的进程接收消息，这个接收的进程也叫做 Root 进程。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;多对多通信：每一个进程都向其它所有的进程发送或者接收消息。&lt;/p&gt;
@@ -2015,7 +1889,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例1：广播&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 1：广播&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2085,9 +1959,9 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;广播的特点
 &lt;ul&gt;
-&lt;li&gt;标号为Root的进程发送相同的消息给通信域Comm中的所有进程。&lt;/li&gt;
+&lt;li&gt;标号为 Root 的进程发送相同的消息给通信域 Comm 中的所有进程。&lt;/li&gt;
 &lt;li&gt;消息的内容如同点对点通信一样由三元组&amp;lt;Address, Count, Datatype&amp;gt;标识。&lt;/li&gt;
-&lt;li&gt;对Root进程来说，这个三元组既定义了发送缓冲也定义了接收缓冲。对其它进程来说，这个三元组只定义了接收缓冲&lt;/li&gt;
+&lt;li&gt;对 Root 进程来说，这个三元组既定义了发送缓冲也定义了接收缓冲。对其它进程来说，这个三元组只定义了接收缓冲&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -2095,21 +1969,15 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;ul&gt;
 &lt;li&gt;收集是多对一通信的典型例子，其调用格式为：&lt;code&gt;MPI_Gather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720004519.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720004519&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720004519.webp&#34;
+         alt=&#34;20230720004519&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例2：收集&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 2：收集&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2211,9 +2079,9 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;收集的特点
 &lt;ul&gt;
-&lt;li&gt;在收集操作中，Root进程从进程域Comm的所有进程(包括它自已)接收消息。&lt;/li&gt;
-&lt;li&gt;这n个消息按照进程的标识rank排序进行拼接，然后存放在Root进程的接收缓冲中。&lt;/li&gt;
-&lt;li&gt;接收缓冲由三元组&amp;lt;RecvAddress, RecvCount, RecvDatatype&amp;gt;标识，发送缓冲由三元组&amp;lt;SendAddress, SendCount, SendDatatype&amp;gt;标识，所有非Root进程忽略接收缓冲。&lt;/li&gt;
+&lt;li&gt;在收集操作中，Root 进程从进程域 Comm 的所有进程(包括它自已)接收消息。&lt;/li&gt;
+&lt;li&gt;这 n 个消息按照进程的标识 rank 排序进行拼接，然后存放在 Root 进程的接收缓冲中。&lt;/li&gt;
+&lt;li&gt;接收缓冲由三元组&amp;lt;RecvAddress, RecvCount, RecvDatatype&amp;gt;标识，发送缓冲由三元组&amp;lt;SendAddress, SendCount, SendDatatype&amp;gt;标识，所有非 Root 进程忽略接收缓冲。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -2221,21 +2089,15 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;ul&gt;
 &lt;li&gt;散播是一个一对多操作，其调用格式为：&lt;code&gt;MPI_Scatter(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, int root, MPI_Comm comm)&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720005711.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230720005711&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720005711.webp&#34;
+         alt=&#34;20230720005711&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例3：散播&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 3：散播&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2329,38 +2191,38 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;散播的特点
 &lt;ul&gt;
-&lt;li&gt;Scatter执行与Gather相反的操作。&lt;/li&gt;
-&lt;li&gt;Root进程给所有进程(包括它自已)发送一个不同的消息，这n (n为进程域comm包括的进程个数)个消息在Root进程的发送缓冲区中按进程标识的顺序有序地存放。&lt;/li&gt;
-&lt;li&gt;每个接收缓冲由三元组&amp;lt;RecvAddress, RecvCount, RecvDatatype&amp;gt;标识，所有的非Root进程忽略发送缓冲。对Root进程，发送缓冲由三元组&amp;lt;SendAddress,SendCount, SendDatatype&amp;gt;标识。&lt;/li&gt;
+&lt;li&gt;Scatter 执行与 Gather 相反的操作。&lt;/li&gt;
+&lt;li&gt;Root 进程给所有进程(包括它自已)发送一个不同的消息，这 n (n 为进程域 comm 包括的进程个数)个消息在 Root 进程的发送缓冲区中按进程标识的顺序有序地存放。&lt;/li&gt;
+&lt;li&gt;每个接收缓冲由三元组&amp;lt;RecvAddress, RecvCount, RecvDatatype&amp;gt;标识，所有的非 Root 进程忽略发送缓冲。对 Root 进程，发送缓冲由三元组&amp;lt;SendAddress,SendCount, SendDatatype&amp;gt;标识。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;6-聚合&#34;&gt;6. 聚合&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;集合通信的聚合功能使得MPI进行通信的同时完成一定的计算。&lt;/li&gt;
-&lt;li&gt;MPI聚合的功能分三步实现：
+&lt;li&gt;集合通信的聚合功能使得 MPI 进行通信的同时完成一定的计算。&lt;/li&gt;
+&lt;li&gt;MPI 聚合的功能分三步实现：
 &lt;ul&gt;
 &lt;li&gt;首先是通信的功能，即消息根据要求发送到目标进程，目标进程也已经收到了各自需要的消息&lt;/li&gt;
 &lt;li&gt;然后是对消息的处理，即执行计算功能&lt;/li&gt;
 &lt;li&gt;最后把处理结果放入指定的接收缓冲区&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;MPI提供了两种类型的聚合操作: 归约(Reduce)和扫描(Scan)。&lt;/li&gt;
+&lt;li&gt;MPI 提供了两种类型的聚合操作: 归约(Reduce)和扫描(Scan)。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;7-同步&#34;&gt;7. 同步&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;同步功能用来协调各个进程之间的进度和步伐 。目前MPI的实现中支持一个同步操作，即&lt;strong&gt;路障同步(Barrier)&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;同步功能用来协调各个进程之间的进度和步伐 。目前 MPI 的实现中支持一个同步操作，即&lt;strong&gt;路障同步(Barrier)&lt;/strong&gt;。&lt;/li&gt;
 &lt;li&gt;路障同步的调用格式为：&lt;code&gt;MPI_Barrier(MPI_Comm comm)&lt;/code&gt;
 &lt;ul&gt;
-&lt;li&gt;在路障同步操作&lt;code&gt;MPI_Barrier(Comm)&lt;/code&gt;中，通信域Comm中的所有进程相互同步。&lt;/li&gt;
+&lt;li&gt;在路障同步操作&lt;code&gt;MPI_Barrier(Comm)&lt;/code&gt;中，通信域 Comm 中的所有进程相互同步。&lt;/li&gt;
 &lt;li&gt;在该操作调用返回后，可以保证组内所有的进程都已经执行完了调用之前的所有操作，可以开始该调用后的操作。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;8-规约&#34;&gt;8. 规约&lt;/h2&gt;
-&lt;p&gt;MPI_REDUCE将组内每个进程输入缓冲区中的数据按给定的操作op进行运算，并将其结果返回到序列号为root的进程的输出缓冲区中，输入缓冲区由参数sendbuf、count和datatype定义，输出缓冲区由参数recvbuf count和datatype定义，要求两者的元素数目和类型都必须相同，因为所有组成员都用同样的参数count、datatype、op、root和comm来调用此例程 故而所有进程都提供长度相同、元素类型相同的输入和输出缓冲区，每个进程可能提供一个元素或一系列元素 组合操作依次针对每个元素进行。&lt;/p&gt;
-&lt;p&gt;操作op始终被认为是可结合的 并且所有MPI定义的操作被认为是可交换的，用户自定义的操作被认为是可结合的，但可以不是可交换的。MPI中已经定义好的一些操作,它们是为函数&lt;code&gt;MPI_Reduce&lt;/code&gt;和一些其他的相关函数,如&lt;code&gt;MPI_Allreduce&lt;/code&gt;、&lt;code&gt;MPI_Reduce_scatter&lt;/code&gt;和&lt;code&gt;MPI_Scan&lt;/code&gt;而定义的 这些操作用来设定相应的op。&lt;/p&gt;
-&lt;p&gt;MPI预定的归约操作如下:&lt;/p&gt;
+&lt;p&gt;MPI_REDUCE 将组内每个进程输入缓冲区中的数据按给定的操作 op 进行运算，并将其结果返回到序列号为 root 的进程的输出缓冲区中，输入缓冲区由参数 sendbuf、count 和 datatype 定义，输出缓冲区由参数 recvbuf count 和 datatype 定义，要求两者的元素数目和类型都必须相同，因为所有组成员都用同样的参数 count、datatype、op、root 和 comm 来调用此例程 故而所有进程都提供长度相同、元素类型相同的输入和输出缓冲区，每个进程可能提供一个元素或一系列元素 组合操作依次针对每个元素进行。&lt;/p&gt;
+&lt;p&gt;操作 op 始终被认为是可结合的 并且所有 MPI 定义的操作被认为是可交换的，用户自定义的操作被认为是可结合的，但可以不是可交换的。MPI 中已经定义好的一些操作,它们是为函数&lt;code&gt;MPI_Reduce&lt;/code&gt; 和一些其他的相关函数,如&lt;code&gt;MPI_Allreduce&lt;/code&gt;、&lt;code&gt;MPI_Reduce_scatter&lt;/code&gt; 和&lt;code&gt;MPI_Scan&lt;/code&gt; 而定义的 这些操作用来设定相应的 op。&lt;/p&gt;
+&lt;p&gt;MPI 预定的归约操作如下:&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -2413,7 +2275,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例4：计算pi值&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 4：计算 pi 值&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2511,7 +2373,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;nf&#34;&gt;scanf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;%d&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;n&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;startwtime&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;MPI_Wtime&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;cm&#34;&gt;/* 将n广播给所有进程 */&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;cm&#34;&gt;/* 将 n 广播给所有进程 */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Bcast&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;n&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_INT&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;cm&#34;&gt;/* 矩形宽度 */&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;h&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;1.0&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;/&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;double&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;n&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
@@ -2542,51 +2404,31 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;</description>
         </item>
         <item>
-        <title>MPI与并行计算（二）：点到点通信</title>
+        <title>MPI 与并行计算（二）：点到点通信</title>
         <link>https://cuterwrite.top/p/mpi-tutorial/2/</link>
         <pubDate>Wed, 19 Jul 2023 13:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/mpi-tutorial/2/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp" alt="Featured image of post MPI与并行计算（二）：点到点通信" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%BA%8C%E7%82%B9%E5%88%B0%E7%82%B9%E9%80%9A%E4%BF%A1&#34; &gt;MPI与并行计算（二）：点到点通信&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-mpi%E7%9A%84%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8F&#34; &gt;1. MPI的通信模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-%E6%A0%87%E5%87%86%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8Fmpi_send%E5%92%8Cmpi_recv&#34; &gt;2. 标准通信模式：MPI_Send和MPI_Recv&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E7%BC%93%E5%86%B2%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8F&#34; &gt;3. 缓冲通信模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E5%B0%B1%E7%BB%AA%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8F&#34; &gt;4. 就绪通信模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-%E5%90%8C%E6%AD%A5%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%BC%8F&#34; &gt;5. 同步通信模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-%E9%98%BB%E5%A1%9E%E9%80%9A%E4%BF%A1%E4%B8%8E%E9%9D%9E%E9%98%BB%E5%A1%9E%E9%80%9A%E4%BF%A1&#34; &gt;6. 阻塞通信与非阻塞通信&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-%E9%9D%9E%E9%98%BB%E5%A1%9E%E7%9A%84%E5%8F%91%E9%80%81%E5%92%8C%E6%8E%A5%E6%94%B6&#34; &gt;7. 非阻塞的发送和接收&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#8-%E6%8E%A2%E6%B5%8Bprobe&#34; &gt;8. 探测Probe&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#9-%E6%80%BB%E7%BB%93&#34; &gt;9. 总结&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;mpi与并行计算二点到点通信&#34;&gt;MPI与并行计算（二）：点到点通信&lt;/h1&gt;
-&lt;h2 id=&#34;1-mpi的通信模式&#34;&gt;1. MPI的通信模式&lt;/h2&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp" alt="Featured image of post MPI 与并行计算（二）：点到点通信" /&gt;&lt;h1 id=&#34;mpi-与并行计算二点到点通信&#34;&gt;MPI 与并行计算（二）：点到点通信&lt;/h1&gt;
+&lt;h2 id=&#34;1-mpi-的通信模式&#34;&gt;1. MPI 的通信模式&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;通信模式：指的是缓冲管理以及发送方和接收方之间的同步方式。&lt;/li&gt;
-&lt;li&gt;MPI支持四种通信模式：标准通信模式、缓冲通信模式、就绪通信模式和同步通信模式&lt;/li&gt;
+&lt;li&gt;MPI 支持四种通信模式：标准通信模式、缓冲通信模式、就绪通信模式和同步通信模式&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;2-标准通信模式mpi_send和mpi_recv&#34;&gt;2. 标准通信模式：MPI_Send和MPI_Recv&lt;/h2&gt;
+&lt;h2 id=&#34;2-标准通信模式mpi_send-和-mpi_recv&#34;&gt;2. 标准通信模式：MPI_Send 和 MPI_Recv&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;由MPI决定是否缓冲消息&lt;/li&gt;
-&lt;li&gt;没有足够的系统缓冲区时或出于性能的考虑， MPI可能进行直接拷贝： 仅当相应的接收开始后，发送语句才能返回&lt;/li&gt;
-&lt;li&gt;MPI缓冲消息：发送语句地相应的接收语句完成前返回&lt;/li&gt;
+&lt;li&gt;由 MPI 决定是否缓冲消息&lt;/li&gt;
+&lt;li&gt;没有足够的系统缓冲区时或出于性能的考虑， MPI 可能进行直接拷贝： 仅当相应的接收开始后，发送语句才能返回&lt;/li&gt;
+&lt;li&gt;MPI 缓冲消息：发送语句地相应的接收语句完成前返回&lt;/li&gt;
 &lt;li&gt;发送的结束 == 消息已从发送方发出，而不是滞留在发送方的系统缓冲区中&lt;/li&gt;
 &lt;li&gt;非本地的：发送操作的成功与否依赖于接收操作&lt;/li&gt;
-&lt;li&gt;理论上要求有接收进程的recv调用配合，发送函数是&lt;code&gt;MPI_Send()&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;理论上要求有接收进程的 recv 调用配合，发送函数是&lt;code&gt;MPI_Send()&lt;/code&gt;。&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例1：标准通信模式&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 1：标准通信模式&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2667,7 +2509,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;other&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;sb&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;BUF_SIZE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;rb&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;[&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;BUF_SIZE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;];&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;// 初始化MPI环境
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;// 初始化 MPI 环境
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Comm_rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;myid&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;n&#34;&gt;MPI_Comm_size&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;numprocs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
@@ -2752,15 +2594,15 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;process &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; tring receiving...
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;process &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; tring send...
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Hello World! Process &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; of &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Send buffer: 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;10&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Receive buffer: 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Send buffer:
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;10&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Receive buffer:
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Hello World! Process &lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; of &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Send buffer: 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Receive buffer: 
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;10&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Send buffer:
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;0&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;Receive buffer:
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;3&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;4&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;5&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;6&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;7&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;8&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;9&lt;/span&gt; &lt;span class=&#34;m&#34;&gt;10&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
@@ -2772,14 +2614,14 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;发送是本地的: 完成不依赖于与其匹配的接收操作。 发送的结束仅表明消息进入系统的缓冲区中，发送缓冲区可以重用，而对接收方的情况并不知道。&lt;/li&gt;
 &lt;li&gt;缓冲模式在相匹配的接收未开始的情况下，总是将送出的消息放在缓冲区内，这样发送者可以很快地继续计算,然后由系统处理放在缓冲区中的消息。&lt;/li&gt;
 &lt;li&gt;占用内存，一次内存拷贝。&lt;/li&gt;
-&lt;li&gt;函数调用形式为：&lt;code&gt;MPI_Bsend()&lt;/code&gt;。B表示缓冲，缓冲通信模式主要用于解开阻塞通信的发送与接收之间的耦合。&lt;/li&gt;
-&lt;li&gt;作用总结：通常情况下，MPI发送和接收操作是阻塞的，即发送操作会等待接收方准备好接收，接收操作会等待发送方发送数据。但是，MPI提供了一种称为缓冲区（buffering）的机制，可以使&lt;strong&gt;发送操作立即返回，而不需要等待接收方准备好&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;函数调用形式为：&lt;code&gt;MPI_Bsend()&lt;/code&gt;。B 表示缓冲，缓冲通信模式主要用于解开阻塞通信的发送与接收之间的耦合。&lt;/li&gt;
+&lt;li&gt;作用总结：通常情况下，MPI 发送和接收操作是阻塞的，即发送操作会等待接收方准备好接收，接收操作会等待发送方发送数据。但是，MPI 提供了一种称为缓冲区（buffering）的机制，可以使&lt;strong&gt;发送操作立即返回，而不需要等待接收方准备好&lt;/strong&gt;。&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例2：缓冲通信模式&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 2：缓冲通信模式&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -2871,7 +2713,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;k&#34;&gt;else&lt;/span&gt; &lt;span class=&#34;k&#34;&gt;if&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;myid&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;==&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;c1&#34;&gt;// sleep 10s 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;c1&#34;&gt;// sleep 10s
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;        &lt;span class=&#34;n&#34;&gt;std&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;::&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;this_thread&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;::&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;sleep_for&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;std&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;::&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;chrono&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;::&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;seconds&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;mi&#34;&gt;10&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;));&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;MPI_Recv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rmsg1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;7&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_CHAR&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;1&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_STATUS_IGNORE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;        &lt;span class=&#34;n&#34;&gt;MPI_Recv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;rmsg2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_DOUBLE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;0&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;2&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_STATUS_IGNORE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
@@ -2912,13 +2754,13 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;ul&gt;
 &lt;li&gt;&lt;strong&gt;发送请求仅当有匹配的接收后才能发出，否则出错&lt;/strong&gt;。在就绪模式下，系统默认与其相匹配的接收已经调用。 接收必须先于发送。&lt;/li&gt;
 &lt;li&gt;它不可以不依赖于接收方的匹配的接收请求而任意发出&lt;/li&gt;
-&lt;li&gt;其函数调用形式为：&lt;code&gt;MPI_RSend()&lt;/code&gt;。R表示就绪，仅当对方的接收操作启动并准备就绪时，才可以发送数据。&lt;/li&gt;
+&lt;li&gt;其函数调用形式为：&lt;code&gt;MPI_RSend()&lt;/code&gt;。R 表示就绪，仅当对方的接收操作启动并准备就绪时，才可以发送数据。&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例3：就绪通信模式&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 3：就绪通信模式&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3025,13 +2867,13 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;是非本地的&lt;/li&gt;
-&lt;li&gt;函数调用形式为：&lt;code&gt;MPI_Ssend()&lt;/code&gt;。S表示同步。&lt;/li&gt;
+&lt;li&gt;函数调用形式为：&lt;code&gt;MPI_Ssend()&lt;/code&gt;。S 表示同步。&lt;/li&gt;
 &lt;/ul&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例4：同步通信模式&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 4：同步通信模式&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3139,14 +2981,14 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;非阻塞通信的完成查询接口&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;非阻塞通信的&lt;strong&gt;发送&lt;/strong&gt;和&lt;strong&gt;接受&lt;/strong&gt;过程都需要同时具备以上两个要素：调用与完成。（1）”调用“按照通信方式的不同（标准、缓存、同步、就绪），有各种函数接口；（2）”完成“是重点，因为程序员需要知道非阻塞调用是否执行完成了，来做下一步的操作。&lt;/p&gt;
-&lt;p&gt;MPI为“完成”定义了一个内部变量MPI_Request request，每个request与一个在非阻塞调用发生时与该调用发生关联（这里的调用包括发送和接收）。“完成”不区分通信方式的不同，统一用MPI_Wait系列函数来完成。&lt;/p&gt;
+&lt;p&gt;MPI 为“完成”定义了一个内部变量 MPI_Request request，每个 request 与一个在非阻塞调用发生时与该调用发生关联（这里的调用包括发送和接收）。“完成”不区分通信方式的不同，统一用 MPI_Wait 系列函数来完成。&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;&lt;code&gt;MPI_Wait(MPI_Request *request)&lt;/code&gt;，均等着request执行完毕了，再往下进行&lt;/li&gt;
-&lt;li&gt;对于非重复非阻塞通信，&lt;code&gt;MPI_Wait&lt;/code&gt;系列函数调用的返回，还意味着request对象被释放了，程序员不用再显式释放request变量。&lt;/li&gt;
-&lt;li&gt;对于重复非阻塞通信，&lt;code&gt;MPI_Wait&lt;/code&gt;系列函数调用的返回，意味着将于request对象关联的非阻塞通信处于不激活状态，并不释放request&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;MPI_Wait(MPI_Request *request)&lt;/code&gt;，均等着 request 执行完毕了，再往下进行&lt;/li&gt;
+&lt;li&gt;对于非重复非阻塞通信，&lt;code&gt;MPI_Wait&lt;/code&gt; 系列函数调用的返回，还意味着 request 对象被释放了，程序员不用再显式释放 request 变量。&lt;/li&gt;
+&lt;li&gt;对于重复非阻塞通信，&lt;code&gt;MPI_Wait&lt;/code&gt; 系列函数调用的返回，意味着将于 request 对象关联的非阻塞通信处于不激活状态，并不释放 request&lt;/li&gt;
 &lt;/ol&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI_Wait会迫使进程进入“阻塞模式”。发送过程将简单地等待请求完成。如果进程在MPI_Isend之后立即等待，则Send与调用MPI_Send相同。等待MPI_WAIT和MPI_WAITANY有两种方式&lt;/li&gt;
+&lt;li&gt;MPI_Wait 会迫使进程进入“阻塞模式”。发送过程将简单地等待请求完成。如果进程在 MPI_Isend 之后立即等待，则 Send 与调用 MPI_Send 相同。等待 MPI_WAIT 和 MPI_WAITANY 有两种方式&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3160,10 +3002,10 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;前者MPI_WAIT只是等待给定请求的完成。请求一完成，就会返回一个状态为MPI_STATUS的实例。后者&lt;code&gt;MPI_Waitany&lt;/code&gt;等待一系列请求中的第一个完成的请求继续。一旦请求完成，INDEX的值被设置为存储ARRAY_OF_REQUESTS中已完成请求的索引。该调用还存储已完成请求的状态。&lt;/p&gt;
+&lt;p&gt;前者 MPI_WAIT 只是等待给定请求的完成。请求一完成，就会返回一个状态为 MPI_STATUS 的实例。后者&lt;code&gt;MPI_Waitany&lt;/code&gt; 等待一系列请求中的第一个完成的请求继续。一旦请求完成，INDEX 的值被设置为存储 ARRAY_OF_REQUESTS 中已完成请求的索引。该调用还存储已完成请求的状态。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;对于阻塞通信，如果不想跟踪此信息，可以将指向MPI_STATUS实例的指针替换为MPI_STATUS_IGNORE。&lt;/p&gt;
+&lt;p&gt;对于阻塞通信，如果不想跟踪此信息，可以将指向 MPI_STATUS 实例的指针替换为 MPI_STATUS_IGNORE。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;正如我们之前看到的，等待会阻止进程，直到请求（或某个请求）被满足。测试则是检查请求是否可以完成。如果可以，请求将自动完成并传输数据。关于等待，有两种测试等待：MPI_Test 和 MPI_Testany。它们的调用方式如下&lt;/p&gt;
@@ -3181,7 +3023,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
 &lt;li&gt;让我们从 MPI_Test 开始。至于 MPI_Wait，参数 request 和 status 并不神秘。请记住，测试是非阻塞的，因此在任何情况下，调用后进程都会继续执行。变量 flag 的作用是告诉你请求是否在测试过程中完成。如果 flag != 0 表示请求已完成&lt;/li&gt;
-&lt;li&gt;MPI_Testany现在应该是完全显而易见的。如果有任何请求可完成，它会将FLAG设置为非零值。如果是这样的话，状态和索引也被赋予一个值&lt;/li&gt;
+&lt;li&gt;MPI_Testany 现在应该是完全显而易见的。如果有任何请求可完成，它会将 FLAG 设置为非零值。如果是这样的话，状态和索引也被赋予一个值&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;7-非阻塞的发送和接收&#34;&gt;7. 非阻塞的发送和接收&lt;/h2&gt;
 &lt;ul&gt;
@@ -3190,7 +3032,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;buf: 发送缓冲区的起始地址&lt;/li&gt;
 &lt;li&gt;count: 发送数据的个数&lt;/li&gt;
 &lt;li&gt;datatype: 发送数据的类型&lt;/li&gt;
-&lt;li&gt;dest: 目标进程的rank&lt;/li&gt;
+&lt;li&gt;dest: 目标进程的 rank&lt;/li&gt;
 &lt;li&gt;tag: 消息标签&lt;/li&gt;
 &lt;li&gt;comm: 通信子&lt;/li&gt;
 &lt;li&gt;request: 非阻塞通信完成对象&lt;/li&gt;
@@ -3203,7 +3045,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例5：非阻塞通信&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 5：非阻塞通信&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3449,7 +3291,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;8-探测probe&#34;&gt;8. 探测Probe&lt;/h2&gt;
+&lt;/div&gt;&lt;h2 id=&#34;8-探测-probe&#34;&gt;8. 探测 Probe&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;探测实际上非常有用，它有很多用途，例如获取即将接收的元素数量、接收进程的 ID 和标记，或者是否真的接收到了任何信息。&lt;/li&gt;
 &lt;li&gt;用于探测的函数有两个：MPI_Probe 和 MPI_IProbe。第一个是阻塞调用，而第二个则不是。现在，MPI_Probe 只会给出与收到的下一条消息相关的 MPI_Status 值，该消息对应于某个标签和 ID。如果想探测任何类型或来自任何来源的消息接收情况，可以使用 MPI_ANY_SOURCE 和 MPI_ANY_TAG。然后，可以将生成的 MPI_Status 对象与其他函数结合使用，以获取更多信息。&lt;/li&gt;
@@ -3458,7 +3300,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例6：探测&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 6：探测&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3489,7 +3331,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-cpp&#34; data-lang=&#34;cpp&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kt&#34;&gt;void&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;probing_process&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;int_sum&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;float&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;float_sum&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;n&#34;&gt;MPI_Status&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;status&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 1- Probe the incoming message
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;  &lt;span class=&#34;n&#34;&gt;MPI_Probe&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_ANY_SOURCE&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_ANY_TAG&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;status&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;  &lt;span class=&#34;c1&#34;&gt;// 2- Get the tag and the source
@@ -3513,7 +3355,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;9-总结&#34;&gt;9. 总结&lt;/h2&gt;
-&lt;p&gt;理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的Send实际利用了MPI环境提供的默认缓冲区；Bsend实际相当于将MPI环境提供的buffer放在用户空间管理；Rsend实际相当于不要缓冲区，但发送端不能提前等待；Ssend实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为MPI环境会另起一个线程在后台做实际的消息传输，通过Wait、Test等机制与MPI进程的主线程进行通信和同步。&lt;/p&gt;
+&lt;p&gt;理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的 Send 实际利用了 MPI 环境提供的默认缓冲区；Bsend 实际相当于将 MPI 环境提供的 buffer 放在用户空间管理；Rsend 实际相当于不要缓冲区，但发送端不能提前等待；Ssend 实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为 MPI 环境会另起一个线程在后台做实际的消息传输，通过 Wait、Test 等机制与 MPI 进程的主线程进行通信和同步。&lt;/p&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -3532,7 +3374,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;td style=&#34;text-align:center&#34;&gt;标准通信&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Send&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Isend&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;MPI环境提供的默认缓冲区&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;MPI 环境提供的默认缓冲区&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;是&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;是&lt;/td&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;是&lt;/td&gt;
@@ -3573,56 +3415,37 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 </description>
         </item>
         <item>
-        <title>MPI与并行计算（一）：并行环境及编程模型</title>
+        <title>MPI 与并行计算（一）：并行环境及编程模型</title>
         <link>https://cuterwrite.top/p/mpi-tutorial/1/</link>
         <pubDate>Tue, 18 Jul 2023 00:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/mpi-tutorial/1/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp" alt="Featured image of post MPI与并行计算（一）：并行环境及编程模型" /&gt;&lt;!-- raw HTML omitted --&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;p&gt;&lt;strong&gt;Table of Contents&lt;/strong&gt;  &lt;em&gt;generated with &lt;a class=&#34;link&#34; href=&#34;https://github.com/thlorenz/doctoc&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;DocToc&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#mpi%E4%B8%8E%E5%B9%B6%E8%A1%8C%E8%AE%A1%E7%AE%97%E4%B8%80%E5%B9%B6%E8%A1%8C%E7%8E%AF%E5%A2%83%E5%8F%8A%E7%BC%96%E7%A8%8B%E6%A8%A1%E5%9E%8B&#34; &gt;MPI与并行计算（一）：并行环境及编程模型&lt;/a&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#1-%E4%BB%80%E4%B9%88%E6%98%AFmpi&#34; &gt;1. 什么是MPI&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#2-mpi%E7%9A%84%E5%8F%91%E5%B1%95%E8%BF%87%E7%A8%8B&#34; &gt;2. MPI的发展过程&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#3-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8mpi&#34; &gt;3. 为什么要用MPI&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#4-%E5%B9%B6%E8%A1%8C%E7%BC%96%E7%A8%8B%E6%A8%A1%E5%BC%8F&#34; &gt;4. 并行编程模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#5-mpi%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F&#34; &gt;5. MPI的工作模式&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#6-mpi%E6%B6%88%E6%81%AF%E4%BC%A0%E9%80%92%E9%80%9A%E4%BF%A1%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5&#34; &gt;6. MPI消息传递通信的基本概念&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#7-mpi%E7%A8%8B%E5%BA%8F%E7%BC%96%E8%AF%91%E8%BF%90%E8%A1%8C&#34; &gt;7. MPI程序编译、运行&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;#8-mpi%E7%9A%84%E5%9B%9B%E4%B8%AA%E5%9F%BA%E6%9C%AC%E6%8E%A5%E5%8F%A3&#34; &gt;8. MPI的四个基本接口&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;!-- raw HTML omitted --&gt;
-&lt;h1 id=&#34;mpi与并行计算一并行环境及编程模型&#34;&gt;MPI与并行计算（一）：并行环境及编程模型&lt;/h1&gt;
-&lt;h2 id=&#34;1-什么是mpi&#34;&gt;1. 什么是MPI&lt;/h2&gt;
-&lt;p&gt;Massage Passing Interface：是消息传递函数库的标准规范，由MPI论坛开发，支持Fortran和C。&lt;/p&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp" alt="Featured image of post MPI 与并行计算（一）：并行环境及编程模型" /&gt;&lt;h1 id=&#34;mpi-与并行计算一并行环境及编程模型&#34;&gt;MPI 与并行计算（一）：并行环境及编程模型&lt;/h1&gt;
+&lt;h2 id=&#34;1-什么是-mpi&#34;&gt;1. 什么是 MPI&lt;/h2&gt;
+&lt;p&gt;Massage Passing Interface：是消息传递函数库的标准规范，由 MPI 论坛开发，支持 Fortran 和 C。&lt;/p&gt;
 &lt;ol&gt;
-&lt;li&gt;一种新的库描述，不是一种语言。共有上百个函数调用接口，在Fortran和C语言中可以直接对这些函数进行调用。&lt;/li&gt;
-&lt;li&gt;MPI是一种标准或规范的代表，而不是特指某一个对它的具体实现。迄今为止所有的并行计算机制造商都提供对MPI的支持。
+&lt;li&gt;一种新的库描述，不是一种语言。共有上百个函数调用接口，在 Fortran 和 C 语言中可以直接对这些函数进行调用。&lt;/li&gt;
+&lt;li&gt;MPI 是一种标准或规范的代表，而不是特指某一个对它的具体实现。迄今为止所有的并行计算机制造商都提供对 MPI 的支持。
 &lt;ul&gt;
 &lt;li&gt;Intel MPI&lt;/li&gt;
 &lt;li&gt;OpenMPI&lt;/li&gt;
 &lt;li&gt;mpich&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;MPI是一种消息传递编程模型，并成为这种编程模型的代表和事实上的标准。&lt;/li&gt;
+&lt;li&gt;MPI 是一种消息传递编程模型，并成为这种编程模型的代表和事实上的标准。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;h2 id=&#34;2-mpi的发展过程&#34;&gt;2. MPI的发展过程&lt;/h2&gt;
+&lt;h2 id=&#34;2-mpi-的发展过程&#34;&gt;2. MPI 的发展过程&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;MPI 1.1：1995
 &lt;ul&gt;
-&lt;li&gt;MPICH:是MPI最流行的非专利实现,由Argonne国家实验室和密西西比州立大学联合开发,具有更好的可移植性.&lt;/li&gt;
+&lt;li&gt;MPICH:是 MPI 最流行的非专利实现,由 Argonne 国家实验室和密西西比州立大学联合开发,具有更好的可移植性.&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;MPI 1.2~2.0：动态进程, 并行 I/O, 支持F90和C++(1997)&lt;/li&gt;
+&lt;li&gt;MPI 1.2~2.0：动态进程, 并行 I/O, 支持 F90 和 C++(1997)&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;3-为什么要用mpi&#34;&gt;3. 为什么要用MPI&lt;/h2&gt;
+&lt;h2 id=&#34;3-为什么要用-mpi&#34;&gt;3. 为什么要用 MPI&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;高可移植性：MPI已在IBM PC机上、 MS Windows上、所有主要的Unix工作站上和所有主流的并行机上得到实现。使用MPI作消息传递的C或Fortran并行程序可不加改变地运行在IBMPC、 MS Windows、 Unix工作站、以及各种并行机上。&lt;/li&gt;
+&lt;li&gt;高可移植性：MPI 已在 IBM PC 机上、 MS Windows 上、所有主要的 Unix 工作站上和所有主流的并行机上得到实现。使用 MPI 作消息传递的 C 或 Fortran 并行程序可不加改变地运行在 IBMPC、 MS Windows、 Unix 工作站、以及各种并行机上。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;4-并行编程模式&#34;&gt;4. 并行编程模式&lt;/h2&gt;
 &lt;ul&gt;
@@ -3635,19 +3458,19 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;进程之间需要使用协同操作完成数据传递，如发送操作必须要求有与之配对的接收操作&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;共享变量：并行代码分别驻留在不同的处理器上，通过读写公共存储器中的共享变量进行同步和通信，一般适合在多核系统，SMP系统上运行。分布式存储系统可以在运行时库支持下通过自定义机制以共享变量的方式运行。&lt;/li&gt;
+&lt;li&gt;共享变量：并行代码分别驻留在不同的处理器上，通过读写公共存储器中的共享变量进行同步和通信，一般适合在多核系统，SMP 系统上运行。分布式存储系统可以在运行时库支持下通过自定义机制以共享变量的方式运行。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;5-mpi的工作模式&#34;&gt;5. MPI的工作模式&lt;/h2&gt;
+&lt;h2 id=&#34;5-mpi-的工作模式&#34;&gt;5. MPI 的工作模式&lt;/h2&gt;
 &lt;ol&gt;
 &lt;li&gt;运行方式：以串行方式编写，运行时分别执行不同的块。&lt;/li&gt;
 &lt;li&gt;资源分配：所有程序元素只要没有进行显示区分，无论是代码、函数、全局变量还是局部变量，都默认的由全部进程共同拥有，所有进程看到的虽然是相同的名字，但在“物理”上却彼此无关。&lt;/li&gt;
-&lt;li&gt;显示区分：就是指程序员需在程序设计阶段通过显示的条件判断来指定在不同进程上运行不同的代码块。这正是MPI程序的特点，也恰好是难点之一。&lt;/li&gt;
+&lt;li&gt;显示区分：就是指程序员需在程序设计阶段通过显示的条件判断来指定在不同进程上运行不同的代码块。这正是 MPI 程序的特点，也恰好是难点之一。&lt;/li&gt;
 &lt;/ol&gt;
 
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;一个典型的MPI程序代码模式如下：&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;一个典型的 MPI 程序代码模式如下：&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3683,40 +3506,34 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;6-mpi消息传递通信的基本概念&#34;&gt;6. MPI消息传递通信的基本概念&lt;/h2&gt;
+&lt;/div&gt;&lt;h2 id=&#34;6-mpi-消息传递通信的基本概念&#34;&gt;6. MPI 消息传递通信的基本概念&lt;/h2&gt;
 &lt;ul&gt;
 &lt;li&gt;
-&lt;p&gt;消息：一个消息可以比做一个封信。需要定义消息的内容以及消息的发送与接收者。前者称为消息的缓冲(Message Buffer)，后者称为消息信封(Message Envelop)。在MPI中，消息缓冲由三元组&amp;lt;起始地址，数据个数，数据类型&amp;gt;来标识，而消息信封则是由三元组&amp;lt;源/目标进程，消息标签，通讯域&amp;gt;来标识。如下为&lt;code&gt;MPI_Send&lt;/code&gt;的消息缓冲和消息信封。
-&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230718183355.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230718183355&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;p&gt;消息：一个消息可以比做一个封信。需要定义消息的内容以及消息的发送与接收者。前者称为消息的缓冲(Message Buffer)，后者称为消息信封(Message Envelop)。在 MPI 中，消息缓冲由三元组&amp;lt;起始地址，数据个数，数据类型&amp;gt;来标识，而消息信封则是由三元组&amp;lt;源/目标进程，消息标签，通讯域&amp;gt;来标识。如下为&lt;code&gt;MPI_Send&lt;/code&gt; 的消息缓冲和消息信封。
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230718183355.webp&#34;
+         alt=&#34;20230718183355&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;缓冲区：MPI环境定义了3种缓冲区：应用缓冲区，系统缓冲区和用户向系统注册的缓冲区。&lt;/p&gt;
+&lt;p&gt;缓冲区：MPI 环境定义了 3 种缓冲区：应用缓冲区，系统缓冲区和用户向系统注册的缓冲区。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;应用缓冲区：保存将要发送或接收的消息内容即上述的消息缓冲。&lt;/li&gt;
-&lt;li&gt;系统缓冲区：MPI环境为通信所准备的存储空间。&lt;/li&gt;
-&lt;li&gt;用户缓冲区：指用户向系统注册的缓冲区，用户使用某些API(如&lt;code&gt;MPI_Bsend&lt;/code&gt;)时，在程序中显示申请的存储空间，然后注册到MPI环境中供通信所用。&lt;/li&gt;
+&lt;li&gt;系统缓冲区：MPI 环境为通信所准备的存储空间。&lt;/li&gt;
+&lt;li&gt;用户缓冲区：指用户向系统注册的缓冲区，用户使用某些 API(如&lt;code&gt;MPI_Bsend&lt;/code&gt;)时，在程序中显示申请的存储空间，然后注册到 MPI 环境中供通信所用。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;通信子：MPI环境管理进程及通信的基本设施。&lt;code&gt;MPI_COMM_WORLD&lt;/code&gt;就是MPI环境启动时默认创建的通信子。对某个进程的操作必须放在通信子内方可有效。&lt;/p&gt;
+&lt;p&gt;通信子：MPI 环境管理进程及通信的基本设施。&lt;code&gt;MPI_COMM_WORLD&lt;/code&gt; 就是 MPI 环境启动时默认创建的通信子。对某个进程的操作必须放在通信子内方可有效。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;进程号：进程号即进程的&lt;code&gt;rank&lt;/code&gt;，指在某个通信子内某个进程号rank为num。在一个通信子内，每一个进程都有它&lt;!-- raw HTML omitted --&gt;唯一&lt;!-- raw HTML omitted --&gt;的num，这个标识号是在进程初始化时由系统分配，从0开始编号。&lt;/p&gt;
+&lt;p&gt;进程号：进程号即进程的&lt;code&gt;rank&lt;/code&gt;，指在某个通信子内某个进程号 rank 为 num。在一个通信子内，每一个进程都有它&lt;!-- raw HTML omitted --&gt;唯一&lt;!-- raw HTML omitted --&gt;的 num，这个标识号是在进程初始化时由系统分配，从 0 开始编号。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
 &lt;p&gt;进程组：定义一个通信子，也就指定了一组共享该空间的进程，这些进程组成了该通信子的进程组(group)。&lt;/p&gt;
 &lt;/li&gt;
 &lt;li&gt;
-&lt;p&gt;通信协议：MPI环境依据实现的策略不同，可能采用如下一种或几种协议。&lt;/p&gt;
+&lt;p&gt;通信协议：MPI 环境依据实现的策略不同，可能采用如下一种或几种协议。&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;立即通信协议，总是假定目标进程具有保存消息数据的能力。&lt;/li&gt;
 &lt;li&gt;集中通信协议，在目标准备好之后，才可以执行发送动作。&lt;/li&gt;
@@ -3724,16 +3541,16 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;h2 id=&#34;7-mpi程序编译运行&#34;&gt;7. MPI程序编译、运行&lt;/h2&gt;
+&lt;h2 id=&#34;7-mpi-程序编译运行&#34;&gt;7. MPI 程序编译、运行&lt;/h2&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI环境安装：
+&lt;li&gt;MPI 环境安装：
 &lt;ul&gt;
-&lt;li&gt;更新apt源：&lt;code&gt;sudo apt-get update&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;安装build-essential：&lt;code&gt;sudo apt-get install -y build-essential&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;安装mpich: &lt;code&gt;sudo apt-get install -y mpich&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;更新 apt 源：&lt;code&gt;sudo apt-get update&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;安装 build-essential：&lt;code&gt;sudo apt-get install -y build-essential&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;安装 mpich: &lt;code&gt;sudo apt-get install -y mpich&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;MPI程序编译：mpicc
+&lt;li&gt;MPI 程序编译：mpicc
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -3766,7 +3583,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;mpicc编译示例&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;mpicc 编译示例&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3777,9 +3594,9 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;MPI程序运行：mpirun
+&lt;li&gt;MPI 程序运行：mpirun
 &lt;ul&gt;
-&lt;li&gt;使用mpirun来运行mpi程序（intel mpi、mpich、openmpi等）&lt;/li&gt;
+&lt;li&gt;使用 mpirun 来运行 mpi 程序（intel mpi、mpich、openmpi 等）&lt;/li&gt;
 &lt;li&gt;用法：mpirun -n 进程数 可执行文件名&lt;/li&gt;
 &lt;li&gt;示例：&lt;code&gt;mpirun -n 2 ./example&lt;/code&gt;&lt;/li&gt;
 &lt;/ul&gt;
@@ -3789,7 +3606,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;第一个MPI程序示例 - Hello World&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;第一个 MPI 程序示例 - Hello World&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3809,7 +3626,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;mpi.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;printf&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;Hello World!&lt;/span&gt;&lt;span class=&#34;se&#34;&gt;\n&lt;/span&gt;&lt;span class=&#34;s&#34;&gt;&amp;#34;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Finalize&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;();&lt;/span&gt;
@@ -3818,7 +3635,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;编译与运行mpi.c&lt;/li&gt;
+&lt;li&gt;编译与运行 mpi.c&lt;/li&gt;
 &lt;/ul&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3834,9 +3651,9 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-warning&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 576 512&#34;&gt;&lt;path d=&#34;M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;注意： root用户运行mpirun时，需要加上&amp;ndash;allow-run-as-root参数，否则会报错。&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 576 512&#34;&gt;&lt;path d=&#34;M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;注意： root 用户运行 mpirun 时，需要加上&amp;ndash;allow-run-as-root 参数，否则会报错。&lt;/p&gt;&lt;/div&gt;
 
-&lt;h2 id=&#34;8-mpi的四个基本接口&#34;&gt;8. MPI的四个基本接口&lt;/h2&gt;
+&lt;h2 id=&#34;8-mpi-的四个基本接口&#34;&gt;8. MPI 的四个基本接口&lt;/h2&gt;
 &lt;table&gt;
 &lt;thead&gt;
 &lt;tr&gt;
@@ -3847,35 +3664,35 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;tbody&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Init(&amp;amp;argc, &amp;amp;argv)&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;初始化MPI环境，MPI系统将通过argc, argv得到命令行参数&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;初始化 MPI 环境，MPI 系统将通过 argc, argv 得到命令行参数&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Comm_rank(MPI_COMM_WORLD, &amp;amp;myrank)&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;缺省的通信子为MPI_COMMON_WORLD，获得进程所在缺省通信子的编号，赋值给myrank&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;缺省的通信子为 MPI_COMMON_WORLD，获得进程所在缺省通信子的编号，赋值给 myrank&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Comm_size(MPI_COMM_WORLD, &amp;amp;nprocs)&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;获得缺省通信子中进程的个数，赋值给nprocs&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;获得缺省通信子中进程的个数，赋值给 nprocs&lt;/td&gt;
 &lt;/tr&gt;
 &lt;tr&gt;
 &lt;td style=&#34;text-align:center&#34;&gt;MPI_Finalize()&lt;/td&gt;
-&lt;td style=&#34;text-align:center&#34;&gt;一般放在程序最后一行，如果没有此行，MPI程序将不会终止&lt;/td&gt;
+&lt;td style=&#34;text-align:center&#34;&gt;一般放在程序最后一行，如果没有此行，MPI 程序将不会终止&lt;/td&gt;
 &lt;/tr&gt;
 &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;ul&gt;
-&lt;li&gt;MPI初始化：MPI_Init
+&lt;li&gt;MPI 初始化：MPI_Init
 &lt;ul&gt;
 &lt;li&gt;int MPI_Init(int *argc, char ***argv)&lt;/li&gt;
-&lt;li&gt;MPI_Init是MPI程序的第一个调用，它完成MPI程序的所有初始化工作。所有的MPI程序的第一条可执行语句都是这条语句。&lt;/li&gt;
-&lt;li&gt;启动MPI环境,标志并行代码的开始.&lt;/li&gt;
-&lt;li&gt;要求main必须带参数运行,否则出错&lt;/li&gt;
+&lt;li&gt;MPI_Init 是 MPI 程序的第一个调用，它完成 MPI 程序的所有初始化工作。所有的 MPI 程序的第一条可执行语句都是这条语句。&lt;/li&gt;
+&lt;li&gt;启动 MPI 环境,标志并行代码的开始.&lt;/li&gt;
+&lt;li&gt;要求 main 必须带参数运行,否则出错&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;li&gt;MPI结束：MPI_Finalize
+&lt;li&gt;MPI 结束：MPI_Finalize
 &lt;ul&gt;
 &lt;li&gt;int MPI_Finalize(void)&lt;/li&gt;
-&lt;li&gt;MPI_FINALIZE是MPI程序的最后一个调用，它结束MPI程序的运行，它是MPI程序的最后一条可执行语句，否则程序的运行结果是不可预知的。&lt;/li&gt;
+&lt;li&gt;MPI_FINALIZE 是 MPI 程序的最后一个调用，它结束 MPI 程序的运行，它是 MPI 程序的最后一条可执行语句，否则程序的运行结果是不可预知的。&lt;/li&gt;
 &lt;li&gt;标志并行代码的结束,结束除主进程外其它进程。&lt;/li&gt;
 &lt;li&gt;之后串行代码仍可在主进程(rank = 0)上运行(如果必须)。&lt;/li&gt;
 &lt;/ul&gt;
@@ -3883,7 +3700,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;进程号：MPI_Comm_rank
 &lt;ul&gt;
 &lt;li&gt;int MPI_Comm_rank(MPI_Comm comm, int *rank)&lt;/li&gt;
-&lt;li&gt;MPI_COMM_RANK是MPI程序中的一个重要函数，它返回调用进程在通信子中的进程号，即rank。&lt;/li&gt;
+&lt;li&gt;MPI_COMM_RANK 是 MPI 程序中的一个重要函数，它返回调用进程在通信子中的进程号，即 rank。&lt;/li&gt;
 &lt;li&gt;通信子：MPI_COMM_WORLD&lt;/li&gt;
 &lt;li&gt;进程号：rank&lt;/li&gt;
 &lt;/ul&gt;
@@ -3891,7 +3708,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;li&gt;进程数：MPI_Comm_size
 &lt;ul&gt;
 &lt;li&gt;int MPI_Comm_size(MPI_Comm comm, int *size)&lt;/li&gt;
-&lt;li&gt;MPI_COMM_SIZE是MPI程序中的一个重要函数，它返回通信子中的进程数，即size。&lt;/li&gt;
+&lt;li&gt;MPI_COMM_SIZE 是 MPI 程序中的一个重要函数，它返回通信子中的进程数，即 size。&lt;/li&gt;
 &lt;li&gt;通信子：MPI_COMM_WORLD&lt;/li&gt;
 &lt;li&gt;进程数：size&lt;/li&gt;
 &lt;/ul&gt;
@@ -3901,7 +3718,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 
 
 &lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例2：打印进程ID和进程数&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;示例 2：打印进程 ID 和进程数&lt;/p&gt;&lt;/div&gt;
 
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -3924,7 +3741,7 @@ MPI通过提供预定义数据类型来解决异构计算中的互操作性问�
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;c1&#34;&gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;mpi.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;#include&lt;/span&gt; &lt;span class=&#34;cpf&#34;&gt;&amp;lt;stdio.h&amp;gt;&lt;/span&gt;&lt;span class=&#34;cp&#34;&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;cp&#34;&gt;&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;nf&#34;&gt;main&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;kt&#34;&gt;char&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;**&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt; 
+&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;kt&#34;&gt;int&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;myrank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;n&#34;&gt;nprocs&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;;&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Init&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argc&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;argv&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;nf&#34;&gt;MPI_Comm_rank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;MPI_COMM_WORLD&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;myrank&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;);&lt;/span&gt;

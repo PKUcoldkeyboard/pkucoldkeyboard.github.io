@@ -378,30 +378,24 @@
 <h2 id="一前言">一、前言</h2>
 <p>在多核并发编程中，如果将互斥锁的争用比作 <strong>性能杀手</strong> 的话，那么伪共享则相当于 <strong>性能刺客</strong>。<strong>杀手</strong> 与 <strong>刺客</strong> 的区别在于杀手是可见的，遇到杀手时我们可以选择战斗、逃跑、绕路、求饶等多种手段去应付，但 <strong>刺客</strong> 却不同， <strong>刺客</strong> 永远隐藏在暗处，伺机给你致命一击，防不胜防。具体到我们的并发编程中，遇到锁争用影响并发性能情况时，我们可以采取多种措施（如缩短临界区，原子操作等等）去提高程序性能，但是伪共享却是我们从所写代码中看不出任何蛛丝马迹的，发现不了问题也就无法解决问题，从而导致伪共享在暗处严重拖累程序的并发性能，但我们却束手无策。</p>
 <h2 id="二缓存行">二、缓存行</h2>
-<p>为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU将最近使用的数据预先读取到Cache中，下次再访问同样数据的时候，可以直接从速度比较快的CPU缓存中读取，避免从内存或磁盘读取拖慢整体速度。</p>
-<p>CPU缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 <code>64Byte</code> 和 <code>32Byte</code> ，CPU缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。</p>
+<p>为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU 缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU 将最近使用的数据预先读取到 Cache 中，下次再访问同样数据的时候，可以直接从速度比较快的 CPU 缓存中读取，避免从内存或磁盘读取拖慢整体速度。</p>
+<p>CPU 缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 <code>64Byte</code> 和 <code>32Byte</code> ，CPU 缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。</p>
 <h2 id="三缓存一致性">三、缓存一致性</h2>
-<p>在单核CPU情况下，上述方法可以正常工作，可以确保缓存到CPU缓存中的数据永远是 <strong>干净</strong> 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 <strong>干净</strong> 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。</p>
-<p>Linux系统中采用 <code>MESI</code> 协议处理缓存一致性，所谓 <code>MESI</code> 即是指 CPU 缓存的四种状态：</p>
+<p>在单核 CPU 情况下，上述方法可以正常工作，可以确保缓存到 CPU 缓存中的数据永远是 <strong>干净</strong> 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 <strong>干净</strong> 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。</p>
+<p>Linux 系统中采用 <code>MESI</code> 协议处理缓存一致性，所谓 <code>MESI</code> 即是指 CPU 缓存的四种状态：</p>
 <ul>
 <li>M（修改，Modified）：本地处理器已经修改缓存行，即是脏行，它的内容与内存中的内容不一样，并且此 cache 只有本地一个拷贝(专有)；</li>
 <li>E（专有，Exclusive）：缓存行内容和内存中的一样，而且其它处理器都没有这行数据；</li>
 <li>S（共享，Shared）：缓存行内容和内存中的一样, 有可能其它处理器也存在此缓存行的拷贝；</li>
 <li>I（无效，Invalid）：缓存行失效, 不能使用。</li>
 </ul>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20231202205445-2023-12-02"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp"
+         alt="20231202205445-2023-12-02" width="auto" loading="lazy"/>
+</figure>
+
 <p>每个 CPU 缓存行都在四个状态之间互相转换，以此决定 CPU 缓存是否失效，比如 CPU1 对一个缓存行执行了写入操作，则此操作会导致其他 CPU 的该缓存行进入 Invalid 无效状态， CPU 需要使用该缓存行的时候需要从内存中重新读取。由此就解决了多 CPU 之间的缓存一致性问题。</p>
 <h2 id="四伪共享">四、伪共享</h2>
-<p>何谓伪共享？上面我们提过 CPU 的缓存是 <strong>以缓存行为单位</strong> 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 <code>abcdefgh</code> 八个int型数据，当 CPU 读取 <code>d</code> 这个数据时， CPU 会将 <code>abcdefgh</code> 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 <code>a</code> 这个数据进行频繁读写， CPU2 只对 <code>b</code> 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 <code>a</code> 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对<code> b</code> 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个CPU之间 <strong>乒乓</strong> ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。</p>
+<p>何谓伪共享？上面我们提过 CPU 的缓存是 <strong>以缓存行为单位</strong> 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 <code>abcdefgh</code> 八个 int 型数据，当 CPU 读取 <code>d</code> 这个数据时， CPU 会将 <code>abcdefgh</code> 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 <code>a</code> 这个数据进行频繁读写， CPU2 只对 <code>b</code> 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 <code>a</code> 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对<code> b</code> 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个 CPU 之间 <strong>乒乓</strong> ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。</p>
 <p>下面是维基百科的定义：</p>
 <blockquote>
 <p>In computer science, <strong>false sharing</strong> is a performance-degrading usage pattern that can arise in systems with distributed, coherent caches at the size of the smallest resource block managed by the caching mechanism. When a system participant attempts to periodically access data that is not being altered by another party, but that data shares a cache block with data that is being altered, the caching protocol may force the first participant to reload the whole cache block despite a lack of logical necessity. The caching system is unaware of activity within this block and forces the first participant to bear the caching system overhead required by true shared access of a resource.</p>
@@ -415,9 +409,9 @@
 </ul>
 <h2 id="六获取缓存行大小">六、获取缓存行大小</h2>
 <p>在 C++11 中，可以使用 <code>std::hardware_destructive_interference_size</code> 和 <code>std::hardware_constructive_interference_size</code> 获取缓存行大小，前者获取的是缓存行大小，后者获取的是缓存行大小的两倍，即 <code>2 * std::hardware_destructive_interference_size</code>。</p>
-<p>在 C语言中，可以读取 <code>coherency_line_size</code> 文件获取缓存行大小，该文件位于 <code>/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size</code> ，该文件中存储的是缓存行大小的字节数，可以使用 <code>cat</code> 命令查看。也可以通过 <code>long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)</code> 的方式获取。</p>
+<p>在 C 语言中，可以读取 <code>coherency_line_size</code> 文件获取缓存行大小，该文件位于 <code>/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size</code> ，该文件中存储的是缓存行大小的字节数，可以使用 <code>cat</code> 命令查看。也可以通过 <code>long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)</code> 的方式获取。</p>
 <h2 id="七通过对齐解决伪共享">七、通过对齐解决伪共享</h2>
-<p>C语言中可以使用 <code>posix_memalign</code> 函数来实现对齐，该函数的声明如下：</p>
+<p>C 语言中可以使用 <code>posix_memalign</code> 函数来实现对齐，该函数的声明如下：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -510,7 +504,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">高性能异步I/O框架：io_uring</h2>
+            <h2 class="article-title">高性能异步 I/O 框架：io_uring</h2>
         </div>
     </a>
 </article>
@@ -548,7 +542,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存访问模式</h2>
+            <h2 class="article-title">CUDA 基础：内存访问模式</h2>
         </div>
     </a>
 </article>
@@ -567,7 +561,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存管理</h2>
+            <h2 class="article-title">CUDA 基础：内存管理</h2>
         </div>
     </a>
 </article>
@@ -586,7 +580,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存模型概述</h2>
+            <h2 class="article-title">CUDA 基础：内存模型概述</h2>
         </div>
     </a>
 </article>
@@ -658,7 +652,7 @@
         
             2021 - 
         
-        2023 cuterwrite
+        2024 cuterwrite
     </section>
     
     <section class="powerby">

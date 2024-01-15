@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重的影响了性能。本文将主要介绍CUDA的内存模型，CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。'>
-<title>CUDA基础：内存模型概述</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重地影响了性能。本文将主要介绍 CUDA 的内存模型，CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。'>
+<title>CUDA 基础：内存模型概述</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/cuda-base-memory-model/'>
 
-<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='CUDA基础：内存模型概述'>
-<meta property='og:description' content='必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重的影响了性能。本文将主要介绍CUDA的内存模型，CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='CUDA 基础：内存模型概述'>
+<meta property='og:description' content='必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重地影响了性能。本文将主要介绍 CUDA 的内存模型，CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。'>
 <meta property='og:url' content='https://cuterwrite.top/p/cuda-base-memory-model/'>
 <meta property='og:site_name' content='cuterwrite'>
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='并行计算' /><meta property='article:tag' content='CUDA' /><meta property='article:published_time' content='2023-09-01T04:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-09-01T04:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp' />
-<meta name="twitter:title" content="CUDA基础：内存模型概述">
-<meta name="twitter:description" content="必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重的影响了性能。本文将主要介绍CUDA的内存模型，CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。"><meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CUDA 基础：内存模型概述">
+<meta name="twitter:description" content="必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重地影响了性能。本文将主要介绍 CUDA 的内存模型，CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。"><meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp' />
     <link rel="shortcut icon" href="/favicon.ico" />
 
@@ -271,7 +271,7 @@
             <nav id="TableOfContents">
   <ul>
     <li><a href="#一内存层次结构的优点">一、内存层次结构的优点</a></li>
-    <li><a href="#二cuda内存模型">二、CUDA内存模型</a>
+    <li><a href="#二cuda-内存模型">二、CUDA 内存模型</a>
       <ul>
         <li><a href="#1-寄存器">1. 寄存器</a></li>
         <li><a href="#2-本地内存">2. 本地内存</a></li>
@@ -279,8 +279,8 @@
         <li><a href="#4-常量内存">4. 常量内存</a></li>
         <li><a href="#5-纹理内存">5. 纹理内存</a></li>
         <li><a href="#6-全局内存">6. 全局内存</a></li>
-        <li><a href="#7-gpu缓存">7. GPU缓存</a></li>
-        <li><a href="#8-cuda变量声明总结">8. CUDA变量声明总结</a></li>
+        <li><a href="#7-gpu-缓存">7. GPU 缓存</a></li>
+        <li><a href="#8-cuda-变量声明总结">8. CUDA 变量声明总结</a></li>
         <li><a href="#9-静态全局内存">9. 静态全局内存</a></li>
       </ul>
     </li>
@@ -301,7 +301,7 @@
         <div class="article-image">
             <a href="/p/cuda-base-memory-model/">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" loading="lazy" alt="Featured image of post CUDA基础：内存模型概述" />
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" loading="lazy" alt="Featured image of post CUDA 基础：内存模型概述" />
                 
             </a>
         </div>
@@ -320,12 +320,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/p/cuda-base-memory-model/">CUDA基础：内存模型概述</a>
+            <a href="/p/cuda-base-memory-model/">CUDA 基础：内存模型概述</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重的影响了性能。本文将主要介绍CUDA的内存模型，CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。
+            必须承认执行模型中内核的配置，决定了程序执行效率，但是程序的执行效率不只由线程束，线程块等执行结构决定，内存也严重地影响了性能。本文将主要介绍 CUDA 的内存模型，CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，使用户能显式地控制数据布局以优化性能。
         </h3>
         
     </div>
@@ -361,7 +361,7 @@
 
 
                 <time class="article-time--reading">
-                    阅读时长: 11 分钟
+                    阅读时长: 10 分钟
                 </time>
             </div>
         
@@ -376,9 +376,9 @@
     <section class="article-content">
     
     
-    <h1 id="cuda基础内存模型概述">CUDA基础：内存模型概述</h1>
+    <h1 id="cuda-基础内存模型概述">CUDA 基础：内存模型概述</h1>
 <p>内存的访问和管理是所有编程语言的重要部分。在现代加速器中，内存管理对高性能计算有着很大的影响。</p>
-<p>因为多数工作负载被加载和存储数据的速度所限制，所以有大量低延迟、高带宽的内存对性能是十分有利的。然而，大容量、高性能的内存造价高且不容易生产。因此，在现有的硬件存储子系统下，必须依靠<strong>内存模型</strong>获得最佳的延迟和带宽。CUDA内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，能显式地控制数据布局以优化性能。</p>
+<p>因为多数工作负载被加载和存储数据的速度所限制，所以有大量低延迟、高带宽的内存对性能是十分有利的。然而，大容量、高性能的内存造价高且不容易生产。因此，在现有的硬件存储子系统下，必须依靠<strong>内存模型</strong>获得最佳的延迟和带宽。CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，能显式地控制数据布局以优化性能。</p>
 <h2 id="一内存层次结构的优点">一、内存层次结构的优点</h2>
 <p>程序具有局部性特点，包括：</p>
 <ol>
@@ -386,20 +386,14 @@
 <li>空间局部性：如果一个数据被访问，那么它附近的数据也会被访问。</li>
 </ol>
 <p>现代计算机的内存结构主要如下：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901232704-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp"
+         alt="20230901232704-2023-09-01" width="auto" loading="lazy"/>
+</figure>
+
 <p>一个内存层次结构由具有不同延迟、带宽和容量的多级内存组成。通常，随着从处理器到内存延迟的增加，内存的容量也在增加。</p>
-<p>CPU 和 GPU 的主存都采用的是 DRAM（动态随机存取存储器），而低延迟内存（如CPU一级缓存）使用的则是SRAM（静态随机存取存储器）。内存层次结构中最大且最慢的级别通常使用磁盘或闪存驱动来实现。在这种内存层次结构中，当数据被处理器频繁使用时，该数据保存在低延迟、低容量的存储器中；而当该数据被存储起来以备后用时，数据就存储在高延迟、大容量的存储器中。这种内存层次结构符合大内存低延迟的设想。</p>
+<p>CPU 和 GPU 的主存都采用的是 DRAM（动态随机存取存储器），而低延迟内存（如 CPU 一级缓存）使用的则是 SRAM（静态随机存取存储器）。内存层次结构中最大且最慢的级别通常使用磁盘或闪存驱动来实现。在这种内存层次结构中，当数据被处理器频繁使用时，该数据保存在低延迟、低容量的存储器中；而当该数据被存储起来以备后用时，数据就存储在高延迟、大容量的存储器中。这种内存层次结构符合大内存低延迟的设想。</p>
 <p>GPU 和 CPU 的内存设计有相似的准则和模型。但它们的主要区别是，CUDA 编程模型能将内存层次结构更好地呈现给用户，能让我们显式地控制它的行为。</p>
-<h2 id="二cuda内存模型">二、CUDA内存模型</h2>
+<h2 id="二cuda-内存模型">二、CUDA 内存模型</h2>
 <p>对于程序员来说，一般有两种类型的存储器：</p>
 <ol>
 <li>可编程的：你需要显式地控制哪些数据存放在可编程内存中</li>
@@ -415,20 +409,14 @@
 <li>全局内存</li>
 </ul>
 <p>下图所示为这些内存空间的层次结构，每种都有不同的作用域、生命周期和缓存行为。一个核函数中的线程都有自己私有的<strong>本地内存</strong>。一个线程块有自己的<strong>共享内存</strong>，对同一线程块中所有线程都可见，其内容持续线程块的整个生命周期。所有线程都可以访问<strong>全局内存</strong>。所有线程都能访问的只读内存空间有：<strong>常量内存空间和纹理内存空间</strong>。全局内存、常量内存和纹理内存空间有不同的用途。<strong>纹理内存</strong>为各种数据布局提供了不同的寻址模式和滤波模式。对于一个应用程序来说， <strong>全局内存、常量内存和纹理内存</strong>中的内容具有相同的生命周期。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901233955-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp"
+         alt="20230901233955-2023-09-01" width="auto" loading="lazy"/>
+</figure>
+
 <h3 id="1-寄存器">1. 寄存器</h3>
 <p>寄存器无论是在 CPU 还是在 GPU 都是速度最快的内存空间，但是和 CPU 不同的是 GPU 的寄存器储量要多一些，而且当我们在核函数内不加修饰的声明一个变量，此变量就存储在寄存器中，但是 CPU 运行的程序有些不同，只有当前在计算的变量存储在寄存器中，其余在主存中，使用时传输至寄存器。在核函数声明的数组中，<strong>如果用于引用该数组的索引是常量且能在编译时确定</strong>，那么该数组也存储在寄存器中。</p>
 <p>寄存器变量对于每个线程来说都是私有的，一个核函数通常使用寄存器来保存需要频繁访问的线程私有变量。寄存器变量与核函数的生命周期相同。一旦核函数执行完毕，就不能对寄存器变量进行访问了。</p>
-<p>寄存器是SM中的稀缺资源，Fermi 架构中每个线程最多 63 个寄存器。Kepler 结构扩展到 255个 寄存器，一个线程如果使用更少的寄存器，那么就会有更多的常驻线程块，SM上并发的线程块越多，效率越高，性能和使用率也就越高。</p>
+<p>寄存器是 SM 中的稀缺资源，Fermi 架构中每个线程最多 63 个寄存器。Kepler 结构扩展到 255 个 寄存器，一个线程如果使用更少的寄存器，那么就会有更多的常驻线程块，SM 上并发的线程块越多，效率越高，性能和使用率也就越高。</p>
 <p>那么问题就来了，如果一个线程里面的变量太多，以至于寄存器完全不够呢？这时候寄存器发生溢出，本地内存就会过来帮忙存储多出来的变量，这种情况会对效率产生非常负面的影响，所以，不到万不得已，一定要避免此种情况发生。</p>
 <p>为了避免寄存器溢出，可以在核函数的代码中配置额外的信息来辅助编译器优化，比如：</p>
 <div class="highlight"><div class="chroma">
@@ -450,7 +438,7 @@
 </div><p>这里面在核函数定义前加了一个 关键字 <strong>lauch_bounds</strong> ，然后它后面对应了两个变量：</p>
 <ol>
 <li>maxThreadaPerBlock：线程块内包含的最大线程数，线程块由核函数来启动</li>
-<li>minBlocksPerMultiprocessor：可选参数，每个SM中预期的最小的常驻内存块参数。注意，对于一定的核函数，优化的启动边界会因为不同的结构而不同
+<li>minBlocksPerMultiprocessor：可选参数，每个 SM 中预期的最小的常驻内存块参数。注意，对于一定的核函数，优化的启动边界会因为不同的结构而不同
 也可以在编译选项中加入 <strong>-maxrregcount=32</strong> 来指定每个线程使用的最大寄存器数。</li>
 </ol>
 <h3 id="2-本地内存">2. 本地内存</h3>
@@ -494,9 +482,9 @@
 </span></code></pre></td>
 <td class="lntd">
 <pre tabindex="0" class="chroma"><code class="language-text" data-lang="text"><span class="line"><span class="cl">cudaFuncCachePreferNone    // 无参考值，默认设置
-</span></span><span class="line"><span class="cl">cudaFuncCachePreferShared  // 48k共享内存，16k一级缓存
-</span></span><span class="line"><span class="cl">cudaFuncCachePreferL1      // 48k一级缓存，16k共享内存
-</span></span><span class="line"><span class="cl">cudaFuncCachePreferEqual   // 32k一级缓存，32k共享内存
+</span></span><span class="line"><span class="cl">cudaFuncCachePreferShared  // 48k 共享内存，16k 一级缓存
+</span></span><span class="line"><span class="cl">cudaFuncCachePreferL1      // 48k 一级缓存，16k 共享内存
+</span></span><span class="line"><span class="cl">cudaFuncCachePreferEqual   // 32k 一级缓存，32k 共享内存
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>Fermi 架构支持前三种，后面的设备都支持。</p>
@@ -526,9 +514,9 @@
 <li>内存事务的对齐方式</li>
 </ol>
 <p>在一般情况下，用来满足内存请求的事务越多，未使用的字节被传输回的可能性就越高，这就造成了数据吞吐率的降低。</p>
-<p>对于一个给定的线程束内存请求，事务数量和数据吞吐率是由设备的计算能力来确定的。对于计算能力为1.0和1.1的设备，全局内存访问的要求是非常严格的。对于计算能力高于 1.1 的设备，由于内存事务被缓存，所以要求较为宽松。缓存的内存事务利用数据局部性来提高数据吞吐率。</p>
-<h3 id="7-gpu缓存">7. GPU缓存</h3>
-<p>与 CPU 缓存类似， GPU 缓存是不可编程的内存。在GPU上有 4 种缓存：</p>
+<p>对于一个给定的线程束内存请求，事务数量和数据吞吐率是由设备的计算能力来确定的。对于计算能力为 1.0 和 1.1 的设备，全局内存访问的要求是非常严格的。对于计算能力高于 1.1 的设备，由于内存事务被缓存，所以要求较为宽松。缓存的内存事务利用数据局部性来提高数据吞吐率。</p>
+<h3 id="7-gpu-缓存">7. GPU 缓存</h3>
+<p>与 CPU 缓存类似， GPU 缓存是不可编程的内存。在 GPU 上有 4 种缓存：</p>
 <ul>
 <li>一级缓存</li>
 <li>二级缓存</li>
@@ -538,7 +526,7 @@
 <p>每个 SM 都有一个一级缓存，所有的 SM 共享一个二级缓存。一级和二级缓存都被用来在存储本地内存和全局内存中的数据，也包括寄存器溢出的部分。对 Fermi GPU 和 Kepler K40 或其后发布的 GPU 来说，CUDA 允许我们配置读操作的数据是使用一级和二级缓存，还是只使用二级缓存。</p>
 <p>在 CPU 上，内存的加载和存储都可以被缓存。但是，在 GPU 上只有内存加载操作可以被缓存，内存存储操作不能被缓存。</p>
 <p>每个 SM 也有一个只读常量缓存和只读纹理缓存，它们用于在设备内存中提高来自于各自内存空间内的读取性能。</p>
-<h3 id="8-cuda变量声明总结">8. CUDA变量声明总结</h3>
+<h3 id="8-cuda-变量声明总结">8. CUDA 变量声明总结</h3>
 <p>用表格进行总结：</p>
 <div class="table-wrapper"><table>
 <thead>
@@ -612,7 +600,7 @@
 <tr>
 <td style="text-align:center">本地</td>
 <td style="text-align:center">片外</td>
-<td style="text-align:center">1.0以上有</td>
+<td style="text-align:center">1.0 以上有</td>
 <td style="text-align:center">R/W</td>
 <td style="text-align:center">一个线程</td>
 <td style="text-align:center">线程</td>
@@ -628,7 +616,7 @@
 <tr>
 <td style="text-align:center">全局</td>
 <td style="text-align:center">片外</td>
-<td style="text-align:center">1.0以上有</td>
+<td style="text-align:center">1.0 以上有</td>
 <td style="text-align:center">R/W</td>
 <td style="text-align:center">所有线程+主机</td>
 <td style="text-align:center">主机配置</td>
@@ -652,7 +640,7 @@
 </tbody>
 </table></div>
 <h3 id="9-静态全局内存">9. 静态全局内存</h3>
-<p>CPU 内存有动态分配和静态分配两种类型，从内存位置来说，动态分配在堆上进行，静态分配在站上进行，在代码上的表现是一个需要 new，malloc 等类似的函数动态分配空间，并用 delete 和 free 来释放。在CUDA中也有类似的动态静态之分，需要 cudaMalloc 的就是动态分配，静态分配与动态分配相同是，也需要显式的将内存copy到设备端。下面代码是一个静态分配的例子：</p>
+<p>CPU 内存有动态分配和静态分配两种类型，从内存位置来说，动态分配在堆上进行，静态分配在站上进行，在代码上的表现是一个需要 new，malloc 等类似的函数动态分配空间，并用 delete 和 free 来释放。在 CUDA 中也有类似的动态静态之分，需要 cudaMalloc 的就是动态分配，静态分配与动态分配相同是，也需要显式的将内存 copy 到设备端。下面代码是一个静态分配的例子：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -755,10 +743,10 @@
 </span></span><span class="line"><span class="cl"><span class="n">cudaGetSymbolAddress</span><span class="p">((</span><span class="kt">void</span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dptr</span><span class="p">,</span> <span class="n">devData</span><span class="p">);</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>当然也有一个例外，可以直接从主机引用GPU内存——CUDA固定内存。</p>
+</div><p>当然也有一个例外，可以直接从主机引用 GPU 内存——CUDA 固定内存。</p>
 <p>CUDA 运行时 API 能访问主机和设备变量，但这取决于你给正确的函数是否提供了正确的参数，使用运行时 API ，如果参数填错，尤其是主机和设备上的指针，结果是无法预测的。</p>
 <h2 id="参考资料">参考资料</h2>
-<p>[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著</p>
+<p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著</p>
 
 </section>
 
@@ -838,7 +826,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存访问模式</h2>
+            <h2 class="article-title">CUDA 基础：内存访问模式</h2>
         </div>
     </a>
 </article>
@@ -857,7 +845,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存管理</h2>
+            <h2 class="article-title">CUDA 基础：内存管理</h2>
         </div>
     </a>
 </article>
@@ -876,7 +864,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：线程束执行的本质</h2>
+            <h2 class="article-title">CUDA 基础：线程束执行的本质</h2>
         </div>
     </a>
 </article>
@@ -895,7 +883,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA编程：从基础到应用</h2>
+            <h2 class="article-title">CUDA 编程：从基础到应用</h2>
         </div>
     </a>
 </article>
@@ -986,7 +974,7 @@
         
             2021 - 
         
-        2023 cuterwrite
+        2024 cuterwrite
     </section>
     
     <section class="powerby">

@@ -7,7 +7,158 @@
         <generator>Hugo -- gohugo.io</generator>
         <language>zh-cn</language>
         <copyright>cuterwrite</copyright>
-        <lastBuildDate>Sat, 30 Dec 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <lastBuildDate>Mon, 01 Jan 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>RDMA 概述</title>
+        <link>https://cuterwrite.top/p/rdma-overview/</link>
+        <pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate>
+        
+        <guid>https://cuterwrite.top/p/rdma-overview/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" /&gt;&lt;h1 id=&#34;rdma-概述&#34;&gt;RDMA 概述&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;本文欢迎非商业转载，转载请注明出处。&lt;/strong&gt;&lt;/p&gt;
+&lt;blockquote&gt;
+    &lt;p&gt;声明：仅用于收藏，便于阅读&lt;/p&gt;&lt;span class=&#34;cite&#34;&gt;&lt;span&gt;― &lt;/span&gt;&lt;span&gt;Savir, &lt;/span&gt;&lt;a href=&#34;https://zhuanlan.zhihu.com/p/138874738&#34;&gt;&lt;cite&gt;知乎专栏：1. RDMA 概述&lt;/cite&gt;&lt;/a&gt;&lt;/span&gt;&lt;/blockquote&gt;
+&lt;p&gt;本想完全靠自己的语言完成这篇概述，然而开篇并没有想象当中的好写，看样子从宏观上概括一个技术比从微观上探究细枝末节要困难不少。本文是以前人们对 RDMA 技术的介绍为主，加入了一些自己的理解。随着本专栏内容的增加，本篇概述也会更新和逐渐完善。&lt;/p&gt;
+&lt;h2 id=&#34;什么是-dma&#34;&gt;什么是 DMA&lt;/h2&gt;
+&lt;p&gt;DMA 全称为 Direct Memory Access，即直接内存访问。意思是外设对内存的读写过程可以不用 CPU 参与而直接进行。我们先来看一下没有 DMA 的时候：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203040-2024-01-14.png&#34;
+         alt=&#34;无 DMA 控制器时 I/O 设备和内存间的数据路径&#34; width=&#34;auto&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;无 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;假设 I/O 设备为一个普通网卡，为了从内存拿到需要发送的数据，然后组装数据包发送到物理链路上，网卡需要通过总线告知 CPU 自己的数据请求。然后 CPU 将会把内存缓冲区中的数据复制到自己内部的寄存器中，再复制到 I/O 设备的存储空间中。如果数据量比较大，那么很长一段时间内 CPU 都会忙于搬移数据，而无法投入到其他工作中去。&lt;/p&gt;
+&lt;p&gt;CPU 的最主要工作是计算，而不是进行数据复制，这种工作属于白白浪费了它的计算能力。为了给 CPU“减负”，让它投入到更有意义的工作中去，后来人们设计了 DMA 机制：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203114-2024-01-14.png&#34;
+         alt=&#34;有 DMA 控制器时 I/O 设备和内存间的数据路径&#34; width=&#34;auto&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;有 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;可以看到总线上又挂了一个 DMA 控制器，它是专门用来读写内存的设备。有了它以后，当我们的网卡想要从内存中拷贝数据时，除了一些必要的控制命令外，整个数据复制过程都是由 DMA 控制器完成的。过程跟 CPU 复制是一样的，只不过这次是把内存中的数据通过总线复制到 DMA 控制器内部的寄存器中，再复制到 I/O 设备的存储空间中。CPU 除了关注一下这个过程的开始和结束以外，其他时间可以去做其他事情。&lt;/p&gt;
+&lt;p&gt;DMA 控制器一般是和 I/O 设备在一起的，也就是说一块网卡中既有负责数据收发的模块，也有 DMA 模块。&lt;/p&gt;
+&lt;h2 id=&#34;什么是-rdma&#34;&gt;什么是 RDMA&lt;/h2&gt;
+&lt;p&gt;RDMA（ Remote Direct Memory Access ）意为远程直接地址访问，通过 RDMA，本端节点可以“直接”访问远端节点的内存。所谓直接，指的是可以像访问本地内存一样，绕过传统以太网复杂的 TCP/IP 网络协议栈读写远端内存，而这个过程对端是不感知的，而且这个读写过程的大部分工作是由硬件而不是软件完成的。&lt;/p&gt;
+&lt;p&gt;为了能够直观的理解这一过程，请看下面两个图（图中箭头仅做示意，不表示实际逻辑或物理关系）：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235555-2024-01-15.png&#34;
+         alt=&#34;20240115235555-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;传统网络中，“节点 A 给节点 B 发消息”实际上做的是“把节点 A 内存中的一段数据，通过网络链路搬移到节点 B 的内存中”，而这一过程无论是发端还是收段，都需要 CPU 的指挥和控制，包括网卡的控制，中断的处理，报文的封装和解析等等。&lt;/p&gt;
+&lt;p&gt;上图中左边的节点在内存用户空间中的数据，需要经过 CPU 拷贝到内核空间的缓冲区中，然后才可以被网卡访问，这期间数据会经过软件实现的 TCP/IP 协议栈，加上各层头部和校验码，比如 TCP 头，IP 头等。网卡通过 DMA 拷贝内核中的数据到网卡内部的缓冲区中，进行处理后通过物理链路发送给对端。&lt;/p&gt;
+&lt;p&gt;对端收到数据后，会进行相反的过程：从网卡内部存储空间，将数据通过 DMA 拷贝到内存内核空间的缓冲区中，然后 CPU 会通过 TCP/IP 协议栈对其进行解析，将数据取出来拷贝到用户空间中。&lt;/p&gt;
+&lt;p&gt;可以看到，即使有了 DMA 技术，上述过程还是对 CPU 有较强的依赖。&lt;/p&gt;
+&lt;p&gt;而使用了 RDMA 技术之后，这一过程可以简单的表示成下面的示意图：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235612-2024-01-15.png&#34;
+         alt=&#34;20240115235612-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;同样是把本端内存中的一段数据，复制到对端内存中，在使用了 RDMA 技术时，两端的 CPU 几乎不用参与数据传输过程（只参与控制面）。本端的网卡直接从内存的用户空间 DMA 拷贝数据到内部存储空间，然后硬件进行各层报文的组装后，通过物理链路发送到对端网卡。对端的 RDMA 网卡收到数据后，剥离各层报文头和校验码，通过 DMA 将数据直接拷贝到用户空间内存中。&lt;/p&gt;
+&lt;h2 id=&#34;rdma-的优势&#34;&gt;RDMA 的优势&lt;/h2&gt;
+&lt;p&gt;RDMA 主要应用在高性能计算（HPC）领域和大型数据中心当中，并且设备相对普通以太网卡要昂贵不少（比如 Mellanox 公司的 Connext-X 5 100Gb PCIe 网卡市价在 4000 元以上）。由于使用场景和价格的原因，RDMA 与普通开发者和消费者的距离较远，目前主要是一些大型互联网企业在部署和使用。&lt;/p&gt;
+&lt;p&gt;RDMA 技术为什么可以应用在上述场景中呢？这就涉及到它的以下几个特点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;0 拷贝：指的是不需要在用户空间和内核空间中来回复制数据。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235643-2024-01-15.png&#34;
+         alt=&#34;20240115235643-2024-01-15&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;由于 Linux 等操作系统将内存划分为用户空间和内核空间，在传统的 Socket 通信流程中 CPU 需要多次把数据在内存中来回拷贝。而通过 RDMA 技术，我们可以直接访问远端已经注册的内存区域。&lt;/p&gt;
+&lt;p&gt;关于 0 拷贝可以参考这篇文章：&lt;a class=&#34;link&#34; href=&#34;https://www.jianshu.com/p/e76e3580e356&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;浅谈 Linux 下的零拷贝机制&lt;/a&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;内核 Bypass：指的是 IO（数据）流程可以绕过内核，即在用户层就可以把数据准备好并通知硬件准备发送和接收。避免了系统调用和上下文切换的开销。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235721-2024-01-15.png&#34;
+         alt=&#34;20240115235721-2024-01-15&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;上图（原图&lt;a class=&#34;link&#34; href=&#34;https://pc.nanog.org/static/published/meetings/NANOG76/1999/20190612_Cardona_Towards_Hyperscale_High_v1.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[1]&lt;/a&gt;）可以很好的解释“0 拷贝”和“内核 Bypass”的含义。上下两部分分别是基于 Socket 的和基于 RDMA 的一次收-发流程，左右分别为两个节点。可以明显的看到 Socket 流程中在软件中多了一次拷贝动作。而 RDMA 绕过了内核同时也减少了内存拷贝，数据可以直接在用户层和硬件间传递。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CPU 卸载：指的是可以在远端节点 CPU 不参与通信的情况下（当然要持有访问远端某段内存的“钥匙”才行）对内存进行读写，这实际上是 &lt;strong&gt;把报文封装和解析放到硬件中做了&lt;/strong&gt;。而传统的以太网通信，双方 CPU 都必须参与各层报文的解析，如果数据量大且交互频繁，对 CPU 来讲将是一笔不小的开销，而这些被占用的 CPU 计算资源本可以做一些更有价值的工作。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235929-2024-01-15.png&#34;
+         alt=&#34;20240115235929-2024-01-15&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;通信领域两大出场率最高的性能指标就是“带宽”和“时延”。简单的说，所谓带宽指的是指单位时间内能够传输的数据量，而时延指的是数据从本端发出到被对端接收所耗费的时间。因为上述几个特点，相比于传统以太网，RDMA 技术同时做到了更高带宽和更低时延，所以其在带宽敏感的场景——比如海量数据的交互，时延敏感——比如多个计算节点间的数据同步的场景下得以发挥其作用。&lt;/p&gt;
+&lt;h2 id=&#34;协议&#34;&gt;协议&lt;/h2&gt;
+&lt;p&gt;RDMA 本身指的是一种技术，具体协议层面，包含 Infiniband（IB），RDMA over Converged Ethernet（RoCE）和 internet Wide Area RDMA Protocol（iWARP）。三种协议都符合 RDMA 标准，使用相同的上层接口，在不同层次上有一些差别。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000000-2024-01-16.png&#34;
+         alt=&#34;20240116000000-2024-01-16&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;上图&lt;a class=&#34;link&#34; href=&#34;https://www.snia.org/sites/default/files/ESF/RoCE-vs.-iWARP-Final.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[2]g&lt;/a&gt;对于几种常见的 RDMA 技术的协议层次做了非常清晰的对比&lt;/p&gt;
+&lt;h3 id=&#34;infiniband&#34;&gt;Infiniband&lt;/h3&gt;
+&lt;p&gt;2000 年由 IBTA（InfiniBand Trade Association）提出的 IB 协议是当之无愧的核心，其规定了一整套完整的链路层到传输层（非传统 OSI 七层模型的传输层，而是位于其之上）规范，但是其无法兼容现有以太网，除了需要支持 IB 的网卡之外，企业如果想部署的话还要重新购买配套的交换设备。&lt;/p&gt;
+&lt;h3 id=&#34;roce&#34;&gt;RoCE&lt;/h3&gt;
+&lt;p&gt;RoCE 从英文全称就可以看出它是基于以太网链路层的协议，v1 版本网络层仍然使用了 IB 规范，而 v2 使用了 UDP+IP 作为网络层，使得数据包也可以被路由。RoCE 可以被认为是 IB 的“低成本解决方案”，将 IB 的报文封装成以太网包进行收发。由于 RoCE v2 可以使用以太网的交换设备，所以现在在企业中应用也比较多，但是相同场景下相比 IB 性能要有一些损失。&lt;/p&gt;
+&lt;h3 id=&#34;iwarp&#34;&gt;iWARP&lt;/h3&gt;
+&lt;p&gt;iWARP 协议是 IETF 基于 TCP 提出的，因为 TCP 是面向连接的可靠协议，这使得 iWARP 在面对有损网络场景（可以理解为网络环境中可能经常出现丢包）时相比于 RoCE v2 和 IB 具有更好的可靠性，在大规模组网时也有明显的优势。但是大量的 TCP 连接会耗费很多的内存资源，另外 TCP 复杂的流控等机制会导致性能问题，所以从性能上看 iWARP 要比 UDP 的 RoCE v2 和 IB 差。&lt;/p&gt;
+&lt;p&gt;需要注意的是，虽然有软件实现的 RoCE 和 iWARP 协议，但是真正商用时上述几种协议都需要专门的硬件（网卡）支持。&lt;/p&gt;
+&lt;p&gt;iWARP 本身不是由 Infiniband 直接发展而来的，但是它继承了一些 Infiniband 技术的设计思想。这三种协议的关系如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000125-2024-01-16.png&#34;
+         alt=&#34;20240116000125-2024-01-16&#34; width=&#34;60%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;玩家&#34;&gt;玩家&lt;/h2&gt;
+&lt;h3 id=&#34;标准生态组织&#34;&gt;标准/生态组织&lt;/h3&gt;
+&lt;p&gt;提到 IB 协议，就不得不提到两大组织——IBTA 和 OFA。&lt;/p&gt;
+&lt;h3 id=&#34;ibta3httpswwwinfinibandtaorg&#34;&gt;IBTA&lt;a class=&#34;link&#34; href=&#34;https://www.infinibandta.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[3]&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;成立于 1999 年，负责制定和维护 Infiniband 协议标准。IBTA 独立于各个厂商，通过赞助技术活动和推动资源共享来将整个行业整合在一起，并且通过线上交流、营销和线下活动等方式积极推广 IB 和 RoCE。&lt;/p&gt;
+&lt;p&gt;IBTA 会对商用的 IB 和 RoCE 设备进行协议标准符合性和互操作性测试及认证，由很多大型的 IT 厂商组成的委员会领导，其主要成员包括博通，HPE，IBM，英特尔，Mellanox 和微软等，华为也是 IBTA 的会员。&lt;/p&gt;
+&lt;h3 id=&#34;ofa4httpswwwopenfabricsorg&#34;&gt;OFA&lt;a class=&#34;link&#34; href=&#34;https://www.openfabrics.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[4]&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;成立于 2004 年的非盈利组织，负责开发、测试、认证、支持和分发独立于厂商的开源跨平台 infiniband 协议栈，2010 年开始支持 RoCE。其对用于支撑 RDMA/Kernel bypass 应用的 OFED（OpenFabrics Enterprise Distribution）软件栈负责，保证其与主流软硬件的兼容性和易用性。OFED 软件栈包括驱动、内核、中间件和 API。&lt;/p&gt;
+&lt;p&gt;上述两个组织是配合关系，IBTA 主要负责开发、维护和增强 Infiniband 协议标准；OFA 负责开发和维护 Infiniband 协议和上层应用 API。&lt;/p&gt;
+&lt;h2 id=&#34;开发社区&#34;&gt;开发社区&lt;/h2&gt;
+&lt;h3 id=&#34;linux-社区&#34;&gt;Linux 社区&lt;/h3&gt;
+&lt;p&gt;Linux 内核的 RDMA 子系统还算比较活跃，经常会讨论一些协议细节，对框架的修改比较频繁，另外包括华为和 Mellanox 在内的一些厂商也会经常对驱动代码进行修改。&lt;/p&gt;
+&lt;p&gt;邮件订阅：http://vger.kernel.org/vger-lists.html#linux-rdma&lt;/p&gt;
+&lt;p&gt;代码位于内核 drivers/infiniband/目录下，包括框架核心代码和各厂商的驱动代码。&lt;/p&gt;
+&lt;p&gt;代码仓：https://git.kernel.org/pub/scm/linux/kernel/git/rdma/rdma.git/&lt;/p&gt;
+&lt;h3 id=&#34;rdma-社区&#34;&gt;RDMA 社区&lt;/h3&gt;
+&lt;p&gt;对于上层用户，IB 提供了一套与 Socket 套接字类似的接口——libibverbs，前文所述三种协议都可以使用。参考着协议、API 文档和示例程序很容易就可以写一个 Demo 出来。本专栏中的 RDMA 社区专指其用户态社区，在 github 上其仓库的名字为 linux-rdma。&lt;/p&gt;
+&lt;p&gt;主要包含两个子仓库：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;rdma-core&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;用户态核心代码，API，文档以及各个厂商的用户态驱动。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;perftest
+一个功能强大的用于测试 RDMA 性能的工具。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;代码仓：https://github.com/linux-rdma/&lt;/p&gt;
+&lt;h2 id=&#34;ucx5httpswwwopenucxorg&#34;&gt;UCX&lt;a class=&#34;link&#34; href=&#34;https://www.openucx.org/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;[5]&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;UCX 是一个建立在 RDMA 等技术之上的用于数据处理和高性能计算的通信框架，RDMA 是其底层核心之一。我们可以将其理解为是位于应用和 RDMA API 之间的中间件，向上层用户又封装了一层更易开发的接口。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000429-2024-01-16.png&#34;
+         alt=&#34;20240116000429-2024-01-16&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;笔者对其并不了解太多，只知道业界有一些企业在基于 UCX 开发应用。&lt;/p&gt;
+&lt;p&gt;代码仓：https://github.com/openucx/ucx&lt;/p&gt;
+&lt;h2 id=&#34;硬件厂商&#34;&gt;硬件厂商&lt;/h2&gt;
+&lt;p&gt;设计和生产 IB 相关硬件的厂商有不少，包括 Mellanox、华为、收购了 Qlogic 的 IB 技术的 Intel，博通、Marvell，富士通等等，这里就不逐个展开了，仅简单提一下 Mellanox 和华为。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;Mellanox
+IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都能看到 Mellanox 的身影，其在社区和标准制定上上拥有最大的话语权。目前最新一代的网卡是支持 200Gb/s 的 ConnextX-6 系列。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;华为
+去年初推出的鲲鹏 920 芯片已经支持 100Gb/s 的 RoCE 协议，技术上在国内处于领先地位。但是软硬件和影响力方面距离 Mellanox 还有比较长的路要走，相信华为能够早日赶上老大哥的步伐。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;用户&#34;&gt;用户&lt;/h2&gt;
+&lt;p&gt;微软、IBM 和国内的阿里、京东都正在使用 RDMA，另外还有很多大型 IT 公司在做初步的开发和测试。在数据中心和高性能计算场景下，RDMA 代替传统网络是大势所趋。笔者对于市场接触不多，所以并不能提供更详细的应用情况。&lt;/p&gt;
+&lt;p&gt;下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p&gt;
+</description>
+        </item>
+        <item>
         <title>在 HPC 上运行 Apache Spark</title>
         <link>https://cuterwrite.top/p/run-spark-on-hpc/</link>
         <pubDate>Sat, 30 Dec 2023 01:00:00 +0000</pubDate>
@@ -436,7 +587,8 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;ul&gt;
-&lt;li&gt;然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;code&gt;http://localhost:8080/&lt;/code&gt; 访问 Spark Web UI。&lt;/li&gt;
+&lt;li&gt;然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;a class=&#34;link&#34; href=&#34;http://localhost:8080/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
+    &gt;http://localhost:8080/&lt;/a&gt; 访问 Spark Web UI。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
@@ -458,7 +610,7 @@
         
         <guid>https://cuterwrite.top/p/processing-avif-heic-images-pillow-plugins/</guid>
         <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp" alt="Featured image of post 使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片" /&gt;&lt;h2 id=&#34;一引言&#34;&gt;一、引言&lt;/h2&gt;
-&lt;p&gt;随着图片格式的不断发展，AVIF和HEIC这两种高效的图片格式逐渐受到了开发者的关注。AVIF（AV1 Image File Format）是一种基于 AV1 视频编码的图像格式，具有高压缩率和高质量的特点。HEIC（High Efficiency Image Format）是一种基于 HEVC（High Efficiency Video Coding）编码的图像格式，同样具有高压缩率和高质量的优势。为了方便处理这两种格式的图片，我们可以使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库。&lt;/p&gt;
+&lt;p&gt;随着图片格式的不断发展，AVIF 和 HEIC 这两种高效的图片格式逐渐受到了开发者的关注。AVIF（AV1 Image File Format）是一种基于 AV1 视频编码的图像格式，具有高压缩率和高质量的特点。HEIC（High Efficiency Image Format）是一种基于 HEVC（High Efficiency Video Coding）编码的图像格式，同样具有高压缩率和高质量的优势。为了方便处理这两种格式的图片，我们可以使用 Pillow-AVIF-Plugin 和 Pillow-HEIC 库。&lt;/p&gt;
 &lt;h2 id=&#34;二安装&#34;&gt;二、安装&lt;/h2&gt;
 &lt;p&gt;首先，我们需要安装 Pillow 库，它是一个强大的 Python 图像处理库。使用以下命令安装：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
@@ -481,7 +633,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h2 id=&#34;三使用方法&#34;&gt;三、使用方法&lt;/h2&gt;
-&lt;h3 id=&#34;1-处理avif图片&#34;&gt;1. 处理AVIF图片&lt;/h3&gt;
+&lt;h3 id=&#34;1-处理-avif-图片&#34;&gt;1. 处理 AVIF 图片&lt;/h3&gt;
 &lt;p&gt;使用 Pillow-AVIF-Plugin 处理 AVIF 图片非常简单。首先，导入所需的库：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -493,7 +645,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;kn&#34;&gt;import&lt;/span&gt; &lt;span class=&#34;nn&#34;&gt;pillow_avif&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开AVIF图片：&lt;/p&gt;
+&lt;/div&gt;&lt;p&gt;然后，使用 &lt;code&gt;Image.open()&lt;/code&gt; 方法打开 AVIF 图片：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -517,7 +669,7 @@
 &lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;os&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;.&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;remove&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;(&lt;/span&gt;&lt;span class=&#34;n&#34;&gt;file_path&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;)&lt;/span&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
-&lt;/div&gt;&lt;h3 id=&#34;2-处理heic图片&#34;&gt;2. 处理HEIC图片&lt;/h3&gt;
+&lt;/div&gt;&lt;h3 id=&#34;2-处理-heic-图片&#34;&gt;2. 处理 HEIC 图片&lt;/h3&gt;
 &lt;p&gt;处理 HEIC 图片的方法与处理 AVIF 图片类似。首先，导入所需的库：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
@@ -562,25 +714,19 @@
 </description>
         </item>
         <item>
-        <title>Ring buffer详解</title>
+        <title>Ring buffer 详解</title>
         <link>https://cuterwrite.top/p/ring-buffer/</link>
         <pubDate>Sat, 02 Dec 2023 02:00:00 +0000</pubDate>
         
         <guid>https://cuterwrite.top/p/ring-buffer/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp" alt="Featured image of post Ring buffer详解" /&gt;&lt;h1 id=&#34;ring-buffer详解&#34;&gt;Ring buffer详解&lt;/h1&gt;
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp" alt="Featured image of post Ring buffer 详解" /&gt;&lt;h1 id=&#34;ring-buffer-详解&#34;&gt;Ring buffer 详解&lt;/h1&gt;
 &lt;h2 id=&#34;一概述&#34;&gt;一、概述&lt;/h2&gt;
 &lt;p&gt;&lt;code&gt;ring buffer&lt;/code&gt; 称作 &lt;strong&gt;环形缓冲区&lt;/strong&gt; ，也称作环形队列（circular queue），是一种用于表示一个固定尺寸、头尾相连的缓冲区的数据结构，适合缓存数据流。如下为 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的概念示意图。&lt;/p&gt;
-&lt;p&gt;在任务间的通信、串口数据收发、log缓存、网卡处理网络数据包、音频/视频流处理中均有 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的应用。在 &lt;strong&gt;RT-Thread&lt;/strong&gt; 的 &lt;code&gt;ringbuffer.c&lt;/code&gt; 和 &lt;code&gt;ringbuffer.h&lt;/code&gt; 文件中，Linux 内核文件 &lt;code&gt;kfifo.h&lt;/code&gt; 和 &lt;code&gt;kfifo.c&lt;/code&gt; 中也有 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的代码实现。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202213555-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231202213555-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;p&gt;在任务间的通信、串口数据收发、log 缓存、网卡处理网络数据包、音频/视频流处理中均有 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的应用。在 &lt;strong&gt;RT-Thread&lt;/strong&gt; 的 &lt;code&gt;ringbuffer.c&lt;/code&gt; 和 &lt;code&gt;ringbuffer.h&lt;/code&gt; 文件中，Linux 内核文件 &lt;code&gt;kfifo.h&lt;/code&gt; 和 &lt;code&gt;kfifo.c&lt;/code&gt; 中也有 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的代码实现。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202213555-2023-12-02.webp&#34;
+         alt=&#34;20231202213555-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;环形缓冲区的一些使用特点如下：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;当一个数据元素被读取出后，其余数据元素不需要移动其存储位置；&lt;/li&gt;
@@ -592,86 +738,44 @@
 &lt;p&gt;由于计算机内存是线性地址空间，因此 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 需要特别的算法设计才可以从逻辑上实现。&lt;/p&gt;
 &lt;h3 id=&#34;1-一个简单例子&#34;&gt;1. 一个简单例子&lt;/h3&gt;
 &lt;p&gt;先不要想 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 的具体实现细节，来看一个简单的例子。如下是一个空间大小为 7 的环形缓冲区，其中底部的单线箭头表示头尾相连形成一个环形地址空间：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_empty.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_empty.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_empty.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_empty.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;假设 &lt;code&gt;1&lt;/code&gt; 被写入圆形缓冲区的中心（在环形缓冲区中，最初的写入位置在哪里是无关紧要的）：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XX1XXXX.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_XX1XXXX.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XX1XXXX.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_XX1XXXX.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;再 &lt;strong&gt;写入两个&lt;/strong&gt; 元素，分别是 &lt;code&gt;2&lt;/code&gt; 和 &lt;code&gt;3&lt;/code&gt; ，这两个元素被追加到 &lt;code&gt;1&lt;/code&gt; 之后：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XX123XX.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_XX123XX.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XX123XX.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_XX123XX.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;如果 &lt;strong&gt;读出两个&lt;/strong&gt; 元素，那么环形缓冲区中最老的两个元素将被读出（先进先出原则）。在本例中 &lt;code&gt;1&lt;/code&gt; 和 &lt;code&gt;2&lt;/code&gt; 被读出，缓冲区中剩下 &lt;code&gt;3&lt;/code&gt; ：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XXXX3XX.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_XXXX3XX.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_XXXX3XX.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_XXXX3XX.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;紧接着，向缓冲区中 &lt;strong&gt;写入六个&lt;/strong&gt; 元素 &lt;code&gt;4、5、6、7、8、9&lt;/code&gt; ，这时缓冲区会被装满：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_6789345.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_6789345.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_6789345.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_6789345.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;如果缓冲区是满的，又要写入新的数据，这时有两种策略：一种是覆盖掉最老的数据，也就是将老数据丢掉；另一种是返回错误码或者抛出异常。来看策略一，例如，这时写入两个元素 &lt;code&gt;A&lt;/code&gt; 和 &lt;code&gt;B&lt;/code&gt; ，就会覆盖掉 &lt;code&gt;3&lt;/code&gt; 和 &lt;code&gt;4&lt;/code&gt; ：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_6789AB5.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_6789AB5.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_6789AB5.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_6789AB5.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;再看，这时如果读出两个元素，就不是 &lt;code&gt;3&lt;/code&gt; 和 &lt;code&gt;4&lt;/code&gt; 而是 &lt;code&gt;5&lt;/code&gt; 和 &lt;code&gt;6&lt;/code&gt;（ &lt;code&gt;5&lt;/code&gt; 和 &lt;code&gt;6&lt;/code&gt; 这时最老），&lt;code&gt;3&lt;/code&gt; 和 &lt;code&gt;4&lt;/code&gt; 已经被 &lt;code&gt;A&lt;/code&gt; 和 &lt;code&gt;B&lt;/code&gt; 覆盖掉。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_X789ABX.svg-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;375px-Circular_buffer_-_X789ABX.svg-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/375px-Circular_buffer_-_X789ABX.svg-2023-12-02.webp&#34;
+         alt=&#34;375px-Circular_buffer_-_X789ABX.svg-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;通过这个简单的例子，可以总结出要实现 &lt;strong&gt;环形缓冲区（ring buffer）&lt;/strong&gt; 需要注意到几个问题点：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;在缓冲区满的时候写数据，有两种策略可以使用：第一覆盖掉老数据；第二抛出异常；&lt;/li&gt;
-&lt;li&gt;读数据时，一定要读出缓冲区中最老的数据（缓冲区中数据满足FIFO特性）；&lt;/li&gt;
+&lt;li&gt;读数据时，一定要读出缓冲区中最老的数据（缓冲区中数据满足 FIFO 特性）；&lt;/li&gt;
 &lt;li&gt;怎样来判断缓冲区是满的；&lt;/li&gt;
 &lt;li&gt;如何实现一个线性地址空间的循环读写。&lt;/li&gt;
 &lt;/ul&gt;
@@ -687,8 +791,8 @@
 &lt;p&gt;具体来说，读写逻辑如下：&lt;/p&gt;
 &lt;ol&gt;
 &lt;li&gt;当环形缓冲区为空时，读索引和写索引指向相同的位置（因为是环形缓冲区，可以出现在任何位置）；&lt;/li&gt;
-&lt;li&gt;当向缓冲区写入一个元素时，元素被写入 &lt;strong&gt;写索引&lt;/strong&gt; 当前所指向位置，然后写索引加1，指向下一个位置；&lt;/li&gt;
-&lt;li&gt;当从缓冲区读出一个元素时，在 &lt;strong&gt;读索引&lt;/strong&gt; 当前所指向位置的元素被读出，然后读索引加1，指向下一个位置；&lt;/li&gt;
+&lt;li&gt;当向缓冲区写入一个元素时，元素被写入 &lt;strong&gt;写索引&lt;/strong&gt; 当前所指向位置，然后写索引加 1，指向下一个位置；&lt;/li&gt;
+&lt;li&gt;当从缓冲区读出一个元素时，在 &lt;strong&gt;读索引&lt;/strong&gt; 当前所指向位置的元素被读出，然后读索引加 1，指向下一个位置；&lt;/li&gt;
 &lt;li&gt;当缓冲区满时，写索引和读索引指向相同的位置（和缓冲区为空时一样）。&lt;/li&gt;
 &lt;/ol&gt;
 &lt;h4 id=&#34;21-在缓冲区满的时候写数据有两种策略可以使用&#34;&gt;2.1 在缓冲区满的时候写数据，有两种策略可以使用&lt;/h4&gt;
@@ -699,7 +803,7 @@
 &lt;p&gt;判断缓冲区是满还是空，在环形缓冲区（ring buffer）中是一个重点问题，在&lt;a class=&#34;link&#34; href=&#34;https://en.wikipedia.org/wiki/Circular_buffer&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
     &gt;维基百科&lt;/a&gt;中，讲解了五种判断方法，感兴趣可以看一下。在平衡各方优缺点后，本节重点讲解 &lt;strong&gt;镜像指示位&lt;/strong&gt; 方法，在 &lt;code&gt;linux&lt;/code&gt; 和 &lt;code&gt;RT-Thread&lt;/code&gt; 实现的环形缓冲区中，也都是用的该策略（或者说是该策略的扩展）。&lt;/p&gt;
 &lt;blockquote&gt;
-&lt;p&gt;镜像指示位：缓冲区的长度如果是 n ，逻辑地址空间则为 0 至 n-1 ；那么，规定 n 至 2n-1 为镜像逻辑地址空间。本策略规定读写指针的地址空间为 0 至 2n-1 ，其中低半部分对应于常规的逻辑地址空间，高半部分对应于镜像逻辑地址空间。当指针值大于等于 2n 时，使其折返（wrapped）到ptr-2n。使用一位表示写指针或读指针是否进入了虚拟的镜像存储区：置位表示进入，不置位表示没进入还在基本存储区。&lt;/p&gt;
+&lt;p&gt;镜像指示位：缓冲区的长度如果是 n ，逻辑地址空间则为 0 至 n-1 ；那么，规定 n 至 2n-1 为镜像逻辑地址空间。本策略规定读写指针的地址空间为 0 至 2n-1 ，其中低半部分对应于常规的逻辑地址空间，高半部分对应于镜像逻辑地址空间。当指针值大于等于 2n 时，使其折返（wrapped）到 ptr-2n。使用一位表示写指针或读指针是否进入了虚拟的镜像存储区：置位表示进入，不置位表示没进入还在基本存储区。&lt;/p&gt;
 &lt;/blockquote&gt;
 &lt;ul&gt;
 &lt;li&gt;
@@ -715,16 +819,10 @@
 &lt;p&gt;如果缓冲区长度是 &lt;code&gt;2&lt;/code&gt; 的幂，则本方法可以省略镜像指示位。如果读写指针的值相等，则缓冲区为空；如果读写指针相差 &lt;code&gt;n&lt;/code&gt; ，则缓冲区为满，这可以用条件表达式（写指针 == (读指针 异或 缓冲区长度)）来判断。—— 维基百科&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-22cba7a9b8ff0746184d752a63621981_1440w-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;v2-22cba7a9b8ff0746184d752a63621981_1440w-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-22cba7a9b8ff0746184d752a63621981_1440w-2023-12-02.webp&#34;
+         alt=&#34;v2-22cba7a9b8ff0746184d752a63621981_1440w-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;上面是维基百科中对 &lt;strong&gt;镜像指示位&lt;/strong&gt; 的整体描述，但是单凭上面这一个描述，去理解 &lt;strong&gt;镜像指示位&lt;/strong&gt; 方法还是有一定困难，下面来进行一些讨论。&lt;/p&gt;
 &lt;p&gt;上面描述中提到了 &lt;strong&gt;读/写指针&lt;/strong&gt; 的概念，注意这个读/写指针和上文提到的 &lt;strong&gt;读索引&lt;/strong&gt; 和 &lt;strong&gt;写索引&lt;/strong&gt; 不是一回事。读写指针的范围是 $[0, 2n-1]$ ，而 &lt;strong&gt;读索引&lt;/strong&gt; 和 &lt;strong&gt;写索引&lt;/strong&gt; 的范围是 $[0, n - 1]$ ，其必须和缓冲区的实际逻辑空间一致。但是 &lt;strong&gt;读/写指针&lt;/strong&gt; 和 &lt;strong&gt;读索引&lt;/strong&gt; 和 &lt;strong&gt;写索引&lt;/strong&gt; 有一个转换关系：&lt;/p&gt;
 &lt;p&gt;$$
@@ -738,7 +836,7 @@ $$&lt;/p&gt;
 $$&lt;/p&gt;
 &lt;p&gt;按位与的运算效率要比求余运算高的多，在 &lt;code&gt;linux&lt;/code&gt; 内核中将缓冲区长度扩展为 &lt;code&gt;2&lt;/code&gt; 的幂长度随处可见，都是为了用按位与操作代替求余操作。为了判断缓冲区是否为空或者满，镜像指示位策略引入了两个布尔变量（指示位），来分别标记读指针或写指针是否进入了镜像区间 $[n, 2n-1]$ ，在读写指针的值相同情况下，如果二者的指示位相同，说明缓冲区 &lt;strong&gt;为空&lt;/strong&gt; ；如果二者的指示位不同，说明缓冲区 &lt;strong&gt;为满&lt;/strong&gt; 。但如果缓冲区的长度是 &lt;code&gt;2&lt;/code&gt; 的幂，则可以省略镜像指示位。如果读写指针的值相等，则缓冲区为空；如果读写指针相差 &lt;code&gt;n&lt;/code&gt; ，则缓冲区为满。&lt;/p&gt;
 &lt;h4 id=&#34;24-如何实现一个线性地址空间的循环读写&#34;&gt;2.4 如何实现一个线性地址空间的循环读写&lt;/h4&gt;
-&lt;p&gt;理解了2.3节的描述，再来理解用一个线性地址空间来实现循环读写就比较容易。如一个环形缓冲区的长度为 &lt;strong&gt;七&lt;/strong&gt; ，则其读写索引的区间为 $[0, 6]$ 。当写索引的值为 &lt;code&gt;6&lt;/code&gt; ，再向缓冲区中写入一个元素时，写索引应该要回到缓冲区的起始索引位置 &lt;code&gt;0&lt;/code&gt; ，读索引在碰到这种情况也是类似处理。总结为一句话就是，当写索引或读索引已经到了环形缓冲区的结束位置时，进行下一步操作时，其应该要回到环形缓冲区的开始位置。&lt;/p&gt;
+&lt;p&gt;理解了 2.3 节的描述，再来理解用一个线性地址空间来实现循环读写就比较容易。如一个环形缓冲区的长度为 &lt;strong&gt;七&lt;/strong&gt; ，则其读写索引的区间为 $[0, 6]$ 。当写索引的值为 &lt;code&gt;6&lt;/code&gt; ，再向缓冲区中写入一个元素时，写索引应该要回到缓冲区的起始索引位置 &lt;code&gt;0&lt;/code&gt; ，读索引在碰到这种情况也是类似处理。总结为一句话就是，当写索引或读索引已经到了环形缓冲区的结束位置时，进行下一步操作时，其应该要回到环形缓冲区的开始位置。&lt;/p&gt;
 &lt;h2 id=&#34;三实现&#34;&gt;三、实现&lt;/h2&gt;
 &lt;p&gt;对于环形缓冲区的代码实现，本文会分析 &lt;strong&gt;RT-Thread&lt;/strong&gt; 的 &lt;code&gt;ringbuffer.c&lt;/code&gt; 和 &lt;code&gt;ringbuffer.h&lt;/code&gt; 文件，&lt;strong&gt;Linux&lt;/strong&gt; 内核中的 &lt;code&gt;kfifo.h&lt;/code&gt; 和 &lt;code&gt;kfifo.c&lt;/code&gt; 文件。&lt;/p&gt;
 &lt;h3 id=&#34;1-rt-thread-中实现的-ring-buffer&#34;&gt;1. RT-Thread 中实现的 ring buffer&lt;/h3&gt;
@@ -1191,12 +1289,12 @@ $$&lt;/p&gt;
 &lt;li&gt;当只有一个读线程和一个写线程（单生产者单消费者模型）时，用 &lt;code&gt;rt_ringbuffer_put&lt;/code&gt; 和 &lt;code&gt;rt_ringbuffer_get&lt;/code&gt; 进行读写操作缓冲区是线程安全的，无需加锁；但是 &lt;code&gt;rt_ringbuffer_put_force&lt;/code&gt; 不行，因为其可能对 &lt;strong&gt;读写索引&lt;/strong&gt; 都进行操作的场景，这个时候再进行 &lt;code&gt;rt_ringbuffer_get&lt;/code&gt; 读操作，就是不安全访问；&lt;/li&gt;
 &lt;li&gt;读写指针已经在读写( &lt;code&gt;rt_ringbuffer_get&lt;/code&gt; 和 &lt;code&gt;rt_ringbuffer_put&lt;/code&gt; )过程中转换为了读写索引。所以 &lt;code&gt;read_index&lt;/code&gt;(读索引)和 &lt;code&gt;write_index&lt;/code&gt; (写索引)可以直接用来操作缓冲区，无需转换；&lt;/li&gt;
 &lt;li&gt;&lt;code&gt;read_index&lt;/code&gt; 和 &lt;code&gt;write_index&lt;/code&gt; 的大小区间为$[0, n-1]$ ， $n$ 为缓冲区大小；&lt;/li&gt;
-&lt;li&gt;&lt;strong&gt;RT-Thread&lt;/strong&gt; 的环形缓冲区不需要 &lt;code&gt;buffer&lt;/code&gt; 大小为 &lt;strong&gt;2的幂&lt;/strong&gt; 。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;RT-Thread&lt;/strong&gt; 的环形缓冲区不需要 &lt;code&gt;buffer&lt;/code&gt; 大小为 &lt;strong&gt;2 的幂&lt;/strong&gt; 。&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h3 id=&#34;2-linux-中实现的-ring-buffer&#34;&gt;2. Linux 中实现的 ring buffer&lt;/h3&gt;
 &lt;p&gt;在 &lt;code&gt;linux&lt;/code&gt; 内核中， &lt;code&gt;kfifo&lt;/code&gt; 就是 &lt;strong&gt;ring buffer&lt;/strong&gt; 的经典实现方式，本文将介绍 &lt;code&gt;linux 2.6&lt;/code&gt; 版本中的 &lt;strong&gt;ring buffer&lt;/strong&gt; 实现方式，主要介绍 &lt;strong&gt;缓冲区结构体&lt;/strong&gt; 、 &lt;strong&gt;缓冲区初始化&lt;/strong&gt; 、 &lt;strong&gt;读操作&lt;/strong&gt; 、 &lt;strong&gt;写操作&lt;/strong&gt; 、 &lt;strong&gt;判断缓冲区是否为空或满&lt;/strong&gt; 。&lt;/p&gt;
 &lt;h4 id=&#34;21-缓冲区结构体&#34;&gt;2.1 缓冲区结构体&lt;/h4&gt;
-&lt;p&gt;&lt;code&gt;kfifo&lt;/code&gt; 的 &lt;strong&gt;ring buffer&lt;/strong&gt; 结构体定义如下，其中 &lt;code&gt;buffer、size、in、out&lt;/code&gt; 环形缓冲区4个信息是一一对应的。但其中 &lt;code&gt;in&lt;/code&gt; 、 &lt;code&gt;out&lt;/code&gt; 分别是 &lt;strong&gt;写指针&lt;/strong&gt; 和 &lt;strong&gt;读指针&lt;/strong&gt; ，而不是 &lt;strong&gt;写索引&lt;/strong&gt; 和 &lt;strong&gt;读索引&lt;/strong&gt; 。参数 &lt;code&gt;lock&lt;/code&gt; 是自旋锁，在多进程/线程对同一个环形缓冲区进行读写操作时，需要进行锁保护。和 &lt;strong&gt;RT-Thread&lt;/strong&gt; 对比，可以看到其并没有读写的 &lt;strong&gt;镜像指示位&lt;/strong&gt; 。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;kfifo&lt;/code&gt; 的 &lt;strong&gt;ring buffer&lt;/strong&gt; 结构体定义如下，其中 &lt;code&gt;buffer、size、in、out&lt;/code&gt; 环形缓冲区 4 个信息是一一对应的。但其中 &lt;code&gt;in&lt;/code&gt; 、 &lt;code&gt;out&lt;/code&gt; 分别是 &lt;strong&gt;写指针&lt;/strong&gt; 和 &lt;strong&gt;读指针&lt;/strong&gt; ，而不是 &lt;strong&gt;写索引&lt;/strong&gt; 和 &lt;strong&gt;读索引&lt;/strong&gt; 。参数 &lt;code&gt;lock&lt;/code&gt; 是自旋锁，在多进程/线程对同一个环形缓冲区进行读写操作时，需要进行锁保护。和 &lt;strong&gt;RT-Thread&lt;/strong&gt; 对比，可以看到其并没有读写的 &lt;strong&gt;镜像指示位&lt;/strong&gt; 。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1218,7 +1316,7 @@ $$&lt;/p&gt;
 &lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h4 id=&#34;22-缓冲区初始化&#34;&gt;2.2 缓冲区初始化&lt;/h4&gt;
-&lt;p&gt;在 &lt;code&gt;kfifo&lt;/code&gt; 的初始化 &lt;code&gt;kfifo_init&lt;/code&gt; 中可以看出，其会对所传入的 &lt;code&gt;size&lt;/code&gt; 大小进行扩展，使其满足 &lt;code&gt;size&lt;/code&gt; 为 &lt;strong&gt;2的幂&lt;/strong&gt; 。这样就可以使用性质： &lt;strong&gt;如果缓冲区的长度是 2 的幂 ，则可以省略镜像指示位。如果读写指针的值相等，则缓冲区为空；如果读写指针相差n(缓冲区大小)，则缓冲区为满&lt;/strong&gt; 。所以在传入 &lt;code&gt;buffer&lt;/code&gt; 的 &lt;code&gt;size&lt;/code&gt; 大小时，最好开始就将其确定为 &lt;strong&gt;2的幂&lt;/strong&gt; 。&lt;/p&gt;
+&lt;p&gt;在 &lt;code&gt;kfifo&lt;/code&gt; 的初始化 &lt;code&gt;kfifo_init&lt;/code&gt; 中可以看出，其会对所传入的 &lt;code&gt;size&lt;/code&gt; 大小进行扩展，使其满足 &lt;code&gt;size&lt;/code&gt; 为 &lt;strong&gt;2 的幂&lt;/strong&gt; 。这样就可以使用性质： &lt;strong&gt;如果缓冲区的长度是 2 的幂 ，则可以省略镜像指示位。如果读写指针的值相等，则缓冲区为空；如果读写指针相差 n(缓冲区大小)，则缓冲区为满&lt;/strong&gt; 。所以在传入 &lt;code&gt;buffer&lt;/code&gt; 的 &lt;code&gt;size&lt;/code&gt; 大小时，最好开始就将其确定为 &lt;strong&gt;2 的幂&lt;/strong&gt; 。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
@@ -1399,8 +1497,8 @@ $$&lt;/p&gt;
 &lt;/div&gt;
 &lt;/div&gt;&lt;h4 id=&#34;小结-1&#34;&gt;小结&lt;/h4&gt;
 &lt;ul&gt;
-&lt;li&gt;&lt;code&gt;linux&lt;/code&gt; 中环形缓冲区（ring buffer）的实现，其实是对 &lt;strong&gt;镜像指示位&lt;/strong&gt; 策略的扩展，读指针和写指针区间范围不再局限在镜像区间 $[0, 2n-1]$ ，而是整个unsigned int大小的空间，对于32位机器，读指针和写指针的区间范围是 $[0, 2^32 - 1]$ ;&lt;/li&gt;
-&lt;li&gt;进行扩展后，还能维持如下的关系，是因为缓冲区大小 &lt;code&gt;n&lt;/code&gt; 会被扩展为 &lt;strong&gt;2的幂&lt;/strong&gt; ，那么 $2^32$ 肯定是 $n$ 扩展后的整数倍，所以还是能够满足如下关系；
+&lt;li&gt;&lt;code&gt;linux&lt;/code&gt; 中环形缓冲区（ring buffer）的实现，其实是对 &lt;strong&gt;镜像指示位&lt;/strong&gt; 策略的扩展，读指针和写指针区间范围不再局限在镜像区间 $[0, 2n-1]$ ，而是整个 unsigned int 大小的空间，对于 32 位机器，读指针和写指针的区间范围是 $[0, 2^{32} - 1]$ ;&lt;/li&gt;
+&lt;li&gt;进行扩展后，还能维持如下的关系，是因为缓冲区大小 &lt;code&gt;n&lt;/code&gt; 会被扩展为 &lt;strong&gt;2 的幂&lt;/strong&gt; ，那么 $2^32$ 肯定是 $n$ 扩展后的整数倍，所以还是能够满足如下关系；
 &lt;ul&gt;
 &lt;li&gt;读索引 = 读指针 &amp;amp; (缓冲区长度 - 1)&lt;/li&gt;
 &lt;li&gt;写索引 = 写指针 &amp;amp; (缓冲区长度 - 1)&lt;/li&gt;
@@ -1410,9 +1508,9 @@ $$&lt;/p&gt;
 &lt;li&gt;在多进程/线程中，对同一个环形缓冲区进行读写操作时，需要加上锁，不然存在访问不安全问题；&lt;/li&gt;
 &lt;li&gt;当只有一个读进程/线程和一个写进程/线程时，无需加锁，也能保证访问安全。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;h3 id=&#34;3-517版本的linux中实现的-ring-buffer&#34;&gt;3. 5.17+版本的Linux中实现的 ring buffer&lt;/h3&gt;
+&lt;h3 id=&#34;3-517版本的-linux-中实现的-ring-buffer&#34;&gt;3. 5.17+版本的 Linux 中实现的 ring buffer&lt;/h3&gt;
 &lt;p&gt;在 &lt;code&gt;linux5.17+&lt;/code&gt; 版本中的 &lt;code&gt;kfifo.c&lt;/code&gt; 和 &lt;code&gt;kfifo.h&lt;/code&gt; 中，其源码实现已经和 &lt;code&gt;linux 2.6&lt;/code&gt; 版本有很大的不同，但是最新版本的 &lt;strong&gt;ring buffer&lt;/strong&gt; 核心思想和 &lt;code&gt;linux 2.6&lt;/code&gt; 版本并没有不同。&lt;/p&gt;
-&lt;p&gt;&lt;code&gt;kfifo.h&lt;/code&gt; 文件中定义的 ring buffer 结构体，其中 &lt;code&gt;in&lt;/code&gt; 、 &lt;code&gt;out&lt;/code&gt; 依然是 &lt;strong&gt;写指针&lt;/strong&gt; 和 &lt;strong&gt;读指针&lt;/strong&gt; ，&lt;code&gt;mask&lt;/code&gt; 是缓冲区大小减1（做&amp;amp;操作，更方便的将读写指针转换为 &lt;strong&gt;读写索引&lt;/strong&gt; ）， &lt;code&gt;esize&lt;/code&gt; 缓冲区单个存储元素的字节大小(在 &lt;code&gt;linux 2.6&lt;/code&gt; 版本中，一个元素就是一个字节大小，最新版本将其进行了扩展)， &lt;code&gt;data&lt;/code&gt; 缓冲区的逻辑起始地址（指针类型不再是字节）。其它的 &lt;strong&gt;初始化接口&lt;/strong&gt; 、 &lt;strong&gt;读接口&lt;/strong&gt; 、 &lt;strong&gt;写接口&lt;/strong&gt; 、 &lt;strong&gt;判断缓冲区是否为空或满接口逻辑&lt;/strong&gt; 和 &lt;code&gt;linux 2.6&lt;/code&gt; 大致差不多，可以对照源码看一下。&lt;/p&gt;
+&lt;p&gt;&lt;code&gt;kfifo.h&lt;/code&gt; 文件中定义的 ring buffer 结构体，其中 &lt;code&gt;in&lt;/code&gt; 、 &lt;code&gt;out&lt;/code&gt; 依然是 &lt;strong&gt;写指针&lt;/strong&gt; 和 &lt;strong&gt;读指针&lt;/strong&gt; ，&lt;code&gt;mask&lt;/code&gt; 是缓冲区大小减 1（做&amp;amp;操作，更方便的将读写指针转换为 &lt;strong&gt;读写索引&lt;/strong&gt; ）， &lt;code&gt;esize&lt;/code&gt; 缓冲区单个存储元素的字节大小(在 &lt;code&gt;linux 2.6&lt;/code&gt; 版本中，一个元素就是一个字节大小，最新版本将其进行了扩展)， &lt;code&gt;data&lt;/code&gt; 缓冲区的逻辑起始地址（指针类型不再是字节）。其它的 &lt;strong&gt;初始化接口&lt;/strong&gt; 、 &lt;strong&gt;读接口&lt;/strong&gt; 、 &lt;strong&gt;写接口&lt;/strong&gt; 、 &lt;strong&gt;判断缓冲区是否为空或满接口逻辑&lt;/strong&gt; 和 &lt;code&gt;linux 2.6&lt;/code&gt; 大致差不多，可以对照源码看一下。&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1462,30 +1560,24 @@ $$&lt;/p&gt;
 &lt;h2 id=&#34;一前言&#34;&gt;一、前言&lt;/h2&gt;
 &lt;p&gt;在多核并发编程中，如果将互斥锁的争用比作 &lt;strong&gt;性能杀手&lt;/strong&gt; 的话，那么伪共享则相当于 &lt;strong&gt;性能刺客&lt;/strong&gt;。&lt;strong&gt;杀手&lt;/strong&gt; 与 &lt;strong&gt;刺客&lt;/strong&gt; 的区别在于杀手是可见的，遇到杀手时我们可以选择战斗、逃跑、绕路、求饶等多种手段去应付，但 &lt;strong&gt;刺客&lt;/strong&gt; 却不同， &lt;strong&gt;刺客&lt;/strong&gt; 永远隐藏在暗处，伺机给你致命一击，防不胜防。具体到我们的并发编程中，遇到锁争用影响并发性能情况时，我们可以采取多种措施（如缩短临界区，原子操作等等）去提高程序性能，但是伪共享却是我们从所写代码中看不出任何蛛丝马迹的，发现不了问题也就无法解决问题，从而导致伪共享在暗处严重拖累程序的并发性能，但我们却束手无策。&lt;/p&gt;
 &lt;h2 id=&#34;二缓存行&#34;&gt;二、缓存行&lt;/h2&gt;
-&lt;p&gt;为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU将最近使用的数据预先读取到Cache中，下次再访问同样数据的时候，可以直接从速度比较快的CPU缓存中读取，避免从内存或磁盘读取拖慢整体速度。&lt;/p&gt;
-&lt;p&gt;CPU缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 &lt;code&gt;64Byte&lt;/code&gt; 和 &lt;code&gt;32Byte&lt;/code&gt; ，CPU缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。&lt;/p&gt;
+&lt;p&gt;为了进行下面的讨论，我们需要首先熟悉缓存行的概念，学过操作系统课程存储结构这部分内容的同学应该对存储器层次结构的金字塔模型印象深刻，金字塔从上往下代表存储介质的成本降低、容量变大，从下往上则代表存取速度的提高。位于金字塔模型最上层的是 CPU 中的寄存器，其次是 CPU 缓存（L1，L2，L3），再往下是内存，最底层是磁盘，操作系统采用这种存储层次模型主要是为了解决 CPU 的高速与内存磁盘低速之间的矛盾，CPU 将最近使用的数据预先读取到 Cache 中，下次再访问同样数据的时候，可以直接从速度比较快的 CPU 缓存中读取，避免从内存或磁盘读取拖慢整体速度。&lt;/p&gt;
+&lt;p&gt;CPU 缓存的最小单位就是缓存行，缓存行大小依据架构不同有不同大小，最常见的有 &lt;code&gt;64Byte&lt;/code&gt; 和 &lt;code&gt;32Byte&lt;/code&gt; ，CPU 缓存从内存取数据时以缓存行为单位进行，每一次都取需要读取数据所在的整个缓存行，即使相邻的数据没有被用到也会被缓存到 CPU 缓存中。&lt;/p&gt;
 &lt;h2 id=&#34;三缓存一致性&#34;&gt;三、缓存一致性&lt;/h2&gt;
-&lt;p&gt;在单核CPU情况下，上述方法可以正常工作，可以确保缓存到CPU缓存中的数据永远是 &lt;strong&gt;干净&lt;/strong&gt; 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 &lt;strong&gt;干净&lt;/strong&gt; 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。&lt;/p&gt;
-&lt;p&gt;Linux系统中采用 &lt;code&gt;MESI&lt;/code&gt; 协议处理缓存一致性，所谓 &lt;code&gt;MESI&lt;/code&gt; 即是指 CPU 缓存的四种状态：&lt;/p&gt;
+&lt;p&gt;在单核 CPU 情况下，上述方法可以正常工作，可以确保缓存到 CPU 缓存中的数据永远是 &lt;strong&gt;干净&lt;/strong&gt; 的，因为不会有其他 CPU 去更改内存中的数据，但是在多核 CPU 下，情况就变得更加复杂一些。多 CPU 中，每个 CPU 都有自己的私有缓存（可能共享 L3 缓存），当一个 CPU1 对 Cache 中缓存数据进行操作时，如果 CPU2 在此之前更改了该数据，则 CPU1 中的数据就不再是 &lt;strong&gt;干净&lt;/strong&gt; 的，即应该是失效数据，缓存一致性就是为了保证多 CPU 之间的缓存一致。&lt;/p&gt;
+&lt;p&gt;Linux 系统中采用 &lt;code&gt;MESI&lt;/code&gt; 协议处理缓存一致性，所谓 &lt;code&gt;MESI&lt;/code&gt; 即是指 CPU 缓存的四种状态：&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;M（修改，Modified）：本地处理器已经修改缓存行，即是脏行，它的内容与内存中的内容不一样，并且此 cache 只有本地一个拷贝(专有)；&lt;/li&gt;
 &lt;li&gt;E（专有，Exclusive）：缓存行内容和内存中的一样，而且其它处理器都没有这行数据；&lt;/li&gt;
 &lt;li&gt;S（共享，Shared）：缓存行内容和内存中的一样, 有可能其它处理器也存在此缓存行的拷贝；&lt;/li&gt;
 &lt;li&gt;I（无效，Invalid）：缓存行失效, 不能使用。&lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231202205445-2023-12-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231202205445-2023-12-02.webp&#34;
+         alt=&#34;20231202205445-2023-12-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;
+&lt;/figure&gt;
+
 &lt;p&gt;每个 CPU 缓存行都在四个状态之间互相转换，以此决定 CPU 缓存是否失效，比如 CPU1 对一个缓存行执行了写入操作，则此操作会导致其他 CPU 的该缓存行进入 Invalid 无效状态， CPU 需要使用该缓存行的时候需要从内存中重新读取。由此就解决了多 CPU 之间的缓存一致性问题。&lt;/p&gt;
 &lt;h2 id=&#34;四伪共享&#34;&gt;四、伪共享&lt;/h2&gt;
-&lt;p&gt;何谓伪共享？上面我们提过 CPU 的缓存是 &lt;strong&gt;以缓存行为单位&lt;/strong&gt; 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 &lt;code&gt;abcdefgh&lt;/code&gt; 八个int型数据，当 CPU 读取 &lt;code&gt;d&lt;/code&gt; 这个数据时， CPU 会将 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 &lt;code&gt;a&lt;/code&gt; 这个数据进行频繁读写， CPU2 只对 &lt;code&gt;b&lt;/code&gt; 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 &lt;code&gt;a&lt;/code&gt; 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对&lt;code&gt; b&lt;/code&gt; 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个CPU之间 &lt;strong&gt;乒乓&lt;/strong&gt; ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。&lt;/p&gt;
+&lt;p&gt;何谓伪共享？上面我们提过 CPU 的缓存是 &lt;strong&gt;以缓存行为单位&lt;/strong&gt; 进行的，即除了本身所需读写的数据之外还会缓存与该数据在同一缓存行的数据，假设缓存行大小是 32 字节，内存中有 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 型数据，当 CPU 读取 &lt;code&gt;d&lt;/code&gt; 这个数据时， CPU 会将 &lt;code&gt;abcdefgh&lt;/code&gt; 八个 int 数据组成一个缓存行加入到 CPU 缓存中。假设计算机有两个 CPU：CPU1 和 CPU2 ， CPU1 只对 &lt;code&gt;a&lt;/code&gt; 这个数据进行频繁读写， CPU2 只对 &lt;code&gt;b&lt;/code&gt; 这个数据进行频繁读写，按理说这两个 CPU 读写数据没有任何关联，也就不会产生任何竞争，不会有性能问题，但是由于 CPU 缓存是以缓存行为单位进行存取的，也是以缓存行为单位失效的，即使 CPU1 只更改了缓存行中 &lt;code&gt;a&lt;/code&gt; 数据，也会导致 CPU2 中该缓存行完全失效，同理，CPU2 对&lt;code&gt; b&lt;/code&gt; 的改动也会导致 CPU1 中该缓存行失效，由此引发了该缓存行在两个 CPU 之间 &lt;strong&gt;乒乓&lt;/strong&gt; ，缓存行频繁失效，最终导致程序性能下降，这就是伪共享。&lt;/p&gt;
 &lt;p&gt;下面是维基百科的定义：&lt;/p&gt;
 &lt;blockquote&gt;
 &lt;p&gt;In computer science, &lt;strong&gt;false sharing&lt;/strong&gt; is a performance-degrading usage pattern that can arise in systems with distributed, coherent caches at the size of the smallest resource block managed by the caching mechanism. When a system participant attempts to periodically access data that is not being altered by another party, but that data shares a cache block with data that is being altered, the caching protocol may force the first participant to reload the whole cache block despite a lack of logical necessity. The caching system is unaware of activity within this block and forces the first participant to bear the caching system overhead required by true shared access of a resource.&lt;/p&gt;
@@ -1499,9 +1591,9 @@ $$&lt;/p&gt;
 &lt;/ul&gt;
 &lt;h2 id=&#34;六获取缓存行大小&#34;&gt;六、获取缓存行大小&lt;/h2&gt;
 &lt;p&gt;在 C++11 中，可以使用 &lt;code&gt;std::hardware_destructive_interference_size&lt;/code&gt; 和 &lt;code&gt;std::hardware_constructive_interference_size&lt;/code&gt; 获取缓存行大小，前者获取的是缓存行大小，后者获取的是缓存行大小的两倍，即 &lt;code&gt;2 * std::hardware_destructive_interference_size&lt;/code&gt;。&lt;/p&gt;
-&lt;p&gt;在 C语言中，可以读取 &lt;code&gt;coherency_line_size&lt;/code&gt; 文件获取缓存行大小，该文件位于 &lt;code&gt;/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size&lt;/code&gt; ，该文件中存储的是缓存行大小的字节数，可以使用 &lt;code&gt;cat&lt;/code&gt; 命令查看。也可以通过 &lt;code&gt;long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)&lt;/code&gt; 的方式获取。&lt;/p&gt;
+&lt;p&gt;在 C 语言中，可以读取 &lt;code&gt;coherency_line_size&lt;/code&gt; 文件获取缓存行大小，该文件位于 &lt;code&gt;/sys/devices/system/cpu/cpu0/cache/index0/coherency_line_size&lt;/code&gt; ，该文件中存储的是缓存行大小的字节数，可以使用 &lt;code&gt;cat&lt;/code&gt; 命令查看。也可以通过 &lt;code&gt;long cache_line_size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)&lt;/code&gt; 的方式获取。&lt;/p&gt;
 &lt;h2 id=&#34;七通过对齐解决伪共享&#34;&gt;七、通过对齐解决伪共享&lt;/h2&gt;
-&lt;p&gt;C语言中可以使用 &lt;code&gt;posix_memalign&lt;/code&gt; 函数来实现对齐，该函数的声明如下：&lt;/p&gt;
+&lt;p&gt;C 语言中可以使用 &lt;code&gt;posix_memalign&lt;/code&gt; 函数来实现对齐，该函数的声明如下：&lt;/p&gt;
 &lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
 &lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
 &lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
@@ -1535,52 +1627,32 @@ $$&lt;/p&gt;
 \frac{n(x_1)}{n(x_2)} = \exp \left [ -\frac{qu(x_1)-qu(x_2)}{kT} \right ] \tag{1.1}
 $$&lt;/p&gt;
 &lt;p&gt;因此，电位差 $\Delta u = u(x_1) − u(x_2)$ 引起了离子密度的差异。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102170347-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102170347-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102170347-2023-11-02.webp&#34;
+         alt=&#34;20231102170347-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 1.1： (a)在热平衡状态下，电场中的正离子分布为：高能态的离子较少，低能态的离子较多。因此，电压差会产生浓度梯度。(b) 类似地，离子浓度的差异会产生电势差。神经元内部的浓度与周围的浓度不同。由此产生的电位称为 **Nernst 电位** 。实线表示细胞膜。离子可以通过间隙传递。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图1.1： (a)在热平衡状态下，电场中的正离子分布为：高能态的离子较少，低能态的离子较多。因此，电压差会产生浓度梯度。(b) 类似地，离子浓度的差异会产生电势差。神经元内部的浓度与周围的浓度不同。由此产生的电位称为 &lt;strong&gt;Nernst 电位&lt;/strong&gt; 。实线表示细胞膜。离子可以通过间隙传递。&lt;/p&gt;&lt;/div&gt;
-
-&lt;p&gt;由于这是关于平衡状态的陈述，反过来也是成立的。离子密度的差异会产生电势差 $\Delta u$ 。我们考虑两个离子浓度分别为 $n_1$ 和 $n_2$ 的区域；参见图1.1(b)。通过求解公式 (1.1) 得到 $\Delta u$，我们发现，在平衡状态下，浓度差异会产生一个电压。&lt;/p&gt;
+&lt;p&gt;由于这是关于平衡状态的陈述，反过来也是成立的。离子密度的差异会产生电势差 $\Delta u$ 。我们考虑两个离子浓度分别为 $n_1$ 和 $n_2$ 的区域；参见图 1.1(b)。通过求解公式 (1.1) 得到 $\Delta u$，我们发现，在平衡状态下，浓度差异会产生一个电压。&lt;/p&gt;
 &lt;p&gt;$$
 \Delta u = \frac{kT}{q} \ln \frac{n_1}{n_2} \tag{1.2}
 $$&lt;/p&gt;
 &lt;p&gt;该电压又被称为 Nernst 电位（Hille, 2001）。&lt;/p&gt;
 &lt;h3 id=&#34;2-反转电位reversal-potential&#34;&gt;2. 反转电位（Reversal Potential）&lt;/h3&gt;
 &lt;p&gt;细胞膜由一层薄的脂质双层组成，几乎是一个完美的电绝缘体。然而，在细胞膜中嵌入了特定的蛋白质，它们作为离子门控通道。第一种类型的门控通道是离子泵，第二种是离子通道。离子泵能够主动地将离子从一侧运输到另一侧。因此，细胞内液体中的离子浓度与周围环境不同。例如，哺乳动物神经元内的钠浓度（约为 $10 mM$ ）低于细胞外液体中的钠浓度（约为 $145 mM$ ）。另一方面，细胞内的钾浓度（约为 $140 mM$ ）高于周围环境中的钾浓度（约为 $5 mM$ ）。对于霍奇金和哈克斯利研究的鱿鱼巨大轴突，这些数字略有不同，但基本思想是相同的：细胞外的钠离子比细胞内多，而钾离子则相反。&lt;/p&gt;
-&lt;p&gt;让我们暂时专注于钠离子。在平衡状态下，浓度差引起了约为 $+67 mV$ 的 Nernst 电位 $E_{Na}$ 。也就是说，在平衡状态下，细胞内部相对于周围环境具有正电势。细胞内部和周围液体通过离子通道相互联系，钠离子可以从膜的一侧通过到另一侧。如果电压差 $\Delta u$ 小于 Nernst电势 $E_{Na^{+}}$ 的值，更多的 $Na^+$ 离子会流入细胞，以减小浓度差异。如果电压大于 Nernst 电势，离子会从细胞流出。因此，当电压 $\Delta u$ 通过 $E_{Na}$ 时，电流的方向会反转。因此，$E_{Na}$ 被称为反转电位。&lt;/p&gt;
+&lt;p&gt;让我们暂时专注于钠离子。在平衡状态下，浓度差引起了约为 $+67 mV$ 的 Nernst 电位 $E_{Na}$ 。也就是说，在平衡状态下，细胞内部相对于周围环境具有正电势。细胞内部和周围液体通过离子通道相互联系，钠离子可以从膜的一侧通过到另一侧。如果电压差 $\Delta u$ 小于 Nernst 电势 $E_{Na^{+}}$ 的值，更多的 $Na^+$ 离子会流入细胞，以减小浓度差异。如果电压大于 Nernst 电势，离子会从细胞流出。因此，当电压 $\Delta u$ 通过 $E_{Na}$ 时，电流的方向会反转。因此，$E_{Na}$ 被称为反转电位。&lt;/p&gt;
 &lt;p&gt;继续看钾离子，正如上面提到的，钾离子在细胞内的浓度（约为 $140 mM$ ）比细胞外液体（约为 $5 mM$ ）高。钾离子具有单个正电荷 $q = 1.6 × 10^{-19} C$ 。应用 Nernst 公式（1.2），其中玻尔兹曼常数 $k = 1.4 × 10^{-23} J/K$ ，在室温下得到 $E_K ≈ -83 mV$ 。因此，钾离子 $K^{+} 的反转电势是负的。&lt;/p&gt;
 &lt;p&gt;到目前为止，我们考虑了钠或钾的存在。在真实的细胞中，这些和其他离子类型同时存在，并对跨膜电压做出贡献。实验发现，细胞膜的静息电位约为 $u_{rest} ≈ 65 mV$ 。由于 $E_K &amp;lt; u_{rest} &amp;lt; E_{Na}$ ，钾离子在静息电位下从细胞流出，而钠离子则流入细胞。在稳态下，主动离子泵平衡这种流动，并通过通道运输与通过通道的离子数量相同的离子返回。$u_{rest}$ 的值由通道中离子流动（膜的渗透性）和主动离子转运（维持浓度差的离子泵的效率）之间的动态平衡决定。&lt;/p&gt;
 &lt;h2 id=&#34;二hudgkin-huxley-模型&#34;&gt;二、Hudgkin-Huxley 模型&lt;/h2&gt;
 &lt;p&gt;霍奇金和哈克斯利（1952）对乌贼的巨型轴突进行了实验，发现了三种不同类型的离子电流，即钠、钾和主要由氯离子组成的泄漏电流。特定的电压依赖性离子通道，一个用于钠，另一个用于钾，控制这些离子通过细胞膜的流动。泄漏电流负责其他未明确描述的通道类型。&lt;/p&gt;
 &lt;h3 id=&#34;1-模型定义model-definition&#34;&gt;1. 模型定义（Model Definition）&lt;/h3&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102175050-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102175050-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102175050-2023-11-02.webp&#34;
+         alt=&#34;20231102175050-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.1： Hodgkin-Huxley 模型示意图。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图2.1： Hodgkin-Huxley模型示意图。&lt;/p&gt;&lt;/div&gt;
-
-&lt;p&gt;Hodgkin-Huxley模型可以通过图 2.1 来理解。半透膜细胞膜将细胞内部与细胞外液体隔开，并起到电容器的作用。如果将输入电流 $I(t)$ 注入细胞，它可能会在电容器上增加进一步的电荷，或者通过细胞膜中的通道泄漏。&lt;/p&gt;
+&lt;p&gt;Hodgkin-Huxley 模型可以通过图 2.1 来理解。半透膜细胞膜将细胞内部与细胞外液体隔开，并起到电容器的作用。如果将输入电流 $I(t)$ 注入细胞，它可能会在电容器上增加进一步的电荷，或者通过细胞膜中的通道泄漏。&lt;/p&gt;
 &lt;p&gt;图 2.1 中的每种通道类型都由一个电阻器表示。非特异通道具有泄漏电阻 $R$ ，钠通道具有电阻 $R_{Na}$ ，钾通道具有电阻 $R_K$ 。电阻器图中的对角箭头表示电阻值不固定，而是根据离子通道是否打开或关闭而变化。&lt;/p&gt;
 &lt;p&gt;由于通过细胞膜的主动离子转运，细胞内的离子浓度与细胞外液体不同。由离子浓度差产生的 Nernst 电位在图 2.1 中由电池表示。由于每种离子类型的 Nernst 电位不同，分别为钠、钾和非特异第三通道设置了单独的电池，其电池电压分别为 $E_{Na}$ 、$E_K$ 和 $E_L$ 。&lt;/p&gt;
 &lt;p&gt;现在让我们将上述电路图转化为数学方程。膜上电荷的守恒意味着施加的电流 $I(t)$ 可以分为充电电流 $I_C$ ，用于充电电容器 $C$ ，以及通过离子通道的其他电流 $I_k$ 。因此，可以写成以下方程：&lt;/p&gt;
@@ -1604,37 +1676,17 @@ $$&lt;/p&gt;
 \dot{x}=-\frac{1}{\tau_x (u)}\left [ x-x_0(u)\right ] \tag{2.4}
 $$&lt;/p&gt;
 &lt;p&gt;其中，$\dot{x} = \frac{dx}{dt}$ ，其中 $x$ 表示 $m$, $n$ 或者 $h$ 。公式 （2.4） 的解释很简单：对于一个固定的电压 $u$ ，变量 $x$ 以时间常数 $\tau_x(u)$ 逼近目标值 $x_0(u)$ 。目标值 $x_0(u)$ 和时间常数 $\tau_x(u)$ 对电压的依赖关系分别如图 2.2 (a), (b) 所示。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102185532-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102185532-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102185532-2023-11-02.webp&#34;
+         alt=&#34;20231102185532-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.2 ： Hodgkin-Huxley 模型。(a) 门控变量 $m$, $n$, $h$ 的平衡函数。(b)与电压有关的时间常数，静息电位为 $u=-65mV$ （箭头），参数由表 2.1 给出。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.2 ： Hodgkin-Huxley 模型。(a) 门控变量 $m$, $n$, $h$ 的平衡函数。(b)与电压有关的时间常数，静息电位为 $u=-65mV$ （箭头），参数由表 2.1 给出。&lt;/p&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102185758-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102185758-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;表 2.1 ：在大脑皮层上的锥体神经元上拟合的 Hodgkin-Huxley 方程的参数。$n$ 和 $m$ 的参数由Zach Mainen（Mainen et al., 1995）根据Huguenard等人（1988）报告的实验进行拟合，$h$ 的参数由 Richard Naud 根据 Hamill 等人（1991）报告的实验进行拟合。电压以 $mV$ 为单位，膜电容为 $C = 1 \mu F/ cm^2$ 。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102185758-2023-11-02.webp&#34;
+         alt=&#34;20231102185758-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;表 2.1 ：在大脑皮层上的锥体神经元上拟合的 Hodgkin-Huxley 方程的参数。$n$ 和 $m$ 的参数由 Zach Mainen（Mainen et al., 1995）根据 Huguenard 等人（1988）报告的实验进行拟合，$h$ 的参数由 Richard Naud 根据 Hamill 等人（1991）报告的实验进行拟合。电压以 $mV$ 为单位，膜电容为 $C = 1 \mu F/ cm^2$ 。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;图 2.2 中绘制的函数形式，以及公式（2.3）中的最大电导和反转电位，是霍奇金和哈克斯利根据经验推导出来的。&lt;/p&gt;
 &lt;p&gt;实验者通过向细胞注入适当的电流来保持细胞膜上的电压在所需的值上。在实验中，假设实验者在 $t&amp;lt;t_0$ 时将细胞保持在静息电位 $u_0 =-65mV$ ，并且在 $t=t_0$ 时将电压切换到一个新值 $u_1$ 。对于 $t &amp;gt; t_0$ ，通过对微分方程（2.4）进行积分，可以得到以下动力学方程：&lt;/p&gt;
@@ -1650,42 +1702,22 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 n(t)=n_0(u_1) + [n_0(u_0)-n_0(u_1)] \exp \left[ -\frac{t-t_0}{\tau_n(u_1)} \right ] \tag{2.6}
 $$&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102222844-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102222844-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.3 ：Hodgkin 和 Huxley 绘制的钾离子电导率变化原始测量曲线和公式拟合曲线。施加 $25 mV$ 的电压切换后，回到静息电位后，钾的电导率（圆圈）的测量时间过程。拟合实线是基于公式（2.6）的。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102222844-2023-11-02.webp&#34;
+         alt=&#34;20231102222844-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.3 ：Hodgkin 和 Huxley 绘制的钾离子电导率变化原始测量曲线和公式拟合曲线。施加 $25 mV$ 的电压切换后，回到静息电位后，钾的电导率（圆圈）的测量时间过程。拟合实线是基于公式（2.6）的。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;霍奇金和哈克斯利使用方程（2.4）和（2.5）反过来进行研究。他们在使用适当的药物阻断钠通道后，施加电压变化并测量钾电流的时间变化。将记录的电流除以驱动电位 $(u_1 - E_K)$ 可以得到时间相关的电导率 $g_K [ n(t)^4]$ (图 2.3 ）。使用方程（2.6），霍奇金和哈克斯利推导出了钾通道的 $n_0(u_1)$ 和 $τ_n(u_1)$ 的值，以及 $n^4(t)$ 中的指数 4。通过对不同的 $u_1$ 值重复实验，可以得到 $n_0(u)$ 和 $τ_n(u)$ 的实验曲线。&lt;/p&gt;
 &lt;p&gt;变量 $m$ 被称为激活变量。为了理解这个术语，我们注意到从图 2.2 可以看出，在神经元的静息电位 $u = -65 mV$ 时，$m_0(u)$ 的值接近于零。因此，在静息状态下，通过通道的钠电流 $I_{Na} = g_{Na} m^3 h(u - E_{Na})$ 为零。换句话说，钠通道是关闭的。&lt;/p&gt;
-&lt;p&gt;当膜电位显著增加超过静息电位时，门控变量 $m$ 增加到其新值 $m_0(u)$ 。只要 $h$ 不变，钠电流就会增加，门打开。因此，变量 $m$ “激活”了通道。如果在电压恢复到静息状态后，$m$ 衰减回零，就被称为“去激活”。类似地，关于失活变量 $h$ 的术语也是类似的。在静息状态下，$h$ 有一个较大的正值。如果电压增加到超过 $-40 mV$ 的值，$h$ 接近一个接近静息状态的新值 $h_0(u)$ 。因此，通道通过一个由 $\tau_h(u)$ 给出的时间常数“失活”（阻塞）。如果电压返回到零，$h$ 增加，使得通道经历“去失活”。这听起来像是一种棘手的词汇，但事实证明，将一个去激活的通道（$m$ 接近零，$h$ 接近1）与一个失活的通道（$h$ 接近零）区分开来是有用的。&lt;/p&gt;
+&lt;p&gt;当膜电位显著增加超过静息电位时，门控变量 $m$ 增加到其新值 $m_0(u)$ 。只要 $h$ 不变，钠电流就会增加，门打开。因此，变量 $m$ “激活”了通道。如果在电压恢复到静息状态后，$m$ 衰减回零，就被称为“去激活”。类似地，关于失活变量 $h$ 的术语也是类似的。在静息状态下，$h$ 有一个较大的正值。如果电压增加到超过 $-40 mV$ 的值，$h$ 接近一个接近静息状态的新值 $h_0(u)$ 。因此，通道通过一个由 $\tau_h(u)$ 给出的时间常数“失活”（阻塞）。如果电压返回到零，$h$ 增加，使得通道经历“去失活”。这听起来像是一种棘手的词汇，但事实证明，将一个去激活的通道（$m$ 接近零，$h$ 接近 1）与一个失活的通道（$h$ 接近零）区分开来是有用的。&lt;/p&gt;
 &lt;h3 id=&#34;2-随机通道的打开stochastic-channel-opening&#34;&gt;2. 随机通道的打开（Stochastic Channel Opening）&lt;/h3&gt;
 &lt;p&gt;首先，离子通道的数量在一个细胞膜上是有限的，而且每个离子通道的开启和关闭是随机的。因此，当实验者记录通过细胞膜的电流时，他不会发现测量变量随时间平滑可靠地演变，而是会发现电流高度波动，每次重复实验时看起来都不同。这就是离子通道的随机性（如图 2.4 所示）。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102224048-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102224048-2023-11-02&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.4 ： 随机通道激活现象。在实验中，当施加一个电压阶跃到细胞膜上时，通过细胞膜的电流会呈现阶梯状变化，并且在每次试验中都有所不同（如顶部的连续轨迹所示）。对多次试验进行平均后，得到的结果是底部的轨迹。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102224048-2023-11-02.webp&#34;
+         alt=&#34;20231102224048-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.4 ： 随机通道激活现象。在实验中，当施加一个电压阶跃到细胞膜上时，通过细胞膜的电流会呈现阶梯状变化，并且在每次试验中都有所不同（如顶部的连续轨迹所示）。对多次试验进行平均后，得到的结果是底部的轨迹。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;然而，Hodgkin-Huxley 模型是用确定性方程描述离子通道的开启和关闭的。这些方程涉及的变量包括 $m$ ，$h$ 和 $n$ ，它们对应的是通过一个假设的、包含无限数量离子通道的极大细胞膜的电流密度，或者说是通过一小片细胞膜的电流，但是这个电流是在多次重复同一实验后得到的平均值。这就是 $Hodgkin-Huxley$ 模型的局限性，因为它忽略了离子通道的随机性。不过可以通过向模型中添加适当的噪声来包含随机性。这种噪声可以模拟离子通道开启和关闭的随机性，从而使模型更准确地描述神经元的动力学行为。&lt;/p&gt;
 &lt;p&gt;使用以电压为自变量的转换速率 $\alpha$ 和 $\beta$ 来描述每种通道类型的激活和失活动力学，公式如下：&lt;/p&gt;
@@ -1701,22 +1733,12 @@ $$&lt;/p&gt;
 &lt;p&gt;方程（2.7）是化学中常用的方程，用于描述具有速率常数 $α$ 和 $β$ 的激活过程的随机动力学。我们可以将这个过程解释为具有电压依赖的转换速率的两个状态之间的分子开关。例如，激活变量 $n$ 可以解释为找到一个开放的钾通道的概率。因此，在一个具有 $K$ 个离子通道的细胞膜中，预计有 $k \approx (1 - n)K$ 个通道是关闭的。我们可以将 $\alpha_n(u) \Delta t$ 解释为在短时间区间 $\Delta t$ 内，暂时关闭的通道中有一个切换到开放状态的概率。&lt;/p&gt;
 &lt;h3 id=&#34;3-hudgkin-huxley-模型的动力学dynamics-of-hudgkin-huxley-model&#34;&gt;3. Hudgkin-Huxley 模型的动力学（Dynamics of Hudgkin-Huxley Model）&lt;/h3&gt;
 &lt;p&gt;不同类型的输入被依次考虑，包括脉冲输入、恒定输入、阶跃电流输入和时间依赖输入。选择这些输入场景是为了直观理解 Hodgkin-Huxley 模型的动力学特性。Hodgkin-Huxley 模型最重要的特性是能够产生动作电位。在图 2.5(a) 中，一个持续 $1ms$ 的短脉冲电流在 $t=1ms$ 时施加，引发了一个动作电位。这个脉冲的幅度接近 $100mV$ ，半峰宽约为 $2.5ms$ 。在动作电位之后，膜电位下降到静息电位以下，再慢慢回到静息电位值 $-65mV$ 。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102225930-2023-11-02.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231102225930-2023-11-02&#34;
-	
-	
-&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231102225930-2023-11-02.webp&#34;
+         alt=&#34;20231102225930-2023-11-02&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.5 ： (a)动作电位。Hodgkin-Huxley 模型受到 $t=1ms$ 和 $t=2ms$ 之间的短而强的电流脉冲的刺激。对于 $t&amp;gt;2ms$ 的膜电位 $u(t)$ 的时间变化显示了动作电位（正峰值），随后是相对不应期，此时电位低于静息电位 $u_{rest}$（虚线）。右侧面板显示了 $t=2ms$ 和 $t=5ms$ 之间动作电位的放大视图。（b）门控变量 $m，h，n$ 的变化揭示了动作电位是如何通过钠通道和钾通道介导的。（c）钠电流 $I_{Na}$ 取决于变量 $m$ 和 $h$ ，在动作电位的上升阶段有一个脉冲。钾电流 $I_K$ 受变量 $n$ 控制，并与 $I_{Na}$ 相比有一定的延迟开始。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.5 ： (a)动作电位。Hodgkin-Huxley 模型受到 $t=1ms$ 和 $t=2ms$ 之间的短而强的电流脉冲的刺激。对于 $t&amp;gt;2ms$ 的膜电位 $u(t)$ 的时间变化显示了动作电位（正峰值），随后是相对不应期，此时电位低于静息电位 $u_rest$（虚线）。右侧面板显示了 $t=2ms$ 和 $t=5ms$ 之间动作电位的放大视图。（b）门控变量 $m，h，n$ 的变化揭示了动作电位是如何通过钠通道和钾通道介导的。（c）钠电流 $I_{Na}$ 取决于变量 $m$ 和 $h$ ，在动作电位的上升阶段有一个脉冲。钾电流 $I_K$ 受变量 $n$ 控制，并与 $I_{Na}$ 相比有一定的延迟开始。&lt;/p&gt;&lt;/div&gt;
-&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;脉冲产生过程中离子通道的动力学（Ion channel dynamics during spike generation）
 为了理解动作电位生成的生物物理学基础，我们回到图 2.2(a) 。我们发现 $m_0$ 和 $n_0$ 随着 $u$ 的增加而增加，而 $h_0$ 则减少。因此，如果某些外部输入导致膜电压上升，由于 $m$ 的增加，钠通道的电导增加。结果，正钠离子流入细胞，进一步提高膜电位。如果这种正反馈足够大，就会引发动作电位。当膜电位接近钠电流的反转电位 $E_{Na}$ 时，这种爆发性增加自然停止。&lt;/li&gt;
@@ -1748,21 +1770,11 @@ $$&lt;/p&gt;
 &lt;p&gt;生物神经元是一种高度特化的细胞，其结构和功能包含很多因素，其中神经元的几何形态特征和电学物理特性是两个重要方面。几何形态特征主要指神经元的空间结构，而电学物理特性包含神经元不同的动作点位发放模式。生物神经系统内有两类细胞：神经元细胞和神经胶质细胞，前者担负着信息处理的主要任务，而后者对前者起支持作用。神经元细胞的几何形态结构和电学物理特性是生物神经系统进行信息处理的基础。所谓的神经胶质细胞，它们是脑组织能量供应和结构稳定所需要的。由于胶质细胞不直接参与信息处理，本文将不再进一步讨论它们。本文还将忽略一些罕见的神经元亚型，如哺乳动物视网膜上的非脉冲神经元。本文只专注于脉冲神经元。&lt;/p&gt;
 &lt;h3 id=&#34;1-理想的脉冲神经元-ideal-spike-neuron&#34;&gt;1. 理想的脉冲神经元 (ideal spike neuron)&lt;/h3&gt;
 &lt;p&gt;一个典型的神经元可以分为三个功能不同的部分，称为树突（dendrite）、细胞体（soma）和轴突（axon）。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230912222755-2023-09-12.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230912222755-2023-09-12&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 1.1：(a) Ramón y Cajal 于 1899 年绘制的神经元示意图。树突、体细胞和轴突可以被清楚地区分出来。图片显示了一个神经元动作电位的例子。动作电位是一个持续时间为 $1ms$ 的短电压脉冲，振幅约为 $100mv$ 。(b) 从突触前神经元 $j$ 到突触后神经元 $i$ 的信号传输。突触由虚线圈标记。右下端的轴突通向其它神经元。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230912222755-2023-09-12.webp&#34;
+         alt=&#34;20230912222755-2023-09-12&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 1.1：(a) Ramón y Cajal 于 1899 年绘制的神经元示意图。树突、体细胞和轴突可以被清楚地区分出来。图片显示了一个神经元动作电位的例子。动作电位是一个持续时间为 $1ms$ 的短电压脉冲，振幅约为 $100mv$ 。(b) 从突触前神经元 $j$ 到突触后神经元 $i$ 的信号传输。突触由虚线圈标记。右下端的轴突通向其它神经元。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;ul&gt;
 &lt;li&gt;树突：指从神经元细胞体内向外伸出的许多较短的分支，它们充当着神经元的&lt;strong&gt;输入端&lt;/strong&gt;，接收来自其它神经元的神经冲动并传递给细胞体；&lt;/li&gt;
@@ -1772,21 +1784,11 @@ $$&lt;/p&gt;
 &lt;p&gt;神经元的轴突末梢经过多次分支，最后每一个小支的末端膨大呈杯状或球状，称为突触小体。这些突触小体可以与多个神经元的细胞体或树突相接触，形成神经元之间连接的突触（synapse）。通常把发送神经元成为突触前神经元（presynaptic neuron），把接收神经元称为突触后神经元（postsynaptic neuron）。&lt;/p&gt;
 &lt;h3 id=&#34;2-脉冲序列-spike-train&#34;&gt;2. 脉冲序列 (spike train)&lt;/h3&gt;
 &lt;p&gt;生物神经系统在内外刺激作用下，使得神经元按照一定的时间间隔产生一系列的活动电位，称为脉冲序列 (spike train)。神经元信号由短的电脉冲组成，可以通过在神经元的体部或靠近体部或轴突的位置放置一个精细的电极来观察，如下图所示，脉冲（或活动电位），其振幅为 100 毫伏，通常持续时间为 1~2 ms。脉冲的形式不会因为活动电位沿轴突传播而改变。神经元发送的单个活动电位或脉冲是信号传递的基本单元，因为所有脉冲的波形都是相似的，所以活动电位的形状不会携带任何信息，而传递有用神经信息的是&lt;strong&gt;脉冲的发放时间和频率&lt;/strong&gt;。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230912224451-2023-09-12.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230912224451-2023-09-12&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 1.2：动作电位是刻板事件。在最大电压时间内排列的膜电位记录显示动作电位形状的变化很小。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230912224451-2023-09-12.webp&#34;
+         alt=&#34;20230912224451-2023-09-12&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 1.2：动作电位是刻板事件。在最大电压时间内排列的膜电位记录显示动作电位形状的变化很小。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;脉冲序列中的活动电位通常是很好地分开的。即使有非常强的输入，也不可能在第一次脉冲期间紧接着激发第二次脉冲。两个脉冲之间的最小距离定义了神经元的绝对不应期（absolute refractory period）—— 大致在活动电位的复极化阶段（repolarization phase），无论用任何强的刺激都不能再引起活动电位。&lt;/p&gt;
 &lt;h3 id=&#34;3-突触-synapse&#34;&gt;3. 突触 (synapse)&lt;/h3&gt;
@@ -1794,39 +1796,19 @@ $$&lt;/p&gt;
 &lt;p&gt;除了化学突触之外，神经元还可以通过电突触连接，称为间隙连接（gap junctions）。特化膜蛋白在两个神经元之间形成直接的电连接。关于间隙连接的功能方面当前所知不多，但它们被认为参与了神经元的同步。&lt;/p&gt;
 &lt;h2 id=&#34;二神经动力学的要素&#34;&gt;二、神经动力学的要素&lt;/h2&gt;
 &lt;p&gt;脉冲对突触后神经元的影响可以用细胞内电极来记录，该电极测量细胞内部和其周围环境之间的电位差 $u(t)$ 。这个电位差被称为膜电位。在没有任何输入的情况下，神经元处于静息状态，对应一个恒定的膜电位 $u_{rest}$，称为静息电位（resting potential），一般在 $-80\sim -40mV$ （当以细胞外的电位为 0 ）。当神经元受到外界刺激，突触后电位的总和超过某一阈值时，神经元产生一个不衰减的沿神经纤维传递的神经冲动，即活动电位或脉冲。活动电位的动态变化过程包含一个迅速的去极化正向电位变化和缓慢的复极化负向电位变化。活动电位的另一特征是电位的极性在峰电位顶端倒转，细胞内由静息时的负电位变为正电位，这一过程称为超射。神经元活动电位的产生会导致局部的兴奋性发生一系列的变化。大致在活动电位的复极化阶段（repolarization phase），无论用任何强的刺激都不能再引起活动电位，这个阶段称为绝对不应期（absolute refractory period）；在随后的短时间内，活动电位进入超极化阶段（hyperpolarization phase），用比原来强的刺激方能引起活动电位，而且反应幅度还会小一些，这个阶段称为相对不应期（relative refractory period）。神经元对信号的传递方式在很大程度上与神经元的电学特性有关。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913004838-2023-09-13.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230913004838-2023-09-13&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.1：膜电位在绝对不应期和相对不应期的变化。在绝对不应期，神经元不能再次激发。在相对不应期，神经元可以激发，但需要更强的刺激。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913004838-2023-09-13.webp&#34;
+         alt=&#34;20230913004838-2023-09-13&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.1：膜电位在绝对不应期和相对不应期的变化。在绝对不应期，神经元不能再次激发。在相对不应期，神经元可以激发，但需要更强的刺激。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;h3 id=&#34;1-突触后电位postsynaptic-potential&#34;&gt;1. 突触后电位（postsynaptic potential）&lt;/h3&gt;
 &lt;p&gt;从突触前神经元传入的脉冲信号引起突触后神经元膜电位发生的变化称为突触后电位（postsynaptic potential），具有局部电位的性质。一个神经元通常有许多突触，其中有些是兴奋性的，有些是抑制性的。对于从突触前神经元传来的多个脉冲，由于突触类型的不同，突触后电位可分为兴奋性和抑制性两类。兴奋性突触使突触后神经元的膜去极化，产生正的突触后电位，称为兴奋性突触后电位（excitatory postsynaptic potential，EPSP）。EPSP 在传入脉冲到达突触后神经元 $0.3\sim 0.5ms$ 之后产生，它有一个较快的上升过程和缓慢的指数衰减过程，电位总共持续  $10\sim 20ms$ 。抑制性突触使突触后神经元的膜超极化，产生负的突触后电位，称为抑制性突触后电位（inhibitory postsynapticpotential，IPSP），IPSP 到达峰值时间和 EPSP 相似。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913005342-2023-09-13.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230913005342-2023-09-13&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.2：(a)兴奋性突触后电位（EPSP）; (b)抑制性突触后电位（IPSP）。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913005342-2023-09-13.webp&#34;
+         alt=&#34;20230913005342-2023-09-13&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.2：(a)兴奋性突触后电位（EPSP）; (b)抑制性突触后电位（IPSP）。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;用数学术语规范化，那么研究神经元 $i$ 的膜电位随时间变化的函数 $u_i(t)$ 。在输入脉冲到达之前，有 $u_i(t)=u_{rest}\ (t=0)$ 。对于 $t&amp;gt;0$ ，在电极上看到神经元 $i$ 的反应如下：&lt;/p&gt;
 &lt;p&gt;$$
@@ -1840,21 +1822,11 @@ $$&lt;/p&gt;
 &lt;p&gt;即，膜电位对输入脉冲的反应是线性的。&lt;/p&gt;
 &lt;p&gt;另一方面，如果在很短的时间间隔内有太多的输入脉冲到达，线性就会被打破。一旦膜电位达到一个临界值 $\vartheta$ ，它的曲线就会显示出与 PSP 的简单求和完全不同的行为：膜电位表现出类似脉冲的偏移，振幅约为 $100 mV$ 。这个短电压脉冲将沿着神经元轴突与其他神经元的突触传播。在脉冲之后，膜电位并不直接回到静止电位，而是在许多神经元类型中通过低于静止值的超极化阶段。&lt;/p&gt;
 &lt;p&gt;单个 EPSP 的振幅在 $1 mV$ 的范围内。脉冲初始临界值比静息电位高约 $20$ 至 $30 mV$ 。因此在大多数神经元中，如下图所示的四个脉冲是不足以触发一个活动电位的。相反地，需要大约 $20\sim 50$ 个突触前脉冲在很短的时间窗口内到达才能触发一个突触后活动电位。这个时间窗口称为发射阈值（firing threshold），它是神经元的一个重要参数。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913012304-2023-09-13.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230913012304-2023-09-13&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 2.3：来自第二个突触前神经元 $j=2$ 的输入脉冲在来自神经元 $j=1$ 的尖峰后不久到达，导致第二个突触后电位增加到了第一个上。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230913012304-2023-09-13.webp&#34;
+         alt=&#34;20230913012304-2023-09-13&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 2.3：来自第二个突触前神经元 $j=2$ 的输入脉冲在来自神经元 $j=1$ 的尖峰后不久到达，导致第二个突触后电位增加到了第一个上。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;h2 id=&#34;三integrade-and-fire-模型&#34;&gt;三、Integrade-and-fire 模型&lt;/h2&gt;
 &lt;p&gt;神经元动力学可以被视为一个整合的过程，与出发活动电位超过某个临界电压的机制相结合。事实上，在实验中，发射时间通常被定义为膜电位从下往上达到某个阈值的时刻。为了建立一个神经元动力学的现实模型，我们通过阈值 $\vartheta$ 来描述神经元的发射阈值。如果电压 $u_i(t)$ （包含所有输入的总效应）从下往上到达 $\vartheta$ ，我们就说神经元会发射一个脉冲。跨越阈值的时刻定义了发射时间 $t_i^f$ 。&lt;/p&gt;
@@ -1872,21 +1844,11 @@ $$&lt;/p&gt;
 &lt;h3 id=&#34;1-输入的整合input-integration&#34;&gt;1. 输入的整合（input integration）&lt;/h3&gt;
 &lt;p&gt;变量 $u_i$ 描述了神经元 $i$ 的膜电位的瞬时值。在没有任何输入的情况下，电位处于静息值 $u_{rest}$ 。如果实验者向神经元 $i$ 注入电流 $I(t)$ ，或神经元 $i$ 接收其它神经元的突触输入，电位 $u_i$ 将被偏离其静止值。&lt;/p&gt;
 &lt;p&gt;为了得到一个将瞬时电压 $u_i(t) - u_{rest}$ 与输入电流 $I(t)$ 联系起来的方程，我们使用电学理论中的基本定律。一个神经元被细胞膜所包围，这是一个相当好的绝缘体。如果一个短的电流脉冲 $I(t)$ 被注入到神经元中，额外的电荷 $q=\int I(t&amp;rsquo;)\ dt&amp;rsquo;$ 必须去到某个地方：给细胞膜充电（如下图所示）。因此，细胞膜的作用就相当于一个容量为 $C$ 的电容器。因为绝缘体并不完美，电荷会随着时间的推移慢慢通过细胞膜泄露。因此，细胞膜可以用一个有限的泄露电阻 $R$ 表示。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230914213909-2023-09-14.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20230914213909-2023-09-14&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图 3.1：神经元的电学特性：被动膜。(a)由细胞膜（大圈）包围的神经元接收一个（正）输入电流 $I(t)$ ，增加细胞内的电荷。细胞膜的作用就像一个与电阻并联的电容器，与电位为 $u_{rest}$ 的电池并联。(b)细胞膜对具有平滑电压轨迹的阶梯电流的反应。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230914213909-2023-09-14.webp&#34;
+         alt=&#34;20230914213909-2023-09-14&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 3.1：神经元的电学特性：被动膜。(a)由细胞膜（大圈）包围的神经元接收一个（正）输入电流 $I(t)$ ，增加细胞内的电荷。细胞膜的作用就像一个与电阻并联的电容器，与电位为 $u_{rest}$ 的电池并联。(b)细胞膜对具有平滑电压轨迹的阶梯电流的反应。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;代表 Leaky Integrate-and-fire 模型的基本电路由一个电容 $C$ 和一个由电流 $I(t)$ 驱动的电阻 $R$ 并联组成。如果驱动电流 $I(t)$ 为零，则电容器两端的电压由电池电压 $u_{rest}$ 给出。&lt;/p&gt;
 &lt;p&gt;为了分析电路，我们使用电流守恒定律，将驱动电流分成两部分。&lt;/p&gt;
@@ -1902,21 +1864,11 @@ $$&lt;/p&gt;
 \tau_m \frac{du}{dt} = -[u(t)-u_{rest}]+RI(t). \tag{3.3}
 $$&lt;/p&gt;
 &lt;p&gt;其中，$u$ 是膜电位，$\tau_m$ 是神经元的膜时间常数。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031161758-2023-10-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231031161758-2023-10-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图3.2：被动膜上的短脉冲和总充电量。由短电流脉冲 $I(t)$ 驱动的漏电整合器的电压响应振幅（底部）（顶部）只取决于总电荷 $q = \int I(t) \ dt$ ，而不取决于电流脉冲的高度。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031161758-2023-10-31.webp&#34;
+         alt=&#34;20231031161758-2023-10-31&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 3.2：被动膜上的短脉冲和总充电量。由短电流脉冲 $I(t)$ 驱动的漏电整合器的电压响应振幅（底部）（顶部）只取决于总电荷 $q = \int I(t) \\ dt$ ，而不取决于电流脉冲的高度。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;从数学的角度来看，公式 (3.3) 是一个线性微分方程。从电气工程师的角度来看，它是一个漏电整合器或 $RC$ 电路的方程，其中电阻 $R$ 和电容 $C$ 是平行排列的。从神经科学家的角度来看，它被称为被动膜的方程。&lt;/p&gt;
 &lt;p&gt;方程 (3.3) 的解是什么？我们假设，无论出于什么原因，在时刻 $t=0$ 时，膜电位的值为 $u_{rest} + \Delta u$ 。在 $t&amp;gt;0$ 时，输入电流 $I(t)$ 将消失变为零。直观地讲，我们期望，如果我们等待足够长的时间，膜电位会放松到静息电位 $u_{rest}$ 。事实上，具有初始条件 $u(t_0)=u_{rest} + \Delta u$ 的方程 (3.3) 的解是：&lt;/p&gt;
@@ -1936,21 +1888,11 @@ $$&lt;/p&gt;
 &lt;p&gt;$$
 t^f\ : \quad u(t^f) = \vartheta. \tag{3.6}
 $$&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031165128-2023-10-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231031165128-2023-10-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图3.3：Integrate-and-Fire 模型。(a)由恒定输入电流 $I_0=1.5$ 驱动的 Integrate-and-fire 神经元的膜电位的事件过程。电压 $\Delta u(t)=u-u_{rest}$ 被阈值 $\vartheta$ 归一化。输入电流的单位将被选择，以便 $I_0=1$ 能对应达到 $t\rightarrow \infty$ 的阈值曲线。在一个脉冲过后，电位被重置为 $u_{\tau} = u_{rest}$ 。(b)对随时间变化的输入电流的电压反应。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031165128-2023-10-31.webp&#34;
+         alt=&#34;20231031165128-2023-10-31&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 3.3：Integrate-and-Fire 模型。(a)由恒定输入电流 $I_0=1.5$ 驱动的 Integrate-and-fire 神经元的膜电位的事件过程。电压 $\Delta u(t)=u-u_{rest}$ 被阈值 $\vartheta$ 归一化。输入电流的单位将被选择，以便 $I_0=1$ 能对应达到 $t\rightarrow \infty$ 的阈值曲线。在一个脉冲过后，电位被重置为 $u_{\tau} = u_{rest}$ 。(b)对随时间变化的输入电流的电压反应。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;虽然脉冲的形式没有被明确描述。然而注意到，在发射时间 $t^f$ 之后，电位立即被重置为一个新的值 $u_r &amp;lt; \vartheta$。&lt;/p&gt;
 &lt;p&gt;$$
@@ -1980,43 +1922,23 @@ $$&lt;/p&gt;
 &lt;p&gt;这样就不会保留对以前脉冲的记忆。现在，让我们列出到目前位置讨论的简化模型的主要局限性。&lt;/p&gt;
 &lt;h3 id=&#34;1-适应爆发和抑制性反弹adaptation-bursting-and-inhibitory-rebound&#34;&gt;1. 适应、爆发和抑制性反弹（adaptation, bursting and inhibitory rebound）&lt;/h3&gt;
 &lt;p&gt;通过细胞内电极注入电流。在一个标准的实验方案中，我们可以施加一个刺激电流，在时间 $t_0$ 从一个电流值 $I_1$ 切换到一个新的电流值 $I_2$ 。假设 $I_1=0$ ，这样神经元在 $t&amp;lt;t_0$ 时是静息状态的。如果电流 $I_2$ 足够大，它将引起 $t&amp;gt;t_0$ 的脉冲。大多数神经元会对当前阶跃做出反应，产生一列脉冲，脉冲之间的间隔会连续增加，直到达到周期性发射的稳定状态。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031210458-2023-10-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231031210458-2023-10-31&#34;
-	
-	
-&gt;&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031210458-2023-10-31.webp&#34;
+         alt=&#34;20231031210458-2023-10-31&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 4.1：对当前阶跃的反应。在(a)(c)中，电流在 $t=t_0$ 时从 $I_1=0$ 切换到 $I_2&amp;gt;0$ 。fast-spiking neuron(a)在没有适应的情况下具有较短的脉冲间隔，而 regularly firing neuron(c)表现出适应性，可以看到脉冲间隔时间的增加。(b)中显示了一个 stuttering neuron(指发生语言或运动障碍的神经元，这种神经元在传递信号时可能会出现中断、重复或不协调的行为，导致口吃或肌肉抽动等症状)的例子。许多神经元在抑制性电流 $I_1 &amp;lt;0$ 被关闭后发出一个抑制性反弹脉冲(d)。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图4.1：对当前阶跃的反应。在(a)(c)中，电流在 $t=t_0$ 时从 $I_1=0$ 切换到 $I_2&amp;gt;0$ 。fast-spiking neuron(a)在没有适应的情况下具有较短的脉冲间隔，而 regularly firing neuron(c)表现出适应性，可以看到脉冲间隔时间的增加。(b)中显示了一个 stuttering neuron(指发生语言或运动障碍的神经元，这种神经元在传递信号时可能会出现中断、重复或不协调的行为，导致口吃或肌肉抽动等症状)的例子。许多神经元在抑制性电流 $I_1 &amp;lt;0$ 被关闭后发出一个抑制性反弹脉冲(d)。&lt;/p&gt;&lt;/div&gt;
-
-&lt;p&gt;图4.1(c)中这种具有适应性的神经元被称为 regularly firing neuron。适应是一个缓慢的过程，在几个脉冲上积累起来。由于标准的 LIF 模型在每次脉冲后将电位重置位相同的值并重新启动整合过程，因此在最近的脉冲之后不会保留任何记忆。因此，LIF 神经元不具有适应性。&lt;/p&gt;
+&lt;p&gt;图 4.1(c)中这种具有适应性的神经元被称为 regularly firing neuron。适应是一个缓慢的过程，在几个脉冲上积累起来。由于标准的 LIF 模型在每次脉冲后将电位重置位相同的值并重新启动整合过程，因此在最近的脉冲之后不会保留任何记忆。因此，LIF 神经元不具有适应性。&lt;/p&gt;
 &lt;p&gt;第二类神经元为 fast-spiking neuron。这些神经元不显示适应性，因此可以用 LIF 模型来近似。许多抑制性神经元是 fast-spiking neuron。&lt;/p&gt;
 &lt;p&gt;除了 regularly firing neuron 和 fast-spiking neuron 外，还有 bursting neuron 和 stuttering neuron。这些神经元对恒定刺激的反应是一连串的脉冲，这些脉冲周期性地爆发或非周期性地被相当长的间隔打断。&lt;/p&gt;
 &lt;p&gt;另一个经常观察到的行为是抑制后的反弹。考虑到一个 $I_1&amp;lt;0$ 和 $I_2=0$ 的阶梯电流，即：在一个时间 $t_0$ 从一个抑制性电流 $I_1$ 切换到零电流。在这种情况下，许多神经元会在 $t&amp;gt;t_0$ 时发出一个或多个抑制性反弹脉冲，甚至抑制的释放也能出发动作电位。这种行为在图 4.1(d) 中显示。&lt;/p&gt;
 &lt;h3 id=&#34;2-分流抑制和反转电位shunting-inhibition-and-reversal-potential&#34;&gt;2. 分流抑制和反转电位（shunting inhibition and reversal potential）&lt;/h3&gt;
 &lt;p&gt;在显示中，神经元被嵌入在一个大型网络中，并接受来自许多其它神经元的输入。假设一个来自突触前神经元 $j$ 的脉冲在时间 $t_j^f$ 被发送到突触后神经元 $i$ 的突触。突触后电位是脉冲到达突触后产生的，其形状和振幅不取决于突触后神经元 $i$ 的状态。这当然是一种简化，现实中的情况要复杂一些。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031231444-2023-10-31.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231031231444-2023-10-31&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图4.2：突触后电位的形状取决于去极化的瞬间水平。(a)当神经元处于静息状态时，在时间 $t^f$ 到达的抑制性突触的突触前脉冲对膜电位几乎没有影响，但如果膜电位 $u$ 高于静息电位，则影响很大。如果膜在抑制性突触的反转电位以下超极化，对突触前输入的反应就会改变符号。(b)兴奋性突触的脉冲引起突触后电位，其振幅仅略微取决于瞬间电压 $u$ 。对于大的去极化，振幅会饱和并且变小。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031231444-2023-10-31.webp&#34;
+         alt=&#34;20231031231444-2023-10-31&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 4.2：突触后电位的形状取决于去极化的瞬间水平。(a)当神经元处于静息状态时，在时间 $t^f$ 到达的抑制性突触的突触前脉冲对膜电位几乎没有影响，但如果膜电位 $u$ 高于静息电位，则影响很大。如果膜在抑制性突触的反转电位以下超极化，对突触前输入的反应就会改变符号。(b)兴奋性突触的脉冲引起突触后电位，其振幅仅略微取决于瞬间电压 $u$ 。对于大的去极化，振幅会饱和并且变小。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;在图 4.2 中示意性地勾勒了一个实验，其中神经元由恒定电流 $I_0$ 驱动。假设 $I_0$ 太弱，无法引起发射，因此，在一定的静息时间后，膜电位会稳定在一个恒定值 $u_0$ 。在 $t=t^f$ 时，其中一个突触前神经元发出一个脉冲，这样，不久之后动作电位就会到达突触，并且提供突触后神经元的额外刺激。更精确的说，脉冲在突触后神经元产生一个电流脉冲（突触后电流，PSC），其振幅为：&lt;/p&gt;
 &lt;p&gt;$$
@@ -2030,21 +1952,11 @@ $$&lt;/p&gt;
 &lt;p&gt;突触后电位的形状不仅取决于去极化的程度，而且更广泛地取决于神经元的内部状态，例如，相对于以前动作电位的时间。假设在时间 $t^f_i$ 产生了动作电位，突触前的脉冲在突触 $j$ 的时间 $t^f_j &amp;gt; t^f_i$ 到达。如果突触前脉冲在突触后动作电位期间或之后不久到达，它的影响不大，因为参与发射动作电位的一些离子通道依然是开放的。如果输入脉冲到达地更晚，它就会产生一个通常大小的突触后电位。&lt;/p&gt;
 &lt;h3 id=&#34;4-空间结构spatial-structure&#34;&gt;4. 空间结构（spatial structure）&lt;/h3&gt;
 &lt;p&gt;突触后电位的形式也取决于突触在树突树上的位置。位于远离体细胞的突触引起的突触后电位通常比位于体细胞附近的突触引起的突触后电位小。如果几个输入在几毫秒内出现在同一个树突分支上，第一个输入将引起膜电位的局部变化，影响对稍晚到达的输入脉冲的反应幅度。这可能会导致饱和，或者在所谓的“活性”电流的情况下，导致反应的增强。而在 LIF 模型中，不同突触前脉冲之间这种非线性相互作用被忽略了。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231101212827-2023-11-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231101212827-2023-11-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图4.3：突触后电位的形状（虚线）取决于自神经元 $i$ 的最后一次输出脉冲以来所经过的时间 $t-t^f_i$。 突触后的尖峰在时间 $t^f_i$ 被触发。突触前的脉冲在突触后神经元的尖峰后不久到达 $t^f_j$ ，其振幅比后来到达的脉冲小得多。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231101212827-2023-11-01.webp&#34;
+         alt=&#34;20231101212827-2023-11-01&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 4.3：突触后电位的形状（虚线）取决于自神经元 $i$ 的最后一次输出脉冲以来所经过的时间 $t-t^f_i$。 突触后的尖峰在时间 $t^f_i$ 被触发。突触前的脉冲在突触后神经元的尖峰后不久到达 $t^f_j$ ，其振幅比后来到达的脉冲小得多。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;h2 id=&#34;五lif-模型的启示&#34;&gt;五、LIF 模型的启示&lt;/h2&gt;
 &lt;p&gt;LIF 模型是一个极其简化的神经元模型。它忽略了神经科学家在研究活脑或脑组织切片中的神经元时观察到的许多特征。因此，问题出现了：我们应该从这样一个模型中期待什么？显然，我们不能指望它能解释神经元的完整生物化学和生物物理学。我们也不期望它能解释由树突树上某些 &amp;ldquo;热点 &amp;ldquo;的活性电流引起的高度非线性的相互作用。然而，当涉及到产生脉冲时，即在时间上精确计时的事件时，LIF 模型是十分精确的。因此，它有可能成为神经元中脉冲产生的有效模型，或者更准确地说，能成为细胞体中脉冲产生的有效模型。&lt;/p&gt;
@@ -2055,21 +1967,11 @@ $$&lt;/p&gt;
 \tau_{adapt} \frac{d\vartheta}{dt} = -[\vartheta(t)-\vartheta_0] + \theta \sum_{f} \delta(t-t_i^f). \tag{5.1}
 $$&lt;/p&gt;
 &lt;p&gt;其中，$\tau_{adapt}$ 为适应时间常数（~几百毫秒），$t^f=t^{(1)}, t^{(2)}, t^{(3)}, \cdots$ 是神经元的发射时间。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231101214530-2023-11-01.webp&#34;
-	
-	
-	
-	loading=&#34;lazy&#34;
-	
-		alt=&#34;20231101214530-2023-11-01&#34;
-	
-	
-&gt;&lt;/p&gt;
-
-
-
-&lt;div class=&#34;notice notice-note&#34; &gt;
-    &lt;div class=&#34;notice-title&#34;&gt;&lt;svg xmlns=&#34;http://www.w3.org/2000/svg&#34; class=&#34;icon notice-icon&#34; viewBox=&#34;0 0 512 512&#34;&gt;&lt;path d=&#34;M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z&#34;/&gt;&lt;/svg&gt;&lt;/div&gt;&lt;p&gt;图5.1： 广义 LIF 模型与真实实验测量的对比。由波动电流驱动的真实神经元中记录的电压曲线（粗黑线）被叠加在由相同电流驱动的广义 LIF 模型（细线）上。除了少数额外或遗漏的脉冲（箭头），平均脉冲时间也得到了很好的预测。&lt;/p&gt;&lt;/div&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20231101214530-2023-11-01.webp&#34;
+         alt=&#34;20231101214530-2023-11-01&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;/&gt;&lt;figcaption&gt;
+            &lt;h4&gt;图 5.1： 广义 LIF 模型与真实实验测量的对比。由波动电流驱动的真实神经元中记录的电压曲线（粗黑线）被叠加在由相同电流驱动的广义 LIF 模型（细线）上。除了少数额外或遗漏的脉冲（箭头），平均脉冲时间也得到了很好的预测。&lt;/h4&gt;
+        &lt;/figcaption&gt;
+&lt;/figure&gt;
 
 &lt;p&gt;从图 5.1 中可以看出，具有动态阈值的 LIF 模型的预测结果与真实神经元的电压曲线非常吻合。&lt;/p&gt;
 &lt;p&gt;一旦我们确定了好的候选神经元模型，我们将可以尝试用这些模型构建大的神经元网络，并进一步尝试理解神经元网络所使用的动态和计算原理以及潜在的神经编码。虽然这并不意味着理解了整个大脑，但经过良好测试的简化神经元模型中理解大量神经元群体的原理是朝着这个方向迈出的第一步，也是重要的一步。&lt;/p&gt;
@@ -2077,267 +1979,6 @@ $$&lt;/p&gt;
 &lt;p&gt;神经元信号由短电压脉冲组成，称为动作电位或者脉冲。这些脉冲沿着轴突行进，并被分配到几个突触后神经元，在那里它们又引起突触后电位。如果一个突触后神经元在一个短时间窗口内从多个突触前神经元那收集到足够多的脉冲，它的膜电位可能会达到一个临界值，然后发射出一个脉冲。我们说，神经元已经“发射”了一个脉冲。这个脉冲是神经元的输出信号，反过来又被传输到其它神经元。&lt;/p&gt;
 &lt;p&gt;一个比较简单的脉冲神经元模型是 LIF 模型。该模型用一个线性微分方程描述了输入电流如何被整合并转化为膜电位 $u(t)$ 。这里的输入可以是实验者注入孤立神经元的输入电流，也可以是由大型高度连接网络中其它神经元到达的脉冲引起的突触输入电流。其次，如果膜电位到达阈值 $\vartheta$ ，LIF 神经元会产生一个输出脉冲。最后，在脉冲发射后，线性整合过程被重置，膜电位被重置为一个新的值 $u_r$ 。这个过程被称为膜电位的重置。&lt;/p&gt;
 &lt;p&gt;LIF 模型并没有考虑持久的适应性，然而，如果 LIF 模型的电压动态地通过适应机制得到增强，那么它可以成为准确预测皮层神经元脉冲时间的有力工具。&lt;/p&gt;
-</description>
-        </item>
-        <item>
-        <title>NEST on HPC 安装教程</title>
-        <link>https://cuterwrite.top/p/nest-on-hpe-install/</link>
-        <pubDate>Mon, 30 Oct 2023 00:00:00 +0000</pubDate>
-        
-        <guid>https://cuterwrite.top/p/nest-on-hpe-install/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031002508-2023-10-31.webp" alt="Featured image of post NEST on HPC 安装教程" /&gt;&lt;h1 id=&#34;nest-on-hpc-安装教程&#34;&gt;NEST on HPC 安装教程&lt;/h1&gt;
-&lt;h2 id=&#34;1-安装-miniconda3&#34;&gt;1. 安装 MiniConda3&lt;/h2&gt;
-&lt;p&gt;从 &lt;a class=&#34;link&#34; href=&#34;https://repo.anaconda.com/miniconda/Miniconda3-py39_23.5.2-0-Linux-x86_64.sh&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;Miniconda3 官方网站&lt;/a&gt; 下载 Miniconda3_py39_23.5.2 。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-fallback&#34; data-lang=&#34;fallback&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;wget https://repo.anaconda.com/miniconda/Miniconda3-py39_23.5.2-0-Linux-x86_64.sh
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;执行 Miniconda3-py39_23.5.2-0-Linux-x86_64.sh ，按照提示安装 Miniconda3。（安装在 &lt;code&gt;$HOME/software/miniconda3/23.5.2&lt;/code&gt; 目录下）&lt;/p&gt;
-&lt;p&gt;然后，设置 Miniconda3 环境变量。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/miniconda3/23.5.2/bin:&lt;span class=&#34;nv&#34;&gt;$PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;2-安装-boost&#34;&gt;2. 安装 Boost&lt;/h2&gt;
-&lt;p&gt;从 &lt;a class=&#34;link&#34; href=&#34;https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;Boost 官方网站&lt;/a&gt; 下载 Boost。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;wget https://boostorg.jfrog.io/artifactory/main/release/1.77.0/source/boost_1_77_0.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -zxvf boost_1_77_0.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;cd&lt;/span&gt; boost_1_77_0
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;在 Boost 根目录下执行以下命令安装 Boost：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;module load gcc/8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;./bootstrap.sh --prefix&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/boost/1.77.0-gcc-8.4.0 &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;CC&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;gcc &lt;span class=&#34;nv&#34;&gt;CXX&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;g++ &lt;span class=&#34;nv&#34;&gt;FC&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;gfortran &lt;span class=&#34;nv&#34;&gt;CFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;CXXFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;FCFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;配置环境变量：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;BOOST_ROOT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/boost/1.77.0-gcc-8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LD_LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$BOOST_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LD_LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$BOOST_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;CMAKE_PREFIX_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$BOOST_ROOT&lt;/span&gt;/lib/cmake:&lt;span class=&#34;nv&#34;&gt;$CMAKE_PREFIX_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;CPATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$BOOST_ROOT&lt;/span&gt;/include:&lt;span class=&#34;nv&#34;&gt;$CPATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LD_RUN_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$BOOST_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LD_RUN_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;3-安装-gnu-scientific-library&#34;&gt;3. 安装 GNU Scientific Library&lt;/h2&gt;
-&lt;p&gt;从 &lt;a class=&#34;link&#34; href=&#34;https://mirror.ibcp.fr/pub/gnu/gsl/gsl-latest.tar.gzz&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;GNU Scientific Library 镜像站&lt;/a&gt; 下载 GSL。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;wget https://mirror.ibcp.fr/pub/gnu/gsl/gsl-latest.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -zxvf gsl-latest.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;在 GSL 根目录执行以下命令安装 GSL：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;module load gcc/8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;./configure --prefix&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/gsl/2.7.1-gcc-8.4.0 &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;CC&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;gcc &lt;span class=&#34;nv&#34;&gt;CXX&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;g++ &lt;span class=&#34;nv&#34;&gt;FC&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;gfortran &lt;span class=&#34;nv&#34;&gt;CFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;CXXFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;FCFLAGS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;make install
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;配置环境变量：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;6
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;GSL_ROOT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/gsl/2.7.1-gcc-8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LD_LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$GSL_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LD_LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$GSL_ROOT&lt;/span&gt;/bin:&lt;span class=&#34;nv&#34;&gt;$PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;CPATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$GSL_ROOT&lt;/span&gt;/include:&lt;span class=&#34;nv&#34;&gt;$CPATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$GSL_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LD_RUN_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$GSL_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LD_RUN_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;4-安装-nest&#34;&gt;4. 安装 NEST&lt;/h2&gt;
-&lt;p&gt;使用 Miniconda3 创建一个虚拟环境。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;source&lt;/span&gt; activate
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;conda create -n nest &lt;span class=&#34;nv&#34;&gt;python&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;3.9
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;conda activate nest
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;使用 pip 安装 numpy, scipy, cython==0.29.36&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;pip install numpy scipy &lt;span class=&#34;nv&#34;&gt;cython&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;==&lt;/span&gt;0.29.36
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;从 &lt;a class=&#34;link&#34; href=&#34;https://github.com/nest/nest-simulator/archive/refs/tags/v3.4.tar.gz&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;NEST github仓库&lt;/a&gt; 下载 NEST 3.4。&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;wget https://github.com/nest/nest-simulator/archive/refs/tags/v3.4.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;tar -zxvf v3.4.tar.gz
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;在 nest-simulator-3.4 目录下执行:&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt; 1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 5
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 6
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 7
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 8
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt; 9
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;10
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;11
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;12
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;13
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;module load gcc/8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;module load mvaapich2/2.3.7-gcc-8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;cmake -DCMAKE_C_COMPILER&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;mpicc &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DCMAKE_CXX_COMPILER&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;mpicxx &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -Dwith-mpi&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;sb&#34;&gt;`&lt;/span&gt;which mpiexec&lt;span class=&#34;sb&#34;&gt;`&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DCMAKE_C_FLAGS&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3 -fPIC&amp;#39;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DCMAKE_CXX_FLAGS&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;s1&#34;&gt;&amp;#39;-O3&amp;#39;&lt;/span&gt; &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -Dwith-boost&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/boost/1.77.0-gcc-8.4.0 &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DGSL_INCLUDE_DIR&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/gsl/2.7.1-gcc-8.4.0/include &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DGSL_LIBRARY&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/gsl/2.7.1-gcc-8.4.0/lib/libgsl.a &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DGSL_CBLAS_LIBRARY&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/gsl/2.7.1-gcc-8.4.0/lib/libgslcblas.a &lt;span class=&#34;se&#34;&gt;\
-&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;se&#34;&gt;&lt;/span&gt;      -DCMAKE_INSTALL_PREFIX:PATH&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/nest-simulator/3.4-gcc-8.4.0 .
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;配置环境变量：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;NEST_ROOT&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/nest-simulator/3.4-gcc-8.4.0
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$NEST_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;LD_LIBRARY_PATH&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;nv&#34;&gt;$NEST_ROOT&lt;/span&gt;/lib:&lt;span class=&#34;nv&#34;&gt;$LD_LIBRARY_PATH&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;h2 id=&#34;5-运行-hpc_benchmark-测试&#34;&gt;5. 运行 hpc_benchmark 测试&lt;/h2&gt;
-&lt;p&gt;运行 NEST 前需要配置nest环境：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;source&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;$HOME&lt;/span&gt;/software/nest-simulator/3.4-gcc-8.4.0/bin/nest_vars.sh
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;接着找到 &lt;code&gt;hpc_benchmark.py&lt;/code&gt; 目录，该文件位于 &lt;code&gt;$HOME/software/nest-simulator/3.4-gcc-8.4.0/share/doc/nest/examples/hpc_benchmark.py&lt;/code&gt;。修改其中的 params 以并行运行更大的模型。&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;修改 nvp 为所需 MPI 进程数 × 每进程线程数，如 2 MPI进程 × 14 线程 = 28&lt;/li&gt;
-&lt;li&gt;设置合适的 scale ，如 10 。更大的需要更多 nvp 。&lt;/li&gt;
-&lt;/ol&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;3
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;4
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;5
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-python&#34; data-lang=&#34;python&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;n&#34;&gt;params&lt;/span&gt; &lt;span class=&#34;o&#34;&gt;=&lt;/span&gt; &lt;span class=&#34;p&#34;&gt;{&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;s1&#34;&gt;&amp;#39;nvp&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;mi&#34;&gt;28&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;               &lt;span class=&#34;c1&#34;&gt;# total number of virtual processes&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;s1&#34;&gt;&amp;#39;scale&amp;#39;&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;:&lt;/span&gt; &lt;span class=&#34;mf&#34;&gt;10.&lt;/span&gt;&lt;span class=&#34;p&#34;&gt;,&lt;/span&gt;            &lt;span class=&#34;c1&#34;&gt;# scaling factor of the network size&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;    &lt;span class=&#34;c1&#34;&gt;# others...&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;p&#34;&gt;}&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;在 &lt;code&gt;hpc_benchmark.py&lt;/code&gt; 目录下执行：&lt;/p&gt;
-&lt;div class=&#34;highlight&#34;&gt;&lt;div class=&#34;chroma&#34;&gt;
-&lt;table class=&#34;lntable&#34;&gt;&lt;tr&gt;&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code&gt;&lt;span class=&#34;lnt&#34;&gt;1
-&lt;/span&gt;&lt;span class=&#34;lnt&#34;&gt;2
-&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
-&lt;td class=&#34;lntd&#34;&gt;
-&lt;pre tabindex=&#34;0&#34; class=&#34;chroma&#34;&gt;&lt;code class=&#34;language-bash&#34; data-lang=&#34;bash&#34;&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;&lt;span class=&#34;nb&#34;&gt;export&lt;/span&gt; &lt;span class=&#34;nv&#34;&gt;OMP_NUM_THREADS&lt;/span&gt;&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;&lt;span class=&#34;m&#34;&gt;14&lt;/span&gt;
-&lt;/span&gt;&lt;/span&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;cl&#34;&gt;mpiexec -N &lt;span class=&#34;m&#34;&gt;1&lt;/span&gt; -n &lt;span class=&#34;m&#34;&gt;2&lt;/span&gt; -p &amp;lt;partition_name&amp;gt; --export&lt;span class=&#34;o&#34;&gt;=&lt;/span&gt;all python3 hpc_benchmark.py
-&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
-&lt;/div&gt;
-&lt;/div&gt;&lt;p&gt;其中 -N 指定节点数，-n 指定 MPI 进程数，-p 指定分区名，如 &lt;code&gt;compute&lt;/code&gt;，&amp;ndash;export=all 用于将环境变量导出到 MPI 进程中。&lt;/p&gt;
-&lt;h2 id=&#34;总结&#34;&gt;总结&lt;/h2&gt;
-&lt;p&gt;本文介绍了在高性能计算机上安装 NEST-3.4 的方法。&lt;/p&gt;
-&lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
-&lt;ol&gt;
-&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://nest-simulator.readthedocs.io/en/latest/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34;
-    &gt;NEST 官方文档&lt;/a&gt;&lt;/li&gt;
-&lt;/ol&gt;
 </description>
         </item>
         

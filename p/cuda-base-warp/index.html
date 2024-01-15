@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。'>
-<title>CUDA基础：线程束执行的本质</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA 执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。'>
+<title>CUDA 基础：线程束执行的本质</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/cuda-base-warp/'>
 
-<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='CUDA基础：线程束执行的本质'>
-<meta property='og:description' content='对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='CUDA 基础：线程束执行的本质'>
+<meta property='og:description' content='对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA 执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。'>
 <meta property='og:url' content='https://cuterwrite.top/p/cuda-base-warp/'>
 <meta property='og:site_name' content='cuterwrite'>
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='并行计算' /><meta property='article:tag' content='CUDA' /><meta property='article:published_time' content='2023-08-31T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-08-31T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp' />
-<meta name="twitter:title" content="CUDA基础：线程束执行的本质">
-<meta name="twitter:description" content="对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。"><meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CUDA 基础：线程束执行的本质">
+<meta name="twitter:description" content="对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA 执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。"><meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp' />
     <link rel="shortcut icon" href="/favicon.ico" />
 
@@ -294,7 +294,7 @@
         <div class="article-image">
             <a href="/p/cuda-base-warp/">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp" loading="lazy" alt="Featured image of post CUDA基础：线程束执行的本质" />
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp" loading="lazy" alt="Featured image of post CUDA 基础：线程束执行的本质" />
                 
             </a>
         </div>
@@ -313,12 +313,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/p/cuda-base-warp/">CUDA基础：线程束执行的本质</a>
+            <a href="/p/cuda-base-warp/">CUDA 基础：线程束执行的本质</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。
+            对于 SM 来说，CUDA 执行的实质是线程束的执行，因为 SM 根本不知道每个块是什么，也不知道先后顺序，SM 只知道按照按照机器码跑，而给它什么，先后顺序，这个就是硬件功能设计的直接体现了。CUDA 执行所有的线程，并行的，没有先后次序的，但实际上硬件资源是有限的，不可能同时执行百万个线程，所以从硬件角度来看，物理层面上执行的也只是线程的一部分，而每次执行的这一部分，就是线程束。
         </h3>
         
     </div>
@@ -369,19 +369,13 @@
     <section class="article-content">
     
     
-    <h1 id="cuda基础线程束执行的本质">CUDA基础：线程束执行的本质</h1>
+    <h1 id="cuda-基础线程束执行的本质">CUDA 基础：线程束执行的本质</h1>
 <h2 id="1-线程束和线程块">1. 线程束和线程块</h2>
 <p>线程束是 SM 中基本的执行单元，当一个线程块的网格被启动后，网格中的线程块分布在 SM 中。一旦线程块被调度在一个 SM 上，线程块中的线程会被进一步划分为线程束。一个线程束由 32 个连续的线程组成（目前的 GPU 都是 32 个线程，但不保证未来是 32 个），在一个线程束中，所有的线程按照单指令多线程（SIMT）方式执行；也就是说，所有线程都执行相同的指令，每个线程在私有数据上进行操作。下图展示了线程块的逻辑视图和硬件视图之间的关系：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184443-2023-08-31.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230831184443-2023-08-31"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184443-2023-08-31.webp"
+         alt="20230831184443-2023-08-31" width="90%" loading="lazy"/>
+</figure>
+
 <p>然而，从硬件的角度来看，所有的线程都被组织成了一维的，线程块可以被配置为一维、二维、三维的。在一个块中，每个线程都有唯一的 ID 。对于一维的线程块，唯一的线程 ID 被存储在 CUDA 的内置变量 threadIdx.x 中，并且，threadIdx.x 中拥有连续值得线程被分组到线程束中。例如，一个有 128 个线程的一维线程块被组织到 4 个线程束里，如下所示：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -421,7 +415,7 @@
 <pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">tid</span> <span class="o">=</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">y</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">+</span> <span class="n">threadIdx</span><span class="p">.</span><span class="n">z</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">x</span> <span class="o">*</span> <span class="n">blockDim</span><span class="p">.</span><span class="n">y</span><span class="p">;</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>在C语言中，假设三维数组 t 保存了所有的线程，那么 (threadIdx.x, threadIdx.y, threadIdx.z) 就相当于：</p>
+</div><p>在 C 语言中，假设三维数组 t 保存了所有的线程，那么 (threadIdx.x, threadIdx.y, threadIdx.z) 就相当于：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt">1
@@ -444,8 +438,8 @@ $$</p>
 <p><strong>从硬件角度来看：</strong> 线程块是一维线程束的集合。在线程块中线程被组织成一维布局，每 32 个连续线程组成一个线程束。</p></div>
 
 <h2 id="2-线程束分化">2. 线程束分化</h2>
-<p>控制流是高级编程语言的基本构造中的一种。GPU支持传统的、C风格的、显式的控制流结构，例如，if···then···else、for和while。</p>
-<p>CPU 拥有复杂的硬件以执行分支预测，也就是在每个条件检查中预测应用程序的控制流会使用哪个分支。如果预测正确，CPU 中的分支只需付出很小的性能代价。如果预测不正确，CPU可能会停止运行很多个周期，因为指令流水线被清空了。我们不必完全理解为什么 CPU 擅长处理复杂的控制流。这个解释只是作为对比的背景。当我们的程序包含大量的分支判断时，从程序角度来说，程序的逻辑是很复杂的，因为一个分支就会有两条路可以走，如果有 10 个分支，那么一共有 1024 条路走，CPU 采用流水线话作业，如果每次等到分支执行完再执行下面的指令会造成很大的延迟，所以现在处理器都采用分支预测技术，而CPU的这项技术相对于 GPU 来说高级了不止一点点，而这也是GPU与CPU的不同，设计初衷就是为了解决不同的问题。CPU适合逻辑复杂计算量不大的程序，比如操作系统，控制系统，GPU适合大量计算简单逻辑的任务，所以被用来算数。</p>
+<p>控制流是高级编程语言的基本构造中的一种。GPU 支持传统的、C 风格的、显式的控制流结构，例如，if···then···else、for 和 while。</p>
+<p>CPU 拥有复杂的硬件以执行分支预测，也就是在每个条件检查中预测应用程序的控制流会使用哪个分支。如果预测正确，CPU 中的分支只需付出很小的性能代价。如果预测不正确，CPU 可能会停止运行很多个周期，因为指令流水线被清空了。我们不必完全理解为什么 CPU 擅长处理复杂的控制流。这个解释只是作为对比的背景。当我们的程序包含大量的分支判断时，从程序角度来说，程序的逻辑是很复杂的，因为一个分支就会有两条路可以走，如果有 10 个分支，那么一共有 1024 条路走，CPU 采用流水线化作业，如果每次等到分支执行完再执行下面的指令会造成很大的延迟，所以现在处理器都采用分支预测技术，而 CPU 的这项技术相对于 GPU 来说高级了不止一点点，而这也是 GPU 与 CPU 的不同，设计初衷就是为了解决不同的问题。CPU 适合逻辑复杂计算量不大的程序，比如操作系统，控制系统，GPU 适合大量计算简单逻辑的任务，所以被用来算数。</p>
 <p>GPU 是相对简单的设备，它没有复杂的分支预测机制。一个线程束中的所有线程在同周期中必须执行相同的指令，如果一个线程执行一条指令，那么线程束中的所有线程都必须执行该指令。如果在同一线程束中的线程使用不同的路径通过同一个应用程序，这可能会产生问题。例如，思考下面的语句:</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -463,20 +457,13 @@ $$</p>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>假设在一个线程束中有 16 个线程执行这段代码，cond 为 true，但对于其他 16 个来说 cond 为 false 。一半的线程束需要执行 if 语句块中的指令，而另一半需要执行 else 语句块中的指令。在同一线程束中的线程执行不同的指令，被称为<strong>线程束分化</strong>。我们已经知道，在一个线程束中所有线程在每个周期中必须执行相同的指令，所以线程束分化似乎会产生一
-个悖论。</p>
+</div><p>假设在一个线程束中有 16 个线程执行这段代码，cond 为 true，但对于其他 16 个来说 cond 为 false 。一半的线程束需要执行 if 语句块中的指令，而另一半需要执行 else 语句块中的指令。在同一线程束中的线程执行不同的指令，被称为<strong>线程束分化</strong>。我们已经知道，在一个线程束中所有线程在每个周期中必须执行相同的指令，所以线程束分化似乎会产生一个悖论。</p>
 <p>如果一个线程束中的线程产生分化，线程束将连续执行每一个分支路径，而禁用不执行这一路径的线程。线程束分化会导致性能明显地下降。在前面的例子中可以看到，线程中并行线程的数量减少了一半: 只有 16 个线程同时活跃地执行，而其他 16 个被禁用了。条件分支越多，并行性削弱越严重。此外，线程束分化只发生在同一个线程束中。在不同的线程束中，不同的条件值不会引起线程束分化。</p>
 <p>执行过程如下：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831205444-2023-08-31.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230831205444-2023-08-31"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831205444-2023-08-31.webp"
+         alt="20230831205444-2023-08-31" width="90%" loading="lazy"/>
+</figure>
+
 <p>因为线程束分化导致的性能下降就应该用线程束的方法解决，根本思路是<strong>避免同一个线程束内的线程分化</strong>，而让我们能控制线程束内线程行为的原因是线程块中线程分配到线程束是有规律的而不是随机的。这就使得我们根据线程编号来设计分支是可以的，补充说明下，当一个线程束中所有的线程都执行 if 或者，都执行 else 时，不存在性能下降；只有当线程束内有分歧产生分支的时候，性能才会急剧下降。</p>
 <p>线程束内的线程是可以被我们控制的，那么我们就把都执行 if 的线程塞到一个线程束中，或者让一个线程束中的线程都执行 if ，另外线程都执行 else 的这种方式可以将效率提高很多。</p>
 <p>举以下一个低效的核函数为例：</p>
@@ -548,7 +535,7 @@ $$</p>
         <svg xmlns="http://www.w3.org/2000/svg" class="icon github-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M2 2.5C2 1.83696 2.26339 1.20107 2.73223 0.732233C3.20108 0.263392 3.83696 0 4.5 0L13.25 0C13.4489 0 13.6397 0.0790176 13.7803 0.21967C13.921 0.360322 14 0.551088 14 0.75V13.25C14 13.4489 13.921 13.6397 13.7803 13.7803C13.6397 13.921 13.4489 14 13.25 14H10.75C10.5511 14 10.3603 13.921 10.2197 13.7803C10.079 13.6397 10 13.4489 10 13.25C10 13.0511 10.079 12.8603 10.2197 12.7197C10.3603 12.579 10.5511 12.5 10.75 12.5H12.5V10.5H4.5C4.30308 10.5 4.11056 10.5582 3.94657 10.6672C3.78257 10.7762 3.65442 10.9312 3.57816 11.1128C3.50191 11.2943 3.48096 11.4943 3.51793 11.6878C3.5549 11.8812 3.64816 12.0594 3.786 12.2C3.92524 12.3422 4.0023 12.5338 4.00024 12.7328C3.99818 12.9318 3.91716 13.1218 3.775 13.261C3.63285 13.4002 3.4412 13.4773 3.24222 13.4752C3.04325 13.4732 2.85324 13.3922 2.714 13.25C2.25571 12.7829 1.99929 12.1544 2 11.5V2.5ZM12.5 1.5V9H4.5C4.144 9 3.806 9.074 3.5 9.208V2.5C3.5 2.23478 3.60536 1.98043 3.79289 1.79289C3.98043 1.60536 4.23478 1.5 4.5 1.5H12.5ZM5 12.25V15.5C5 15.5464 5.01293 15.5919 5.03734 15.6314C5.06175 15.6709 5.09667 15.7028 5.1382 15.7236C5.17972 15.7444 5.22621 15.7532 5.27245 15.749C5.31869 15.7448 5.36286 15.7279 5.4 15.7L6.85 14.613C6.89328 14.5805 6.94591 14.563 7 14.563C7.05409 14.563 7.10673 14.5805 7.15 14.613L8.6 15.7C8.63714 15.7279 8.68131 15.7448 8.72755 15.749C8.77379 15.7532 8.82028 15.7444 8.8618 15.7236C8.90333 15.7028 8.93826 15.6709 8.96266 15.6314C8.98707 15.5919 9 15.5464 9 15.5V12.25C9 12.1837 8.97366 12.1201 8.92678 12.0732C8.87989 12.0263 8.81631 12 8.75 12H5.25C5.1837 12 5.12011 12.0263 5.07322 12.0732C5.02634 12.1201 5 12.1837 5 12.25Z"/></svg>
         <a class="name" href=https://github.com/PKUcoldkeyboard/cuda-demo/blob/main/Chap3/simpleDivergence.cu target="_blank">线程束分化示例</a>
     </div>
-    <div class="description">CUDA编程DEMO：线程束分化</div> 
+    <div class="description">CUDA 编程 DEMO：线程束分化</div> 
     <div class="language">
         <span class="language-color" style="background-color: #3A4E3A"></span>
         <span class="language-name">Cuda</span>
@@ -564,18 +551,12 @@ $$</p>
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>运行结果为：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831223456-2023-08-31.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230831223456-2023-08-31"
-	
-	
-></p>
-<p>代码中的 Warmup 部分是提前启动一次GPU，因为第一次启动GPU时会比第二次速度慢一些，具体原因未知，可以去查一下CUDA的相关技术文档了解内容。我们可以通过 Nvidia Nsight Compute 来查看分支效率（<strong>旧版的 nvprof 被弃用了</strong>，metrics 参数对应的修改可以参考 <a class="link" href="https://blog.csdn.net/weixin_44334901/article/details/128596081"  target="_blank" rel="noopener"
-    >CUDA编程性能分析工具 nvprof/ncu &ndash;metrics参数含义</a> ，而且运行 ncu 时候必须使用 root 权限），结果如下所示：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831223456-2023-08-31.webp"
+         alt="20230831223456-2023-08-31" width="90%" loading="lazy"/>
+</figure>
+
+<p>代码中的 Warmup 部分是提前启动一次 GPU，因为第一次启动 GPU 时会比第二次速度慢一些，具体原因未知，可以去查一下 CUDA 的相关技术文档了解内容。我们可以通过 Nvidia Nsight Compute 来查看分支效率（<strong>旧版的 nvprof 被弃用了</strong>，metrics 参数对应的修改可以参考 <a class="link" href="https://blog.csdn.net/weixin_44334901/article/details/128596081"  target="_blank" rel="noopener"
+    >CUDA 编程性能分析工具 nvprof/ncu &ndash;metrics 参数含义</a> ，而且运行 ncu 时候必须使用 root 权限），结果如下所示：</p>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
 <pre tabindex="0" class="chroma"><code><span class="lnt"> 1
@@ -672,45 +653,27 @@ $$</p>
 </ul>
 <p>线程束一旦被激活来到片上，那么它就不会再离开 SM 直到执行结束。</p>
 <p>每个 SM 都有 32 位的寄存器组，每个架构寄存器的数量不一样，其存储于寄存器文件中，为每个线程进行分配，同时，固定数量的共享内存，在线程块之间分配。</p>
-<p>一个 SM 上被分配多少个线程块和线程束取决于SM中可用的寄存器和共享内存，以及内核需要的寄存器和共享内存大小。 当 kernel 占用的资源较少，那么更多的线程处于活跃状态，相反则线程越少。</p>
+<p>一个 SM 上被分配多少个线程块和线程束取决于 SM 中可用的寄存器和共享内存，以及内核需要的寄存器和共享内存大小。 当 kernel 占用的资源较少，那么更多的线程处于活跃状态，相反则线程越少。</p>
 <ol>
 <li>寄存器资源的分配</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150726-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901150726-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150726-2023-09-01.webp"
+         alt="20230901150726-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <ol start="2">
 <li>共享内存的分配</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150743-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901150743-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150743-2023-09-01.webp"
+         alt="20230901150743-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <p>上面讲的主要是线程束，如果从逻辑上来看线程块的话，可用资源的分配也会影响常驻线程块的数量。特别是当 SM 内的资源没办法处理一个完整块，那么程序将无法启动。</p>
 <p>以下是资源列表：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150843-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901150843-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150843-2023-09-01.webp"
+         alt="20230901150843-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <p>当寄存器和共享内存分配给了线程块，这个线程块处于活跃状态，所包含的线程束称为活跃线程束。活跃的线程束又分为三类：</p>
 <ul>
 <li>选定的线程束</li>
@@ -723,10 +686,10 @@ $$</p>
 <li>32 个 CUDA 核心可以用于执行</li>
 <li>执行所需要的资源全部就位</li>
 </ul>
-<p>Kepler活跃的线程束数量从开始到结束不得大于 64，可以等于。任何周期选定的线程束小于等于 4 。由于计算资源是在线程束之间分配的，且线程束的整个生命周期都在片上，所以线程束的上下文切换是非常快速的。下一节将说明如何通过大量的活跃的线程束切换来隐藏延迟。</p>
+<p>Kepler 活跃的线程束数量从开始到结束不得大于 64，可以等于。任何周期选定的线程束小于等于 4 。由于计算资源是在线程束之间分配的，且线程束的整个生命周期都在片上，所以线程束的上下文切换是非常快速的。下一节将说明如何通过大量的活跃的线程束切换来隐藏延迟。</p>
 <h2 id="4-延迟隐藏">4. 延迟隐藏</h2>
 <p>SM 依赖线程级并行，以最大化功能单元的利用率，因此，利用率与常驻线程束的数量直接相关。在指令发出和完成之间的时钟周期被定义为<strong>指令延迟</strong>。当每个时钟周期中所有的线程调度器都有一个符合条件的线程束时，可以达到计算资源的完全利用。这就可以保证，通过在其他常驻线程束中发布其他指令，可以<strong>隐藏每个指令的延迟</strong>。</p>
-<p>与在 CPU 上用C语言编程相比，<strong>延迟隐藏</strong>在 CUDA 编程中尤为重要。CPU 核心是为同时最小化延迟一个或两个线程而设计的，而 GPU 则是为处理大量并发和轻量级线程以最大化吞吐量而设计的。GPU 的指令延迟被其他线程束的计算隐藏。</p>
+<p>与在 CPU 上用 C 语言编程相比，<strong>延迟隐藏</strong>在 CUDA 编程中尤为重要。CPU 核心是为同时最小化延迟一个或两个线程而设计的，而 GPU 则是为处理大量并发和轻量级线程以最大化吞吐量而设计的。GPU 的指令延迟被其他线程束的计算隐藏。</p>
 <p>考虑到指令延迟，指令可以被分为两种基本类型：</p>
 <ul>
 <li>算术指令</li>
@@ -738,16 +701,10 @@ $$</p>
 <li>全局内存访问为 400～800 个周期</li>
 </ul>
 <p>下图是阻塞线程束到可选线程束的过程逻辑图：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151502-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901151502-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151502-2023-09-01.webp"
+         alt="20230901151502-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <p>其中线程束 0 （Warp 0） 阻塞两段时间后恢复可选模式，但是在这段等待时间中，SM 没有闲置。那么至少需要多少线程，线程束来保证最小化延迟呢？可以根据利特尔法则（Little&rsquo;s Law）提供一个合理的近似值。它起源于队列理论中的一个定理，也可以用于 GPU 中：</p>
 <p>$$
 \mathrm{所需线程束}=\mathrm{延迟}\times \mathrm{吞吐量}
@@ -759,49 +716,31 @@ $$</p>
     <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254c0 7-5 12-12 12h-88c-7 0-12-5-12-12v-24c0-7 5-12 12-12h12v-64h-12c-7 0-12-5-12-12v-24c0-7 5-12 12-12h64c7 0 12 5 12 12v100h12c7 0 12 5 12 12v24z"/></svg></div><p>注意带宽和吞吐量的区别，带宽一般指的是理论峰值，最大每个时钟周期能执行多少个指令，吞吐量是指实际操作过程中每分钟处理多少个指令。简单来说，带宽通常是指理论峰值，而吞吐量是指已达到的值。</p></div>
 
 <p>这个可以想象成一个瀑布，像这样，绿箭头是线程束，只要线程束足够多，吞吐量是不会降低的：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151942-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901151942-2023-09-01"
-	
-	
-></p>
-<p>假设在 kernel 里一条指令的平均延迟是5个周期。为了保持在每个周期内执行 6 个线程束的吞吐量，则至少需要 30 个未完成的线程束。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151942-2023-09-01.webp"
+         alt="20230901151942-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
+<p>假设在 kernel 里一条指令的平均延迟是 5 个周期。为了保持在每个周期内执行 6 个线程束的吞吐量，则至少需要 30 个未完成的线程束。</p>
 <p>对于算术运算来说，其所需的并行可以表示成隐藏算术延迟所需要的操作数量。下面的表格出了 Fermi 和 Kepler 设备所需的操作数量。示例中的算术运算是一个 32 位的浮点数乘加运算 (a + b $\times$ c)，表示在每个 SM 中每个时钟周期内的操作数量。吞吐量因不同的算术指令而不同。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152413-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901152413-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152413-2023-09-01.webp"
+         alt="20230901152413-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <p>吞吐量由 SM 中每个周期内的操作数量确定，而执行一条指令的一个线程束对应 32 个操作。因此，为保持计算资源的充分利用，对于 Fermi GPU 而言，每个 SM 中所需的线程束数量通过计算为 $640 \div 32 = 20 $ 个线程束。因此，算术运算所需的并行可以用操作的数量或线程束的数量来表示。这个简单的单位转换表明，有两种方法可以提高并行：</p>
 <ul>
 <li>指令级并行（ILP）：一个线程中有很多独立的指令</li>
 <li>线程级并行（TLP）：很多并发地符合条件的线程</li>
 </ul>
 <p>同样，与指令周期隐藏延迟类似，<strong>内存隐藏延迟</strong>是靠内存读取的并发操作来完成的，需要注意的是，指令隐藏的关键目的是使用全部的计算资源，而内存读取的延迟隐藏是为了使用全部的内存带宽，内存延迟的时候，计算资源正在被别的线程束使用，所以我们不考虑内存读取延迟的时候计算资源在做了什么，我们的根本目的是把计算资源，内存读取的带宽资源全部使用满，这样就能达到理论的最大效率。同样下表根据利特尔法则给出了需要多少线程束来最小化内存读取延迟，不过这里有个单位换算过程，机器的性能指标内存读取速度给出的是 GB/s 的单位，而我们需要的是每个时钟周期读取字节数，所以要用这个速度除以频率，例如 Tesla C2070 的内存带宽是 144 GB/s，转化成时钟周期： $\frac{144\mathrm{GB/s}}{1.566 \mathrm{GHz}}=92\mathrm{B/t}$，这样就能得到单位时间周期的内存带宽了。即下表的数据：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152915-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901152915-2023-09-01"
-	
-	
-></p>
-<p>需要说明的是这个速度不是单个 SM 的而是整个GPU设备的。Fermi 需要并行的读取 74KB 的数据才能让GPU带宽满载，如果每个线程读取4个字节，我们大约需要18500个线程，大约579个线程束才能达到这个峰值。</p>
-<p>所以，延迟的隐藏取决于活动的线程束的数量，数量越多，隐藏的越好，但是线程束的数量又受到上面的说的资源影响。所以这里就需要寻找最优的执行配置来达到最优的延迟隐藏。</p>
-<p>那么我们怎么样确定一个线程束的下界呢，使得当高于这个数字时SM的延迟能充分的隐藏，其实这个公式很简单，也很好理解，就是SM的计算核心数乘以单条指令的延迟，比如 32 个单精度浮点计算器，每次计算延迟 20 个时钟周期，那么我需要最少 $32 \times 20 =640$ 个线程使设备处于忙碌状态。然而，这只是一个下边界。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152915-2023-09-01.webp"
+         alt="20230901152915-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
+<p>需要说明的是这个速度不是单个 SM 的而是整个 GPU 设备的。Fermi 需要并行的读取 74KB 的数据才能让 GPU 带宽满载，如果每个线程读取 4 个字节，我们大约需要 18500 个线程，大约 579 个线程束才能达到这个峰值。</p>
+<p>所以，延迟的隐藏取决于活动的线程束的数量，数量越多，隐藏得越好，但是线程束的数量又受到上面的说的资源影响。所以这里就需要寻找最优的执行配置来达到最优的延迟隐藏。</p>
+<p>那么我们怎么样确定一个线程束的下界呢，使得当高于这个数字时 SM 的延迟能充分的隐藏，其实这个公式很简单，也很好理解，就是 SM 的计算核心数乘以单条指令的延迟，比如 32 个单精度浮点计算器，每次计算延迟 20 个时钟周期，那么我需要最少 $32 \times 20 =640$ 个线程使设备处于忙碌状态。然而，这只是一个下边界。</p>
 <h2 id="5-占用率">5. 占用率</h2>
-<p>在每个CUDA核心里指令是顺序执行的。当一个线程束阻塞时，SM 切换执行其他符合条件的线程束。理想情况下，我们想要有足够的线程束占用设备的核心。占用率是每个 SM 中活跃的线程束占最大线程束数量的比值。即：</p>
+<p>在每个 CUDA 核心里指令是顺序执行的。当一个线程束阻塞时，SM 切换执行其他符合条件的线程束。理想情况下，我们想要有足够的线程束占用设备的核心。占用率是每个 SM 中活跃的线程束占最大线程束数量的比值。即：</p>
 <p>$$
 \mathrm{Occupancy} = \frac{\mathrm{Active\ Warps}}{\mathrm{Max\ Warps}}
 $$</p>
@@ -849,16 +788,10 @@ $$</p>
 </span></span></code></pre></td></tr></table>
 </div>
 </div><p>输出结果为：</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901155126-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901155126-2023-09-01"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901155126-2023-09-01.webp"
+         alt="20230901155126-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <p>可以看到 RTX4090 最大 64 个线程束每个 SM。</p>
 <p>内核使用寄存器的数量会影响 SM 内线程束的数量，nvcc 的编译选项也有手动控制寄存器的使用。也可以通过调整线程块内线程的多少来提高占用率，当然要合理不能太极端：</p>
 <ul>
@@ -889,26 +822,20 @@ $$</p>
 <pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">__syncthreads</span><span class="p">();</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><p>这个函数完成，这个函数只能同步同一个块内的线程，不能同步不同块内的线程，想要同步不同块内的线程，就只能让核函数执行完成，控制程序交换主机，这种方式来同步所有线程。当__syncthreads被调用时，在同一个线程块中每个线程都必须等待直至该线程块中所有其他线程都已经达到这个同步点。线程产生的所有全局内存和共享内存访问，将会在栅栏后对线程块中所有其他的线程可见。该函数可以协调同一个块中线程之间的通信，但它强制线程束空闲，从而可能对性能产生负面影响。</p>
+</div><p>这个函数完成，这个函数只能同步同一个块内的线程，不能同步不同块内的线程，想要同步不同块内的线程，就只能让核函数执行完成，控制程序交换主机，这种方式来同步所有线程。当__syncthreads 被调用时，在同一个线程块中每个线程都必须等待直至该线程块中所有其他线程都已经达到这个同步点。线程产生的所有全局内存和共享内存访问，将会在栅栏后对线程块中所有其他的线程可见。该函数可以协调同一个块中线程之间的通信，但它强制线程束空闲，从而可能对性能产生负面影响。</p>
 <p>在不同的块之间没有线程同步。块间同步，唯一安全的方法是在每个内核执行结束端使用全局同步点；也就是说，在全局同步之后，终止当前的核函数，开始执行新的核函数。</p>
-<p>不同块中的线程不允许相互同步，因此GPU可以以任意顺序执行块。这使得CUDA程序在大规模并行GPU上是可扩展的。</p>
+<p>不同块中的线程不允许相互同步，因此 GPU 可以以任意顺序执行块。这使得 CUDA 程序在大规模并行 GPU 上是可扩展的。</p>
 <h2 id="7-可扩展性">7. 可扩展性</h2>
-<p>对于任何并行应用程序而言，可扩展性是一个理想的特性。可扩展性意味着为并行应用程序提供了额外的硬件资源，相对于增加的资源，并行应用程序会产生加速。例如，若一个CUDA程序在两个 SM 中是可扩展的，则与在一个 SM 中运行相比，在两个 SM 中运行会使运行时间减半。一个可扩展的并行程序可以高效地使用所有的计算资源以提高性能。可扩展性意味着增加的计算核心可以提高性能。串行代码本身是不可扩展的，因为在成千上万的内核上运行一个串行单线程应用程序，对性能是没有影响的。并行代码有可扩展的潜能，但真正的可扩展性取决于算法设计和硬件特性。</p>
+<p>对于任何并行应用程序而言，可扩展性是一个理想的特性。可扩展性意味着为并行应用程序提供了额外的硬件资源，相对于增加的资源，并行应用程序会产生加速。例如，若一个 CUDA 程序在两个 SM 中是可扩展的，则与在一个 SM 中运行相比，在两个 SM 中运行会使运行时间减半。一个可扩展的并行程序可以高效地使用所有的计算资源以提高性能。可扩展性意味着增加的计算核心可以提高性能。串行代码本身是不可扩展的，因为在成千上万的内核上运行一个串行单线程应用程序，对性能是没有影响的。并行代码有可扩展的潜能，但真正的可扩展性取决于算法设计和硬件特性。</p>
 <p>能够在可变数量的计算核心上执行相同的应用程序代码的能力被称为<strong>透明可扩展性</strong>。一个透明的可扩展平台拓宽了现有应用程序的应用范围，并减少了开发人员的负担，因为它们可以避免新的或不同的硬件产生的变化。可扩展性比效率更重要。一个可扩展但效率很低的系统可以通过简单添加硬件核心来处理更大的工作负载。一个效率很高但不可扩展的系统可能很快会达到可实现性能的上限。</p>
-<p>CUDA内核启动时，线程块分布在多个 SM 中。网格中的线程块以并行或连续或任意的顺序被执行。这种独立性使得CUDA程序在任意数量的计算核心间可以扩展。</p>
-<p>下图展示了 CUDA 架构可扩展性的一个例子。左侧的 GPU 有两个 SM，  可以同时执行两个块；右侧的 GPU 有 4 个 SM ，可以同时执行 4 个块。不修改任何代码，一个应用程序可以在不同的GPU配置上运行，并且所需的执行时间根据可用的资源而改变。</p>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901163747-2023-09-01.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230901163747-2023-09-01"
-	
-	
-></p>
+<p>CUDA 内核启动时，线程块分布在多个 SM 中。网格中的线程块以并行或连续或任意的顺序被执行。这种独立性使得 CUDA 程序在任意数量的计算核心间可以扩展。</p>
+<p>下图展示了 CUDA 架构可扩展性的一个例子。左侧的 GPU 有两个 SM，  可以同时执行两个块；右侧的 GPU 有 4 个 SM ，可以同时执行 4 个块。不修改任何代码，一个应用程序可以在不同的 GPU 配置上运行，并且所需的执行时间根据可用的资源而改变。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901163747-2023-09-01.webp"
+         alt="20230901163747-2023-09-01" width="90%" loading="lazy"/>
+</figure>
+
 <h2 id="参考资料">参考资料</h2>
-<p>[1] CUDA C编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著</p>
+<p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著</p>
 
 </section>
 
@@ -988,7 +915,7 @@ $$</p>
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存访问模式</h2>
+            <h2 class="article-title">CUDA 基础：内存访问模式</h2>
         </div>
     </a>
 </article>
@@ -1007,7 +934,7 @@ $$</p>
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存管理</h2>
+            <h2 class="article-title">CUDA 基础：内存管理</h2>
         </div>
     </a>
 </article>
@@ -1026,7 +953,7 @@ $$</p>
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA基础：内存模型概述</h2>
+            <h2 class="article-title">CUDA 基础：内存模型概述</h2>
         </div>
     </a>
 </article>
@@ -1045,7 +972,7 @@ $$</p>
         
 
         <div class="article-details">
-            <h2 class="article-title">CUDA编程：从基础到应用</h2>
+            <h2 class="article-title">CUDA 编程：从基础到应用</h2>
         </div>
     </a>
 </article>
@@ -1136,7 +1063,7 @@ $$</p>
         
             2021 - 
         
-        2023 cuterwrite
+        2024 cuterwrite
     </section>
     
     <section class="powerby">

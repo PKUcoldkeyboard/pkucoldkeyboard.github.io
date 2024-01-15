@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="zh-cn" dir="ltr">
     <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文是关于RDMA技术及其编程方法的指导。文章主要介绍了libibverbs的简介和Verbs API的详解，包括Verbs对象创建层次和两个动态库。此外，还介绍了Connection Manager的建立过程和抽象类型RDMACM。最后，文章通过解析被动方和主动方的RDMACM程序，以及基于RDMA的client-server程序的实战，来帮助读者更好地理解和应用RDMA技术。'>
-<title>RDMA技术及其编程方法（二）：编程指导</title>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文是关于 RDMA 技术及其编程方法的指导。文章主要介绍了 libibverbs 的简介和 Verbs API 的详解，包括 Verbs 对象创建层次和两个动态库。此外，还介绍了 Connection Manager 的建立过程和抽象类型 RDMACM。最后，文章通过解析被动方和主动方的 RDMACM 程序，以及基于 RDMA 的 client-server 程序的实战，来帮助读者更好地理解和应用 RDMA 技术。'>
+<title>RDMA 技术及其编程方法（二）：编程指导</title>
 
 <link rel='canonical' href='https://cuterwrite.top/p/rdma-tutorial/2/'>
 
-<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='RDMA技术及其编程方法（二）：编程指导'>
-<meta property='og:description' content='本文是关于RDMA技术及其编程方法的指导。文章主要介绍了libibverbs的简介和Verbs API的详解，包括Verbs对象创建层次和两个动态库。此外，还介绍了Connection Manager的建立过程和抽象类型RDMACM。最后，文章通过解析被动方和主动方的RDMACM程序，以及基于RDMA的client-server程序的实战，来帮助读者更好地理解和应用RDMA技术。'>
+<link rel="stylesheet" href="/scss/style.min.a396fcf458856ed828a39d8d042cb52899a22a1649ff05c03dc4308e6ddc184b.css"><meta property='og:title' content='RDMA 技术及其编程方法（二）：编程指导'>
+<meta property='og:description' content='本文是关于 RDMA 技术及其编程方法的指导。文章主要介绍了 libibverbs 的简介和 Verbs API 的详解，包括 Verbs 对象创建层次和两个动态库。此外，还介绍了 Connection Manager 的建立过程和抽象类型 RDMACM。最后，文章通过解析被动方和主动方的 RDMACM 程序，以及基于 RDMA 的 client-server 程序的实战，来帮助读者更好地理解和应用 RDMA 技术。'>
 <meta property='og:url' content='https://cuterwrite.top/p/rdma-tutorial/2/'>
 <meta property='og:site_name' content='cuterwrite'>
 <meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='RDMA' /><meta property='article:tag' content='计算机网络' /><meta property='article:published_time' content='2023-07-27T01:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-27T01:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725145210.webp' />
-<meta name="twitter:title" content="RDMA技术及其编程方法（二）：编程指导">
-<meta name="twitter:description" content="本文是关于RDMA技术及其编程方法的指导。文章主要介绍了libibverbs的简介和Verbs API的详解，包括Verbs对象创建层次和两个动态库。此外，还介绍了Connection Manager的建立过程和抽象类型RDMACM。最后，文章通过解析被动方和主动方的RDMACM程序，以及基于RDMA的client-server程序的实战，来帮助读者更好地理解和应用RDMA技术。"><meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="RDMA 技术及其编程方法（二）：编程指导">
+<meta name="twitter:description" content="本文是关于 RDMA 技术及其编程方法的指导。文章主要介绍了 libibverbs 的简介和 Verbs API 的详解，包括 Verbs 对象创建层次和两个动态库。此外，还介绍了 Connection Manager 的建立过程和抽象类型 RDMACM。最后，文章通过解析被动方和主动方的 RDMACM 程序，以及基于 RDMA 的 client-server 程序的实战，来帮助读者更好地理解和应用 RDMA 技术。"><meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725145210.webp' />
     <link rel="shortcut icon" href="/favicon.ico" />
 
@@ -270,48 +270,48 @@
         <div class="widget--toc">
             <nav id="TableOfContents">
   <ul>
-    <li><a href="#一libibverbs简介">一、libibverbs简介</a></li>
-    <li><a href="#二verbs-api详解">二、Verbs API详解</a>
+    <li><a href="#一libibverbs-简介">一、libibverbs 简介</a></li>
+    <li><a href="#二verbs-api-详解">二、Verbs API 详解</a>
       <ul>
         <li><a href="#1-简介">1. 简介</a></li>
-        <li><a href="#2-verbs对象创建层次">2. Verbs对象创建层次</a></li>
+        <li><a href="#2-verbs-对象创建层次">2. Verbs 对象创建层次</a></li>
         <li><a href="#3-两个动态库">3. 两个动态库</a></li>
       </ul>
     </li>
     <li><a href="#三connection-manager">三、Connection Manager</a>
       <ul>
         <li><a href="#1-连接的建立">1. 连接的建立</a></li>
-        <li><a href="#2-cm的抽象类型rdmacm">2. CM的抽象类型（RDMACM）</a></li>
+        <li><a href="#2-cm-的抽象类型rdmacm">2. CM 的抽象类型（RDMACM）</a></li>
       </ul>
     </li>
-    <li><a href="#四-rdmacm程序解析被动方">四、 RDMACM程序解析——被动方</a>
+    <li><a href="#四-rdmacm-程序解析被动方">四、 RDMACM 程序解析——被动方</a>
       <ul>
-        <li><a href="#1-创建事件channel">1. 创建事件channel</a></li>
-        <li><a href="#2-创建连接id">2. 创建连接ID</a></li>
+        <li><a href="#1-创建事件-channel">1. 创建事件 channel</a></li>
+        <li><a href="#2-创建连接-id">2. 创建连接 ID</a></li>
         <li><a href="#3-绑定地址">3. 绑定地址</a></li>
-        <li><a href="#4-创建listener返回端口地址">4. 创建Listener，返回端口/地址</a></li>
+        <li><a href="#4-创建-listener返回端口地址">4. 创建 Listener，返回端口/地址</a></li>
         <li><a href="#5-等待连接请求">5. 等待连接请求</a></li>
-        <li><a href="#6-创建pdcq和send-receive-qp">6. 创建PD、CQ和Send-Receive QP</a></li>
+        <li><a href="#6-创建-pdcq-和-send-receive-qp">6. 创建 PD、CQ 和 Send-Receive QP</a></li>
         <li><a href="#7-最后的操作">7. 最后的操作</a></li>
       </ul>
     </li>
-    <li><a href="#五-rdmacm程序解析主动方">五、 RDMACM程序解析——主动方</a>
+    <li><a href="#五-rdmacm-程序解析主动方">五、 RDMACM 程序解析——主动方</a>
       <ul>
-        <li><a href="#1-创建事件channel-1">1. 创建事件channel</a></li>
-        <li><a href="#2-创建连接id-1">2. 创建连接ID</a></li>
+        <li><a href="#1-创建事件-channel-1">1. 创建事件 channel</a></li>
+        <li><a href="#2-创建连接-id-1">2. 创建连接 ID</a></li>
         <li><a href="#3-绑定地址-1">3. 绑定地址</a></li>
-        <li><a href="#4-创建qp">4. 创建QP</a></li>
+        <li><a href="#4-创建-qp">4. 创建 QP</a></li>
         <li><a href="#5-解析路由">5. 解析路由</a></li>
         <li><a href="#6-建立连接">6. 建立连接</a></li>
         <li><a href="#7-最后的操作-1">7. 最后的操作</a></li>
       </ul>
     </li>
-    <li><a href="#六实战基于rdma的client-server程序">六、实战：基于RDMA的client-server程序</a>
+    <li><a href="#六实战基于-rdma-的-client-server-程序">六、实战：基于 RDMA 的 client-server 程序</a>
       <ul>
-        <li><a href="#1-server端">1. server端</a></li>
-        <li><a href="#2-client端">2. client端</a></li>
+        <li><a href="#1-server-端">1. server 端</a></li>
+        <li><a href="#2-client-端">2. client 端</a></li>
         <li><a href="#3-项目实现">3. 项目实现</a></li>
-        <li><a href="#4-补充rdma应用程序标准流程">4. 补充：RDMA应用程序标准流程</a></li>
+        <li><a href="#4-补充rdma-应用程序标准流程">4. 补充：RDMA 应用程序标准流程</a></li>
       </ul>
     </li>
     <li><a href="#参考文献">参考文献</a></li>
@@ -331,7 +331,7 @@
         <div class="article-image">
             <a href="/p/rdma-tutorial/2/">
                 
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725145210.webp" loading="lazy" alt="Featured image of post RDMA技术及其编程方法（二）：编程指导" />
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725145210.webp" loading="lazy" alt="Featured image of post RDMA 技术及其编程方法（二）：编程指导" />
                 
             </a>
         </div>
@@ -350,12 +350,12 @@
 
     <div class="article-title-wrapper">
         <h2 class="article-title">
-            <a href="/p/rdma-tutorial/2/">RDMA技术及其编程方法（二）：编程指导</a>
+            <a href="/p/rdma-tutorial/2/">RDMA 技术及其编程方法（二）：编程指导</a>
         </h2>
     
         
         <h3 class="article-subtitle">
-            本文是关于RDMA技术及其编程方法的指导。文章主要介绍了libibverbs的简介和Verbs API的详解，包括Verbs对象创建层次和两个动态库。此外，还介绍了Connection Manager的建立过程和抽象类型RDMACM。最后，文章通过解析被动方和主动方的RDMACM程序，以及基于RDMA的client-server程序的实战，来帮助读者更好地理解和应用RDMA技术。
+            本文是关于 RDMA 技术及其编程方法的指导。文章主要介绍了 libibverbs 的简介和 Verbs API 的详解，包括 Verbs 对象创建层次和两个动态库。此外，还介绍了 Connection Manager 的建立过程和抽象类型 RDMACM。最后，文章通过解析被动方和主动方的 RDMACM 程序，以及基于 RDMA 的 client-server 程序的实战，来帮助读者更好地理解和应用 RDMA 技术。
         </h3>
         
     </div>
@@ -391,7 +391,7 @@
 
 
                 <time class="article-time--reading">
-                    阅读时长: 12 分钟
+                    阅读时长: 10 分钟
                 </time>
             </div>
         
@@ -406,96 +406,41 @@
     <section class="article-content">
     
     
-    <!-- raw HTML omitted -->
-<!-- raw HTML omitted -->
-<p><strong>Table of Contents</strong>  <em>generated with <a class="link" href="https://github.com/thlorenz/doctoc"  target="_blank" rel="noopener"
-    >DocToc</a></em></p>
+    <h1 id="rdma-技术及其编程方法二编程指导">RDMA 技术及其编程方法（二）：编程指导</h1>
+<h2 id="一libibverbs-简介">一、libibverbs 简介</h2>
 <ul>
-<li><a class="link" href="#rdma%E6%8A%80%E6%9C%AF%E5%8F%8A%E5%85%B6%E7%BC%96%E7%A8%8B%E6%96%B9%E6%B3%95%E4%BA%8C%E7%BC%96%E7%A8%8B%E6%8C%87%E5%AF%BC" >RDMA技术及其编程方法（二）：编程指导</a>
-<ul>
-<li><a class="link" href="#%E4%B8%80libibverbs%E7%AE%80%E4%BB%8B" >一、libibverbs简介</a></li>
-<li><a class="link" href="#%E4%BA%8Cverbs-api%E8%AF%A6%E8%A7%A3" >二、Verbs API详解</a>
-<ul>
-<li><a class="link" href="#1-%E7%AE%80%E4%BB%8B" >1. 简介</a></li>
-<li><a class="link" href="#2-verbs%E5%AF%B9%E8%B1%A1%E5%88%9B%E5%BB%BA%E5%B1%82%E6%AC%A1" >2. Verbs对象创建层次</a></li>
-<li><a class="link" href="#3-%E4%B8%A4%E4%B8%AA%E5%8A%A8%E6%80%81%E5%BA%93" >3. 两个动态库</a></li>
-</ul>
-</li>
-<li><a class="link" href="#%E4%B8%89connection-manager" >三、Connection Manager</a>
-<ul>
-<li><a class="link" href="#1-%E8%BF%9E%E6%8E%A5%E7%9A%84%E5%BB%BA%E7%AB%8B" >1. 连接的建立</a></li>
-<li><a class="link" href="#2-cm%E7%9A%84%E6%8A%BD%E8%B1%A1%E7%B1%BB%E5%9E%8Brdmacm" >2. CM的抽象类型（RDMACM）</a></li>
-</ul>
-</li>
-<li><a class="link" href="#%E5%9B%9B-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E8%A2%AB%E5%8A%A8%E6%96%B9" >四、 RDMACM程序解析——被动方</a>
-<ul>
-<li><a class="link" href="#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel" >1. 创建事件channel</a></li>
-<li><a class="link" href="#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id" >2. 创建连接ID</a></li>
-<li><a class="link" href="#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80" >3. 绑定地址</a></li>
-<li><a class="link" href="#4-%E5%88%9B%E5%BB%BAlistener%E8%BF%94%E5%9B%9E%E7%AB%AF%E5%8F%A3%E5%9C%B0%E5%9D%80" >4. 创建Listener，返回端口/地址</a></li>
-<li><a class="link" href="#5-%E7%AD%89%E5%BE%85%E8%BF%9E%E6%8E%A5%E8%AF%B7%E6%B1%82" >5. 等待连接请求</a></li>
-<li><a class="link" href="#6-%E5%88%9B%E5%BB%BApdcq%E5%92%8Csend-receive-qp" >6. 创建PD、CQ和Send-Receive QP</a></li>
-<li><a class="link" href="#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C" >7. 最后的操作</a></li>
-</ul>
-</li>
-<li><a class="link" href="#%E4%BA%94-rdmacm%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90%E4%B8%BB%E5%8A%A8%E6%96%B9" >五、 RDMACM程序解析——主动方</a>
-<ul>
-<li><a class="link" href="#1-%E5%88%9B%E5%BB%BA%E4%BA%8B%E4%BB%B6channel-1" >1. 创建事件channel</a></li>
-<li><a class="link" href="#2-%E5%88%9B%E5%BB%BA%E8%BF%9E%E6%8E%A5id-1" >2. 创建连接ID</a></li>
-<li><a class="link" href="#3-%E7%BB%91%E5%AE%9A%E5%9C%B0%E5%9D%80-1" >3. 绑定地址</a></li>
-<li><a class="link" href="#4-%E5%88%9B%E5%BB%BAqp" >4. 创建QP</a></li>
-<li><a class="link" href="#5-%E8%A7%A3%E6%9E%90%E8%B7%AF%E7%94%B1" >5. 解析路由</a></li>
-<li><a class="link" href="#6-%E5%BB%BA%E7%AB%8B%E8%BF%9E%E6%8E%A5" >6. 建立连接</a></li>
-<li><a class="link" href="#7-%E6%9C%80%E5%90%8E%E7%9A%84%E6%93%8D%E4%BD%9C-1" >7. 最后的操作</a></li>
-</ul>
-</li>
-<li><a class="link" href="#%E5%85%AD%E5%AE%9E%E6%88%98%E5%9F%BA%E4%BA%8Erdma%E7%9A%84client-server%E7%A8%8B%E5%BA%8F" >六、实战：基于RDMA的client-server程序</a>
-<ul>
-<li><a class="link" href="#1-server%E7%AB%AF" >1. server端</a></li>
-<li><a class="link" href="#2-client%E7%AB%AF" >2. client端</a></li>
-<li><a class="link" href="#3-%E9%A1%B9%E7%9B%AE%E5%AE%9E%E7%8E%B0" >3. 项目实现</a></li>
-</ul>
-</li>
-<li><a class="link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE" >参考文献</a></li>
-</ul>
-</li>
-</ul>
-<!-- raw HTML omitted -->
-<h1 id="rdma技术及其编程方法二编程指导">RDMA技术及其编程方法（二）：编程指导</h1>
-<h2 id="一libibverbs简介">一、libibverbs简介</h2>
-<ul>
-<li>libibverbs由Roland Dreier自2006年开始开发和维护，实际上是*nix中的Verbs API标准
+<li>libibverbs 由 Roland Dreier 自 2006 年开始开发和维护，实际上是*nix 中的 Verbs API 标准
 <ul>
 <li>开源</li>
-<li>Verbs的核心部分自2005年起集成到Linux内核中&ndash;内核2.6.11</li>
+<li>Verbs 的核心部分自 2005 年起集成到 Linux 内核中&ndash;内核 2.6.11</li>
 <li>Inbox in several *nix distributions</li>
 <li>目前有多个硬件供应商提供的级别较低的库</li>
 </ul>
 </li>
-<li>对所有启用RDMA的传输协议使用相同的API
+<li>对所有启用 RDMA 的传输协议使用相同的 API
 <ul>
-<li><strong>InfiniBand</strong>： 支持RDMA的网络体系结构
+<li><strong>InfiniBand</strong>： 支持 RDMA 的网络体系结构
 <ul>
-<li>需要支持它的网卡和InfiniBand交换机。</li>
+<li>需要支持它的网卡和 InfiniBand 交换机。</li>
 </ul>
 </li>
-<li><strong>RoCE</strong>：基于以太网/IP帧的RDMA数据包封装
+<li><strong>RoCE</strong>：基于以太网/IP 帧的 RDMA 数据包封装
 <ul>
 <li>需要支持它的网卡和标准以太网交换机</li>
 </ul>
 </li>
-<li><strong>iWARP</strong>：提供基于流控制传输协议(SCTP)和传输控制协议(TCP)的RDMA
+<li><strong>iWARP</strong>：提供基于流控制传输协议(SCTP)和传输控制协议(TCP)的 RDMA
 <ul>
 <li>需要支持它的网卡和标准以太网交换机</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>libibverbs是完全线程安全的
+<li>libibverbs 是完全线程安全的
 <ul>
-<li>libibverbs本身是线程安全的</li>
+<li>libibverbs 本身是线程安全的</li>
 <li>用户态空间低级驱动程序库也是线程安全的</li>
-<li>应用程序可以在多线程中使用RDMA资源</li>
+<li>应用程序可以在多线程中使用 RDMA 资源</li>
 </ul>
 </li>
 </ul>
@@ -503,10 +448,10 @@
 
 
 <div class="notice notice-warning" >
-    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 576 512"><path d="M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>销毁一个线程中的资源并在另一个线程中使用它将导致segmentation fault，这个问题在非多线程代码中也会发生</p></div>
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 576 512"><path d="M570 440c18 32-5 72-42 72H48c-37 0-60-40-42-72L246 24c19-32 65-32 84 0l240 416zm-282-86a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>销毁一个线程中的资源并在另一个线程中使用它将导致 segmentation fault，这个问题在非多线程代码中也会发生</p></div>
 
 <ul>
-<li>使用libibverbs的基本须知
+<li>使用 libibverbs 的基本须知
 <div class="table-wrapper"><table>
 <thead>
 <tr>
@@ -524,94 +469,82 @@
 <td style="text-align:left">-libverbs</td>
 </tr>
 <tr>
-<td style="text-align:left">所有的input structures需要为zeroed</td>
-<td style="text-align:left">使用memset()或结构初始化、如果该structure有扩充的需求，则零值将保留遗留行为</td>
+<td style="text-align:left">所有的 input structures 需要为 zeroed</td>
+<td style="text-align:left">使用 memset()或结构初始化、如果该 structure 有扩充的需求，则零值将保留遗留行为</td>
 </tr>
 <tr>
 <td style="text-align:left">大多数资源句柄都是指针，因此使用错误的句柄可能会导致分段错误</td>
-<td style="text-align:left">使用NULL检查句柄</td>
+<td style="text-align:left">使用 NULL 检查句柄</td>
 </tr>
 <tr>
-<td style="text-align:left">返回指针的Verbs成功时返回有效值，失败时返回NULL</td>
+<td style="text-align:left">返回指针的 Verbs 成功时返回有效值，失败时返回 NULL</td>
 <td style="text-align:left">检查返回值</td>
 </tr>
 <tr>
-<td style="text-align:left">返回整形变量的Verbs如果成功则返回零，如果成功则返回-1或errno</td>
+<td style="text-align:left">返回整形变量的 Verbs 如果成功则返回零，如果成功则返回-1 或 errno</td>
 <td style="text-align:left">检查返回值</td>
 </tr>
 </tbody>
 </table></div>
 </li>
 </ul>
-<h2 id="二verbs-api详解">二、Verbs API详解</h2>
+<h2 id="二verbs-api-详解">二、Verbs API 详解</h2>
 <h3 id="1-简介">1. 简介</h3>
 <ul>
 <li>在内核和用户态空间均可使用</li>
-<li>Verbs中的类
+<li>Verbs 中的类
 <ul>
-<li>资源管理：Qps、CQs、SRQs等等</li>
-<li>WR处理：post send, 轮询CQ等等</li>
+<li>资源管理：Qps、CQs、SRQs 等等</li>
+<li>WR 处理：post send, 轮询 CQ 等等</li>
 <li>内存注册</li>
 <li>地址句柄</li>
 </ul>
 </li>
-<li>Verbs中的操作
+<li>Verbs 中的操作
 <ul>
-<li>Device操作</li>
+<li>Device 操作</li>
 <li>上下文操作</li>
-<li>PD操作</li>
+<li>PD 操作</li>
 <li>QP bringup</li>
-<li>活跃QP操作</li>
+<li>活跃 QP 操作</li>
 </ul>
 </li>
 </ul>
-<h3 id="2-verbs对象创建层次">2. Verbs对象创建层次</h3>
+<h3 id="2-verbs-对象创建层次">2. Verbs 对象创建层次</h3>
 <ol>
-<li>获取devide列表</li>
-<li>打开请求的device</li>
-<li>查询device功能</li>
-<li>分配PD内存空间</li>
-<li>注册内存域MR</li>
-<li>关联并创建完成队列CQ</li>
-<li>创建QP</li>
+<li>获取 devide 列表</li>
+<li>打开请求的 device</li>
+<li>查询 device 功能</li>
+<li>分配 PD 内存空间</li>
+<li>注册内存域 MR</li>
+<li>关联并创建完成队列 CQ</li>
+<li>创建 QP</li>
 <li>Bring up a QP</li>
-<li>Post WR并且轮询CQ</li>
+<li>Post WR 并且轮询 CQ</li>
 <li>清理资源
-<img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235009.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230724235009"
-	
-	
-></li>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235009.webp"
+         alt="20230724235009" width="90%" loading="lazy"/>
+</figure>
+</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235116.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230724235116"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235116.webp"
+         alt="20230724235116" width="90%" loading="lazy"/>
+</figure>
+
 <h3 id="3-两个动态库">3. 两个动态库</h3>
 <ul>
 <li>libibverbs.so
 <ul>
-<li>用于直接通过用户态空间访问InfiniBand硬件的库</li>
-<li>Infiniband(根据Infiniband规范)和iWarp(iWARP动词规范)的RDMA Verbs的实现</li>
+<li>用于直接通过用户态空间访问 InfiniBand 硬件的库</li>
+<li>Infiniband(根据 Infiniband 规范)和 iWarp(iWARP 动词规范)的 RDMA Verbs 的实现</li>
 <li>它处理创建、修改、查询和销毁资源的控制路径，如保护域(PD)、完成队列(CQ)、队列对(QP)、共享接收队列(SRQ)、地址句柄(AH)、内存区域(MR)</li>
-<li>它还处理发送和接收发布到QPS和SRQ的数据，使用轮询和完成事件从CQs获取完成</li>
+<li>它还处理发送和接收发布到 QPS 和 SRQ 的数据，使用轮询和完成事件从 CQs 获取完成</li>
 </ul>
 </li>
 <li>librdmacm.so
 <ul>
-<li>用户态空间的RDMA连接管理器</li>
-<li>使用Socket语义的RDMA(InfiniBand、ROCE和iWARP)通信管理库</li>
+<li>用户态空间的 RDMA 连接管理器</li>
+<li>使用 Socket 语义的 RDMA(InfiniBand、ROCE 和 iWARP)通信管理库</li>
 </ul>
 </li>
 </ul>
@@ -619,39 +552,39 @@
 <h3 id="1-连接的建立">1. 连接的建立</h3>
 <ul>
 <li>
-<p>基于Infiniband通信管理(CM)协议（在通用服务接口(GSI)上定义的协议QP：QP1）</p>
+<p>基于 Infiniband 通信管理(CM)协议（在通用服务接口(GSI)上定义的协议 QP：QP1）</p>
 </li>
 <li>
 <p>提供以下服务</p>
 <ul>
-<li>在对等RC和QP之间交换必要的参数，使它们为通信做好准备
+<li>在对等 RC 和 QP 之间交换必要的参数，使它们为通信做好准备
 <ul>
-<li>初始化器请求连接到远程上的服务ID（服务ID映射）</li>
-<li>类TCP握手：请求/响应/即用消息</li>
+<li>初始化器请求连接到远程上的服务 ID（服务 ID 映射）</li>
+<li>类 TCP 握手：请求/响应/即用消息</li>
 </ul>
 </li>
-<li>查找给定服务ID的远程UD和QP序号
+<li>查找给定服务 ID 的远程 UD 和 QP 序号
 <ul>
-<li>服务ID请求/响应消息</li>
+<li>服务 ID 请求/响应消息</li>
 </ul>
 </li>
 <li>加载备用路径</li>
 </ul>
 </li>
 <li>
-<p>连接管理器（Connection Manager，CM）是一个用户态空间的库，它提供了一个通用的接口，用于在RDMA网络中建立连接。它可以用于建立连接，也可以用于查找远程QP的地址，以便在不建立连接的情况下发送数据。</p>
+<p>连接管理器（Connection Manager，CM）是一个用户态空间的库，它提供了一个通用的接口，用于在 RDMA 网络中建立连接。它可以用于建立连接，也可以用于查找远程 QP 的地址，以便在不建立连接的情况下发送数据。</p>
 <ul>
-<li>需要在对等QP之间交换信息</li>
-<li>负责RC、UC、RD连接的建立</li>
-<li>应用程序使用SA来获取其他信息(例如路径记录)</li>
-<li>SIDR用于UD</li>
+<li>需要在对等 QP 之间交换信息</li>
+<li>负责 RC、UC、RD 连接的建立</li>
+<li>应用程序使用 SA 来获取其他信息(例如路径记录)</li>
+<li>SIDR 用于 UD</li>
 </ul>
 </li>
 </ul>
-<h3 id="2-cm的抽象类型rdmacm">2. CM的抽象类型（RDMACM）</h3>
+<h3 id="2-cm-的抽象类型rdmacm">2. CM 的抽象类型（RDMACM）</h3>
 <ul>
-<li>类似于Socket连接模式的语义</li>
-<li>对IB和ROCE都使用基于IP的寻址模式</li>
+<li>类似于 Socket 连接模式的语义</li>
+<li>对 IB 和 ROCE 都使用基于 IP 的寻址模式</li>
 </ul>
 <div class="table-wrapper"><table>
 <thead>
@@ -724,7 +657,7 @@
 </tbody>
 </table></div>
 <ul>
-<li>使用rdmacm的基本须知
+<li>使用 rdmacm 的基本须知
 <div class="table-wrapper"><table>
 <thead>
 <tr>
@@ -745,23 +678,23 @@
 </table></div>
 </li>
 </ul>
-<h2 id="四-rdmacm程序解析被动方">四、 RDMACM程序解析——被动方</h2>
+<h2 id="四-rdmacm-程序解析被动方">四、 RDMACM 程序解析——被动方</h2>
 <p>流程如下：</p>
 <ol>
-<li>创建事件channel，以便我们可以接收rdmacm事件，如连接请求和连接建立通知。</li>
-<li>创建连接ID并绑定到地址。</li>
-<li>创建Listener并返回端口/地址。</li>
+<li>创建事件 channel，以便我们可以接收 rdmacm 事件，如连接请求和连接建立通知。</li>
+<li>创建连接 ID 并绑定到地址。</li>
+<li>创建 Listener 并返回端口/地址。</li>
 <li>等待连接请求</li>
-<li>创建PD、CQ和Send-Receive QP</li>
+<li>创建 PD、CQ 和 Send-Receive QP</li>
 <li>接受连接请求</li>
 <li>等待建立连接</li>
 <li>视情况发布操作</li>
 </ol>
-<h3 id="1-创建事件channel">1. 创建事件channel</h3>
+<h3 id="1-创建事件-channel">1. 创建事件 channel</h3>
 <ul>
-<li>打开用于报告通信事件的channel。异步事件将通过事件channel报告给用户，对应方法为<code>struct rdma_event_channel * rdma_create_event_channel(void)</code>。</li>
-<li>事件channel用于定向rdma_cm_id上的所有事件。对于许多客户端来说，单个事件channel可能就足够了，然而，当管理大量的连接或cm_id时，用户可能会发现将不同cm_id的事件定向到不同的channel进行处理是有用的。</li>
-<li>必须通过调用<code>rdma_destroy_event_channel</code>销毁所有创建的事件channel。用户应该调用<code>rdma_get_cm_event</code>来检索事件channel上的事件。</li>
+<li>打开用于报告通信事件的 channel。异步事件将通过事件 channel 报告给用户，对应方法为<code>struct rdma_event_channel * rdma_create_event_channel(void)</code>。</li>
+<li>事件 channel 用于定向 rdma_cm_id 上的所有事件。对于许多客户端来说，单个事件 channel 可能就足够了，然而，当管理大量的连接或 cm_id 时，用户可能会发现将不同 cm_id 的事件定向到不同的 channel 进行处理是有用的。</li>
+<li>必须通过调用<code>rdma_destroy_event_channel</code> 销毁所有创建的事件 channel。用户应该调用<code>rdma_get_cm_event</code> 来检索事件 channel 上的事件。</li>
 </ul>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -798,27 +731,27 @@
 </span></span></code></pre></td></tr></table>
 </div>
 </div><ul>
-<li>每个事件channel都映射到一个文件描述符。可以像使用和操作任何其他FD一样使用和操作关联的文件描述符，以更改其行为。</li>
+<li>每个事件 channel 都映射到一个文件描述符。可以像使用和操作任何其他 FD 一样使用和操作关联的文件描述符，以更改其行为。</li>
 </ul>
-<h3 id="2-创建连接id">2. 创建连接ID</h3>
+<h3 id="2-创建连接-id">2. 创建连接 ID</h3>
 <ul>
 <li>创建用于跟踪通信信息的标识符，对应方法为<code>int rdma_create_id(struct rdma_event_channel *channel, struct rdma_cm_id **id, void *context, enum rdma_port_space ps)</code>。</li>
 <li>输入参数：
 <ul>
-<li>channel：事件channel</li>
-<li>id：指向rdma_cm_id指针的指针，用于返回新创建的rdma_cm_id</li>
+<li>channel：事件 channel</li>
+<li>id：指向 rdma_cm_id 指针的指针，用于返回新创建的 rdma_cm_id</li>
 <li>context：用户上下文，将在事件中返回给用户</li>
-<li>ps：RDMA端口空间，指定要使用的端口空间</li>
+<li>ps：RDMA 端口空间，指定要使用的端口空间</li>
 </ul>
 </li>
-<li>rdma_cm_id在概念上等同于用于RDMA通信的套接字。不同之处在于，RDMA通信需要显式绑定到指定的RDMA设备，然后才能进行通信，并且大多数操作本质上是异步的。</li>
+<li>rdma_cm_id 在概念上等同于用于 RDMA 通信的套接字。不同之处在于，RDMA 通信需要显式绑定到指定的 RDMA 设备，然后才能进行通信，并且大多数操作本质上是异步的。</li>
 <li>端口空间
 <ul>
-<li>RDMA_PS_TCP：提供可靠、面向连接的QP通信。与TCP不同，RDMA端口空间提供基于消息的通信，而不是基于流的通信。</li>
-<li>RDMA_PS_UDP：提供不可靠、无连接的QP通信。支持数据报和组播通信。</li>
+<li>RDMA_PS_TCP：提供可靠、面向连接的 QP 通信。与 TCP 不同，RDMA 端口空间提供基于消息的通信，而不是基于流的通信。</li>
+<li>RDMA_PS_UDP：提供不可靠、无连接的 QP 通信。支持数据报和组播通信。</li>
 </ul>
 </li>
-<li>销毁：在调用此函数并确认相关事件之前，用户必须释放任何与rdma_cm_id相关的QP。</li>
+<li>销毁：在调用此函数并确认相关事件之前，用户必须释放任何与 rdma_cm_id 相关的 QP。</li>
 </ul>
 <div class="highlight"><div class="chroma">
 <table class="lntable"><tr><td class="lntd">
@@ -844,12 +777,12 @@
 </div>
 </div><h3 id="3-绑定地址">3. 绑定地址</h3>
 <ul>
-<li>将源地址与rdma_cm_id相关联。对应方法为<code>int rdma_bind_addr(struct rdma_cm_id *id, struct sockaddr *addr)</code>。
+<li>将源地址与 rdma_cm_id 相关联。对应方法为<code>int rdma_bind_addr(struct rdma_cm_id *id, struct sockaddr *addr)</code>。
 <ul>
 <li>地址中可以包含通配符。</li>
-<li>如果绑定到特定本地地址，则rdma_cm_id也将绑定到本地RDMA设备。</li>
-<li>通常，在调用<code>rdma_listen</code>以绑定到特定端口号之前调用此函数，但也可以在调用<code>rdma_resolve_addr</code>以绑定到特定地址之前在主动方调用该函数。</li>
-<li>如果用于绑定到端口0，rdma_cm将选择一个可用端口，可以使用<code>rdma_get_src_port</code>检索该端口。</li>
+<li>如果绑定到特定本地地址，则 rdma_cm_id 也将绑定到本地 RDMA 设备。</li>
+<li>通常，在调用<code>rdma_listen</code> 以绑定到特定端口号之前调用此函数，但也可以在调用<code>rdma_resolve_addr</code> 以绑定到特定地址之前在主动方调用该函数。</li>
+<li>如果用于绑定到端口 0，rdma_cm 将选择一个可用端口，可以使用<code>rdma_get_src_port</code> 检索该端口。</li>
 </ul>
 </li>
 </ul>
@@ -872,9 +805,9 @@
 </span><span class="lnt">15
 </span></code></pre></td>
 <td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/*  sockaddr_in是IPV4的地址结构体
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/*  sockaddr_in 是 IPV4 的地址结构体
 </span></span></span><span class="line"><span class="cl"><span class="cm">*   AF_INET：IPV4
-</span></span></span><span class="line"><span class="cl"><span class="cm">*   htons：将主机字节序转换为网络字节序（小端存储）, 20079是端口号
+</span></span></span><span class="line"><span class="cl"><span class="cm">*   htons：将主机字节序转换为网络字节序（小端存储）, 20079 是端口号
 </span></span></span><span class="line"><span class="cl"><span class="cm">*   INADDR_ANY：表示任意地址
 </span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
 </span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">sockaddr_in</span> <span class="n">addr</span> <span class="o">=</span> <span class="p">{</span>
@@ -889,24 +822,24 @@
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="4-创建listener返回端口地址">4. 创建Listener，返回端口/地址</h3>
+</div><h3 id="4-创建-listener返回端口地址">4. 创建 Listener，返回端口/地址</h3>
 <ul>
-<li>初始化传入连接请求或数据报服务查找的Listener。对应方法为<code>int rdma_listen(struct rdma_cm_id *id, int backlog)</code>。
+<li>初始化传入连接请求或数据报服务查找的 Listener。对应方法为<code>int rdma_listen(struct rdma_cm_id *id, int backlog)</code>。
 <ul>
 <li>侦听将被限制为本地绑定源地址</li>
-<li>在调用此函数之前，用户必须已通过调用<code>rdma_bind_addr</code>将<code>rdma_cm_id</code>绑定到本地地址。</li>
-<li>如果<code>rdma_cm_id</code>绑定到特定的IP地址，则侦听将仅限于该地址和关联的RDMA设备。</li>
-<li>如果<code>rdma_cm_id</code>仅绑定到RDMA端口号，则将在所有RDMA设备上进行侦听。</li>
+<li>在调用此函数之前，用户必须已通过调用<code>rdma_bind_addr</code> 将<code>rdma_cm_id</code> 绑定到本地地址。</li>
+<li>如果<code>rdma_cm_id</code> 绑定到特定的 IP 地址，则侦听将仅限于该地址和关联的 RDMA 设备。</li>
+<li>如果<code>rdma_cm_id</code> 仅绑定到 RDMA 端口号，则将在所有 RDMA 设备上进行侦听。</li>
 </ul>
 </li>
-<li>返回已绑定到本地地址的<code>rdma_cm_id</code>的本地端口号。对应方法为<code>uint16_t rdma_get_src_port(struct rdma_cm_id *id)</code>。</li>
-<li>返回已绑定到本地设备的<code>rdma_cm_id</code>的本地IP地址。对应方法为<code>struct sockaddr * rdma_get_local_addr(struct rdma_cm_id *id)</code>。</li>
-<li>解析目的节点和服务地址，并返回建立通信所需的信息。提供与getaddrinfo等效的RDMA功能(配合<code>rdma_create_ep</code>使用)。对应方法为<code>int rdma_getaddrinfo (char *node, char *service, struct rdma_addrinfo *hints, struct rdma_addrinfo **res)</code>。
+<li>返回已绑定到本地地址的<code>rdma_cm_id</code> 的本地端口号。对应方法为<code>uint16_t rdma_get_src_port(struct rdma_cm_id *id)</code>。</li>
+<li>返回已绑定到本地设备的<code>rdma_cm_id</code> 的本地 IP 地址。对应方法为<code>struct sockaddr * rdma_get_local_addr(struct rdma_cm_id *id)</code>。</li>
+<li>解析目的节点和服务地址，并返回建立通信所需的信息。提供与 getaddrinfo 等效的 RDMA 功能(配合<code>rdma_create_ep</code> 使用)。对应方法为<code>int rdma_getaddrinfo (char *node, char *service, struct rdma_addrinfo *hints, struct rdma_addrinfo **res)</code>。
 <ul>
-<li>node: 可选，目的节点的主机名，或者点分十进制的IPv4/IPv6十六进制地址</li>
+<li>node: 可选，目的节点的主机名，或者点分十进制的 IPv4/IPv6 十六进制地址</li>
 <li>service：地址的服务名称或端口号。</li>
-<li>hints：一个包含有关调用方支持的服务类型的提示的rdma_addrinfo结构的引用。</li>
-<li>res：指向包含响应信息的rdma_addrinfo结构的LinkedList的指针。</li>
+<li>hints：一个包含有关调用方支持的服务类型的提示的 rdma_addrinfo 结构的引用。</li>
+<li>res：指向包含响应信息的 rdma_addrinfo 结构的 LinkedList 的指针。</li>
 </ul>
 </li>
 </ul>
@@ -990,7 +923,7 @@
 <ul>
 <li>检索通信事件。如果没有挂起的事件，默认情况下，调用将阻塞，直到接收到事件。对应方法为<code>int rdma_get_cm_event(struct rdma_event_channel *channel, struct rdma_cm_event **event)</code>。</li>
 <li>通过修改与给定通道相关联的文件描述符，可以更改此函数的默认同步行为。</li>
-<li>所有报告的事件都必须通过调用<code>rdma_ack_cm_event</code>进行确认。</li>
+<li>所有报告的事件都必须通过调用<code>rdma_ack_cm_event</code> 进行确认。</li>
 <li><code>rdma_cm_id</code> 的销毁将被阻塞，直到相关事件被确认。</li>
 </ul>
 <div class="highlight"><div class="chroma">
@@ -1005,11 +938,11 @@
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">err</span> <span class="o">=</span> <span class="nf">rdma_get_cm_event</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">event</span><span class="p">);</span>
 </span></span></code></pre></td></tr></table>
 </div>
-</div><h3 id="6-创建pdcq和send-receive-qp">6. 创建PD、CQ和Send-Receive QP</h3>
+</div><h3 id="6-创建-pdcq-和-send-receive-qp">6. 创建 PD、CQ 和 Send-Receive QP</h3>
 <ul>
-<li>分配与指定的<code>rdma_cm_id</code>相关联的QP，并将其转换为用于发送和接收。对应方法为<code>int rdma_create_qp(struct rdma_cm_id *id, struct ibv_pd *pd, struct ibv_qp_init_attr *qp_init_attr)</code>。</li>
-<li>在调用此函数之前，<code>rdma_cm_id</code>必须绑定到本地RDMA设备，且保护域PD必须用于同一设备。</li>
-<li>被分配给<code>rdma_cm_id</code>的QP会由 librdmacm 自动转换状态.</li>
+<li>分配与指定的<code>rdma_cm_id</code> 相关联的 QP，并将其转换为用于发送和接收。对应方法为<code>int rdma_create_qp(struct rdma_cm_id *id, struct ibv_pd *pd, struct ibv_qp_init_attr *qp_init_attr)</code>。</li>
+<li>在调用此函数之前，<code>rdma_cm_id</code> 必须绑定到本地 RDMA 设备，且保护域 PD 必须用于同一设备。</li>
+<li>被分配给<code>rdma_cm_id</code> 的 QP 会由 librdmacm 自动转换状态.</li>
 <li>分配完毕后，QP 将准备就绪，处理接收信息的发布。如果 QP 未连接，它将准备好发布发送。</li>
 </ul>
 <div class="highlight"><div class="chroma">
@@ -1100,50 +1033,44 @@
 </div>
 </div><h3 id="7-最后的操作">7. 最后的操作</h3>
 <ol>
-<li>Accept请求连接</li>
+<li>Accept 请求连接</li>
 <li>等待连接建立</li>
 <li>发布操作</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725224928.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230725224928"
-	
-	
-></p>
-<h2 id="五-rdmacm程序解析主动方">五、 RDMACM程序解析——主动方</h2>
-<h3 id="1-创建事件channel-1">1. 创建事件channel</h3>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725224928.webp"
+         alt="20230725224928" width="90%" loading="lazy"/>
+</figure>
+
+<h2 id="五-rdmacm-程序解析主动方">五、 RDMACM 程序解析——主动方</h2>
+<h3 id="1-创建事件-channel-1">1. 创建事件 channel</h3>
 <ul>
 <li>与被动方相同</li>
 </ul>
-<h3 id="2-创建连接id-1">2. 创建连接ID</h3>
+<h3 id="2-创建连接-id-1">2. 创建连接 ID</h3>
 <ul>
 <li>与被动方相同</li>
 </ul>
 <h3 id="3-绑定地址-1">3. 绑定地址</h3>
 <ul>
-<li>将目的地址和可选源地址从IP地址解析为RDMA地址。如果成功，则指定的rdma_cm_id将绑定到本地设备。对应方法为<code>int rdma_resolve_addr (struct rdma_cm_id *id, struct sockaddr *src_addr, struct sockaddr *dst_addr, int timeout_ms)</code>。</li>
-<li>此方法用于将给定的目标IP地址映射到可用的RDMA地址。</li>
-<li>IP到RDMA地址的映射使用本地路由表或通过ARP完成。</li>
-<li>如果给定源地址，则将<code>rdma_cm_id</code>绑定到该地址，就像调用<code>rdma_ind_addr</code>一样。</li>
-<li>如果没有给出源地址，并且<code>rdma_cm_id</code>尚未绑定到设备，则<code>rdma_cm_id</code>将根据本地路由表绑定到源地址。</li>
-<li>在此方法调用之后，<code>rdma_cm_id</code>将绑定到RDMA设备。</li>
+<li>将目的地址和可选源地址从 IP 地址解析为 RDMA 地址。如果成功，则指定的 rdma_cm_id 将绑定到本地设备。对应方法为<code>int rdma_resolve_addr (struct rdma_cm_id *id, struct sockaddr *src_addr, struct sockaddr *dst_addr, int timeout_ms)</code>。</li>
+<li>此方法用于将给定的目标 IP 地址映射到可用的 RDMA 地址。</li>
+<li>IP 到 RDMA 地址的映射使用本地路由表或通过 ARP 完成。</li>
+<li>如果给定源地址，则将<code>rdma_cm_id</code> 绑定到该地址，就像调用<code>rdma_ind_addr</code> 一样。</li>
+<li>如果没有给出源地址，并且<code>rdma_cm_id</code> 尚未绑定到设备，则<code>rdma_cm_id</code> 将根据本地路由表绑定到源地址。</li>
+<li>在此方法调用之后，<code>rdma_cm_id</code> 将绑定到 RDMA 设备。</li>
 <li>该方法调用通常在调用 <code>rdma_resolve_route</code> 和 <code>rdma_connect</code> 之前在主动方上进行。</li>
 </ul>
 
 
 
 <div class="notice notice-note" >
-    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>InfiniBand特定</p></div>
+    <div class="notice-title"><svg xmlns="http://www.w3.org/2000/svg" class="icon notice-icon" viewBox="0 0 512 512"><path d="M504 256a248 248 0 11-496 0 248 248 0 01496 0zm-248 50a46 46 0 100 92 46 46 0 000-92zm-44-165l8 136c0 6 5 11 12 11h48c7 0 12-5 12-11l8-136c0-7-5-13-12-13h-64c-7 0-12 6-12 13z"/></svg></div><p>InfiniBand 特定</p></div>
 
 <ul>
-<li>此方法还会将目标IP地址和源IP地址(如果给定)映射到GID。</li>
-<li>为了执行映射，IPoIB必须同时在本地和远程节点上运行。</li>
+<li>此方法还会将目标 IP 地址和源 IP 地址(如果给定)映射到 GID。</li>
+<li>为了执行映射，IPoIB 必须同时在本地和远程节点上运行。</li>
 </ul>
-<h3 id="4-创建qp">4. 创建QP</h3>
+<h3 id="4-创建-qp">4. 创建 QP</h3>
 <ul>
 <li>与被动方相同</li>
 </ul>
@@ -1156,8 +1083,8 @@
 <li>
 <p>对应方法为<code>int rdma_connect (struct rdma_cm_id *id, struct rdma_conn_param *conn_param);</code></p>
 <ul>
-<li>id：指向rdma_cm_id的指针</li>
-<li>conn_param：指向rdma_conn_param结构的指针，包含连接参数</li>
+<li>id：指向 rdma_cm_id 的指针</li>
+<li>conn_param：指向 rdma_conn_param 结构的指针，包含连接参数</li>
 </ul>
 </li>
 <li>
@@ -1172,48 +1099,36 @@
 <li>等待连接建立</li>
 <li>发布操作</li>
 </ol>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225927.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230725225927"
-	
-	
-></p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225927.webp"
+         alt="20230725225927" width="90%" loading="lazy"/>
+</figure>
+
 <hr>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225943.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230725225943"
-	
-	
-></p>
-<h2 id="六实战基于rdma的client-server程序">六、实战：基于RDMA的client-server程序</h2>
-<h3 id="1-server端">1. server端</h3>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225943.webp"
+         alt="20230725225943" width="90%" loading="lazy"/>
+</figure>
+
+<h2 id="六实战基于-rdma-的-client-server-程序">六、实战：基于 RDMA 的 client-server 程序</h2>
+<h3 id="1-server-端">1. server 端</h3>
 <ul>
 <li>工作流程：
 <ol>
-<li>初始化RDMA资源</li>
-<li>等待client连接</li>
-<li>分配并固定服务器缓冲区buffer</li>
+<li>初始化 RDMA 资源</li>
+<li>等待 client 连接</li>
+<li>分配并固定服务器缓冲区 buffer</li>
 <li>接受客户端连接</li>
 <li>将有关本地服务器缓冲区的信息发送到客户端</li>
 <li>等待断开连接</li>
 </ol>
 </li>
 </ul>
-<h3 id="2-client端">2. client端</h3>
+<h3 id="2-client-端">2. client 端</h3>
 <ul>
 <li>工作流程：
 <ol>
-<li>初始化RDMA资源</li>
-<li>连接server</li>
-<li>通过发送/接收exchange接收服务器端缓冲区信息</li>
+<li>初始化 RDMA 资源</li>
+<li>连接 server</li>
+<li>通过发送/接收 exchange 接收服务器端缓冲区信息</li>
 <li>从（第一个）本地缓冲区向服务器缓冲区进行 RDMA 写入。</li>
 <li>进行 RDMA 读取，将服务器缓冲区的内容读入第二个本地缓冲区。</li>
 <li>比较第一缓冲区和第二缓冲区的内容，并进行匹配</li>
@@ -1233,17 +1148,11 @@
         <span class="language-name">C</span>
     </div>
 </div>
-<h3 id="4-补充rdma应用程序标准流程">4. 补充：RDMA应用程序标准流程</h3>
-<p><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230729185145.webp"
-	
-	
-	
-	loading="lazy"
-	
-		alt="20230729185145"
-	
-	
-></p>
+<h3 id="4-补充rdma-应用程序标准流程">4. 补充：RDMA 应用程序标准流程</h3>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230729185145.webp"
+         alt="20230729185145" width="90%" loading="lazy"/>
+</figure>
+
 <h2 id="参考文献">参考文献</h2>
 <ul>
 <li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.</li>
@@ -1316,6 +1225,25 @@
             
                 
 <article class="has-image">
+    <a href="/p/rdma-overview/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" loading="lazy" data-key="rdma-overview" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">RDMA 概述</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
     <a href="/p/rdma-tutorial/1/">
         
         
@@ -1327,7 +1255,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">RDMA技术及其编程方法（一）：RDMA简介与原理</h2>
+            <h2 class="article-title">RDMA 技术及其编程方法（一）：RDMA 简介与原理</h2>
         </div>
     </a>
 </article>
@@ -1346,7 +1274,7 @@
         
 
         <div class="article-details">
-            <h2 class="article-title">RDMA：Soft-RoCE环境搭建实验</h2>
+            <h2 class="article-title">RDMA：Soft-RoCE 环境搭建实验</h2>
         </div>
     </a>
 </article>
@@ -1385,25 +1313,6 @@
 
         <div class="article-details">
             <h2 class="article-title">性能刺客之伪共享</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/nest-on-hpe-install/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031002508-2023-10-31.webp" loading="lazy" data-key="nest-on-hpe-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20231031002508-2023-10-31.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">NEST on HPC 安装教程</h2>
         </div>
     </a>
 </article>
@@ -1475,7 +1384,7 @@
         
             2021 - 
         
-        2023 cuterwrite
+        2024 cuterwrite
     </section>
     
     <section class="powerby">
