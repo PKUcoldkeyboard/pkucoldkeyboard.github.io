@@ -1,1283 +1,320 @@
-<!DOCTYPE html>
-<html lang="zh-cn" dir="ltr">
-    <head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='Flink Native Kubernetes 词频统计'>
-<title>基于 Flink Native Kubernetes 的词频统计实验</title>
-
-<link rel='canonical' href='https://cuterwrite.top/p/flink-native-k8s/'>
-
-<link rel="stylesheet" href="/scss/style.min.4c90a59d3894c018e0fa2b5730906c36216007e37cf53710f6be1db187096820.css"><meta property='og:title' content='基于 Flink Native Kubernetes 的词频统计实验'>
-<meta property='og:description' content='Flink Native Kubernetes 词频统计'>
-<meta property='og:url' content='https://cuterwrite.top/p/flink-native-k8s/'>
-<meta property='og:site_name' content='cuterwrite'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Flink' /><meta property='article:tag' content='Kubernetes' /><meta property='article:tag' content='分布式计算' /><meta property='article:tag' content='云原生' /><meta property='article:published_time' content='2022-12-23T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-12-23T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp' />
-<meta name="twitter:title" content="基于 Flink Native Kubernetes 的词频统计实验">
-<meta name="twitter:description" content="Flink Native Kubernetes 词频统计"><meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp' />
-    <link rel="shortcut icon" href="/favicon.ico" />
-
-        
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-W5PMS226XS"></script>
-        <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-
-        gtag('config', 'G-W5PMS226XS');
-        </script>
-    </head>
-    <body class="
-    article-page
-    ">
-    <script>
-        (function() {
-            const colorSchemeKey = 'StackColorScheme';
-            if(!localStorage.getItem(colorSchemeKey)){
-                localStorage.setItem(colorSchemeKey, "auto");
-            }
-        })();
-    </script><script>
-    (function() {
-        const colorSchemeKey = 'StackColorScheme';
-        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
-        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
-            
-
-            document.documentElement.dataset.scheme = 'dark';
-        } else {
-            document.documentElement.dataset.scheme = 'light';
-        }
-    })();
-</script>
-<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
-    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
-        <span class="hamburger-box">
-            <span class="hamburger-inner"></span>
-        </span>
-    </button>
-
-    <header>
-        
-            
-            <figure class="site-avatar">
-                <a href="/">
-                
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
-                
-                </a>
-                
-                    <span class="emoji">😉</span>
-                
-            </figure>
-            
-        
-        
-        <div class="site-meta">
-            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
-            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-        </div>
-    </header><ol class="social-menu">
-            
-                <li>
-                    <a 
-                        href='https://github.com/PKUcoldkeyboard'
-                        target="_blank"
-                        title="GitHub"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
-</svg>
-
-
-
-                        
-                    </a>
-                </li>
-            
-                <li>
-                    <a 
-                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
-                        target="_blank"
-                        title="zhihu"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
-    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
-</svg>
-
-                        
-                    </a>
-                </li>
-            
-        </ol><ol class="menu" id="main-menu">
-        
-        
-        
-        <li >
-            <a href='/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <polyline points="5 12 3 12 12 3 21 12 19 12" />
-  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-</svg>
-
-
-
-                
-                <span>首页</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/about/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="7" r="4" />
-  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-</svg>
-
-
-
-                
-                <span>个人</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/archives/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <rect x="3" y="4" width="18" height="4" rx="2" />
-  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
-  <line x1="10" y1="12" x2="14" y2="12" />
-</svg>
-
-
-
-                
-                <span>文章</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/tags/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-tag" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <path d="M11 3L20 12a1.5 1.5 0 0 1 0 2L14 20a1.5 1.5 0 0 1 -2 0L3 11v-4a4 4 0 0 1 4 -4h4" />
-  <circle cx="9" cy="9" r="2" />
-</svg>
-
-
-
-                
-                <span>标签</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/search/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="10" cy="10" r="7" />
-  <line x1="21" y1="21" x2="15" y2="15" />
-</svg>
-
-
-
-                
-                <span>搜索</span>
-            </a>
-        </li>
-        
-
-        <div class="menu-bottom-section">
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="8" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="16" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <span>暗色模式</span>
-                </li>
-            
-        </div>
-    </ol>
-</aside>
-
-    <aside class="sidebar right-sidebar sticky">
-        
-            
-                
-    <section class="widget archives">
-        <div class="widget-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <line x1="5" y1="9" x2="19" y2="9" />
-  <line x1="5" y1="15" x2="19" y2="15" />
-  <line x1="11" y1="4" x2="7" y2="20" />
-  <line x1="17" y1="4" x2="13" y2="20" />
-</svg>
-
-
-
-        </div>
-        <h2 class="widget-title section-title">目录</h2>
-        
-        <div class="widget--toc">
-            <nav id="TableOfContents">
-  <ul>
-    <li><a href="#1-简介">1 简介</a>
-      <ul>
-        <li><a href="#11-实验环境">1.1 实验环境</a></li>
-        <li><a href="#12-集群规划">1.2 集群规划</a></li>
-      </ul>
-    </li>
-    <li><a href="#2-kubernetes-集群部署">2 Kubernetes 集群部署</a></li>
-    <li><a href="#3-flink-native-kubernetes-部署">3 Flink Native Kubernetes 部署</a>
-      <ul>
-        <li><a href="#31-配置-flink-用户权限">3.1 配置 flink 用户权限</a></li>
-        <li><a href="#32-创建-session-cluster">3.2 创建 session cluster</a></li>
-      </ul>
-    </li>
-    <li><a href="#4-编写-wordcount-程序">4 编写 WordCount 程序</a></li>
-    <li><a href="#5-实验结果">5 实验结果</a></li>
-  </ul>
-</nav>
-        </div>
-    </section>
-
-            
-        
-    </aside>
-
-
-            <main class="main full-width">
-    <article class="has-image main-article">
-    <header class="article-header">
-        <div class="article-image">
-            <a href="/p/flink-native-k8s/">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" loading="lazy" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" />
-                
-            </a>
-        </div>
-    
-
-    <div class="article-details">
-    
-    <header class="article-category">
-        
-            <a href="/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF/" style="background-color: #afb0b2; color: #fff;">
-                大数据技术
-            </a>
-        
-            <a href="/categories/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/" style="background-color: #c1cbd7; color: #fff;">
-                容器技术
-            </a>
-        
-    </header>
-    
-
-    <div class="article-title-wrapper">
-        <h2 class="article-title">
-            <a href="/p/flink-native-k8s/">基于 Flink Native Kubernetes 的词频统计实验</a>
-        </h2>
-    
-        
-        <h3 class="article-subtitle">
-            Flink Native Kubernetes 词频统计
-        </h3>
-        
-    </div>
-
-    
-    
-    
-    
-    <footer class="article-time">
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
-  <circle cx="18" cy="18" r="4" />
-  <path d="M15 3v4" />
-  <path d="M7 3v4" />
-  <path d="M3 11h16" />
-  <path d="M18 16.496v1.504l1 1" />
-</svg>
-                <time class="article-time--published">2022-12-23</time>
-            </div>
-        
-
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <polyline points="12 7 12 12 15 15" />
-</svg>
-
-
-
-                <time class="article-time--reading">
-                    阅读时长: 3 分钟
-                </time>
-            </div>
-        
-    </footer>
-    
-
-    
-</div>
-
-</header>
-
-    <section class="article-content">
-    
-    
-    <h1 id="基于-flink-native-kubernetes-的词频统计实验">基于 Flink Native Kubernetes 的词频统计实验</h1>
-<h2 id="1-简介">1 简介</h2>
-<h3 id="11-实验环境">1.1 实验环境</h3>
-<p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>名称</th>
-<th>版本</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>kuboard spary</td>
-<td>v1.2.3-amd64</td>
-</tr>
-<tr>
-<td>kubernetes</td>
-<td>v1.25.4</td>
-</tr>
-<tr>
-<td>calico</td>
-<td>v3.23.3</td>
-</tr>
-<tr>
-<td>etcd</td>
-<td>v3.5.5</td>
-</tr>
-<tr>
-<td>crictl</td>
-<td>v1.25.0</td>
-</tr>
-<tr>
-<td>crun</td>
-<td>1.4.5</td>
-</tr>
-<tr>
-<td>krew</td>
-<td>v0.4.3</td>
-</tr>
-<tr>
-<td>runc</td>
-<td>v1.1.4</td>
-</tr>
-<tr>
-<td>cni</td>
-<td>v1.1.1</td>
-</tr>
-<tr>
-<td>nerdctl</td>
-<td>1.0.0</td>
-</tr>
-<tr>
-<td>coredns</td>
-<td>v1.8.6</td>
-</tr>
-<tr>
-<td>dnsautoscaler</td>
-<td>1.8.5</td>
-</tr>
-<tr>
-<td>pod_infra</td>
-<td>3.7</td>
-</tr>
-<tr>
-<td>flink</td>
-<td>1.16.0</td>
-</tr>
-<tr>
-<td>hadoop</td>
-<td>3.2.3</td>
-</tr>
-</tbody>
-</table></div>
-<h3 id="12-集群规划">1.2 集群规划</h3>
-<ul>
-<li>Kuborad Spary</li>
-</ul>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>主机名</th>
-<th>IP</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>kuborad</td>
-<td>192.168.0.15</td>
-</tr>
-</tbody>
-</table></div>
-<ul>
-<li>NFS Server</li>
-</ul>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>主机名</th>
-<th>IP</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>NFS-server</td>
-<td>192.168.0.15</td>
-</tr>
-</tbody>
-</table></div>
-<ul>
-<li>Kubernetes 集群规划</li>
-</ul>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>主机名</th>
-<th>IP</th>
-<th>控制节点</th>
-<th>etcd 节点</th>
-<th>工作节点</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>node1</td>
-<td>192.168.0.6</td>
-<td>是</td>
-<td>是</td>
-<td>是</td>
-</tr>
-<tr>
-<td>node2</td>
-<td>192.168.0.7</td>
-<td>是</td>
-<td>是</td>
-<td>是</td>
-</tr>
-<tr>
-<td>node3</td>
-<td>192.168.0.14</td>
-<td>是</td>
-<td>是</td>
-<td>是</td>
-</tr>
-</tbody>
-</table></div>
-<h2 id="2-kubernetes-集群部署">2 Kubernetes 集群部署</h2>
-<ul>
-<li>这部分内容已经在<a class="link" href="https://cuterwrite.top/p/spark-on-k8s/"  target="_blank" rel="noopener"
-    >Spark on K8s</a>实验中给出详细步骤，这里不再重复。</li>
-</ul>
-<h2 id="3-flink-native-kubernetes-部署">3 Flink Native Kubernetes 部署</h2>
-<h3 id="31-配置-flink-用户权限">3.1 配置 flink 用户权限</h3>
-<ul>
-<li>创建用户<code>flink</code> 并配置权限</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">kubectl create serviceaccount flink -n bigdata
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">kubectl create clusterrolebinding flink-role-binding-flink <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --clusterrole<span class="o">=</span>edit <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --serviceaccount<span class="o">=</span>bigdata:flink
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="32-创建-session-cluster">3.2 创建 session cluster</h3>
-<ul>
-<li>
-<p>在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./bin/kubernetes-session.sh <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.jobmanager.service-account<span class="o">=</span>flink <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.rest-service.exposed.type<span class="o">=</span>NodePort <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.cluster-id<span class="o">=</span>flink-session-cluster <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dtaskmanager.memory.process.size<span class="o">=</span>2048m <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.taskmanager.cpu<span class="o">=</span><span class="m">1</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dkubernetes.jobmanager.replicas<span class="o">=</span><span class="m">1</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dtaskmanager.numberOfTaskSlots<span class="o">=</span><span class="m">3</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>    -Dresourcemanager.taskmanager-timeout<span class="o">=</span><span class="m">3600000</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png" width="90%" loading="lazy"/>
-  </figure>
-
-<p>可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：<a class="link" href="http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web"  target="_blank" rel="noopener"
-    >http://192.168.0.6:32077，可以看到 Web</a> UI 界面如下：</p>
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png" width="90%" loading="lazy"/>
-  </figure>
-
-</li>
-<li>
-<p>继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span><span class="lnt">7
-</span><span class="lnt">8
-</span><span class="lnt">9
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./bin/flink run -d <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --target kubernetes-session <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.cluster-id<span class="o">=</span>flink-session-cluster <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.service-account<span class="o">=</span>flink <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.taskmanager.cpu<span class="o">=</span><span class="m">1</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>
-</span></span><span class="line"><span class="cl">  examples/streaming/WindowJoin.jar
-</span></span></code></pre></td></tr></table>
-</div>
-</div><figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png" width="90%" loading="lazy"/>
-  </figure>
-
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png" width="90%" loading="lazy"/>
-  </figure>
-
-<p>可以看到<code>WindowJoin.jar</code> 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4</p>
-</li>
-</ul>
-<h2 id="4-编写-wordcount-程序">4 编写 WordCount 程序</h2>
-<ul>
-<li>配置 POM 文件：</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span><span class="lnt">47
-</span><span class="lnt">48
-</span><span class="lnt">49
-</span><span class="lnt">50
-</span><span class="lnt">51
-</span><span class="lnt">52
-</span><span class="lnt">53
-</span><span class="lnt">54
-</span><span class="lnt">55
-</span><span class="lnt">56
-</span><span class="lnt">57
-</span><span class="lnt">58
-</span><span class="lnt">59
-</span><span class="lnt">60
-</span><span class="lnt">61
-</span><span class="lnt">62
-</span><span class="lnt">63
-</span><span class="lnt">64
-</span><span class="lnt">65
-</span><span class="lnt">66
-</span><span class="lnt">67
-</span><span class="lnt">68
-</span><span class="lnt">69
-</span><span class="lnt">70
-</span><span class="lnt">71
-</span><span class="lnt">72
-</span><span class="lnt">73
-</span><span class="lnt">74
-</span><span class="lnt">75
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="cp">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
-</span></span><span class="line"><span class="cl"><span class="nt">&lt;project</span> <span class="na">xmlns=</span><span class="s">&#34;http://maven.apache.org/POM/4.0.0&#34;</span>
-</span></span><span class="line"><span class="cl">         <span class="na">xmlns:xsi=</span><span class="s">&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
-</span></span><span class="line"><span class="cl">         <span class="na">xsi:schemaLocation=</span><span class="s">&#34;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&#34;</span><span class="nt">&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;modelVersion&gt;</span>4.0.0<span class="nt">&lt;/modelVersion&gt;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;groupId&gt;</span>com.cuterwrite<span class="nt">&lt;/groupId&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;artifactId&gt;</span>FlinkApp<span class="nt">&lt;/artifactId&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;version&gt;</span>1.0-SNAPSHOT<span class="nt">&lt;/version&gt;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;properties&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;flink.version&gt;</span>1.16.0<span class="nt">&lt;/flink.version&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;maven.compiler.source&gt;</span>11<span class="nt">&lt;/maven.compiler.source&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;maven.compiler.target&gt;</span>11<span class="nt">&lt;/maven.compiler.target&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;project.build.sourceEncoding&gt;</span>UTF-8<span class="nt">&lt;/project.build.sourceEncoding&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/properties&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;dependencies&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="c">&lt;!-- Flink dependencies --&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;dependency&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;groupId&gt;</span>org.apache.flink<span class="nt">&lt;/groupId&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;artifactId&gt;</span>flink-java<span class="nt">&lt;/artifactId&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;version&gt;</span>${flink.version}<span class="nt">&lt;/version&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;scope&gt;</span>provided<span class="nt">&lt;/scope&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/dependency&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;dependency&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;groupId&gt;</span>org.apache.flink<span class="nt">&lt;/groupId&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;artifactId&gt;</span>flink-streaming-java<span class="nt">&lt;/artifactId&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;version&gt;</span>${flink.version}<span class="nt">&lt;/version&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;scope&gt;</span>provided<span class="nt">&lt;/scope&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/dependency&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/dependencies&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;build&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;plugins&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;plugin&gt;</span>
-</span></span><span class="line"><span class="cl">                <span class="nt">&lt;groupId&gt;</span>org.apache.maven.plugins<span class="nt">&lt;/groupId&gt;</span>
-</span></span><span class="line"><span class="cl">                <span class="nt">&lt;artifactId&gt;</span>maven-shade-plugin<span class="nt">&lt;/artifactId&gt;</span>
-</span></span><span class="line"><span class="cl">                <span class="nt">&lt;version&gt;</span>3.1.1<span class="nt">&lt;/version&gt;</span>
-</span></span><span class="line"><span class="cl">                <span class="nt">&lt;executions&gt;</span>
-</span></span><span class="line"><span class="cl">                    <span class="nt">&lt;execution&gt;</span>
-</span></span><span class="line"><span class="cl">                        <span class="nt">&lt;phase&gt;</span>package<span class="nt">&lt;/phase&gt;</span>
-</span></span><span class="line"><span class="cl">                        <span class="nt">&lt;goals&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;goal&gt;</span>shade<span class="nt">&lt;/goal&gt;</span>
-</span></span><span class="line"><span class="cl">                        <span class="nt">&lt;/goals&gt;</span>
-</span></span><span class="line"><span class="cl">                        <span class="nt">&lt;configuration&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;artifactSet&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;excludes&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="nt">&lt;exclude&gt;</span>com.google.code.findbugs:jsr305<span class="nt">&lt;/exclude&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;/excludes&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;/artifactSet&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;filters&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;filter&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="c">&lt;!-- Do not copy the signatures in the META-INF folder.
-</span></span></span><span class="line"><span class="cl"><span class="c">                                    Otherwise, this might cause SecurityExceptions when using the JAR. --&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="nt">&lt;artifact&gt;</span>*:*<span class="nt">&lt;/artifact&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="nt">&lt;excludes&gt;</span>
-</span></span><span class="line"><span class="cl">                                        <span class="nt">&lt;exclude&gt;</span>META-INF/*.SF<span class="nt">&lt;/exclude&gt;</span>
-</span></span><span class="line"><span class="cl">                                        <span class="nt">&lt;exclude&gt;</span>META-INF/*.DSA<span class="nt">&lt;/exclude&gt;</span>
-</span></span><span class="line"><span class="cl">                                        <span class="nt">&lt;exclude&gt;</span>META-INF/*.RSA<span class="nt">&lt;/exclude&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="nt">&lt;/excludes&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;/filter&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;/filters&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;transformers&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;transformer</span> <span class="na">implementation=</span><span class="s">&#34;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&#34;</span><span class="nt">&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="c">&lt;!-- Replace this with the main class of your job --&gt;</span>
-</span></span><span class="line"><span class="cl">                                    <span class="nt">&lt;mainClass&gt;</span>com.cuterwrite.WordCount<span class="nt">&lt;/mainClass&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;/transformer&gt;</span>
-</span></span><span class="line"><span class="cl">                                <span class="nt">&lt;transformer</span> <span class="na">implementation=</span><span class="s">&#34;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&#34;</span><span class="nt">/&gt;</span>
-</span></span><span class="line"><span class="cl">                            <span class="nt">&lt;/transformers&gt;</span>
-</span></span><span class="line"><span class="cl">                        <span class="nt">&lt;/configuration&gt;</span>
-</span></span><span class="line"><span class="cl">                    <span class="nt">&lt;/execution&gt;</span>
-</span></span><span class="line"><span class="cl">                <span class="nt">&lt;/executions&gt;</span>
-</span></span><span class="line"><span class="cl">            <span class="nt">&lt;/plugin&gt;</span>
-</span></span><span class="line"><span class="cl">        <span class="nt">&lt;/plugins&gt;</span>
-</span></span><span class="line"><span class="cl">    <span class="nt">&lt;/build&gt;</span>
-</span></span><span class="line"><span class="cl"><span class="nt">&lt;/project&gt;</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>编写<code>WordCount.java</code>：</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nn">com.cuterwrite</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.api.common.functions.FlatMapFunction</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.api.java.tuple.Tuple2</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.streaming.api.datastream.DataStreamSource</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.streaming.api.environment.StreamExecutionEnvironment</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.streaming.api.functions.sink.SinkFunction</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.streaming.api.windowing.time.Time</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.apache.flink.util.Collector</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.slf4j.LoggerFactory</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">org.slf4j.Logger</span><span class="o">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">WordCount</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Logger</span> <span class="n">log</span> <span class="o">=</span> <span class="n">LoggerFactory</span><span class="o">.</span><span class="na">getLogger</span><span class="o">(</span><span class="n">WordCount</span><span class="o">.</span><span class="na">class</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">WordCount</span><span class="o">()</span> <span class="o">{}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">StreamExecutionEnvironment</span> <span class="n">env</span> <span class="o">=</span> <span class="n">StreamExecutionEnvironment</span><span class="o">.</span><span class="na">getExecutionEnvironment</span><span class="o">();</span>
-</span></span><span class="line"><span class="cl">        <span class="n">env</span><span class="o">.</span><span class="na">setParallelism</span><span class="o">(</span><span class="n">3</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// 监听 9999 端口的 socket 输入
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">DataStreamSource</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">text</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="na">socketTextStream</span><span class="o">(</span><span class="s">&#34;192.168.0.6&#34;</span><span class="o">,</span> <span class="n">9999</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">text</span><span class="o">.</span><span class="na">flatMap</span><span class="o">(</span><span class="k">new</span> <span class="n">FlatMapFunction</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">            <span class="nd">@Override</span>
-</span></span><span class="line"><span class="cl">            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">flatMap</span><span class="o">(</span><span class="n">String</span> <span class="n">value</span><span class="o">,</span> <span class="n">Collector</span><span class="o">&lt;</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;</span> <span class="n">collector</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">String</span><span class="o">[]</span> <span class="n">tokens</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="na">toLowerCase</span><span class="o">().</span><span class="na">split</span><span class="o">(</span><span class="s">&#34; &#34;</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">token</span> <span class="o">:</span> <span class="n">tokens</span><span class="o">)</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">                    <span class="n">collector</span><span class="o">.</span><span class="na">collect</span><span class="o">(</span><span class="k">new</span> <span class="n">Tuple2</span><span class="o">&lt;&gt;(</span><span class="n">token</span><span class="o">,</span> <span class="n">1</span><span class="o">));</span>
-</span></span><span class="line"><span class="cl">                <span class="o">}</span>
-</span></span><span class="line"><span class="cl">            <span class="o">}</span>
-</span></span><span class="line"><span class="cl">            <span class="c1">// 合并相同单词的频数
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="o">})</span>
-</span></span><span class="line"><span class="cl">        <span class="o">.</span><span class="na">keyBy</span><span class="o">(</span><span class="n">item</span> <span class="o">-&gt;</span> <span class="n">item</span><span class="o">.</span><span class="na">f0</span><span class="o">)</span>
-</span></span><span class="line"><span class="cl">        <span class="o">.</span><span class="na">window</span><span class="o">(</span><span class="n">TumblingProcessingTimeWindows</span><span class="o">.</span><span class="na">of</span><span class="o">(</span><span class="n">Time</span><span class="o">.</span><span class="na">seconds</span><span class="o">(</span><span class="n">5</span><span class="o">)))</span>
-</span></span><span class="line"><span class="cl">        <span class="o">.</span><span class="na">sum</span><span class="o">(</span><span class="n">1</span><span class="o">)</span>
-</span></span><span class="line"><span class="cl">        <span class="o">.</span><span class="na">addSink</span><span class="o">(</span><span class="k">new</span> <span class="n">SinkFunction</span><span class="o">&lt;</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;&gt;()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">            <span class="nd">@Override</span>
-</span></span><span class="line"><span class="cl">            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Tuple2</span><span class="o">&lt;</span><span class="n">String</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">value</span><span class="o">,</span> <span class="n">Context</span> <span class="n">context</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&#34;单词：&#34;</span> <span class="o">+</span> <span class="n">value</span><span class="o">.</span><span class="na">f0</span> <span class="o">+</span> <span class="s">&#34;,频率：&#34;</span> <span class="o">+</span> <span class="n">value</span><span class="o">.</span><span class="na">f1</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">            <span class="o">}</span>
-</span></span><span class="line"><span class="cl">        <span class="o">});</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">env</span><span class="o">.</span><span class="na">execute</span><span class="o">(</span><span class="s">&#34;Word Count&#34;</span><span class="o">);</span>
-</span></span><span class="line"><span class="cl">    <span class="o">}</span>
-</span></span><span class="line"><span class="cl"><span class="o">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="5-实验结果">5 实验结果</h2>
-<ul>
-<li>
-<p>提交 WordCount 程序 jar 包</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span><span class="lnt">7
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">./bin/flink run -d <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  --target kubernetes-session <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.cluster-id<span class="o">=</span>flink-session-cluster <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.service-account<span class="o">=</span>flink <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  -Dkubernetes.namespace<span class="o">=</span>bigdata <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  /root/FlinkApp-1.0-SNAPSHOT.jar
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>
-<p>查看 Flink Web UI：</p>
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png" width="90%" loading="lazy"/>
-  </figure>
-
-</li>
-<li>
-<p>使用 socket 传输字符进行测试：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">nc 192.168.0.6 <span class="m">9999</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>
-<p>实验结果：</p>
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/log.png" width="90%" loading="lazy"/>
-  </figure>
-
-</li>
-</ul>
-
-</section>
-
-
-    <footer class="article-footer">
-    
-    <section class="article-tags">
-        
-            <a href="/tags/flink/">Flink</a>
-        
-            <a href="/tags/kubernetes/">Kubernetes</a>
-        
-            <a href="/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%A1%E7%AE%97/">分布式计算</a>
-        
-            <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/">云原生</a>
-        
-    </section>
-
-
-    
-    <section class="article-copyright">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
-</svg>
-
-
-
-        <span>Licensed under CC BY-NC-SA 4.0</span>
-    </section>
-    </footer>
-
-
-    
-        <link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
-            ><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
-                defer
-                >
-            </script><script>
-    window.addEventListener("DOMContentLoaded", () => {
-        renderMathInElement(document.querySelector(`.article-content`), {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true }
-            ],
-            ignoredClasses: ["gist"]
-        });})
-</script>
-    
-</article>
-
-    
-
-    
-
-<aside class="related-content--wrapper">
-    <h2 class="section-title">相关文章</h2>
-    <div class="related-content">
-        <div class="flex article-list--tile">
-            
-                
-<article class="has-image">
-    <a href="/p/spark-on-k8s/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp" loading="lazy" data-key="spark-on-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">基于 Spark on k8s 的词频统计实验</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/zookeeper-on-k8s/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp" loading="lazy" data-key="zookeeper-on-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">Zookeeper on k8s 部署实验</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/run-spark-on-hpc/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp" loading="lazy" data-key="run-spark-on-hpc" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">在 HPC 上运行 Apache Spark</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/matrix-factorization/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp" loading="lazy" data-key="matrix-factorization" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">SVD 与 NMF：矩阵分解的两种方法</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/mapreduce/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp" loading="lazy" data-key="mapreduce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MapReduce 实验</h2>
-        </div>
-    </a>
-</article>
-
-            
-        </div>
-    </div>
-</aside>
-
-     
-    
-        
-    <script
-    src="https://giscus.app/client.js"
-    data-repo="PKUcoldkeyboard/pkucoldkeyboard.github.io"
-    data-repo-id="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI="
-    data-category="Comments"
-    data-category-id="DIC_kwDOFAUD4M4CZV4F"
-    data-mapping="title"
-    data-strict="0"
-    data-reactions-enabled="1"
-    data-emit-metadata="0"
-    data-input-position="top"
-    data-theme="light"
-    data-lang="zh-CN"
-    data-loading="lazy"
-    crossorigin="anonymous"
-    async
-></script>
-<script>
-    function setGiscusTheme(theme) {
-        let giscus = document.querySelector("iframe.giscus-frame");
-        if (giscus) {
-            giscus.contentWindow.postMessage(
-                {
-                    giscus: {
-                        setConfig: {
-                            theme: theme,
-                        },
-                    },
-                },
-                "https://giscus.app"
-            );
-        }
-    }
-
-    (function () {
-        addEventListener("message", (e) => {
-            if (event.origin !== "https://giscus.app") return;
-            handler();
-        });
-        window.addEventListener("onColorSchemeChange", handler);
-
-        function handler() {
-            if (document.documentElement.dataset.scheme === "light") {
-                setGiscusTheme('light');
-            } else {
-                setGiscusTheme('dark_dimmed');
-            }
-        }
-    })();
-</script>
-
-    
-
-    <footer class="site-footer">
-    <section class="copyright">
-        &copy; 
-        
-            2021 - 
-        
-        2024 cuterwrite
-    </section>
-    
-    <section class="powerby">
-        
-            欢迎来到Cuterwrite的博客网站 <br/>
-        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
-    </section>
-</footer>
-
-
-    
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
-
-    
-    <div class="pswp__bg"></div>
-
-    
-    <div class="pswp__scroll-wrap">
-
-        
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
-
-        
-        <div class="pswp__ui pswp__ui--hidden">
-
-            <div class="pswp__top-bar">
-
-                
-
-                <div class="pswp__counter"></div>
-
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-
-                <button class="pswp__button pswp__button--share" title="Share"></button>
-
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-
-                
-                
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                        <div class="pswp__preloader__cut">
-                            <div class="pswp__preloader__donut"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div>
-            </div>
-
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
-
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
-
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
-
-        </div>
-
-    </div>
-
-</div><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
-                defer
-                >
-            </script><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
-            ><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
-            >
-
-            </main>
-        </div>
-        <script 
-                src="https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
-                
-                >
-            </script><script type="text/javascript" src="/ts/main.js" defer></script>
-<script>
-    (function () {
-        const customFont = document.createElement('link');
-        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
-
-        customFont.type = "text/css";
-        customFont.rel = "stylesheet";
-
-        document.head.appendChild(customFont);
-    }());
-</script>
-
-    </body>
-</html>
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="Flink Native Kubernetes 词频统计"><title>基于 Flink Native Kubernetes 的词频统计实验</title><link rel=canonical href=https://cuterwrite.top/p/flink-native-k8s/><link rel=stylesheet href=/scss/style.min.b97201a532522426f9261990263dade40123288553876f8521e4563585c58246.css><meta property="og:title" content="基于 Flink Native Kubernetes 的词频统计实验"><meta property="og:description" content="Flink Native Kubernetes 词频统计"><meta property="og:url" content="https://cuterwrite.top/p/flink-native-k8s/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:tag" content="Flink"><meta property="article:tag" content="Kubernetes"><meta property="article:tag" content="分布式计算"><meta property="article:tag" content="云原生"><meta property="article:published_time" content="2022-12-23T00:00:00+00:00"><meta property="article:modified_time" content="2022-12-23T00:00:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp"><meta name=twitter:title content="基于 Flink Native Kubernetes 的词频统计实验"><meta name=twitter:description content="Flink Native Kubernetes 词频统计"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
+<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>首页</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>个人</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>文章</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#1-简介>1 简介</a><ul><li><a href=#11-实验环境>1.1 实验环境</a></li><li><a href=#12-集群规划>1.2 集群规划</a></li></ul></li><li><a href=#2-kubernetes-集群部署>2 Kubernetes 集群部署</a></li><li><a href=#3-flink-native-kubernetes-部署>3 Flink Native Kubernetes 部署</a><ul><li><a href=#31-配置-flink-用户权限>3.1 配置 flink 用户权限</a></li><li><a href=#32-创建-session-cluster>3.2 创建 session cluster</a></li></ul></li><li><a href=#4-编写-wordcount-程序>4 编写 WordCount 程序</a></li><li><a href=#5-实验结果>5 实验结果</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/flink-native-k8s/><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp loading=lazy alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验"></a></div><div class=article-details><header class=article-category><a href=/categories/%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF/ style=background-color:#afb0b2;color:#fff>大数据技术</a>
+<a href=/categories/%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF/ style=background-color:#c1cbd7;color:#fff>容器技术</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/flink-native-k8s/>基于 Flink Native Kubernetes 的词频统计实验</a></h2><h3 class=article-subtitle>Flink Native Kubernetes 词频统计</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2022-12-23</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 3 分钟</time></div></footer></div></header><section class=article-content><h1 id=基于-flink-native-kubernetes-的词频统计实验>基于 Flink Native Kubernetes 的词频统计实验</h1><h2 id=1-简介>1 简介</h2><h3 id=11-实验环境>1.1 实验环境</h3><p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：</p><div class=table-wrapper><table><thead><tr><th>名称</th><th>版本</th></tr></thead><tbody><tr><td>kuboard spary</td><td>v1.2.3-amd64</td></tr><tr><td>kubernetes</td><td>v1.25.4</td></tr><tr><td>calico</td><td>v3.23.3</td></tr><tr><td>etcd</td><td>v3.5.5</td></tr><tr><td>crictl</td><td>v1.25.0</td></tr><tr><td>crun</td><td>1.4.5</td></tr><tr><td>krew</td><td>v0.4.3</td></tr><tr><td>runc</td><td>v1.1.4</td></tr><tr><td>cni</td><td>v1.1.1</td></tr><tr><td>nerdctl</td><td>1.0.0</td></tr><tr><td>coredns</td><td>v1.8.6</td></tr><tr><td>dnsautoscaler</td><td>1.8.5</td></tr><tr><td>pod_infra</td><td>3.7</td></tr><tr><td>flink</td><td>1.16.0</td></tr><tr><td>hadoop</td><td>3.2.3</td></tr></tbody></table></div><h3 id=12-集群规划>1.2 集群规划</h3><ul><li>Kuborad Spary</li></ul><div class=table-wrapper><table><thead><tr><th>主机名</th><th>IP</th></tr></thead><tbody><tr><td>kuborad</td><td>192.168.0.15</td></tr></tbody></table></div><ul><li>NFS Server</li></ul><div class=table-wrapper><table><thead><tr><th>主机名</th><th>IP</th></tr></thead><tbody><tr><td>NFS-server</td><td>192.168.0.15</td></tr></tbody></table></div><ul><li>Kubernetes 集群规划</li></ul><div class=table-wrapper><table><thead><tr><th>主机名</th><th>IP</th><th>控制节点</th><th>etcd 节点</th><th>工作节点</th></tr></thead><tbody><tr><td>node1</td><td>192.168.0.6</td><td>是</td><td>是</td><td>是</td></tr><tr><td>node2</td><td>192.168.0.7</td><td>是</td><td>是</td><td>是</td></tr><tr><td>node3</td><td>192.168.0.14</td><td>是</td><td>是</td><td>是</td></tr></tbody></table></div><h2 id=2-kubernetes-集群部署>2 Kubernetes 集群部署</h2><ul><li>这部分内容已经在<a class=link href=https://cuterwrite.top/p/spark-on-k8s/ target=_blank rel=noopener>Spark on K8s</a>实验中给出详细步骤，这里不再重复。</li></ul><h2 id=3-flink-native-kubernetes-部署>3 Flink Native Kubernetes 部署</h2><h3 id=31-配置-flink-用户权限>3.1 配置 flink 用户权限</h3><ul><li>创建用户<code>flink</code> 并配置权限</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>kubectl create serviceaccount flink -n bigdata
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>kubectl create clusterrolebinding flink-role-binding-flink <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --clusterrole<span class=o>=</span>edit <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --serviceaccount<span class=o>=</span>bigdata:flink
+</span></span></code></pre></td></tr></table></div></div><h3 id=32-创建-session-cluster>3.2 创建 session cluster</h3><ul><li><p>在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>./bin/kubernetes-session.sh <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.namespace<span class=o>=</span>bigdata <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.jobmanager.service-account<span class=o>=</span>flink <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.rest-service.exposed.type<span class=o>=</span>NodePort <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.cluster-id<span class=o>=</span>flink-session-cluster <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dtaskmanager.memory.process.size<span class=o>=</span>2048m <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.taskmanager.cpu<span class=o>=</span><span class=m>1</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dkubernetes.jobmanager.replicas<span class=o>=</span><span class=m>1</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dtaskmanager.numberOfTaskSlots<span class=o>=</span><span class=m>3</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -Dresourcemanager.taskmanager-timeout<span class=o>=</span><span class=m>3600000</span>
+</span></span></code></pre></td></tr></table></div></div><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png width=90% loading=lazy></figure><p>可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：<a class=link href=http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web target=_blank rel=noopener>http://192.168.0.6:32077，可以看到 Web</a> UI 界面如下：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png width=90% loading=lazy></figure></li><li><p>继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>./bin/flink run -d <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --target kubernetes-session <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.namespace<span class=o>=</span>bigdata <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.cluster-id<span class=o>=</span>flink-session-cluster <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.service-account<span class=o>=</span>flink <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.namespace<span class=o>=</span>bigdata <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.taskmanager.cpu<span class=o>=</span><span class=m>1</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>
+</span></span><span class=line><span class=cl>  examples/streaming/WindowJoin.jar
+</span></span></code></pre></td></tr></table></div></div><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png width=90% loading=lazy></figure><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png width=90% loading=lazy></figure><p>可以看到<code>WindowJoin.jar</code> 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4</p></li></ul><h2 id=4-编写-wordcount-程序>4 编写 WordCount 程序</h2><ul><li>配置 POM 文件：</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=cp>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;project</span> <span class=na>xmlns=</span><span class=s>&#34;http://maven.apache.org/POM/4.0.0&#34;</span>
+</span></span><span class=line><span class=cl>         <span class=na>xmlns:xsi=</span><span class=s>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+</span></span><span class=line><span class=cl>         <span class=na>xsi:schemaLocation=</span><span class=s>&#34;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;modelVersion&gt;</span>4.0.0<span class=nt>&lt;/modelVersion&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;groupId&gt;</span>com.cuterwrite<span class=nt>&lt;/groupId&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;artifactId&gt;</span>FlinkApp<span class=nt>&lt;/artifactId&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;version&gt;</span>1.0-SNAPSHOT<span class=nt>&lt;/version&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;properties&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;flink.version&gt;</span>1.16.0<span class=nt>&lt;/flink.version&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;maven.compiler.source&gt;</span>11<span class=nt>&lt;/maven.compiler.source&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;maven.compiler.target&gt;</span>11<span class=nt>&lt;/maven.compiler.target&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;project.build.sourceEncoding&gt;</span>UTF-8<span class=nt>&lt;/project.build.sourceEncoding&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/properties&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;dependencies&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c>&lt;!-- Flink dependencies --&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;dependency&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;groupId&gt;</span>org.apache.flink<span class=nt>&lt;/groupId&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;artifactId&gt;</span>flink-java<span class=nt>&lt;/artifactId&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;version&gt;</span>${flink.version}<span class=nt>&lt;/version&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;scope&gt;</span>provided<span class=nt>&lt;/scope&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/dependency&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;dependency&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;groupId&gt;</span>org.apache.flink<span class=nt>&lt;/groupId&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;artifactId&gt;</span>flink-streaming-java<span class=nt>&lt;/artifactId&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;version&gt;</span>${flink.version}<span class=nt>&lt;/version&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;scope&gt;</span>provided<span class=nt>&lt;/scope&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/dependency&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/dependencies&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;build&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;plugins&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;plugin&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&lt;groupId&gt;</span>org.apache.maven.plugins<span class=nt>&lt;/groupId&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&lt;artifactId&gt;</span>maven-shade-plugin<span class=nt>&lt;/artifactId&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&lt;version&gt;</span>3.1.1<span class=nt>&lt;/version&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&lt;executions&gt;</span>
+</span></span><span class=line><span class=cl>                    <span class=nt>&lt;execution&gt;</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&lt;phase&gt;</span>package<span class=nt>&lt;/phase&gt;</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&lt;goals&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;goal&gt;</span>shade<span class=nt>&lt;/goal&gt;</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&lt;/goals&gt;</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&lt;configuration&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;artifactSet&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;excludes&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=nt>&lt;exclude&gt;</span>com.google.code.findbugs:jsr305<span class=nt>&lt;/exclude&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;/excludes&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;/artifactSet&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;filters&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;filter&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=c>&lt;!-- Do not copy the signatures in the META-INF folder.
+</span></span></span><span class=line><span class=cl><span class=c>                                    Otherwise, this might cause SecurityExceptions when using the JAR. --&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=nt>&lt;artifact&gt;</span>*:*<span class=nt>&lt;/artifact&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=nt>&lt;excludes&gt;</span>
+</span></span><span class=line><span class=cl>                                        <span class=nt>&lt;exclude&gt;</span>META-INF/*.SF<span class=nt>&lt;/exclude&gt;</span>
+</span></span><span class=line><span class=cl>                                        <span class=nt>&lt;exclude&gt;</span>META-INF/*.DSA<span class=nt>&lt;/exclude&gt;</span>
+</span></span><span class=line><span class=cl>                                        <span class=nt>&lt;exclude&gt;</span>META-INF/*.RSA<span class=nt>&lt;/exclude&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=nt>&lt;/excludes&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;/filter&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;/filters&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;transformers&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;transformer</span> <span class=na>implementation=</span><span class=s>&#34;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=c>&lt;!-- Replace this with the main class of your job --&gt;</span>
+</span></span><span class=line><span class=cl>                                    <span class=nt>&lt;mainClass&gt;</span>com.cuterwrite.WordCount<span class=nt>&lt;/mainClass&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;/transformer&gt;</span>
+</span></span><span class=line><span class=cl>                                <span class=nt>&lt;transformer</span> <span class=na>implementation=</span><span class=s>&#34;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&#34;</span><span class=nt>/&gt;</span>
+</span></span><span class=line><span class=cl>                            <span class=nt>&lt;/transformers&gt;</span>
+</span></span><span class=line><span class=cl>                        <span class=nt>&lt;/configuration&gt;</span>
+</span></span><span class=line><span class=cl>                    <span class=nt>&lt;/execution&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&lt;/executions&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;/plugin&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/plugins&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/build&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/project&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li>编写<code>WordCount.java</code>：</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kn>package</span> <span class=nn>com.cuterwrite</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.api.common.functions.FlatMapFunction</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.api.java.tuple.Tuple2</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.streaming.api.datastream.DataStreamSource</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.streaming.api.environment.StreamExecutionEnvironment</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.streaming.api.functions.sink.SinkFunction</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.streaming.api.windowing.time.Time</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.apache.flink.util.Collector</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.slf4j.LoggerFactory</span><span class=o>;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>org.slf4j.Logger</span><span class=o>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>WordCount</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>static</span> <span class=kd>final</span> <span class=n>Logger</span> <span class=n>log</span> <span class=o>=</span> <span class=n>LoggerFactory</span><span class=o>.</span><span class=na>getLogger</span><span class=o>(</span><span class=n>WordCount</span><span class=o>.</span><span class=na>class</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>WordCount</span><span class=o>()</span> <span class=o>{}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kd>static</span> <span class=kt>void</span> <span class=nf>main</span><span class=o>(</span><span class=n>String</span><span class=o>[]</span> <span class=n>args</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>Exception</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>StreamExecutionEnvironment</span> <span class=n>env</span> <span class=o>=</span> <span class=n>StreamExecutionEnvironment</span><span class=o>.</span><span class=na>getExecutionEnvironment</span><span class=o>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>env</span><span class=o>.</span><span class=na>setParallelism</span><span class=o>(</span><span class=n>3</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// 监听 9999 端口的 socket 输入
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>DataStreamSource</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>text</span> <span class=o>=</span> <span class=n>env</span><span class=o>.</span><span class=na>socketTextStream</span><span class=o>(</span><span class=s>&#34;192.168.0.6&#34;</span><span class=o>,</span> <span class=n>9999</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>text</span><span class=o>.</span><span class=na>flatMap</span><span class=o>(</span><span class=k>new</span> <span class=n>FlatMapFunction</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>Tuple2</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>Integer</span><span class=o>&gt;&gt;()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=nd>@Override</span>
+</span></span><span class=line><span class=cl>            <span class=kd>public</span> <span class=kt>void</span> <span class=nf>flatMap</span><span class=o>(</span><span class=n>String</span> <span class=n>value</span><span class=o>,</span> <span class=n>Collector</span><span class=o>&lt;</span><span class=n>Tuple2</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>Integer</span><span class=o>&gt;&gt;</span> <span class=n>collector</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>Exception</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>String</span><span class=o>[]</span> <span class=n>tokens</span> <span class=o>=</span> <span class=n>value</span><span class=o>.</span><span class=na>toLowerCase</span><span class=o>().</span><span class=na>split</span><span class=o>(</span><span class=s>&#34; &#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>                <span class=k>for</span> <span class=o>(</span><span class=n>String</span> <span class=n>token</span> <span class=o>:</span> <span class=n>tokens</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>collector</span><span class=o>.</span><span class=na>collect</span><span class=o>(</span><span class=k>new</span> <span class=n>Tuple2</span><span class=o>&lt;&gt;(</span><span class=n>token</span><span class=o>,</span> <span class=n>1</span><span class=o>));</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// 合并相同单词的频数
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=o>})</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=na>keyBy</span><span class=o>(</span><span class=n>item</span> <span class=o>-&gt;</span> <span class=n>item</span><span class=o>.</span><span class=na>f0</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=na>window</span><span class=o>(</span><span class=n>TumblingProcessingTimeWindows</span><span class=o>.</span><span class=na>of</span><span class=o>(</span><span class=n>Time</span><span class=o>.</span><span class=na>seconds</span><span class=o>(</span><span class=n>5</span><span class=o>)))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=na>sum</span><span class=o>(</span><span class=n>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=na>addSink</span><span class=o>(</span><span class=k>new</span> <span class=n>SinkFunction</span><span class=o>&lt;</span><span class=n>Tuple2</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>Integer</span><span class=o>&gt;&gt;()</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=nd>@Override</span>
+</span></span><span class=line><span class=cl>            <span class=kd>public</span> <span class=kt>void</span> <span class=nf>invoke</span><span class=o>(</span><span class=n>Tuple2</span><span class=o>&lt;</span><span class=n>String</span><span class=o>,</span> <span class=n>Integer</span><span class=o>&gt;</span> <span class=n>value</span><span class=o>,</span> <span class=n>Context</span> <span class=n>context</span><span class=o>)</span> <span class=kd>throws</span> <span class=n>Exception</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>log</span><span class=o>.</span><span class=na>info</span><span class=o>(</span><span class=s>&#34;单词：&#34;</span> <span class=o>+</span> <span class=n>value</span><span class=o>.</span><span class=na>f0</span> <span class=o>+</span> <span class=s>&#34;,频率：&#34;</span> <span class=o>+</span> <span class=n>value</span><span class=o>.</span><span class=na>f1</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>env</span><span class=o>.</span><span class=na>execute</span><span class=o>(</span><span class=s>&#34;Word Count&#34;</span><span class=o>);</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=5-实验结果>5 实验结果</h2><ul><li><p>提交 WordCount 程序 jar 包</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>./bin/flink run -d <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --target kubernetes-session <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.namespace<span class=o>=</span>bigdata <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.cluster-id<span class=o>=</span>flink-session-cluster <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.service-account<span class=o>=</span>flink <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -Dkubernetes.namespace<span class=o>=</span>bigdata <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /root/FlinkApp-1.0-SNAPSHOT.jar
+</span></span></code></pre></td></tr></table></div></div></li><li><p>查看 Flink Web UI：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png width=90% loading=lazy></figure></li><li><p>使用 socket 传输字符进行测试：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-shell data-lang=shell><span class=line><span class=cl>nc 192.168.0.6 <span class=m>9999</span>
+</span></span></code></pre></td></tr></table></div></div></li><li><p>实验结果：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/log.png width=90% loading=lazy></figure></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/flink/>Flink</a>
+<a href=/tags/kubernetes/>Kubernetes</a>
+<a href=/tags/%E5%88%86%E5%B8%83%E5%BC%8F%E8%AE%A1%E7%AE%97/>分布式计算</a>
+<a href=/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/>云原生</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/spark-on-k8s/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp loading=lazy data-key=spark-on-k8s data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp></div><div class=article-details><h2 class=article-title>基于 Spark on k8s 的词频统计实验</h2></div></a></article><article class=has-image><a href=/p/zookeeper-on-k8s/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp loading=lazy data-key=zookeeper-on-k8s data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp></div><div class=article-details><h2 class=article-title>Zookeeper on k8s 部署实验</h2></div></a></article><article class=has-image><a href=/p/run-spark-on-hpc/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp loading=lazy data-key=run-spark-on-hpc data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp></div><div class=article-details><h2 class=article-title>在 HPC 上运行 Apache Spark</h2></div></a></article><article class=has-image><a href=/p/matrix-factorization/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp loading=lazy data-key=matrix-factorization data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp></div><div class=article-details><h2 class=article-title>SVD 与 NMF：矩阵分解的两种方法</h2></div></a></article><article class=has-image><a href=/p/mapreduce/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp loading=lazy data-key=mapreduce data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp></div><div class=article-details><h2 class=article-title>MapReduce 实验</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=powerby>欢迎来到Cuterwrite的博客网站<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
+<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
