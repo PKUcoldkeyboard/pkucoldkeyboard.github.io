@@ -1,0 +1,272 @@
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="GCC-13 是一个重大更新，在这个版本，GCC 的静态分析器继续改进，有更多的 C23 和 C++23 功能，并支持许多新的  x86_64/RISC-V/AArch64 处理器。为了普及使用 C++ 新标准而不是一直写 C++17 甚至 C++11，我决定编译安装 GCC-13.2.0，体验一下新的 C++ 标准。"><title>GCC-13.2.0 编译安装</title><link rel=canonical href=https://cuterwrite.top/p/gcc-13-source-install/><link rel=stylesheet href=/scss/style.min.7d8b677c28e5b093d7ffba84a1e2b0a3c17b5fc91830b0cf6b35d4ecb5b4e001.css><meta property="og:title" content="GCC-13.2.0 编译安装"><meta property="og:description" content="GCC-13 是一个重大更新，在这个版本，GCC 的静态分析器继续改进，有更多的 C23 和 C++23 功能，并支持许多新的  x86_64/RISC-V/AArch64 处理器。为了普及使用 C++ 新标准而不是一直写 C++17 甚至 C++11，我决定编译安装 GCC-13.2.0，体验一下新的 C++ 标准。"><meta property="og:url" content="https://cuterwrite.top/p/gcc-13-source-install/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:published_time" content="2024-01-30T11:00:00+00:00"><meta property="article:modified_time" content="2024-01-30T11:00:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp"><meta name=twitter:title content="GCC-13.2.0 编译安装"><meta name=twitter:description content="GCC-13 是一个重大更新，在这个版本，GCC 的静态分析器继续改进，有更多的 C23 和 C++23 功能，并支持许多新的  x86_64/RISC-V/AArch64 处理器。为了普及使用 C++ 新标准而不是一直写 C++17 甚至 C++11，我决定编译安装 GCC-13.2.0，体验一下新的 C++ 标准。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
+<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>首页</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>个人</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>文章</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#下载-gcc-1320-源码>下载 GCC-13.2.0 源码</a></li><li><a href=#开始编译>开始编译</a></li><li><a href=#设置环境变量>设置环境变量</a></li><li><a href=#命令行测试>命令行测试</a></li><li><a href=#c-20-主要新特性>C++ 20 主要新特性</a></li><li><a href=#c-23-主要新特性>C++ 23 主要新特性</a></li><li><a href=#corutines-协程示例>Corutines 协程示例</a></li><li><a href=#deducing-this-示例>Deducing this 示例</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/gcc-13-source-install/><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp loading=lazy alt="Featured image of post GCC-13.2.0 编译安装"></a></div><div class=article-details><header class=article-category><a href=/categories/techstack/ style=background-color:#376795;color:#fff>综合技术栈</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/gcc-13-source-install/>GCC-13.2.0 编译安装</a></h2><h3 class=article-subtitle>GCC-13 是一个重大更新，在这个版本，GCC 的静态分析器继续改进，有更多的 C23 和 C++23 功能，并支持许多新的 x86_64/RISC-V/AArch64 处理器。为了普及使用 C++ 新标准而不是一直写 C++17 甚至 C++11，我决定编译安装 GCC-13.2.0，体验一下新的 C++ 标准。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2024-01-30</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 5 分钟</time></div></footer></div></header><section class=article-content><h1 id=gcc-1320-编译安装>GCC-13.2.0 编译安装</h1><p>GCC 13.1 已被发布为 GCC 13 的第一个稳定版本，作为 GNU 编译器集合的年度功能发布。</p><p>GCC 13.1 是一个重大更新，为那些对一些老式编程感兴趣的人添加了 Modula-2 语言前端，虽然有新的 GCC Rust <code>gccrs</code> 代码，但它在 v13.1 中被禁用。在这个版本，GCC 的静态分析器继续改进，有更多的 C23 和 C++23 功能，并支持许多新的 x86_64/RISC-V/AArch64 处理器。</p><p>GCC 13.1 还提供了对 Ryzen 7000 系列和 EPYC 9004 系列处理器的初始 AMD Zen 4(Znver4)支持，OpenMP 卸载改进，支持以 JSON 为基础的 SARIF 格式发出诊断程序，Ada 2022 附加功能，各种新的 C/C++警告，支持 AMD 本能 MI200 系列用于 AMDGCN 后端，Ampere-1A 支持，Neoverse-V2/Cortex-X3/Cortex-X1C/Cortex-A715 支持，以及许多新的 Intel CPU 支持。GCC 13 增加了针对 Raptor Lake, Meteor Lake, Sierra Forest, Grand Ridge, Emerald Rapids 以及 Granite Rapids 的英特尔 CPU Target，以及相关的新英特尔 CPU 指令集扩展，如 AMX-FP16、AVX-IFMA、AVX-VNNI-INT8、AVX-NE-CONVERT、RAO-INT 和 AMX-Complex。</p><p>为了体验 C++20 的新功能，GCC 13.1 也是一个很好的选择，因为它包括对 C++20 的许多新功能的支持。截止到本文撰写时，GCC-13.2 也已发布，所以我直接选择了最新的版本。</p><h2 id=下载-gcc-1320-源码>下载 GCC-13.2.0 源码</h2><ul><li><p>下载地址：<a class=link href=https://mirror.koddos.net/gcc/releases/gcc-13.2.0/ target=_blank rel=noopener>Index of /gcc/releases/gcc-13.2.0</a></p></li><li><p>下载与解压 GCC-13.2.0 源码</p></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>wget https://mirror.koddos.net/gcc/releases/gcc-13.2.0/gcc-13.2.0.tar.gz
+</span></span><span class=line><span class=cl>tar -xzvf gcc-13.2.0.tar.gz
+</span></span><span class=line><span class=cl><span class=nb>cd</span> gcc-13.2.0
+</span></span></code></pre></td></tr></table></div></div><h2 id=开始编译>开始编译</h2><ul><li>编译命令：</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>./contrib/download_prerequisites
+</span></span><span class=line><span class=cl>mkdir build <span class=o>&amp;&amp;</span> <span class=nb>cd</span> build
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>../configure --prefix<span class=o>=</span>/root/software/gcc-13.2.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--enable-checking<span class=o>=</span>release <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--enable-languages<span class=o>=</span>c,c++ <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--disable-multilib <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--enable-bootstrap <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--enable-threads<span class=o>=</span>posix <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>--with-system-zlib
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>make -j32
+</span></span><span class=line><span class=cl>make install
+</span></span></code></pre></td></tr></table></div></div><h2 id=设置环境变量>设置环境变量</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># gcc-13.0.2.env</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>GCC13_HOME</span><span class=o>=</span>/root/software/gcc-13.2.0
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>PATH</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/bin:<span class=nv>$PATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>LD_LIBRARY_PATH</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/lib64:<span class=nv>$LD_LIBRARY_PATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>LD_LIBRARY_PATH</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/lib:<span class=nv>$LD_LIBRARY_PATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>LD_LIBRARY_PATH</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/libexec:<span class=nv>$LD_LIBRARY_PATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>CPATH</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/include:<span class=nv>$CPATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>INCLUDE</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/include:<span class=nv>$CPATH</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>CC</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/bin/gcc
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>CXX</span><span class=o>=</span><span class=nv>$GCC13_HOME</span>/bin/g++
+</span></span></code></pre></td></tr></table></div></div><h2 id=命令行测试>命令行测试</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-cmd data-lang=cmd><span class=line><span class=cl>gcc -v
+</span></span></code></pre></td></tr></table></div></div><p>输出结果为：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-text data-lang=text><span class=line><span class=cl>gcc version 13.2.0 (GCC)
+</span></span></code></pre></td></tr></table></div></div><p>即为编译安装成功。</p><h2 id=c-20-主要新特性>C++ 20 主要新特性</h2><ul><li>C++ 20 的主要新特性如下：<ul><li>Concepts（概念）：概念是对模板参数的类型约束，它们使得模板代码更加清晰和易于理解。概念允许开发者定义一个接口，模板参数必须满足这个接口才能被接受。</li><li>Ranges（范围库）：这是对标准模板库（STL）的一个重大扩展，它引入了“范围”概念，以支持更加声明式的数据处理方式。</li><li>Spaceship Operator(三路比较运算符)：&lt;=>被称为三路比较运算符，它可以一次性比较两个值，返回它们的相对顺序（小于、等于、大于）。</li><li>Modules (模块)：模块旨在替代传统的头文件和源文件分离方式，提供一种新的编译单元，可以显著改善编译时间和代码组织。</li><li><strong>Coroutines</strong> (协程)：协程是一种轻量级的线程，它可以在不同的执行点之间切换，而不是在函数调用之间切换。协程是一种用于编写异步代码的新方法，它允许函数在不同的时间点暂停和恢复执行，而不需要回调函数或复杂的状态机。</li><li>constexpr 改进：C++20 大大扩展了可以在编译时计算的代码的范围，包括允许 <code>virtual</code> 函数、<code>try</code> 和 <code>catch</code> 块在 <code>constexpr</code> 函数中使用。</li><li>初始化器列表的 <code>std::to_array</code> ：这允许将初始化器列表转换为 std::array ，从而提供了一种类型安全的方式来处理固定大小的数组。</li><li>模板语法的简化：typename 和 class 在模板参数中可以互换使用，简化了模板的语法。</li><li>新的标准属性：引入了多个新的属性，如 <code>[[likely]]</code> 和 <code>[[unlikely]]</code> ，用于向编译器提供分支预测的提示。</li><li>新的标准库组件：例如 <code>std::span</code> ，它提供了一个视图，可以表示数组或其他连续序列的一部分，而不需要复制数据。</li><li>新的同步库：例如 <code>std::latch</code> 和 <code>std::barrier</code> ，为多线程编程提供了新的同步原语。</li><li>std::format：这是一个新的格式化库，它提供了一种类型安全的方式来格式化字符串。</li><li>其它等等</li></ul></li></ul><h2 id=c-23-主要新特性>C++ 23 主要新特性</h2><ul><li>C++ 23 的主要新特性如下：<ul><li>Lambada<ol><li>修复省略参数括号 () 的问题。</li><li>更改 lambda 尾部返回类型的作用域。</li><li>让支持函数的 attributes 都支持 lambda。这个功能其实很多编译器早已支持。</li></ol></li><li>编译期计算：主要修复一些 bug 和继续完善编译期计算的能力。</li><li><strong>Deducing this</strong> : Deducing this 是 C++23 中最重要的特性之一。它其实就是提供一种将非静态成员函数的“隐式对象参数”变为“显式对象参数”的方法。<ul><li>Deducing this 的主要动机是消除成员函数修饰所带来的冗余。</li></ul></li><li>多维数组：<ol><li>支持多维下标运算符，即 operator[a, b, c, …]。</li><li>标准库引入 std::mdspan。</li></ol></li><li>标准库：<ul><li>增强 std::string 和 std::string_view</li><li>增强 std::optional</li><li>std::flat_map 和 std::flat_set， 替代 std::map 和 std::set。</li><li>std::stacktrace：用于 exception 捕获后，展开调用栈，方便调试。将 stacktrace 引入标准库，可以看作是对 C++ 异常处理能力的加强。</li><li>std::excepted：对 C++ 通过返回值进行错误处理的能力加强。和 std::optional 差不多，但是 std::optional 只能表示正常值和空值（std::nullopt）。而 std::expected 则可以表示一个期望的值和一个错误的值，相当于两个成员的 std::variant，但是 std::excepted 的接口使用起来更方便。</li><li>std::unreachable()：给编译器的优化提示，告诉编译器这个地方是不可到达的。如果 std::unreachable() 被调用，其结果是 undefined behavior。</li></ul></li><li>其它：<ul><li>静态 operator() 和 静态 operator[]</li><li>假定表达式 [[assume(expr)]]</li><li>size_t 字面量</li></ul></li></ul></li></ul><h2 id=corutines-协程示例>Corutines 协程示例</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;coroutine&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;iostream&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;optional&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=k>template</span><span class=o>&lt;</span><span class=k>typename</span> <span class=n>T</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>Generator</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>struct</span> <span class=nc>promise_type</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>using</span> <span class=n>handle_type</span> <span class=o>=</span> <span class=n>std</span><span class=o>::</span><span class=n>coroutine_handle</span><span class=o>&lt;</span><span class=n>promise_type</span><span class=o>&gt;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>struct</span> <span class=nc>promise_type</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>optional</span><span class=o>&lt;</span><span class=n>T</span><span class=o>&gt;</span> <span class=n>current_value</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=k>static</span> <span class=k>auto</span> <span class=nf>get_return_object_on_allocation_failure</span><span class=p>()</span> <span class=p>{</span> <span class=k>return</span> <span class=n>Generator</span><span class=p>{</span><span class=k>nullptr</span><span class=p>};</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>auto</span> <span class=nf>get_return_object</span><span class=p>()</span> <span class=p>{</span> <span class=k>return</span> <span class=n>Generator</span><span class=p>{</span><span class=n>handle_type</span><span class=o>::</span><span class=n>from_promise</span><span class=p>(</span><span class=o>*</span><span class=k>this</span><span class=p>)};</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>auto</span> <span class=nf>initial_suspend</span><span class=p>()</span> <span class=p>{</span> <span class=k>return</span> <span class=n>std</span><span class=o>::</span><span class=n>suspend_always</span><span class=p>{};</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>auto</span> <span class=nf>final_suspend</span><span class=p>()</span> <span class=k>noexcept</span> <span class=p>{</span> <span class=k>return</span> <span class=n>std</span><span class=o>::</span><span class=n>suspend_always</span><span class=p>{};</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=kt>void</span> <span class=nf>unhandled_exception</span><span class=p>()</span> <span class=p>{</span> <span class=n>std</span><span class=o>::</span><span class=n>exit</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>template</span><span class=o>&lt;</span><span class=k>typename</span> <span class=n>U</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=k>auto</span> <span class=n>yield_value</span><span class=p>(</span><span class=n>U</span><span class=o>&amp;&amp;</span> <span class=n>value</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>current_value</span> <span class=o>=</span> <span class=n>std</span><span class=o>::</span><span class=n>forward</span><span class=o>&lt;</span><span class=n>U</span><span class=o>&gt;</span><span class=p>(</span><span class=n>value</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=n>std</span><span class=o>::</span><span class=n>suspend_always</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=kt>void</span> <span class=nf>return_void</span><span class=p>()</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>handle_type</span> <span class=n>coro</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>Generator</span><span class=p>(</span><span class=n>handle_type</span> <span class=n>h</span><span class=p>)</span><span class=o>:</span> <span class=n>coro</span><span class=p>(</span><span class=n>h</span><span class=p>)</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=n>Generator</span><span class=p>(</span><span class=n>Generator</span> <span class=k>const</span><span class=o>&amp;</span><span class=p>)</span> <span class=o>=</span> <span class=k>delete</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>Generator</span><span class=p>(</span><span class=n>Generator</span><span class=o>&amp;&amp;</span> <span class=n>o</span><span class=p>)</span> <span class=o>:</span> <span class=n>coro</span><span class=p>(</span><span class=n>o</span><span class=p>.</span><span class=n>coro</span><span class=p>)</span> <span class=p>{</span> <span class=n>o</span><span class=p>.</span><span class=n>coro</span> <span class=o>=</span> <span class=k>nullptr</span><span class=p>;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>~</span><span class=n>Generator</span><span class=p>()</span> <span class=p>{</span> <span class=k>if</span> <span class=p>(</span><span class=n>coro</span><span class=p>)</span> <span class=n>coro</span><span class=p>.</span><span class=n>destroy</span><span class=p>();</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>T</span> <span class=nf>next</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=p>(</span><span class=n>coro</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>coro</span><span class=p>.</span><span class=n>resume</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=p>(</span><span class=n>coro</span><span class=p>.</span><span class=n>done</span><span class=p>())</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>coro</span><span class=p>.</span><span class=n>promise</span><span class=p>().</span><span class=n>current_value</span><span class=p>.</span><span class=n>reset</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=o>*</span><span class=n>coro</span><span class=p>.</span><span class=n>promise</span><span class=p>().</span><span class=n>current_value</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>T</span><span class=p>{};</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>Generator</span><span class=o>&lt;</span><span class=kt>int</span><span class=o>&gt;</span> <span class=n>generateNumbers</span><span class=p>(</span><span class=kt>int</span> <span class=n>start</span><span class=p>,</span> <span class=kt>int</span> <span class=n>end</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=n>start</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;=</span> <span class=n>end</span><span class=p>;</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>co_yield</span> <span class=n>i</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>auto</span> <span class=n>numbers</span> <span class=o>=</span> <span class=n>generateNumbers</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span> <span class=mi>5</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>(</span><span class=kt>int</span> <span class=n>i</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span> <span class=n>i</span> <span class=o>&lt;=</span> <span class=mi>5</span><span class=p>;</span> <span class=o>++</span><span class=n>i</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=n>numbers</span><span class=p>.</span><span class=n>next</span><span class=p>()</span> <span class=o>&lt;&lt;</span> <span class=n>std</span><span class=o>::</span><span class=n>endl</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>编译命令：</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>g++ -o coroutines coroutines.cpp -std<span class=o>=</span>c++20 -fcoroutines -O3
+</span></span></code></pre></td></tr></table></div></div><p>运行结果:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>./coroutines
+</span></span><span class=line><span class=cl><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=m>2</span>
+</span></span><span class=line><span class=cl><span class=m>3</span>
+</span></span><span class=line><span class=cl><span class=m>4</span>
+</span></span><span class=line><span class=cl><span class=m>5</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=deducing-this-示例>Deducing this 示例</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-cpp data-lang=cpp><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;iostream&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=k>struct</span> <span class=nc>Test</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>template</span> <span class=o>&lt;</span><span class=k>typename</span> <span class=n>Self</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=n>explicitCall</span><span class=p>(</span><span class=k>this</span> <span class=n>Self</span><span class=o>&amp;&amp;</span> <span class=n>self</span><span class=p>,</span> <span class=k>const</span> <span class=n>std</span><span class=o>::</span><span class=n>string</span><span class=o>&amp;</span> <span class=n>text</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=n>text</span> <span class=o>&lt;&lt;</span> <span class=s>&#34;: &#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>forward</span><span class=o>&lt;</span><span class=n>Self</span><span class=o>&gt;</span><span class=p>(</span><span class=n>self</span><span class=p>).</span><span class=n>implicitCall</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=sc>&#39;\n&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>implicitCall</span><span class=p>()</span> <span class=o>&amp;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=s>&#34;non const lvalue&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>implicitCall</span><span class=p>()</span> <span class=k>const</span><span class=o>&amp;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=s>&#34;const lvalue&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>implicitCall</span><span class=p>()</span> <span class=o>&amp;&amp;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=s>&#34;non const rvalue&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kt>void</span> <span class=nf>implicitCall</span><span class=p>()</span> <span class=k>const</span><span class=o>&amp;&amp;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=s>&#34;const rvalue&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=sc>&#39;\n&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>Test</span> <span class=n>test</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=k>const</span> <span class=n>Test</span> <span class=n>constTest</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>test</span><span class=p>.</span><span class=n>explicitCall</span><span class=p>(</span><span class=s>&#34;test&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>constTest</span><span class=p>.</span><span class=n>explicitCall</span><span class=p>(</span><span class=s>&#34;constTest&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>test</span><span class=p>).</span><span class=n>explicitCall</span><span class=p>(</span><span class=s>&#34;std::move(test)&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>move</span><span class=p>(</span><span class=n>constTest</span><span class=p>).</span><span class=n>explicitCall</span><span class=p>(</span><span class=s>&#34;std::move(consTest)&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>std</span><span class=o>::</span><span class=n>cout</span> <span class=o>&lt;&lt;</span> <span class=sc>&#39;\n&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div></section><footer class=article-footer><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/processing-avif-heic-images-pillow-plugins/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp loading=lazy data-key=processing-avif-heic-images-pillow-plugins data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp></div><div class=article-details><h2 class=article-title>使用 Pillow + Plugin 处理 AVIF 和 HEIC 图片</h2></div></a></article><article class=has-image><a href=/p/ring-buffer/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp loading=lazy data-key=ring-buffer data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp></div><div class=article-details><h2 class=article-title>Ring buffer 详解</h2></div></a></article><article class=has-image><a href=/p/false-sharing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp loading=lazy data-key=false-sharing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp></div><div class=article-details><h2 class=article-title>性能刺客之伪共享</h2></div></a></article><article class=has-image><a href=/p/debug-and-optimize/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/1c86d46879544786889dcdbaa1cf158f1fb36107.jpg@1256w_1774h_!web-article-pic.webp loading=lazy data-key=debug-and-optimize data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/1c86d46879544786889dcdbaa1cf158f1fb36107.jpg@1256w_1774h_!web-article-pic.webp></div><div class=article-details><h2 class=article-title>程序调试与优化分析工具</h2></div></a></article><article class=has-image><a href=/p/efficient-liburing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp loading=lazy data-key=efficient-liburing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp></div><div class=article-details><h2 class=article-title>高性能异步 I/O 框架：io_uring</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=powerby>欢迎来到Cuterwrite的博客网站<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
+<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

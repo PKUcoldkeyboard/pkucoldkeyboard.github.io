@@ -1,4 +1,219 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on cuterwrite</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Mon, 01 Jan 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on cuterwrite</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 01 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</title><link>https://cuterwrite.top/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post 编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南" />&lt;h1 id="编译安装-ucx-1150-与-openmpi-500详尽指南">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南&lt;/h1>
+&lt;h2 id="一环境准备">一、环境准备&lt;/h2>
+&lt;p>首先，请确保您的系统满足以下基本要求：&lt;/p>
+&lt;ol>
+&lt;li>操作系统：支持 Linux（如 Ubuntu 20.04 LTS）或其他类 Unix 操作系统。&lt;/li>
+&lt;li>开发工具包：安装必要的构建工具和库，例如 &lt;code>build-essential&lt;/code> ，&lt;code>libnuma-dev&lt;/code> ，&lt;code>pkg-config&lt;/code> 等。&lt;/li>
+&lt;li>内核版本：对于最佳性能，建议使用最新稳定版内核。&lt;/li>
+&lt;li>需要支持 RDMA 的硬件环境或虚拟环境。&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">sudo apt-get update
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">sudo apt-get install -y build-essential libnuma-dev pkg-config
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="二编译安装-ucx-1150">二、编译安装 UCX 1.15.0&lt;/h2>
+&lt;ol>
+&lt;li>下载 UCX 源码包：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">wget https://github.com/openucx/ucx/releases/download/v1.15.0/ucx-1.15.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tar -xzvf ucx-1.15.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">cd&lt;/span> ucx-1.15.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="2">
+&lt;li>配置 UCX 编译选项：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mkdir build &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nb">cd&lt;/span> build
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">../configure --prefix&lt;span class="o">=&lt;/span>/root/software/ucx/1.5.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>您可以根据实际需求添加更多配置选项，比如指定特定的网卡类型或者启用特定的功能。&lt;/p>
+&lt;ol start="3">
+&lt;li>编译并安装：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">make -j &lt;span class="m">8&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="4">
+&lt;li>UCX 架构说明&lt;/li>
+&lt;/ol>
+&lt;ul>
+&lt;li>UCX 1.15.0 的架构如下图所示：&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Architecture-2024-02-03.webp"
+alt="Architecture-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>组件&lt;/th>
+&lt;th>角色&lt;/th>
+&lt;th>说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>实现高级抽象，如标记匹配、流、连接协商和建立、多轨以及处理不同的内存类型。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCT&lt;/td>
+&lt;td>Transport&lt;/td>
+&lt;td>实现低级通信原语，如活动消息、远程内存访问和原子操作。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCM&lt;/td>
+&lt;td>Memory&lt;/td>
+&lt;td>通用的数据结构、算法和系统实用程序的集合。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>截获内存注册缓存使用的内存分配和释放事件。&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="三编译安装-openmpi-500">三、编译安装 OpenMPI 5.0.0&lt;/h2>
+&lt;ol>
+&lt;li>下载 OpenMPI 源码包：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tar -xzvf openmpi-5.0.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">cd&lt;/span> openmpi-5.0.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="2">
+&lt;li>配置 OpenMPI 编译选项，指定使用 UCX 作为传输层：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mkdir build &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nb">cd&lt;/span> build
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">../configure --without-hcoll &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-python-bindings &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-mpirun-prefix-by-default &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--prefix&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0 &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--with-ucx&lt;span class="o">=&lt;/span>/root/software/ucx/1.15.0 &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-mca-no-build&lt;span class="o">=&lt;/span>btl-uct
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;ul>
+&lt;li>对于 OpenMPI 4.0 及更高版本，&lt;code>btl_uct&lt;/code> 组件可能存在编译错误。该组件对于使用 UCX 来说并不重要；因此可以通过 &lt;code>--enable-mca-no-build=btl-uct&lt;/code> 禁用：&lt;/li>
+&lt;li>&lt;code>--enable-python-bindings&lt;/code> 选项用于启用 Python 绑定。&lt;/li>
+&lt;li>&lt;code>--enable-mpirun-prefix-by-default&lt;/code> 选项用于在使用 &lt;code>mpirun&lt;/code> 启动 MPI 程序时自动添加 &lt;code>--prefix&lt;/code> 选项。&lt;/li>
+&lt;li>&lt;code>--without-hcoll&lt;/code> 选项用于禁用 HCOLL 组件。不设置编译时会报错 &lt;code>cannot find -lnuma&lt;/code> 与 &lt;code>cannot find -ludev&lt;/code> 的错误。&lt;/li>
+&lt;/ul>&lt;/div>
+&lt;p>最后配置选项如下：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ompi-config-2024-02-03.webp"
+alt="ompi-config-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol start="3">
+&lt;li>编译并安装：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">make -j &lt;span class="m">8&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="四验证安装与设置环境变量">四、验证安装与设置环境变量&lt;/h2>
+&lt;p>安装完成后，可以通过运行简单的 MPI 程序来验证 UCX 和 OpenMPI 是否成功集成：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mpirun -np &lt;span class="m">2&lt;/span> --mca pml ucx --mca btl ^vader,tcp,openib,uct &lt;span class="o">[&lt;/span>-x &lt;span class="nv">UCX_NET_DEVICES&lt;/span>&lt;span class="o">=&lt;/span>mlx5_0:1&lt;span class="o">]&lt;/span> hostname
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>（如果在 root 上运行则需要加上 &lt;code>--allow-run-as-root&lt;/code> 选项，如果有 RDMA 设备可以设置 &lt;code>-x UCX_NET_DEVICES&lt;/code> ）&lt;/p>
+&lt;p>如果一切正常，您会看到两台主机名的输出。为了方便使用，可以将 OpenMPI 的 bin 目录等添加到系统 PATH 环境变量中：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">vim ~/.bashrc
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">PATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/bin:&lt;span class="nv">$PATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">LD_LIBRARY_PATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/lib:&lt;span class="nv">$LD_LIBRARY_PATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">CPATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/include:&lt;span class="nv">$CPATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">MANPATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/share/man:&lt;span class="nv">$MANPATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">source&lt;/span> ~/.bashrc
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="五ucx-性能测试">五、UCX 性能测试&lt;/h2>
+&lt;p>发送方：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">ucx_perftest -c &lt;span class="m">0&lt;/span> -d mlx5_0:1
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>接收方：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">ucx_perftest -c &lt;span class="m">1&lt;/span> -d mlx5_0:1 &amp;lt;server_hostname&amp;gt; -t tag_lat
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>总之，通过以上步骤，我们已经成功地从源代码编译并安装了 UCX 1.15.0 和 OpenMPI 5.0.0，并将其整合为一个高效稳定的高性能计算环境。在实际应用中，可以根据具体需求进一步优化配置以获得更优性能。&lt;/p></description></item><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/138874738">&lt;cite>知乎专栏：1. RDMA 概述&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -6,14 +221,14 @@
 &lt;h2 id="什么是-dma">什么是 DMA&lt;/h2>
 &lt;p>DMA 全称为 Direct Memory Access，即直接内存访问。意思是外设对内存的读写过程可以不用 CPU 参与而直接进行。我们先来看一下没有 DMA 的时候：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203040-2024-01-14.png"
-alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto"/>&lt;figcaption>
+alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
 &lt;h4>无 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>假设 I/O 设备为一个普通网卡，为了从内存拿到需要发送的数据，然后组装数据包发送到物理链路上，网卡需要通过总线告知 CPU 自己的数据请求。然后 CPU 将会把内存缓冲区中的数据复制到自己内部的寄存器中，再复制到 I/O 设备的存储空间中。如果数据量比较大，那么很长一段时间内 CPU 都会忙于搬移数据，而无法投入到其他工作中去。&lt;/p>
 &lt;p>CPU 的最主要工作是计算，而不是进行数据复制，这种工作属于白白浪费了它的计算能力。为了给 CPU“减负”，让它投入到更有意义的工作中去，后来人们设计了 DMA 机制：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203114-2024-01-14.png"
-alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto"/>&lt;figcaption>
+alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
 &lt;h4>有 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>

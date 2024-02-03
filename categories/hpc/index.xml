@@ -1,4 +1,219 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on cuterwrite</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Mon, 01 Jan 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on cuterwrite</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 01 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</title><link>https://cuterwrite.top/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post 编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南" />&lt;h1 id="编译安装-ucx-1150-与-openmpi-500详尽指南">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南&lt;/h1>
+&lt;h2 id="一环境准备">一、环境准备&lt;/h2>
+&lt;p>首先，请确保您的系统满足以下基本要求：&lt;/p>
+&lt;ol>
+&lt;li>操作系统：支持 Linux（如 Ubuntu 20.04 LTS）或其他类 Unix 操作系统。&lt;/li>
+&lt;li>开发工具包：安装必要的构建工具和库，例如 &lt;code>build-essential&lt;/code> ，&lt;code>libnuma-dev&lt;/code> ，&lt;code>pkg-config&lt;/code> 等。&lt;/li>
+&lt;li>内核版本：对于最佳性能，建议使用最新稳定版内核。&lt;/li>
+&lt;li>需要支持 RDMA 的硬件环境或虚拟环境。&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">sudo apt-get update
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">sudo apt-get install -y build-essential libnuma-dev pkg-config
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="二编译安装-ucx-1150">二、编译安装 UCX 1.15.0&lt;/h2>
+&lt;ol>
+&lt;li>下载 UCX 源码包：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">wget https://github.com/openucx/ucx/releases/download/v1.15.0/ucx-1.15.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tar -xzvf ucx-1.15.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">cd&lt;/span> ucx-1.15.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="2">
+&lt;li>配置 UCX 编译选项：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mkdir build &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nb">cd&lt;/span> build
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">../configure --prefix&lt;span class="o">=&lt;/span>/root/software/ucx/1.5.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>您可以根据实际需求添加更多配置选项，比如指定特定的网卡类型或者启用特定的功能。&lt;/p>
+&lt;ol start="3">
+&lt;li>编译并安装：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">make -j &lt;span class="m">8&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="4">
+&lt;li>UCX 架构说明&lt;/li>
+&lt;/ol>
+&lt;ul>
+&lt;li>UCX 1.15.0 的架构如下图所示：&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Architecture-2024-02-03.webp"
+alt="Architecture-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>组件&lt;/th>
+&lt;th>角色&lt;/th>
+&lt;th>说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>实现高级抽象，如标记匹配、流、连接协商和建立、多轨以及处理不同的内存类型。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCT&lt;/td>
+&lt;td>Transport&lt;/td>
+&lt;td>实现低级通信原语，如活动消息、远程内存访问和原子操作。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCM&lt;/td>
+&lt;td>Memory&lt;/td>
+&lt;td>通用的数据结构、算法和系统实用程序的集合。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>截获内存注册缓存使用的内存分配和释放事件。&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="三编译安装-openmpi-500">三、编译安装 OpenMPI 5.0.0&lt;/h2>
+&lt;ol>
+&lt;li>下载 OpenMPI 源码包：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">tar -xzvf openmpi-5.0.0.tar.gz
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">cd&lt;/span> openmpi-5.0.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;ol start="2">
+&lt;li>配置 OpenMPI 编译选项，指定使用 UCX 作为传输层：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mkdir build &lt;span class="o">&amp;amp;&amp;amp;&lt;/span> &lt;span class="nb">cd&lt;/span> build
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">../configure --without-hcoll &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-python-bindings &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-mpirun-prefix-by-default &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--prefix&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0 &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--with-ucx&lt;span class="o">=&lt;/span>/root/software/ucx/1.15.0 &lt;span class="se">\
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="se">&lt;/span>--enable-mca-no-build&lt;span class="o">=&lt;/span>btl-uct
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;ul>
+&lt;li>对于 OpenMPI 4.0 及更高版本，&lt;code>btl_uct&lt;/code> 组件可能存在编译错误。该组件对于使用 UCX 来说并不重要；因此可以通过 &lt;code>--enable-mca-no-build=btl-uct&lt;/code> 禁用：&lt;/li>
+&lt;li>&lt;code>--enable-python-bindings&lt;/code> 选项用于启用 Python 绑定。&lt;/li>
+&lt;li>&lt;code>--enable-mpirun-prefix-by-default&lt;/code> 选项用于在使用 &lt;code>mpirun&lt;/code> 启动 MPI 程序时自动添加 &lt;code>--prefix&lt;/code> 选项。&lt;/li>
+&lt;li>&lt;code>--without-hcoll&lt;/code> 选项用于禁用 HCOLL 组件。不设置编译时会报错 &lt;code>cannot find -lnuma&lt;/code> 与 &lt;code>cannot find -ludev&lt;/code> 的错误。&lt;/li>
+&lt;/ul>&lt;/div>
+&lt;p>最后配置选项如下：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ompi-config-2024-02-03.webp"
+alt="ompi-config-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol start="3">
+&lt;li>编译并安装：&lt;/li>
+&lt;/ol>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">make -j &lt;span class="m">8&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">make install
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="四验证安装与设置环境变量">四、验证安装与设置环境变量&lt;/h2>
+&lt;p>安装完成后，可以通过运行简单的 MPI 程序来验证 UCX 和 OpenMPI 是否成功集成：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">mpirun -np &lt;span class="m">2&lt;/span> --mca pml ucx --mca btl ^vader,tcp,openib,uct &lt;span class="o">[&lt;/span>-x &lt;span class="nv">UCX_NET_DEVICES&lt;/span>&lt;span class="o">=&lt;/span>mlx5_0:1&lt;span class="o">]&lt;/span> hostname
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>（如果在 root 上运行则需要加上 &lt;code>--allow-run-as-root&lt;/code> 选项，如果有 RDMA 设备可以设置 &lt;code>-x UCX_NET_DEVICES&lt;/code> ）&lt;/p>
+&lt;p>如果一切正常，您会看到两台主机名的输出。为了方便使用，可以将 OpenMPI 的 bin 目录等添加到系统 PATH 环境变量中：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">vim ~/.bashrc
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">PATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/bin:&lt;span class="nv">$PATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">LD_LIBRARY_PATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/lib:&lt;span class="nv">$LD_LIBRARY_PATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">CPATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/include:&lt;span class="nv">$CPATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">export&lt;/span> &lt;span class="nv">MANPATH&lt;/span>&lt;span class="o">=&lt;/span>/root/software/openmpi/5.0.0-ucx-1.15.0/share/man:&lt;span class="nv">$MANPATH&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nb">source&lt;/span> ~/.bashrc
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h2 id="五ucx-性能测试">五、UCX 性能测试&lt;/h2>
+&lt;p>发送方：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">ucx_perftest -c &lt;span class="m">0&lt;/span> -d mlx5_0:1
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>接收方：&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">ucx_perftest -c &lt;span class="m">1&lt;/span> -d mlx5_0:1 &amp;lt;server_hostname&amp;gt; -t tag_lat
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>总之，通过以上步骤，我们已经成功地从源代码编译并安装了 UCX 1.15.0 和 OpenMPI 5.0.0，并将其整合为一个高效稳定的高性能计算环境。在实际应用中，可以根据具体需求进一步优化配置以获得更优性能。&lt;/p></description></item><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/138874738">&lt;cite>知乎专栏：1. RDMA 概述&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -6,14 +221,14 @@
 &lt;h2 id="什么是-dma">什么是 DMA&lt;/h2>
 &lt;p>DMA 全称为 Direct Memory Access，即直接内存访问。意思是外设对内存的读写过程可以不用 CPU 参与而直接进行。我们先来看一下没有 DMA 的时候：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203040-2024-01-14.png"
-alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto"/>&lt;figcaption>
+alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
 &lt;h4>无 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>假设 I/O 设备为一个普通网卡，为了从内存拿到需要发送的数据，然后组装数据包发送到物理链路上，网卡需要通过总线告知 CPU 自己的数据请求。然后 CPU 将会把内存缓冲区中的数据复制到自己内部的寄存器中，再复制到 I/O 设备的存储空间中。如果数据量比较大，那么很长一段时间内 CPU 都会忙于搬移数据，而无法投入到其他工作中去。&lt;/p>
 &lt;p>CPU 的最主要工作是计算，而不是进行数据复制，这种工作属于白白浪费了它的计算能力。为了给 CPU“减负”，让它投入到更有意义的工作中去，后来人们设计了 DMA 机制：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203114-2024-01-14.png"
-alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto"/>&lt;figcaption>
+alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
 &lt;h4>有 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
@@ -1376,373 +1591,5 @@ alt="20230903004449-2023-09-03" width="auto" loading="lazy"/>
 &lt;/div>
 &lt;/div>&lt;p>这个函数分配 size 字节的托管内存，并用 devPtr 返回一个指针。该指针在所有设备和主机上都是有效的。使用托管内存的程序行为与使用未托管内存的程序副本行为在功能上是一致的。但是，使用托管内存的程序可以利用自动数据传输和重复指针消除功能。&lt;/p>
 &lt;p>在 CUDA 6.0 中，设备代码不能调用 cudaMallocManaged 函数。所有的托管内存必须在主机端动态声明或者在全局范围内静态声明。&lt;/p>
-&lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存模型概述</title><link>https://cuterwrite.top/p/cuda-base-memory-model/</link><pubDate>Fri, 01 Sep 2023 04:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-model/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" alt="Featured image of post CUDA 基础：内存模型概述" />&lt;h1 id="cuda-基础内存模型概述">CUDA 基础：内存模型概述&lt;/h1>
-&lt;p>内存的访问和管理是所有编程语言的重要部分。在现代加速器中，内存管理对高性能计算有着很大的影响。&lt;/p>
-&lt;p>因为多数工作负载被加载和存储数据的速度所限制，所以有大量低延迟、高带宽的内存对性能是十分有利的。然而，大容量、高性能的内存造价高且不容易生产。因此，在现有的硬件存储子系统下，必须依靠&lt;strong>内存模型&lt;/strong>获得最佳的延迟和带宽。CUDA 内存模型结合了主机和设备的内存系统，展现了完整的内存层次结构，能显式地控制数据布局以优化性能。&lt;/p>
-&lt;h2 id="一内存层次结构的优点">一、内存层次结构的优点&lt;/h2>
-&lt;p>程序具有局部性特点，包括：&lt;/p>
-&lt;ol>
-&lt;li>时间局部性：如果一个数据被访问，那么它在不久的将来也会被访问。&lt;/li>
-&lt;li>空间局部性：如果一个数据被访问，那么它附近的数据也会被访问。&lt;/li>
-&lt;/ol>
-&lt;p>现代计算机的内存结构主要如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp"
-alt="20230901232704-2023-09-01" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>一个内存层次结构由具有不同延迟、带宽和容量的多级内存组成。通常，随着从处理器到内存延迟的增加，内存的容量也在增加。&lt;/p>
-&lt;p>CPU 和 GPU 的主存都采用的是 DRAM（动态随机存取存储器），而低延迟内存（如 CPU 一级缓存）使用的则是 SRAM（静态随机存取存储器）。内存层次结构中最大且最慢的级别通常使用磁盘或闪存驱动来实现。在这种内存层次结构中，当数据被处理器频繁使用时，该数据保存在低延迟、低容量的存储器中；而当该数据被存储起来以备后用时，数据就存储在高延迟、大容量的存储器中。这种内存层次结构符合大内存低延迟的设想。&lt;/p>
-&lt;p>GPU 和 CPU 的内存设计有相似的准则和模型。但它们的主要区别是，CUDA 编程模型能将内存层次结构更好地呈现给用户，能让我们显式地控制它的行为。&lt;/p>
-&lt;h2 id="二cuda-内存模型">二、CUDA 内存模型&lt;/h2>
-&lt;p>对于程序员来说，一般有两种类型的存储器：&lt;/p>
-&lt;ol>
-&lt;li>可编程的：你需要显式地控制哪些数据存放在可编程内存中&lt;/li>
-&lt;li>不可编程的：你不能决定数据的存放位置，程序将自动生成存放位置以获得良好的性能&lt;/li>
-&lt;/ol>
-&lt;p>CPU 内存结构中，一级二级缓存都是不可编程（完全不可控制）的存储设备。另一方面，CUDA 内存模型相对于 CPU 来说更为丰富，提出了多种可编程内存的类型：&lt;/p>
-&lt;ul>
-&lt;li>寄存器&lt;/li>
-&lt;li>共享内存&lt;/li>
-&lt;li>本地内存&lt;/li>
-&lt;li>常量内存&lt;/li>
-&lt;li>纹理内存&lt;/li>
-&lt;li>全局内存&lt;/li>
-&lt;/ul>
-&lt;p>下图所示为这些内存空间的层次结构，每种都有不同的作用域、生命周期和缓存行为。一个核函数中的线程都有自己私有的&lt;strong>本地内存&lt;/strong>。一个线程块有自己的&lt;strong>共享内存&lt;/strong>，对同一线程块中所有线程都可见，其内容持续线程块的整个生命周期。所有线程都可以访问&lt;strong>全局内存&lt;/strong>。所有线程都能访问的只读内存空间有：&lt;strong>常量内存空间和纹理内存空间&lt;/strong>。全局内存、常量内存和纹理内存空间有不同的用途。&lt;strong>纹理内存&lt;/strong>为各种数据布局提供了不同的寻址模式和滤波模式。对于一个应用程序来说， &lt;strong>全局内存、常量内存和纹理内存&lt;/strong>中的内容具有相同的生命周期。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp"
-alt="20230901233955-2023-09-01" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;h3 id="1-寄存器">1. 寄存器&lt;/h3>
-&lt;p>寄存器无论是在 CPU 还是在 GPU 都是速度最快的内存空间，但是和 CPU 不同的是 GPU 的寄存器储量要多一些，而且当我们在核函数内不加修饰的声明一个变量，此变量就存储在寄存器中，但是 CPU 运行的程序有些不同，只有当前在计算的变量存储在寄存器中，其余在主存中，使用时传输至寄存器。在核函数声明的数组中，&lt;strong>如果用于引用该数组的索引是常量且能在编译时确定&lt;/strong>，那么该数组也存储在寄存器中。&lt;/p>
-&lt;p>寄存器变量对于每个线程来说都是私有的，一个核函数通常使用寄存器来保存需要频繁访问的线程私有变量。寄存器变量与核函数的生命周期相同。一旦核函数执行完毕，就不能对寄存器变量进行访问了。&lt;/p>
-&lt;p>寄存器是 SM 中的稀缺资源，Fermi 架构中每个线程最多 63 个寄存器。Kepler 结构扩展到 255 个 寄存器，一个线程如果使用更少的寄存器，那么就会有更多的常驻线程块，SM 上并发的线程块越多，效率越高，性能和使用率也就越高。&lt;/p>
-&lt;p>那么问题就来了，如果一个线程里面的变量太多，以至于寄存器完全不够呢？这时候寄存器发生溢出，本地内存就会过来帮忙存储多出来的变量，这种情况会对效率产生非常负面的影响，所以，不到万不得已，一定要避免此种情况发生。&lt;/p>
-&lt;p>为了避免寄存器溢出，可以在核函数的代码中配置额外的信息来辅助编译器优化，比如：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="nf">__lauch_bounds__&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">maxThreadaPerBlock&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">minBlocksPerMultiprocessor&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">kernel&lt;/span>&lt;span class="p">(...)&lt;/span> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="cm">/* kernel code */&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这里面在核函数定义前加了一个 关键字 &lt;strong>lauch_bounds&lt;/strong> ，然后它后面对应了两个变量：&lt;/p>
-&lt;ol>
-&lt;li>maxThreadaPerBlock：线程块内包含的最大线程数，线程块由核函数来启动&lt;/li>
-&lt;li>minBlocksPerMultiprocessor：可选参数，每个 SM 中预期的最小的常驻内存块参数。注意，对于一定的核函数，优化的启动边界会因为不同的结构而不同
-也可以在编译选项中加入 &lt;strong>-maxrregcount=32&lt;/strong> 来指定每个线程使用的最大寄存器数。&lt;/li>
-&lt;/ol>
-&lt;h3 id="2-本地内存">2. 本地内存&lt;/h3>
-&lt;p>核函数中符合存储在寄存器中但不能进入被该核函数分配的寄存器空间中的变量将溢出到本地内存中。编译器可能存放到本地内存中的变量有：&lt;/p>
-&lt;ul>
-&lt;li>在编译时使用未知索引引用的本地数组&lt;/li>
-&lt;li>可能会占用大量寄存器空间的较大本地结构体或数组&lt;/li>
-&lt;li>任何不满足核函数寄存器限定条件的变量&lt;/li>
-&lt;/ul>
-&lt;p>本地内存实质上是和全局内存一样在同一块存储区域当中的，其访问特点——高延迟，低带宽。对于计算能力 2.0 以上的设备，本地内存存储在每个 SM 的一级缓存，或者设备的二级缓存上。&lt;/p>
-&lt;h3 id="3-共享内存">3. 共享内存&lt;/h3>
-&lt;p>在核函数中使用 &lt;strong>__shared__&lt;/strong> 修饰符修饰的变量存放在共享内存中。&lt;/p>
-&lt;p>因为共享内存是片上内存，所以与本地内存或全局内存相比，它具有更高的带宽和更低的延迟。它的使用类似于 CPU 一级缓存，但它是可编程的。&lt;/p>
-&lt;p>每一个 SM 都有一定数量的由线程块分配的共享内存。因此，必须非常小心不要过度使用共享内存，否则将在不经意间限制活跃线程束的数量。&lt;/p>
-&lt;p>共享内存在核函数的范围内声明，其生命周期伴随着整个线程块。当一个线程块执行结束后，其分配的共享内存将被释放并重新分配给其他线程块。&lt;/p>
-&lt;p>共享内存是线程之间相互通信的基本方式。因为共享内存是块内线程可见的，所以就有竞争问题的存在，也可以通过共享内存进行通信，当然，为了避免内存竞争，可以使用同步语句：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="n">__syncthreads&lt;/span>&lt;span class="p">();&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>此语句相当于在线程块执行时各个线程的一个障碍点，当块内所有线程都执行到本障碍点的时候才能进行下一步的计算，这样可以设计出避免内存竞争的共享内存使用程序。但是，该语句频繁使用会影响内核执行效率。SM 中的一级缓存和共享内存都使用 64KB 的片上内存，它通过静态划分，但在运行时可以通过如下指令进行动态配置：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaError_t&lt;/span> &lt;span class="n">cudaFuncSetCacheConfig&lt;/span> &lt;span class="p">(&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">func&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaFuncCache&lt;/span> &lt;span class="n">cacheConfig&lt;/span> &lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数在每个核函数的基础上配置了片上内存划分，为 func 指定的核函数设置了配置。支持的缓存配置如下：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">&lt;span class="line">&lt;span class="cl">cudaFuncCachePreferNone // 无参考值，默认设置
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">cudaFuncCachePreferShared // 48k 共享内存，16k 一级缓存
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">cudaFuncCachePreferL1 // 48k 一级缓存，16k 共享内存
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">cudaFuncCachePreferEqual // 32k 一级缓存，32k 共享内存
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>Fermi 架构支持前三种，后面的设备都支持。&lt;/p>
-&lt;h3 id="4-常量内存">4. 常量内存&lt;/h3>
-&lt;p>常量内存驻留在设备内存中，每个 SM 都有专用的常量内存缓存，常量内存使用 &lt;strong>__constant__&lt;/strong> 修饰符修饰。&lt;/p>
-&lt;p>常量变量必须在全局空间内和所有核函数之外进行声明。对于所有计算能力的设备，都只可以声明 64kB 的常量内存，常量内存是静态声明的，并对同一编译单元中的所有核函数可见。&lt;/p>
-&lt;p>核函数只能从常量内存中读取数据（只读）。因此，常量内存必须在主机端使用下面的函数来初始化：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaError_t&lt;/span> &lt;span class="n">cudaMemcpyToSymbol&lt;/span> &lt;span class="p">(&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">symbol&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">void&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">src&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span> &lt;span class="n">count&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">size_t&lt;/span> &lt;span class="n">offset&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mi">0&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaMemcpyKind&lt;/span> &lt;span class="n">kind&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">cudaMemcpyHostToDevice&lt;/span> &lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数将 count 个字节从 src 指向的内存复制到 symbol 指向的内存中，这个变量存放在设备的全局内存或常量内存中。在大多数情况下这个函数是同步的。&lt;/p>
-&lt;p>线程束中的所有线程从相同的内存地址中读取数据时，常量内存表现最好。举个例子，数学公式中的系数就是一个很好的使用常量内存的例子，因为一个线程束中所有的线程使用相同的系数来对不同数据进行相同的计算。如果线程束里每个线程都从不同的地址空间读取数据，并且只读一次，那么常量内存中就不是最佳选择，因为每从一个常量内存中读取一次数据，都会广播给线程束里的所有线程。&lt;/p>
-&lt;h3 id="5-纹理内存">5. 纹理内存&lt;/h3>
-&lt;p>纹理内存驻留在设备内存中，并在每个 SM 的只读缓存中缓存。&lt;strong>纹理内存&lt;/strong>是一种通过指定的只读缓存访问的全局内存。只读缓存包括硬件滤波的支持，它可以将浮点插入作为读过程的一部分来执行。纹理内存是对&lt;strong>二维空间局部性&lt;/strong>的优化所以线程束里使用纹理内存访问二维数据的线程可以达到最优性能。对于一些应用程序来说，这是理想的内存，并由于缓存和滤波硬件的支持所以有较好的性能优势。然而对于另一些应用程序来说，与全局内存相比，使用纹理内存更慢。&lt;/p>
-&lt;p>总的来说纹理内存设计目的应该是为了 GPU 本职工作显示设计的，但是对于某些特定的程序可能效果更好，比如需要滤波的程序，可以直接通过硬件完成。&lt;/p>
-&lt;h3 id="6-全局内存">6. 全局内存&lt;/h3>
-&lt;p>全局内存是 GPU 中最大、&lt;strong>延迟最高&lt;/strong>并且最常使用的内存。 global 指的是其作用域和生命周期。它的声明可以在任何 SM 设备上被访问到，并且贯穿应用程序的整个生命周期。一个全局内存变量可以被静态声明或动态声明。可以使用 &lt;strong>__device__&lt;/strong> 修饰符在设备代码中静态地声明一个变量。&lt;/p>
-&lt;p>默认通过 cudaMalloc 声明的所有在 GPU 上访问的内存都是全局内存，也就是没有对内存进行任何优化。因为全局内存的性质，当有多个核函数同时执行的时候，如果使用到了同一全局变量，应注意内存竞争。&lt;/p>
-&lt;p>全局内存访问是对齐，也就是一次要读取指定大小 $(32，64，128)$ 整数倍字节的内存，所以当线程束执行内存加载/存储时，需要满足的传输数量通常取决与以下两个因素：&lt;/p>
-&lt;ol>
-&lt;li>跨线程的内存地址分布&lt;/li>
-&lt;li>内存事务的对齐方式&lt;/li>
-&lt;/ol>
-&lt;p>在一般情况下，用来满足内存请求的事务越多，未使用的字节被传输回的可能性就越高，这就造成了数据吞吐率的降低。&lt;/p>
-&lt;p>对于一个给定的线程束内存请求，事务数量和数据吞吐率是由设备的计算能力来确定的。对于计算能力为 1.0 和 1.1 的设备，全局内存访问的要求是非常严格的。对于计算能力高于 1.1 的设备，由于内存事务被缓存，所以要求较为宽松。缓存的内存事务利用数据局部性来提高数据吞吐率。&lt;/p>
-&lt;h3 id="7-gpu-缓存">7. GPU 缓存&lt;/h3>
-&lt;p>与 CPU 缓存类似， GPU 缓存是不可编程的内存。在 GPU 上有 4 种缓存：&lt;/p>
-&lt;ul>
-&lt;li>一级缓存&lt;/li>
-&lt;li>二级缓存&lt;/li>
-&lt;li>只读常量缓存&lt;/li>
-&lt;li>只读纹理缓存&lt;/li>
-&lt;/ul>
-&lt;p>每个 SM 都有一个一级缓存，所有的 SM 共享一个二级缓存。一级和二级缓存都被用来在存储本地内存和全局内存中的数据，也包括寄存器溢出的部分。对 Fermi GPU 和 Kepler K40 或其后发布的 GPU 来说，CUDA 允许我们配置读操作的数据是使用一级和二级缓存，还是只使用二级缓存。&lt;/p>
-&lt;p>在 CPU 上，内存的加载和存储都可以被缓存。但是，在 GPU 上只有内存加载操作可以被缓存，内存存储操作不能被缓存。&lt;/p>
-&lt;p>每个 SM 也有一个只读常量缓存和只读纹理缓存，它们用于在设备内存中提高来自于各自内存空间内的读取性能。&lt;/p>
-&lt;h3 id="8-cuda-变量声明总结">8. CUDA 变量声明总结&lt;/h3>
-&lt;p>用表格进行总结：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">修饰符&lt;/th>
-&lt;th style="text-align:center">变量名&lt;/th>
-&lt;th style="text-align:center">存储器&lt;/th>
-&lt;th style="text-align:center">作用域&lt;/th>
-&lt;th style="text-align:center">生命周期&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">无&lt;/td>
-&lt;td style="text-align:center">float var&lt;/td>
-&lt;td style="text-align:center">寄存器&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">无&lt;/td>
-&lt;td style="text-align:center">float var[100]&lt;/td>
-&lt;td style="text-align:center">本地&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">__shared__&lt;/td>
-&lt;td style="text-align:center">float var*&lt;/td>
-&lt;td style="text-align:center">共享内存&lt;/td>
-&lt;td style="text-align:center">块&lt;/td>
-&lt;td style="text-align:center">块&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">__device__&lt;/td>
-&lt;td style="text-align:center">float var*&lt;/td>
-&lt;td style="text-align:center">全局内存&lt;/td>
-&lt;td style="text-align:center">全局&lt;/td>
-&lt;td style="text-align:center">应用程序&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">__constant__&lt;/td>
-&lt;td style="text-align:center">float var*&lt;/td>
-&lt;td style="text-align:center">常量内存&lt;/td>
-&lt;td style="text-align:center">全局&lt;/td>
-&lt;td style="text-align:center">应用程序&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>设备存储器的重要特征：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">存储器&lt;/th>
-&lt;th style="text-align:center">片上/片外&lt;/th>
-&lt;th style="text-align:center">缓存&lt;/th>
-&lt;th style="text-align:center">存取&lt;/th>
-&lt;th style="text-align:center">范围&lt;/th>
-&lt;th style="text-align:center">生命周期&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">寄存器&lt;/td>
-&lt;td style="text-align:center">片上&lt;/td>
-&lt;td style="text-align:center">n/a&lt;/td>
-&lt;td style="text-align:center">R/W&lt;/td>
-&lt;td style="text-align:center">一个线程&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">本地&lt;/td>
-&lt;td style="text-align:center">片外&lt;/td>
-&lt;td style="text-align:center">1.0 以上有&lt;/td>
-&lt;td style="text-align:center">R/W&lt;/td>
-&lt;td style="text-align:center">一个线程&lt;/td>
-&lt;td style="text-align:center">线程&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">共享&lt;/td>
-&lt;td style="text-align:center">片上&lt;/td>
-&lt;td style="text-align:center">n/a&lt;/td>
-&lt;td style="text-align:center">R/W&lt;/td>
-&lt;td style="text-align:center">块内所有线程&lt;/td>
-&lt;td style="text-align:center">块&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">全局&lt;/td>
-&lt;td style="text-align:center">片外&lt;/td>
-&lt;td style="text-align:center">1.0 以上有&lt;/td>
-&lt;td style="text-align:center">R/W&lt;/td>
-&lt;td style="text-align:center">所有线程+主机&lt;/td>
-&lt;td style="text-align:center">主机配置&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">常量&lt;/td>
-&lt;td style="text-align:center">片外&lt;/td>
-&lt;td style="text-align:center">有&lt;/td>
-&lt;td style="text-align:center">R&lt;/td>
-&lt;td style="text-align:center">所有线程+主机&lt;/td>
-&lt;td style="text-align:center">主机配置&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">纹理&lt;/td>
-&lt;td style="text-align:center">片外&lt;/td>
-&lt;td style="text-align:center">有&lt;/td>
-&lt;td style="text-align:center">R&lt;/td>
-&lt;td style="text-align:center">所有线程+主机&lt;/td>
-&lt;td style="text-align:center">主机配置&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="9-静态全局内存">9. 静态全局内存&lt;/h3>
-&lt;p>CPU 内存有动态分配和静态分配两种类型，从内存位置来说，动态分配在堆上进行，静态分配在站上进行，在代码上的表现是一个需要 new，malloc 等类似的函数动态分配空间，并用 delete 和 free 来释放。在 CUDA 中也有类似的动态静态之分，需要 cudaMalloc 的就是动态分配，静态分配与动态分配相同是，也需要显式的将内存 copy 到设备端。下面代码是一个静态分配的例子：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;span class="lnt">13
-&lt;/span>&lt;span class="lnt">14
-&lt;/span>&lt;span class="lnt">15
-&lt;/span>&lt;span class="lnt">16
-&lt;/span>&lt;span class="lnt">17
-&lt;/span>&lt;span class="lnt">18
-&lt;/span>&lt;span class="lnt">19
-&lt;/span>&lt;span class="lnt">20
-&lt;/span>&lt;span class="lnt">21
-&lt;/span>&lt;span class="lnt">22
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;lt;cuda_runtime.h&amp;gt;&lt;/span>&lt;span class="cp">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="cp">#include&lt;/span> &lt;span class="cpf">&amp;#34;dbg.h&amp;#34;&lt;/span>&lt;span class="cp">
-&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="cp">&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">__device__&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="n">devData&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">checkGlobalVariable&lt;/span>&lt;span class="p">()&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">printf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Device: the value of devData is %f&lt;/span>&lt;span class="se">\n&lt;/span>&lt;span class="s">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">devData&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">devData&lt;/span> &lt;span class="o">+=&lt;/span> &lt;span class="mf">2.0f&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="kt">int&lt;/span> &lt;span class="nf">main&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="n">argc&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">char&lt;/span> &lt;span class="o">**&lt;/span>&lt;span class="n">argv&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">float&lt;/span> &lt;span class="n">value&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="mf">3.14f&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">CHECK&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">cudaMemcpyToSymbol&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">devData&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">)));&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">printf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Host: copied %f to the global variable&lt;/span>&lt;span class="se">\n&lt;/span>&lt;span class="s">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">checkGlobalVariable&lt;/span>&lt;span class="o">&amp;lt;&amp;lt;&amp;lt;&lt;/span>&lt;span class="mi">1&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="mi">1&lt;/span>&lt;span class="o">&amp;gt;&amp;gt;&amp;gt;&lt;/span>&lt;span class="p">();&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">CHECK&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">cudaMemcpyFromSymbol&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">devData&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">)));&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">printf&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="s">&amp;#34;Host: the value changed by the kernel to %f&lt;/span>&lt;span class="se">\n&lt;/span>&lt;span class="s">&amp;#34;&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">CHECK&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">cudaDeviceReset&lt;/span>&lt;span class="p">());&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">return&lt;/span> &lt;span class="n">EXIT_SUCCESS&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>运行结果为：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">&lt;span class="line">&lt;span class="cl">Host: copied 3.140000 to the global variable
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Device: the value of devData is 3.140000
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">Host: the value changed by the kernel to 5.140000
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>唯一要注意的就是这一句：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaMemcpyToSymbol&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">devData&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">));&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>设备上的变量定义和主机变量定义的不同，设备变量在代码中定义的时候其实就是一个指针，这个指针指向何处，主机端是不知道的，指向的内容也不知道，想知道指向的内容，唯一的办法还是通过显式的办法即 cudaMemcpyToSymbol 传输过来。&lt;/p>
-&lt;p>此外还需要注意的是：&lt;/p>
-&lt;ol>
-&lt;li>在主机端，devData 只是一个标识符，不是设备全局内存的变量地址&lt;/li>
-&lt;li>在核函数中，devData 就是一个全局内存中的变量。主机代码不能直接访问设备变量，设备也不能访问主机变量，这就是 CUDA 编程与 CPU 多核最大的不同之处&lt;/li>
-&lt;/ol>
-&lt;p>一方面，是无法使用 cudaMemcpy 来给静态变量赋值的，除非：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">dptr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">NULL&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaGetSymbolAddress&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">dptr&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="n">devData&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaMemcpy&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="n">dptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">sizeof&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span>&lt;span class="p">),&lt;/span> &lt;span class="n">cudaMemcpyHostToDevice&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>另一方面，主机端不可以对设备变量进行取地址操作，该操作是非法的。想要得到 devData 的地址可以用下面方法：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-cpp" data-lang="cpp">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">dptr&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nb">NULL&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="n">cudaGetSymbolAddress&lt;/span>&lt;span class="p">((&lt;/span>&lt;span class="kt">void&lt;/span>&lt;span class="o">**&lt;/span>&lt;span class="p">)&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">dptr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">devData&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>当然也有一个例外，可以直接从主机引用 GPU 内存——CUDA 固定内存。&lt;/p>
-&lt;p>CUDA 运行时 API 能访问主机和设备变量，但这取决于你给正确的函数是否提供了正确的参数，使用运行时 API ，如果参数填错，尤其是主机和设备上的指针，结果是无法预测的。&lt;/p>
 &lt;h2 id="参考资料">参考资料&lt;/h2>
 &lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item></channel></rss>
