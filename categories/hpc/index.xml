@@ -1,4 +1,134 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on cuterwrite</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 01 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</title><link>https://cuterwrite.top/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post 编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南" />&lt;h1 id="编译安装-ucx-1150-与-openmpi-500详尽指南">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on cuterwrite</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 02 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_20240102-2024-02-03.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">RDMA 基本元素&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/141267386">&lt;cite>知乎专栏：3. RDMA 基本元素&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>RDMA 技术中经常使用缩略语，很容易让刚接触的人一头雾水，本篇的目的是讲解 RDMA 中最基本的元素及其含义。&lt;/p>
+&lt;p>我将常见的缩略语对照表写在前面，阅读的时候如果忘记了可以翻到前面查阅。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
+alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="wq">WQ&lt;/h2>
+&lt;p>Work Queue 简称 WQ，是 RDMA 技术中最重要的概念之一。WQ 是一个储存工作请求的队列，为了讲清楚 WQ 是什么，我们先介绍这个队列中的元素 WQE（Work Queue Element，工作队列元素）。&lt;/p>
+&lt;h3 id="wqe">WQE&lt;/h3>
+&lt;p>WQE 可以认为是一种“任务说明”，这个工作请求是软件下发给硬件的，这份说明中包含了软件所希望硬件去做的任务以及有关这个任务的详细信息。比如，某一份任务是这样的：“我想把位于地址 0x12345678 的长度为 10 字节的数据发送给对面的节点”，硬件接到任务之后，就会通过 DMA 去内存中取数据，组装数据包，然后发送。&lt;/p>
+&lt;p>WQE 的含义应该比较明确了，那么我们最开始提到的 WQ 是什么呢？它就是用来存放“任务书”的“文件夹”，WQ 里面可以容纳很多 WQE。有数据结构基础的读者应该都了解，队列是一种先进先出的数据结构，在计算机系统中非常常见，我们可以用下图表示上文中描述的 WQ 和 WQE 的关系：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
+alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>WQ 这个队列总是由软件向其中增加 WQE（入队），硬件从中取出 WQE，这就是软件给硬件“下发任务”的过程。为什么用队列而不是栈？因为进行“存”和“取“操作的分别是软件和硬件，并且需要保证用户的请求按照顺序被处理在 RDMA 技术中，所有的通信请求都要按照上图这种方式告知硬件，这种方式常被称为“Post”。&lt;/p>
+&lt;h3 id="qp">QP&lt;/h3>
+&lt;p>Queue Pair 简称 QP，就是“一对”WQ 的意思。&lt;/p>
+&lt;h3 id="sq-和-rq">SQ 和 RQ&lt;/h3>
+&lt;p>任何通信过程都要有收发两端，QP 就是一个发送工作队列和一个接受工作队列的组合，这两个队列分别称为 SQ（Send Queue）和 RQ（Receive Queue）。我们再把上面的图丰富一下，左边是发送端，右边是接收端：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>WQ 怎么不见了？SQ 和 RQ 都是 WQ，WQ 只是表示一种可以存储 WQE 的单元，SQ 和 RQ 才是实例。&lt;/p>
+&lt;p>SQ 专门用来存放发送任务，RQ 专门用来存放接收任务。在一次 SEND-RECV 流程中，发送端需要把表示一次发送任务的 WQE 放到 SQ 里面。同样的，接收端软件需要给硬件下发一个表示接收任务的 WQE，这样硬件才知道收到数据之后放到内存中的哪个位置。上文我们提到的 Post 操作，对于 SQ 来说称为 Post Send，对于 RQ 来说称为 Post Receive。&lt;/p>
+&lt;p>需要注意的是，在 RDMA 技术中&lt;strong>通信的基本单元是 QP&lt;/strong>，而不是节点。如下图所示，对于每个节点来说，每个进程都可以使用若干个 QP，而每个本地 QP 可以“关联”一个远端的 QP。我们用“节点 A 给节点 B 发送数据”并不足以完整的描述一次 RDMA 通信，而应该是类似于“节点 A 上的 QP3 给节点 C 上的 QP4 发送数据”。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03.webp"
+alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>每个节点的每个 QP 都有一个唯一的编号，称为 QPN（Queue Pair Number），通过 QPN 可以唯一确定一个节点上的 QP。&lt;/p>
+&lt;h3 id="srq">SRQ&lt;/h3>
+&lt;p>Shared Receive Queue 简称 SRQ，意为共享接收队列。概念很好理解，就是一种几个 QP 共享同一个 RQ 时，我们称其为 SRQ。以后我们会了解到，使用 RQ 的情况要远远小于使用 SQ，而每个队列都是要消耗内存资源的。当我们需要使用大量的 QP 时，可以通过 SRQ 来节省内存。如下图所示，QP2~QP4 一起使用同一个 RQ：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
+alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="cq">CQ&lt;/h2>
+&lt;p>Completion Queue 简称 CQ，意为完成队列。跟 WQ 一样，我们先介绍 CQ 这个队列当中的元素——CQE（Completion Queue Element）。可以认为 CQE 跟 WQE 是相反的概念，如果 WQE 是软件下发给硬件的“任务书”的话，那么 CQE 就是硬件完成任务之后返回给软件的“任务报告”。CQE 中描述了某个任务是被正确无误的执行，还是遇到了错误，如果遇到了错误，那么错误的原因是什么。&lt;/p>
+&lt;p>而 CQ 就是承载 CQE 的容器——一个先进先出的队列。我们把表示 WQ 和 WQE 关系的图倒过来画，就得到了 CQ 和 CQE 的关系：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
+alt="v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>每个 CQE 都包含某个 WQE 的完成信息，他们的关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03.webp"
+alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>下面我们把 CQ 和 WQ（QP）放在一起，看一下一次 SEND-RECV 操作中，软硬件的互动（图中序号顺序不表示实际时序）：&lt;/p>
+&lt;blockquote>
+&lt;p>2022/5/23：下图及后面的列表顺序有修改，将原来第 2 条的“接收端硬件从 RQ 中拿到任务书，准备接收数据”移动到“接收端收到数据，进行校验后回复 ACK 报文给发送端”之后，并且修改了描述，现在为第 6 条。&lt;/p>
+&lt;p>这里我犯了错误的点是 RQ 和 SQ 不同，是一个“被动接收”的过程，只有收到 Send 报文（或者带立即数的 Write 报文）时硬件才会消耗 RQ WQE。感谢 @连接改变世界 的指正。&lt;/p>
+&lt;/blockquote>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03.webp"
+alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol>
+&lt;li>接收端 APP 以 WQE 的形式下发一次 RECV 任务到 RQ。&lt;/li>
+&lt;li>发送端 APP 以 WQE 的形式下发一次 SEND 任务到 SQ。&lt;/li>
+&lt;li>发送端硬件从 SQ 中拿到任务书，从内存中拿到待发送数据，组装数据包。&lt;/li>
+&lt;li>发送端网卡将数据包通过物理链路发送给接收端网卡。&lt;/li>
+&lt;li>接收端收到数据，进行校验后回复 ACK 报文给发送端。&lt;/li>
+&lt;li>接收端硬件从 RQ 中取出一个任务书（WQE）。&lt;/li>
+&lt;li>接收端硬件将数据放到 WQE 中指定的位置，然后生成“任务报告”CQE，放置到 CQ 中。&lt;/li>
+&lt;li>接收端 APP 取得任务完成信息。&lt;/li>
+&lt;li>发送端网卡收到 ACK 后，生成 CQE，放置到 CQ 中。&lt;/li>
+&lt;li>发送端 APP 取得任务完成信息。&lt;/li>
+&lt;/ol>
+&lt;div class="notice notice-note" >
+&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>NOTE: 需要注意的一点是，上图中的例子是可靠服务类型的交互流程，如果是不可靠服务，那么不会有步骤 5 的 ACK 回复，而且步骤 9 以及之后的步骤会在步骤 5 之后立即触发。关于服务类型以及可靠与不可靠，我们将在《RDMA 基本服务类型》一文中讲解。&lt;/p>&lt;/div>
+&lt;p>至此，通过 WQ 和 CQ 这两种媒介，两端软硬件共同完成了一次收发过程。&lt;/p>
+&lt;h2 id="wr-和-wc">WR 和 WC&lt;/h2>
+&lt;p>说完了几个 Queue 之后，其实还有两个文章开头提到的概念没有解释，那就是 WR 和 WC（不是 Water Closet 的缩写）。&lt;/p>
+&lt;p>WR 全称为 Work Request，意为工作请求；WC 全称 Work Completion，意为工作完成。这两者其实是 WQE 和 CQE 在用户层的“映射”。因为 APP 是通过调用协议栈接口来完成 RDMA 通信的，WQE 和 CQE 本身并不对用户可见，是驱动中的概念。用户真正通过 API 下发的是 WR，收到的是 WC。&lt;/p>
+&lt;p>WR/WC 和 WQE/CQE 是相同的概念在不同层次的实体，他们都是“任务书”和“任务报告”。于是我们把前文的两个图又加了点内容：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
+alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
+alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
+&lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
+&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item><item><title>比较基于传统以太网与 RDMA 技术的通信</title><link>https://cuterwrite.top/p/ethernet-vs-rdma/</link><pubDate>Thu, 01 Feb 2024 02:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/ethernet-vs-rdma/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp" alt="Featured image of post 比较基于传统以太网与 RDMA 技术的通信" />&lt;h1 id="比较基于传统以太网与-rdma-技术的通信">比较基于传统以太网与 RDMA 技术的通信&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/139548242">&lt;cite>知乎专栏：2. 比较基于传统以太网与 RDMA 技术的通信&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>本篇的目的是通过对比一次典型的基于 TCP/IP 协议栈的以太网和 RDMA 通信的过程，直观的展示 RDMA 技术相比传统以太网的优势，尽量不涉及协议和软件实现细节。&lt;/p>
+&lt;p>假设本端的某个应用想把自己内存中的数据复制到对端某个应用可以访问的内存中（或者通俗的讲，本端要给对端发送数据），我们来看一下以太网和 RDMA 的 SEND-RECV 语义都做了哪些操作。&lt;/p>
+&lt;h2 id="传统以太网">传统以太网&lt;/h2>
+&lt;p>在描述通信过程时的软硬件关系时，我们通常将模型划分为用户层 Userspace，内核 Kernel 以及硬件 Hardware。Userspace 和 Kernel 实际上使用的是同一块物理内存，但是处于安全考虑，Linux 将内存划分为用户空间和内核空间。用户层没有权限访问和修改内核空间的内存内容，只能通过系统调用陷入内核态，Linux 的内存管理机制比较复杂，本文不展开讨论。&lt;/p>
+&lt;p>一次典型的基于传统以太网的通信过程的可以如下图所示进行分层：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03.webp"
+alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>一次收-发过程的步骤如下：&lt;/p>
+&lt;ol>
+&lt;li>发送端和接收端通过 Socket 库提供的接口建立链接（就是在两个节点间建立了一条逻辑上的道路，数据可以沿这条道路从一端发送到另一端）并分别在内存中申请好发送和接收 Buffer。&lt;/li>
+&lt;li>发送端 APP 通过 Socket 接口陷入内核态，待发送数据经过 TCP/IP 协议栈的一层层封装，最后被 CPU 复制到 Socket Buffer 中。&lt;/li>
+&lt;li>发送端通过网卡驱动，告知网卡可以发送数据了，网卡将通过 DMA 从 Buffer 中复制封装好的数据包到内部缓存中，然后将其发送到物理链路。&lt;/li>
+&lt;li>接收端网卡收到数据包后，将数据包放到接收 Buffer 中，然后 CPU 将通过内核中的 TCP/IP 协议栈对报文进行层层解析，取出有效的数据。&lt;/li>
+&lt;li>接收端 APP 通过 Socket 接口陷入内核态，CPU 将数据从内核空间复制到用户空间。&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>这个模型的数据流向大致是像上图这个样子，数据首先需要从用户空间复制一份到内核空间，这一次复制由 CPU 完成，将数据块从用户空间复制到内核空间的 Socket Buffer 中。内核中软件 TCP/IP 协议栈给数据添加各层头部和校验信息。最后网卡会通过 DMA 从内存中复制数据，并通过物理链路发送给对端的网卡。&lt;/p>
+&lt;p>而对端是完全相反的过程：硬件将数据包 DMA 拷贝到内存中，然后 CPU 会对数据包进行逐层解析和校验，最后将数据复制到用户空间。&lt;/p>
+&lt;p>上述过程中的关键点是需要 CPU 参与的把数据从用户空间拷贝到内核空间，以及同样需要 CPU 全程参与的数据包组装和解析，数据量大的情况下，这将对 CPU 将造成很大的负担。&lt;/p>
+&lt;p>下面我们看一下 RDMA 是如何将 CPU“解放”出来的。&lt;/p>
+&lt;h2 id="rdma">RDMA&lt;/h2>
+&lt;p>同样是一端发送，一端接收的场景，我们将 RDMA 的分层模型分成两部分“控制通路”和“数据通路”，控制通路需要进入内核态准备通信所需的内存资源，而数据通路指的是实际数据交互过程中的流程。这一过程的分层关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03.webp"
+alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>同 Socket 一样，我们简单描述下通信的过程：&lt;/p>
+&lt;ol>
+&lt;li>发送端和接收端分别通过控制通路陷入内核态创建好通信所需要的内存资源。&lt;/li>
+&lt;li>在数据通路上，接收端 APP 通知硬件准备接收数据，告诉硬件将接收到的数据放在哪片内存中。&lt;/li>
+&lt;li>在数据通路上，发送端 APP 通知硬件发送数据，告诉硬件待发送数据位于哪片内存中。&lt;/li>
+&lt;li>发送端 RDMA 网卡从内存中搬移数据，组装报文发送给对端。&lt;/li>
+&lt;li>对端收到报文，对其进行解析并通过 DMA 将有效载荷写入内存。然后以某种方式通知上层 APP，告知其数据已接收并妥善存放到指定位置。&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03.webp"
+alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>这一过程中的数据流向大致如上图所示。通过和 Socket 的对比，我们可以明显看到，&lt;strong>数据收发绕过了内核并且数据交换过程并不需要 CPU 参与，报文的组装和解析是由硬件完成的&lt;/strong>。&lt;/p>
+&lt;p>通过上面的对比，我们可以明显的体会到 RDMA 的优势，既将 CPU 从数据包封装和解析中解放出来，又减少了 CPU 拷贝数据的功率和时间损耗。需要注意的是，本文只描述了 SEND-RECV 流程，而 RDMA 技术所独有的，效率更高的 WRITE/READ 语义将在后续文章中介绍。&lt;/p>
+&lt;p>下一篇我们将介绍一些 RDMA 技术中的重要且基本的概念。&lt;/p></description></item><item><title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</title><link>https://cuterwrite.top/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post 编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南" />&lt;h1 id="编译安装-ucx-1150-与-openmpi-500详尽指南">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南&lt;/h1>
 &lt;h2 id="一环境准备">一、环境准备&lt;/h2>
 &lt;p>首先，请确保您的系统满足以下基本要求：&lt;/p>
 &lt;ol>
@@ -1086,510 +1216,4 @@ alt="20231202205445-2023-12-02" width="auto" loading="lazy"/>
 &lt;ol>
 &lt;li>&lt;a class="link" href="https://nest-simulator.readthedocs.io/en/latest/" target="_blank" rel="noopener"
 >NEST 官方文档&lt;/a>&lt;/li>
-&lt;/ol></description></item><item><title>CUDA 基础：内存访问模式</title><link>https://cuterwrite.top/p/cuda-base-memory-access-mode/</link><pubDate>Mon, 04 Sep 2023 00:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-access-mode/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/14ce26d6f495200cea2cfa76fefadf88eaab94e5.jpg@1256w_754h_!web-article-pic-2023-09-04.webp" alt="Featured image of post CUDA 基础：内存访问模式" />&lt;h1 id="cuda-基础内存访问模式">CUDA 基础：内存访问模式&lt;/h1>
-&lt;p>大多数设备端数据访问都是从全局内存开始的，并且多数 GPU 应用程序容易受内存带宽的限制。因此，最大限度地利用全局内存带宽是调控核函数性能的基本。如果不能正确地调控全局内存的使用，其他优化方案很可能也收效甚微。&lt;/p>
-&lt;p>为了在读写数据时达到最佳的性能，内存访问操作必须满足一定的条件。CUDA 执行模型的显著特征之一就是指令必须以线程束为单位进行发布和执行。存储操作也是同样。在执行内存指令时，线程束中的每个线程都提供了一个正在加载或存储的内存地址。在线程束的 32 个线程中，每个线程都提出了一个包含请求地址的单一内存访问请求，它并由一个或多个设备内存传输提供服务。根据线程束中内存地址的分布，内存访问可以被分成不同的模式。&lt;/p>
-&lt;h2 id="一对齐与合并访问">一、对齐与合并访问&lt;/h2>
-&lt;p>全局内存通过缓存实现加载和存储的过程如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904151729-2023-09-04.webp"
-alt="20230904151729-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>全局内存是一个逻辑内存空间，用户可以通过核函数访问它。所有应用程序数据最初存在于 DRAM 上，即物理设备内存中。核函数的内存请求通常是在 DRAM 设备和片上内存间以 128 字节或 32 字节内存事务来实现。&lt;/p>
-&lt;p>所有对全局内存的访问都会通过二级缓存，也有许多访问会通过一级缓存，这取决于访问类型和 GPU 架构。如果这两级缓存都被用到，那么内存访问是由一个 128 字节的内存事务实现的。如果只使用二级缓存，那么这个内存访问是由一个 32 字节的内存事务来实现的。对全局内存缓存其架构，如果允许使用一级缓存，那么可以在编译时选择启用或禁用一级缓存。&lt;/p>
-&lt;p>一行一级缓存是 128 字节，它映射到设备内存中一个 128 字节 的对齐段。如果线程束中的每个线程请求一个 4 字节的值，那么每次请求就会获取 128 字节的数据，这恰好与缓存行和设备内存段的大小相契合。&lt;/p>
-&lt;p>因此在优化应用程序时，需要注意设备内存访问的两个特性：&lt;/p>
-&lt;ul>
-&lt;li>对齐内存访问&lt;/li>
-&lt;li>合并内存访问&lt;/li>
-&lt;/ul>
-&lt;p>我们把一次内存请求：也就是从核函数发起请求，到硬件响应返回数据这个过程称为一个内存事务（加载和存储都行）。&lt;/p>
-&lt;p>当一个内存事务的首个访问地址是缓存粒度（32 或 128 字节）的偶数倍的时候：比如二级缓存 32 字节的偶数倍 64，128 字节的偶数倍 256 的时候，这个时候被称为对齐内存访问，非对齐访问就是除上述的其他情况，&lt;strong>非对齐的内存访问会造成带宽浪费&lt;/strong>。&lt;/p>
-&lt;p>当一个线程束内的线程访问的内存都在一个内存块里的时候，就会出现合并访问。&lt;/p>
-&lt;p>&lt;strong>对齐合并访问的状态是理想化的，也是最高速的访问方式&lt;/strong>，当线程束内的所有线程访问的数据在一个内存块，并且数据是从内存块的首地址开始被需要的，那么对齐合并访问出现了。为了最大化全局内存访问的理想状态，尽量将线程束访问内存组织成对齐合并的方式，这样的效率是最高的。下面看一个例子。&lt;/p>
-&lt;p>一个线程束加载数据，使用一级缓存，并且这个事务所请求的所有数据在一个 128 字节的对齐的地址段上，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152703-2023-09-04.webp"
-alt="20230904152703-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>上面蓝色表示全局内存，下面橙色是线程束要的数据，绿色就是对齐的地址段。&lt;/p>
-&lt;p>而如果一个事务加载的数据分布在不一个对齐的地址段上，就会有以下两种情况：&lt;/p>
-&lt;ol>
-&lt;li>连续的，但是不在一个对齐的段上，比如，请求访问的数据分布在内存地址 1~128 ，那么 0~127 和 128~255 这两段数据要传递两次到 SM 。&lt;/li>
-&lt;li>不连续的，也不在一个对齐的段上，比如，请求访问的数据分布在内存地址 0~63 和 128~191 上，明显这也需要两次加载。&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152901-2023-09-04.webp"
-alt="20230904152901-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>上图就是典型的一个线程束，数据分散开了，thread 0 的请求在 128 之前，后面还有请求在 256 之后，所以需要三个内存事务，而利用率，也就是从主存取回来的数据被使用到的比例，只有 $\frac{128}{128 \times 3}$ 的比例。这个比例低会造成带宽的浪费，最极端的表现，就是如果每个线程的请求都在不同的段，也就是一个 128 字节的事务只有 1 个字节是有用的，那么利用率只有 $\frac{1}{128}$ 。&lt;/p>
-&lt;p>这里总结一下内存事务的优化关键：&lt;strong>用最少的事务次数满足最多的内存请求&lt;/strong>。事务数量和吞吐量的需求随设备的计算能力变化。&lt;/p>
-&lt;h2 id="二全局内存读取">二、全局内存读取&lt;/h2>
-&lt;p>在 SM 中，数据通过以下 3 种缓存 / 缓冲路径进行传输，具体使用何种方式取决于引用了哪种类型的设备内存：&lt;/p>
-&lt;ul>
-&lt;li>一级和二级缓存&lt;/li>
-&lt;li>常量缓存&lt;/li>
-&lt;li>只读缓存&lt;/li>
-&lt;/ul>
-&lt;p>一 / 二级缓存是默认路径。想要通过其它两种路径传输数据需要&lt;strong>应用程序显式说明&lt;/strong>，但想要提升性能还要取决于使用地访问模式。全局内存加载操作是否会通过一级缓存取决于两个因素：&lt;/p>
-&lt;ul>
-&lt;li>设备的计算能力：比较老的设备可能没有一级缓存&lt;/li>
-&lt;li>编译器选项&lt;/li>
-&lt;/ul>
-&lt;p>在 Fermi GPU 和 Kepler K40 及以后的 GPU （计算能力为 3.5 及以上）中，可以通过编译器标志启用或禁用全局内存负载的一级缓存。默认情况下，在 Fermi 设备上对于全局内存加载可以使用一级缓存，在 K40 及以上 GPU 中禁用。以下标志通知编译器禁用一级缓存：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">&lt;span class="line">&lt;span class="cl">-Xptxas -dlcm=cg
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>如果一级缓存被禁用，所有对全局内存的加载请求将直接进入到二级缓存；如果二级缓存缺失，则由 DRAM 完成请求。每一次内存事务可由一个、两个或四个部分执行，每个部分有 32 个字节。一级缓存也可以使用下列标识符直接启用:&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-text" data-lang="text">&lt;span class="line">&lt;span class="cl">-Xptxas -dlcm=ca
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>设置这个标志后，全局内存加载请求首先尝试通过一级缓存。如果一级缓存缺失，该请求转向二级缓存。如果二级缓存缺失，则请求由 DRAM 完成。在这种模式下，一个内存加载请求由一个 128 字节的设备内存事务实现。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904164822-2023-09-04.webp"
-alt="20230904164822-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>在 Kepler K10、K20 和 K20X GPU 中一级缓存不用来缓存全局内存加载。一级缓存专门用于&lt;strong>缓存寄存器溢出到本地内存中的数据&lt;/strong>。&lt;/p>
-&lt;p>内存加载可以分为两类：&lt;/p>
-&lt;ul>
-&lt;li>缓存加载&lt;/li>
-&lt;li>没有缓存的加载&lt;/li>
-&lt;/ul>
-&lt;p>内存访问有以下特点：&lt;/p>
-&lt;ul>
-&lt;li>是否使用缓存：一级缓存是否介入加载过程&lt;/li>
-&lt;li>对齐与非对齐的：如果访问的第一个地址是 32 的倍数&lt;/li>
-&lt;li>合并与非合并，访问连续数据块则是合并的&lt;/li>
-&lt;/ul>
-&lt;h3 id="1-缓存加载">1. 缓存加载&lt;/h3>
-&lt;p>下面是使用一级缓存的加载过程&lt;/p>
-&lt;ol>
-&lt;li>对齐合并的访问，总线利用率 $100\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165226-2023-09-04.webp"
-alt="20230904165226-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="2">
-&lt;li>对齐的，但是不是连续的，每个线程访问的数据都在一个块内，但是位置是交叉的，总线利用率 $100\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165245-2023-09-04.webp"
-alt="20230904165245-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="3">
-&lt;li>连续非对齐的，线程束请求一个连续的非对齐的，32 个 4 字节数据，那么会出现，数据横跨两个块，但是没有对齐，当启用一级缓存的时候，就要两个 128 字节的事务来完成，总线利用率为 $50\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165306-2023-09-04.webp"
-alt="20230904165306-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="4">
-&lt;li>线程束所有线程请求同一个地址，那么肯定落在一个缓存行范围内，那么如果按照请求的是 4 字节数据来说，总线利用率是 $\frac{4}{128}=3.125\% $&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165516-2023-09-04.webp"
-alt="20230904165516-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="5">
-&lt;li>比较坏的情况，前面提到过最坏的，就是每个线程束内的线程请求的都是不同的缓存行内，这里比较坏的情况就是，所有数据分布在 $N$ 个缓存行，其中 $1\leq N \leq 32$ ，那么请求 32 个 4 字节的数据，就需要 $N$ 个事务来完成，总线利用率也是 $\frac{1}{N}$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165524-2023-09-04.webp"
-alt="20230904165524-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>CPU 和 GPU 的一级缓存有显著的差异， GPU 的一级缓存可以通过编译选项等控制，CPU 不可以，而且 CPU 的一级缓存是的替换算法是有使用频率和时间局部性的， GPU 则没有。&lt;/p>
-&lt;h3 id="2-没有缓存的加载">2. 没有缓存的加载&lt;/h3>
-&lt;p>没有缓存的加载是指的没有通过一级缓存，二级缓存则是不得不经过的。&lt;/p>
-&lt;p>当不使用一级缓存的时候，&lt;strong>内存事务的粒度变为 32 字节&lt;/strong>，更细粒度的加载可以为非对齐或非合并的内存访问带来更好的总线利用率。&lt;/p>
-&lt;ol>
-&lt;li>对齐合并访问 128 字节，不用说，还是最理想的情况，使用 4 个段，总线利用率 $100\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170430-2023-09-04.webp"
-alt="20230904170430-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="2">
-&lt;li>对齐不连续访问 128 字节，都在四个段内，且互不相同，这样的总线利用率也是 $100\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170454-2023-09-04.webp"
-alt="20230904170454-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="3">
-&lt;li>连续不对齐，一个段 32 字节，所以，一个连续的 128 字节的请求，即使不对齐，最多也不会超过五个段，总线利用率至少为 $\frac{4}{5}=80\%$&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170542-2023-09-04.webp"
-alt="20230904170542-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="4">
-&lt;li>所有线程访问一个 4 字节的数据，那么此时的总线利用率是 $\frac{4}{32} = 12.5\%$ ，在这种情况下，非缓存加载性能也是优于缓存加载的性能。&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170609-2023-09-04.webp"
-alt="20230904170609-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="5">
-&lt;li>最坏的情况：所有目标数据分散在内存的各个角落，那么需要 $N$ 个内存段，由于请求的 128 个字节最多落在 $N$ 个 32 字节的内存分段内而不是 $N$ 个 128 字节的缓存行内，所以相比于缓存加载，即便是最坏的情况也有所改善。需要注意这里比较的前提是$N$ 不变，然而在实际情况下，当使用大粒度的缓存行时，$N$ 有可能会减少。&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170847-2023-09-04.webp"
-alt="20230904170847-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;h3 id="3-只读缓存">3. 只读缓存&lt;/h3>
-&lt;p>只读缓存最初是预留给纹理内存加载用的。对计算能力为 3.5 及以上的 GPU 来说，只读缓存也支持使用全局内存加载代替一级缓存。&lt;/p>
-&lt;p>只读缓存的加载粒度是 32 个字节。通常，对分散读取来说，这些更细粒度的加载要优于一级缓存。&lt;/p>
-&lt;p>有两种方式可以指导内存通过只读缓存进行读取:&lt;/p>
-&lt;ul>
-&lt;li>使用函数 __ldg&lt;/li>
-&lt;li>在间接引用的指针上使用修饰符&lt;/li>
-&lt;/ul>
-&lt;p>例如：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;span class="lnt">6
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">copyKernel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">in&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">out&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">int&lt;/span> &lt;span class="n">idx&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">blockDim&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">out&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">idx&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="nf">__ldg&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="o">&amp;amp;&lt;/span>&lt;span class="n">in&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">idx&lt;/span>&lt;span class="p">]);&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>然后就能强制使用只读缓存了。&lt;/p>
-&lt;p>也可以将常量 restrict 修饰符应用到指针上。这些修饰符帮助 nvcc 编译器识别无别名指针(即专门用来访问特定数组的指针)。nvcc 将自动通过只读缓存指导无别名指针的加载。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">copyKernel&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">int&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">__restrict__&lt;/span> &lt;span class="n">out&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">int&lt;/span>&lt;span class="o">*&lt;/span> &lt;span class="n">__restrict__&lt;/span> &lt;span class="n">in&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">int&lt;/span> &lt;span class="n">idx&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">blockDim&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">out&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">idx&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">in&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">idx&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;h2 id="三全局内存写入">三、全局内存写入&lt;/h2>
-&lt;p>内存的存储操作相对简单。一级缓存不能用在 Fermi 或 Kepler GPU 上进行存储操作，在发送到设备内存之间存储操作&lt;strong>只通过二级缓存&lt;/strong>。存储操作在 &lt;strong>32 个字节段&lt;/strong>的粒度上被执行。内存事务可以同时被分为一段、两段或四段。例如，如果两个地址同属于一个 128 字节区域，但是不属于一个对齐的 64 字节区域，则会执行一个四段事务（也就是说，执行一个四段事务比执行两个一段事务效果更好）。&lt;/p>
-&lt;ol>
-&lt;li>对齐的，访问一个连续的 128 字节范围。存储操作使用一个四段事务完成：&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172018-2023-09-04.webp"
-alt="20230904172018-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="2">
-&lt;li>分散在一个 192 字节的范围内，不连续，使用 3 个一段事务完成：&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172036-2023-09-04.webp"
-alt="20230904172036-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="3">
-&lt;li>对齐的，在一个 64 字节的范围内，使用一个两段事务完成：&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172052-2023-09-04.webp"
-alt="20230904172052-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="4">
-&lt;li>非对齐写入示例与读取情况类似，且更简单，因为始终不经过一级缓存，这里就略过了。&lt;/li>
-&lt;/ol>
-&lt;h2 id="四结构体数组与数组结构体">四、结构体数组与数组结构体&lt;/h2>
-&lt;p>数组结构体（AoS）和结构体数组（SoA）是 C 语言中常见的两种数组组织方式。当存储结构化数据集时，它们代表了可以采用的两种强大的数据组织方式（结构体和数组）。&lt;/p>
-&lt;p>下面是存储成对的浮点数据数据集的例子。首先，考虑这些成对数据元素集如何使用 AoS 方法进行存储。如下定义一个结构体，命名为 innerStruct ：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="k">struct&lt;/span> &lt;span class="n">innerStruct&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">float&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">float&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">};&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>然后，按照下面的方法定义这些结构体数组。这是利用 AoS 方式来组织数据的。它存储的是空间上相邻的数据，这在 CPU 上会有良好的缓存局部性。&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="k">struct&lt;/span> &lt;span class="n">innerStruct&lt;/span> &lt;span class="n">myAoS&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">N&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>接下来，考虑使用 SoA 方法来存储数据：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;span class="lnt">2
-&lt;/span>&lt;span class="lnt">3
-&lt;/span>&lt;span class="lnt">4
-&lt;/span>&lt;span class="lnt">5
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="k">struct&lt;/span> &lt;span class="n">innerArray&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">float&lt;/span> &lt;span class="n">x&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">N&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">float&lt;/span> &lt;span class="n">y&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">N&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">};&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这里，在原结构体中每个字段的所有值都被分到各自的数组中。这不仅能将相邻数据点紧密存储起来，也能将跨数组的独立数据点存储起来。可以使用如下结构体定义一个变量：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="k">struct&lt;/span> &lt;span class="n">innerArray&lt;/span> &lt;span class="n">mySoA&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>下图说明了 AoS 和 SoA 方法的内存布局。用 AoS 模式在 GPU 上存储示例数据并执行一个只有 $x$ 字段的应用程序，将导致 $50\%$ 的带宽损失，因为 $y$ 值在每 32 个字节段或 128 个字节缓存行上隐式地被加载。 AoS 格式也在不需要的 $y$ 值上浪费了二级缓存空间。&lt;/p>
-&lt;p>用 SoA 模式存储数据充分利用了 GPU 的内存带宽。由于没有相同字段元素的交叉存取， GPU 上的 SoA 布局提供了合并内存访问，并且可以对全局内存实现更高效的利用。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904173436-2023-09-04.webp"
-alt="20230904173436-2023-09-04" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>当 32 个线程同时访问的时候， SoA 的访问就是连续的，而 AoS 则是不连续的。&lt;/p>
-&lt;p>对比 AoS 和 SoA 的内存布局，我们能得到下面结论：&lt;/p>
-&lt;ul>
-&lt;li>并行编程范式，尤其是 SIMD（单指令多数据）对 SoA 更友好。 CUDA 中普遍倾向于 SoA 因为这种内存访问可以有效地合并。&lt;/li>
-&lt;/ul>
-&lt;h2 id="五性能调整">五、性能调整&lt;/h2>
-&lt;p>优化设备内存带宽利用率有两个目标：&lt;/p>
-&lt;ol>
-&lt;li>对齐及合并内存访问，以减少带宽的浪费&lt;/li>
-&lt;li>足够的并发内存操作，以隐藏内存延迟&lt;/li>
-&lt;/ol>
-&lt;p>实现并发内存访问量最大化是通过以下方式得到的：&lt;/p>
-&lt;ol>
-&lt;li>增加每个线程中执行独立内存操作的数量&lt;/li>
-&lt;li>对核函数启动的执行配置进行试验，已充分体现每个 SM 的并行性&lt;/li>
-&lt;/ol>
-&lt;p>按照这个思路对程序进行优化，则有两种方法：展开技术和增大并行性。&lt;/p>
-&lt;h3 id="1-展开技术">1. 展开技术&lt;/h3>
-&lt;p>包含了内存操作的展开循环增加了更独立的内存操作。考虑如下 readOffsetUnroll4 核函数，每个线程都执行 4 个独立的内存操作。因为每个加载过程都是独立的，所以可以调用更多的并发内存访问：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
-&lt;/span>&lt;span class="lnt"> 2
-&lt;/span>&lt;span class="lnt"> 3
-&lt;/span>&lt;span class="lnt"> 4
-&lt;/span>&lt;span class="lnt"> 5
-&lt;/span>&lt;span class="lnt"> 6
-&lt;/span>&lt;span class="lnt"> 7
-&lt;/span>&lt;span class="lnt"> 8
-&lt;/span>&lt;span class="lnt"> 9
-&lt;/span>&lt;span class="lnt">10
-&lt;/span>&lt;span class="lnt">11
-&lt;/span>&lt;span class="lnt">12
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="n">__global__&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="nf">readOffsetUnroll4&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">A&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">B&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">float&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">C&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">n&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">offset&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">blockIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">threadIdx&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">k&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">i&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">offset&lt;/span>&lt;span class="p">;&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="k">if&lt;/span> &lt;span class="p">(&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">3&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span> &lt;span class="o">&amp;lt;&lt;/span> &lt;span class="n">n&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">{&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">C&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">C&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">B&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">C&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">2&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">2&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">B&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">2&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="n">C&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">i&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">3&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">=&lt;/span> &lt;span class="n">A&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">3&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">]&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="n">B&lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="n">k&lt;/span> &lt;span class="o">+&lt;/span> &lt;span class="mi">3&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">blockDim&lt;/span>&lt;span class="p">.&lt;/span>&lt;span class="n">x&lt;/span>&lt;span class="p">];&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="p">}&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>启用一级缓存编译选项：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-shell" data-lang="shell">&lt;span class="line">&lt;span class="cl">nvcc -O3 readSegmentUnroll.cu -o readSegmentUnroll -Xptxas -dlcm&lt;span class="o">=&lt;/span>ca
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>结果表明，展开技术对性能有非常好的影响，甚至比地址对齐还要好。对于 I/O 密集型的核函数，充分说明内存访问并行有很高的优先级。&lt;/p>
-&lt;h3 id="2-增大并行性">2. 增大并行性&lt;/h3>
-&lt;p>可以通过调整块的大小来实现并行性调整：&lt;/p>
-&lt;ul>
-&lt;li>线程块最内层维度的大小对性能起着关键的作用&lt;/li>
-&lt;li>在所有其它情况下，线程块的数量越多，一般性能越高。因此，增大并行性仍然是性能优化的一个重要因素。&lt;/li>
-&lt;/ul>
-&lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存管理</title><link>https://cuterwrite.top/p/cuda-base-memory-manage/</link><pubDate>Sat, 02 Sep 2023 05:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-manage/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" alt="Featured image of post CUDA 基础：内存管理" />&lt;h1 id="cuda-基础内存管理">CUDA 基础：内存管理&lt;/h1>
-&lt;p>CUDA 编程的内存管理与 C 语言的类似，需要程序员显式地管理主机和设备之间的数据移动。随着 CUDA 版本的升级，NVIDIA 正系统地实现主机和设备内存空间的统一，但对于大多数应用程序来说，仍需要手动移动数据。本文重点在于如何使用 CUDA 函数来显式地管理内存和数据移动。&lt;/p>
-&lt;ul>
-&lt;li>分配和释放设备内存&lt;/li>
-&lt;li>在主机和设备之间传输数据&lt;/li>
-&lt;/ul>
-&lt;p>为了达到最优性能，CUDA 提供了在主机端准备设备内存的函备内存的函数，并且显式地向设备传输数据和从设备中获取数据。&lt;/p>
-&lt;h2 id="一内存分配和释放">一、内存分配和释放&lt;/h2>
-&lt;p>CUDA 编程模型假设了一个包含一个主机和一个设备的异构系统，每一个异构系统都有自己独立的内存空间。核函数在设备内存空间中运行，CUDA 运行时提供函数以分配和释放设备内存。用户可以在主机上使下列函数分配全局内存：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaMalloc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span>&lt;span class="n">devPtr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">size_t&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数在设备上分配了 count 字节的全局内存，并用 devptr 指针返回该内存的地址。所分配的内存支持任何变量类型，包括整型、浮点类型变量、布尔类型等。如果 cudaMalloc 函数执行失败则返回 cudaErrorMemoryAllocation 。在已分配的全局内存中的值不会被清除。用户需要用从主机上传输的数据来填充所分配的全局内存，或用下列函数将其初始化：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaMemset&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">devPtr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">value&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">size_t&lt;/span> &lt;span class="n">count&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数用存储在变量 value 中的值来填充从设备内存地址 devPtr 处开始的 count 字节。&lt;/p>
-&lt;p>一旦一个应用程序不再使用已分配的全局内存，那么可以以下代码释放该内存空间：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaFree&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">devPtr&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数释放了 devPtr 指向的全局内存，该内存必须在此前使用了一个设备分配函数（如 cudaMalloc）来进行分配。否则，它将返回一个错误 cudaErrorInvalidDevicePointer 。如果地址空间已经被释放，那么 cudaFree 也返回一个错误。&lt;/p>
-&lt;p>设备内存的分配和释放操作成本较高，所以应用程序应&lt;strong>重利用设备内存&lt;/strong>，以减少对整体性能的影响。&lt;/p>
-&lt;h2 id="二内存传输">二、内存传输&lt;/h2>
-&lt;p>一旦分配好了全局内存，就可以使用下列函数从主机向设备传输数据：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaMemcpy&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">dst&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="k">const&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span>&lt;span class="n">src&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">size_t&lt;/span> &lt;span class="n">count&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="n">cudaMemcpyKind&lt;/span> &lt;span class="n">kind&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数从内存位置 src 复制了 count 字节到内存位置 dst 。变量 kind 指定了复制的方向，可以有下列取值：&lt;/p>
-&lt;ul>
-&lt;li>cudaMemcpyHostToHost：从主机内存复制到主机内存&lt;/li>
-&lt;li>cudaMemcpyHostToDevice：从主机内存复制到设备内存&lt;/li>
-&lt;li>cudaMemcpyDeviceToHost：从设备内存复制到主机内存&lt;/li>
-&lt;li>cudaMemcpyDeviceToDevice：从设备内存复制到设备内存&lt;/li>
-&lt;/ul>
-&lt;p>如果指针 dst 和 src 与 kind 指定的复制方向不一致，那么 cudaMemcpy 的行为就是未定义行为。这个函数在大多数情况下都是同步的。&lt;/p>
-&lt;p>下图为 CPU 内存和 GPU 内存间的连接性能。从图中可以看到 GPU 芯片和板载 GDDR5 GPU 内存之间的理论峰值带宽非常高，对于 Fermi C2050 GPU 来说为 144GB/s 。CPU 和 GPU 之间通过 PCIe Gen2 总线相连，这种连接的理论带宽要低得多，为 8GB/s（ PCIe Gen3 总线最大理论限制值是 16GB/s）。这种差距意味着如果管理不当的话，主机和设备间的数据传输会降低应用程序的整体性能。因此，CUDA 编程的一个基本原则应是尽可能地减少主机与设备之间的传输。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230902212815-2023-09-02.webp"
-alt="20230902212815-2023-09-02" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;h2 id="三固定内存">三、固定内存&lt;/h2>
-&lt;p>分配的主机内存默认是 pageable（可分页），它的意思也就是因页面错误导致的操作，该操作按照操作系统的要求将主机虚拟内存上的数据移动到不同的物理位置。虚拟内存给人一种比实际可用内存大得多的假象，就如同一级缓存好像比实际可用的片上内存大得多一样。&lt;/p>
-&lt;p>GPU &lt;strong>不能在可分页主机内存上安全地访问数据&lt;/strong>，因为当主机操作系统在物理位置上移动该数据时，它无法控制。当从可分页主机内存传输数据到设备内存时，CUDA 驱动程序首先分配&lt;strong>临时页面锁定的或固定的&lt;/strong>主机内存，将主机源数据复制到固定内存中，然后从固定内存传输数据给设备内存，如下图左边部分所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903003123-2023-09-03.webp"
-alt="20230903003123-2023-09-03" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>左边是正常分配内存，传输过程是：锁页-复制到固定内存-复制到设备&lt;/p>
-&lt;p>右边是分配时就是固定内存，直接传输到设备上。&lt;/p>
-&lt;p>下面函数用来分配固定内存：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaMallocHost&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="n">devPtr&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="kt">size_t&lt;/span> &lt;span class="n">count&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数分配了 count 字节的主机内存，这些内存是页面锁定的并且对设备来说是可访问的。由于固定内存能被设备直接访问，所以它能用比可分页内存高得多的带宽进行读写。然而，分配过多的固定内存可能会降低主机系统的性能，因为它减少了用于存储虚拟内存数据的可分页内存的数量，其中分页内存对主机系统是可用的。&lt;/p>
-&lt;p>固定的主机内存释放使用：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaFreeHost&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">devPtr&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>总的来说，固定内存的释放和分配成本比可分页内存要高很多，但是传输速度更快，所以对于大规模数据，固定内存效率更高。应该尽量使用流来使内存传输和计算之间同时进行。&lt;/p>
-&lt;h2 id="四零拷贝内存">四、零拷贝内存&lt;/h2>
-&lt;p>通常来说，主机不能直接访问设备变量，同时设备也不能直接访问主机变量。但有一个例外：零拷贝内存。&lt;strong>主机和设备都可以访问零拷贝内存&lt;/strong>。&lt;/p>
-&lt;p>GPU 线程可以直接访问零拷贝内存。在 CUDA 核函数中使用零拷贝内存有以下几个优势。&lt;/p>
-&lt;ul>
-&lt;li>当设备内存不足时可利用主机内存&lt;/li>
-&lt;li>避免主机和设备间的显式数据传输&lt;/li>
-&lt;li>提高 PCIe 传输率&lt;/li>
-&lt;/ul>
-&lt;p>当使用零拷贝内存来共享主机和设备间的数据时，用户必须同步主机和设备间的内存访问，同时更改主机和设备的零拷贝内存中的数据将导致不可预知的后果。&lt;/p>
-&lt;p>零拷贝内存是固定内存，不可分页，该内存映射到设备地址空间中。用户可以通过下列函数创建零拷贝内存：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaHostAlloc&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="n">pHost&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="kt">size_t&lt;/span> &lt;span class="n">count&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">flags&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>最后一个标志参数，可以选择以下值：&lt;/p>
-&lt;ul>
-&lt;li>cudaHostAllocDefalt：和 cudaMallocHost 函数一致&lt;/li>
-&lt;li>cudaHostAllocPortable：返回能被所有 CUDA 上下文使用的固定内存&lt;/li>
-&lt;li>cudaHostAllocMapped：产生零拷贝内存，可以实现主机写入和设备读取被映射到设备地址空间中的主机内存&lt;/li>
-&lt;li>cudaHostAllocWriteCombined：返回写结合内存，在某些设备上这种内存传输效率更高&lt;/li>
-&lt;/ul>
-&lt;p>注意，零拷贝内存虽然不需要显式的传递到设备上，但是设备还不能通过 pHost 直接访问对应的内存地址，设备需要访问主机上的零拷贝内存，需要先获得另一个地址，这个地址帮助设备访问到主机对应的内存，方法是：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaHostGetDevicePointer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="n">pDevice&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">pHost&lt;/span>&lt;span class="p">,&lt;/span>&lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">flags&lt;/span>&lt;span class="p">)&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>pDevice 就是设备上访问主机零拷贝内存的指针了，此处 flags 必须设置为 0 。&lt;/p>
-&lt;p>在进行频繁的读写操作时，使用零拷贝内存作为设备内存的补充将显著降低性能。因为每一次映射到内存的传输必须经过 PCIe 总线。与全局内存相比，延迟也显著增加。&lt;/p>
-&lt;p>注意不要过度使用零拷贝内存。由于其延迟较高，从零拷贝内存中读取设备核函数可能很慢。&lt;/p>
-&lt;h2 id="五统一虚拟寻址">五、统一虚拟寻址&lt;/h2>
-&lt;p>计算能力为 2.0 及以上版本的设备支持一种特殊的寻址方式，称为&lt;strong>统一虚拟寻址（UVA）&lt;/strong>。UVA，在 CUDA 4.0 中被引入，支持 64 位 Linux 系统。有了 UVA，主机内存和设备内存可以共享同一个虚拟地址空间，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903004449-2023-09-03.webp"
-alt="20230903004449-2023-09-03" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;p>UVA 之前，我们要管理所有的设备和主机内存，尤其是它们的指针，零拷贝内存尤其麻烦。有了 UVA，由指针指向的内存空间对应用程序代码来说是透明的。&lt;/p>
-&lt;p>通过 UVA，由 cudaHostAlloc 分配的固定主机内存具有相同的主机和设备指针。因此，可以将返回的指针直接传递给核函数。&lt;/p>
-&lt;p>前面的零拷贝内存，可以知道以下几个方面：&lt;/p>
-&lt;ul>
-&lt;li>分配映射的固定主机内存&lt;/li>
-&lt;li>使用 CUDA 运行时函数获取映射到固定内存的设备指针&lt;/li>
-&lt;li>将设备指针传递给核函数&lt;/li>
-&lt;/ul>
-&lt;p>有了 UVA ，可以不用上面的那个获得设备上访问零拷贝内存的函数了：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaHostGetDevicePointer&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="n">pDevice&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">void&lt;/span> &lt;span class="o">*&lt;/span> &lt;span class="n">pHost&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">unsigned&lt;/span> &lt;span class="n">flags&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>因为 UVA 之后，主机和设备的指针都是一样的，所以可以直接传递给核函数了。&lt;/p>
-&lt;h2 id="六统一内存寻址">六、统一内存寻址&lt;/h2>
-&lt;p>在 CUDA 6.0 中，引入了&lt;strong>统一内存寻址&lt;/strong>这一新特性，它用于简化 CUDA 编程模型中的内存管理。统一内存中创建了一个托管内存池，内存池中已分配的空间可以用相同的内存地址（即指针）在 CPU 和 GPU 上进行访问。底层系统在统一内存空间中自动在主机和设备之间进行数据传输。这种数据传输对应用程序是透明的，这大大简化了程序代码。&lt;/p>
-&lt;p>统一内存寻址依赖于 UVA 的支持，但它们是完全不同的技术。 UVA 为系统中的所有处理器提供了一个单一的虚拟内存地址空间。但是， UVA 不会自动将数据从一个物理位置转移到另一个位置，这是统一内存寻址的一个特有功能。&lt;/p>
-&lt;p>统一内存寻址提供了一个&lt;strong>单指针到数据&lt;/strong>模型，在概念上它类似于零拷贝内存。但是零拷贝内存在主机内存中进行分配，因此，由于受到在 PCIe 总线上访问零拷贝内存的影响，核函数的性能将具有较高的延迟。另一方面，统一内存寻址将内存和执行空间分离，因此可以根据需要将数据透明地传输到主机或设备上，以提升局部性和性能。&lt;/p>
-&lt;p>托管内存指的是由底层系统自动分配的统一内存，未托管内存就是用户自己分配的内存，这时候对于核函数，可以传递给它两种类型的内存，已托管和未托管内存，可以同时传递。&lt;/p>
-&lt;p>托管内存可以是静态的，也可以是动态的，添加 managed 关键字修饰托管内存变量。静态声明的托管内存作用域是文件，这一点可以注意一下。&lt;/p>
-&lt;p>托管内存分配方式：&lt;/p>
-&lt;div class="highlight">&lt;div class="chroma">
-&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
-&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
-&lt;td class="lntd">
-&lt;pre tabindex="0" class="chroma">&lt;code class="language-c" data-lang="c">&lt;span class="line">&lt;span class="cl">&lt;span class="kt">cudaError_t&lt;/span> &lt;span class="nf">cudaMallocManaged&lt;/span>&lt;span class="p">(&lt;/span>&lt;span class="kt">void&lt;/span> &lt;span class="o">**&lt;/span> &lt;span class="n">devPtr&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">size_t&lt;/span> &lt;span class="n">size&lt;/span>&lt;span class="p">,&lt;/span> &lt;span class="kt">unsigned&lt;/span> &lt;span class="kt">int&lt;/span> &lt;span class="n">flags&lt;/span>&lt;span class="p">);&lt;/span>
-&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
-&lt;/div>
-&lt;/div>&lt;p>这个函数分配 size 字节的托管内存，并用 devPtr 返回一个指针。该指针在所有设备和主机上都是有效的。使用托管内存的程序行为与使用未托管内存的程序副本行为在功能上是一致的。但是，使用托管内存的程序可以利用自动数据传输和重复指针消除功能。&lt;/p>
-&lt;p>在 CUDA 6.0 中，设备代码不能调用 cudaMallocManaged 函数。所有的托管内存必须在主机端动态声明或者在全局范围内静态声明。&lt;/p>
-&lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item></channel></rss>
+&lt;/ol></description></item></channel></rss>

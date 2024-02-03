@@ -1,4 +1,134 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RDMA on cuterwrite</title><link>https://cuterwrite.top/tags/rdma/</link><description>Recent content in RDMA on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Mon, 01 Jan 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/rdma/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RDMA on cuterwrite</title><link>https://cuterwrite.top/tags/rdma/</link><description>Recent content in RDMA on cuterwrite</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 02 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/rdma/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_20240102-2024-02-03.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">RDMA 基本元素&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/141267386">&lt;cite>知乎专栏：3. RDMA 基本元素&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>RDMA 技术中经常使用缩略语，很容易让刚接触的人一头雾水，本篇的目的是讲解 RDMA 中最基本的元素及其含义。&lt;/p>
+&lt;p>我将常见的缩略语对照表写在前面，阅读的时候如果忘记了可以翻到前面查阅。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
+alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="wq">WQ&lt;/h2>
+&lt;p>Work Queue 简称 WQ，是 RDMA 技术中最重要的概念之一。WQ 是一个储存工作请求的队列，为了讲清楚 WQ 是什么，我们先介绍这个队列中的元素 WQE（Work Queue Element，工作队列元素）。&lt;/p>
+&lt;h3 id="wqe">WQE&lt;/h3>
+&lt;p>WQE 可以认为是一种“任务说明”，这个工作请求是软件下发给硬件的，这份说明中包含了软件所希望硬件去做的任务以及有关这个任务的详细信息。比如，某一份任务是这样的：“我想把位于地址 0x12345678 的长度为 10 字节的数据发送给对面的节点”，硬件接到任务之后，就会通过 DMA 去内存中取数据，组装数据包，然后发送。&lt;/p>
+&lt;p>WQE 的含义应该比较明确了，那么我们最开始提到的 WQ 是什么呢？它就是用来存放“任务书”的“文件夹”，WQ 里面可以容纳很多 WQE。有数据结构基础的读者应该都了解，队列是一种先进先出的数据结构，在计算机系统中非常常见，我们可以用下图表示上文中描述的 WQ 和 WQE 的关系：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
+alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>WQ 这个队列总是由软件向其中增加 WQE（入队），硬件从中取出 WQE，这就是软件给硬件“下发任务”的过程。为什么用队列而不是栈？因为进行“存”和“取“操作的分别是软件和硬件，并且需要保证用户的请求按照顺序被处理在 RDMA 技术中，所有的通信请求都要按照上图这种方式告知硬件，这种方式常被称为“Post”。&lt;/p>
+&lt;h3 id="qp">QP&lt;/h3>
+&lt;p>Queue Pair 简称 QP，就是“一对”WQ 的意思。&lt;/p>
+&lt;h3 id="sq-和-rq">SQ 和 RQ&lt;/h3>
+&lt;p>任何通信过程都要有收发两端，QP 就是一个发送工作队列和一个接受工作队列的组合，这两个队列分别称为 SQ（Send Queue）和 RQ（Receive Queue）。我们再把上面的图丰富一下，左边是发送端，右边是接收端：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>WQ 怎么不见了？SQ 和 RQ 都是 WQ，WQ 只是表示一种可以存储 WQE 的单元，SQ 和 RQ 才是实例。&lt;/p>
+&lt;p>SQ 专门用来存放发送任务，RQ 专门用来存放接收任务。在一次 SEND-RECV 流程中，发送端需要把表示一次发送任务的 WQE 放到 SQ 里面。同样的，接收端软件需要给硬件下发一个表示接收任务的 WQE，这样硬件才知道收到数据之后放到内存中的哪个位置。上文我们提到的 Post 操作，对于 SQ 来说称为 Post Send，对于 RQ 来说称为 Post Receive。&lt;/p>
+&lt;p>需要注意的是，在 RDMA 技术中&lt;strong>通信的基本单元是 QP&lt;/strong>，而不是节点。如下图所示，对于每个节点来说，每个进程都可以使用若干个 QP，而每个本地 QP 可以“关联”一个远端的 QP。我们用“节点 A 给节点 B 发送数据”并不足以完整的描述一次 RDMA 通信，而应该是类似于“节点 A 上的 QP3 给节点 C 上的 QP4 发送数据”。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03.webp"
+alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>每个节点的每个 QP 都有一个唯一的编号，称为 QPN（Queue Pair Number），通过 QPN 可以唯一确定一个节点上的 QP。&lt;/p>
+&lt;h3 id="srq">SRQ&lt;/h3>
+&lt;p>Shared Receive Queue 简称 SRQ，意为共享接收队列。概念很好理解，就是一种几个 QP 共享同一个 RQ 时，我们称其为 SRQ。以后我们会了解到，使用 RQ 的情况要远远小于使用 SQ，而每个队列都是要消耗内存资源的。当我们需要使用大量的 QP 时，可以通过 SRQ 来节省内存。如下图所示，QP2~QP4 一起使用同一个 RQ：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
+alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="cq">CQ&lt;/h2>
+&lt;p>Completion Queue 简称 CQ，意为完成队列。跟 WQ 一样，我们先介绍 CQ 这个队列当中的元素——CQE（Completion Queue Element）。可以认为 CQE 跟 WQE 是相反的概念，如果 WQE 是软件下发给硬件的“任务书”的话，那么 CQE 就是硬件完成任务之后返回给软件的“任务报告”。CQE 中描述了某个任务是被正确无误的执行，还是遇到了错误，如果遇到了错误，那么错误的原因是什么。&lt;/p>
+&lt;p>而 CQ 就是承载 CQE 的容器——一个先进先出的队列。我们把表示 WQ 和 WQE 关系的图倒过来画，就得到了 CQ 和 CQE 的关系：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
+alt="v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>每个 CQE 都包含某个 WQE 的完成信息，他们的关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03.webp"
+alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>下面我们把 CQ 和 WQ（QP）放在一起，看一下一次 SEND-RECV 操作中，软硬件的互动（图中序号顺序不表示实际时序）：&lt;/p>
+&lt;blockquote>
+&lt;p>2022/5/23：下图及后面的列表顺序有修改，将原来第 2 条的“接收端硬件从 RQ 中拿到任务书，准备接收数据”移动到“接收端收到数据，进行校验后回复 ACK 报文给发送端”之后，并且修改了描述，现在为第 6 条。&lt;/p>
+&lt;p>这里我犯了错误的点是 RQ 和 SQ 不同，是一个“被动接收”的过程，只有收到 Send 报文（或者带立即数的 Write 报文）时硬件才会消耗 RQ WQE。感谢 @连接改变世界 的指正。&lt;/p>
+&lt;/blockquote>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03.webp"
+alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol>
+&lt;li>接收端 APP 以 WQE 的形式下发一次 RECV 任务到 RQ。&lt;/li>
+&lt;li>发送端 APP 以 WQE 的形式下发一次 SEND 任务到 SQ。&lt;/li>
+&lt;li>发送端硬件从 SQ 中拿到任务书，从内存中拿到待发送数据，组装数据包。&lt;/li>
+&lt;li>发送端网卡将数据包通过物理链路发送给接收端网卡。&lt;/li>
+&lt;li>接收端收到数据，进行校验后回复 ACK 报文给发送端。&lt;/li>
+&lt;li>接收端硬件从 RQ 中取出一个任务书（WQE）。&lt;/li>
+&lt;li>接收端硬件将数据放到 WQE 中指定的位置，然后生成“任务报告”CQE，放置到 CQ 中。&lt;/li>
+&lt;li>接收端 APP 取得任务完成信息。&lt;/li>
+&lt;li>发送端网卡收到 ACK 后，生成 CQE，放置到 CQ 中。&lt;/li>
+&lt;li>发送端 APP 取得任务完成信息。&lt;/li>
+&lt;/ol>
+&lt;div class="notice notice-note" >
+&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>NOTE: 需要注意的一点是，上图中的例子是可靠服务类型的交互流程，如果是不可靠服务，那么不会有步骤 5 的 ACK 回复，而且步骤 9 以及之后的步骤会在步骤 5 之后立即触发。关于服务类型以及可靠与不可靠，我们将在《RDMA 基本服务类型》一文中讲解。&lt;/p>&lt;/div>
+&lt;p>至此，通过 WQ 和 CQ 这两种媒介，两端软硬件共同完成了一次收发过程。&lt;/p>
+&lt;h2 id="wr-和-wc">WR 和 WC&lt;/h2>
+&lt;p>说完了几个 Queue 之后，其实还有两个文章开头提到的概念没有解释，那就是 WR 和 WC（不是 Water Closet 的缩写）。&lt;/p>
+&lt;p>WR 全称为 Work Request，意为工作请求；WC 全称 Work Completion，意为工作完成。这两者其实是 WQE 和 CQE 在用户层的“映射”。因为 APP 是通过调用协议栈接口来完成 RDMA 通信的，WQE 和 CQE 本身并不对用户可见，是驱动中的概念。用户真正通过 API 下发的是 WR，收到的是 WC。&lt;/p>
+&lt;p>WR/WC 和 WQE/CQE 是相同的概念在不同层次的实体，他们都是“任务书”和“任务报告”。于是我们把前文的两个图又加了点内容：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
+alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
+alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
+&lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
+&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item><item><title>比较基于传统以太网与 RDMA 技术的通信</title><link>https://cuterwrite.top/p/ethernet-vs-rdma/</link><pubDate>Thu, 01 Feb 2024 02:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/ethernet-vs-rdma/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp" alt="Featured image of post 比较基于传统以太网与 RDMA 技术的通信" />&lt;h1 id="比较基于传统以太网与-rdma-技术的通信">比较基于传统以太网与 RDMA 技术的通信&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/139548242">&lt;cite>知乎专栏：2. 比较基于传统以太网与 RDMA 技术的通信&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>本篇的目的是通过对比一次典型的基于 TCP/IP 协议栈的以太网和 RDMA 通信的过程，直观的展示 RDMA 技术相比传统以太网的优势，尽量不涉及协议和软件实现细节。&lt;/p>
+&lt;p>假设本端的某个应用想把自己内存中的数据复制到对端某个应用可以访问的内存中（或者通俗的讲，本端要给对端发送数据），我们来看一下以太网和 RDMA 的 SEND-RECV 语义都做了哪些操作。&lt;/p>
+&lt;h2 id="传统以太网">传统以太网&lt;/h2>
+&lt;p>在描述通信过程时的软硬件关系时，我们通常将模型划分为用户层 Userspace，内核 Kernel 以及硬件 Hardware。Userspace 和 Kernel 实际上使用的是同一块物理内存，但是处于安全考虑，Linux 将内存划分为用户空间和内核空间。用户层没有权限访问和修改内核空间的内存内容，只能通过系统调用陷入内核态，Linux 的内存管理机制比较复杂，本文不展开讨论。&lt;/p>
+&lt;p>一次典型的基于传统以太网的通信过程的可以如下图所示进行分层：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03.webp"
+alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>一次收-发过程的步骤如下：&lt;/p>
+&lt;ol>
+&lt;li>发送端和接收端通过 Socket 库提供的接口建立链接（就是在两个节点间建立了一条逻辑上的道路，数据可以沿这条道路从一端发送到另一端）并分别在内存中申请好发送和接收 Buffer。&lt;/li>
+&lt;li>发送端 APP 通过 Socket 接口陷入内核态，待发送数据经过 TCP/IP 协议栈的一层层封装，最后被 CPU 复制到 Socket Buffer 中。&lt;/li>
+&lt;li>发送端通过网卡驱动，告知网卡可以发送数据了，网卡将通过 DMA 从 Buffer 中复制封装好的数据包到内部缓存中，然后将其发送到物理链路。&lt;/li>
+&lt;li>接收端网卡收到数据包后，将数据包放到接收 Buffer 中，然后 CPU 将通过内核中的 TCP/IP 协议栈对报文进行层层解析，取出有效的数据。&lt;/li>
+&lt;li>接收端 APP 通过 Socket 接口陷入内核态，CPU 将数据从内核空间复制到用户空间。&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>这个模型的数据流向大致是像上图这个样子，数据首先需要从用户空间复制一份到内核空间，这一次复制由 CPU 完成，将数据块从用户空间复制到内核空间的 Socket Buffer 中。内核中软件 TCP/IP 协议栈给数据添加各层头部和校验信息。最后网卡会通过 DMA 从内存中复制数据，并通过物理链路发送给对端的网卡。&lt;/p>
+&lt;p>而对端是完全相反的过程：硬件将数据包 DMA 拷贝到内存中，然后 CPU 会对数据包进行逐层解析和校验，最后将数据复制到用户空间。&lt;/p>
+&lt;p>上述过程中的关键点是需要 CPU 参与的把数据从用户空间拷贝到内核空间，以及同样需要 CPU 全程参与的数据包组装和解析，数据量大的情况下，这将对 CPU 将造成很大的负担。&lt;/p>
+&lt;p>下面我们看一下 RDMA 是如何将 CPU“解放”出来的。&lt;/p>
+&lt;h2 id="rdma">RDMA&lt;/h2>
+&lt;p>同样是一端发送，一端接收的场景，我们将 RDMA 的分层模型分成两部分“控制通路”和“数据通路”，控制通路需要进入内核态准备通信所需的内存资源，而数据通路指的是实际数据交互过程中的流程。这一过程的分层关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03.webp"
+alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>同 Socket 一样，我们简单描述下通信的过程：&lt;/p>
+&lt;ol>
+&lt;li>发送端和接收端分别通过控制通路陷入内核态创建好通信所需要的内存资源。&lt;/li>
+&lt;li>在数据通路上，接收端 APP 通知硬件准备接收数据，告诉硬件将接收到的数据放在哪片内存中。&lt;/li>
+&lt;li>在数据通路上，发送端 APP 通知硬件发送数据，告诉硬件待发送数据位于哪片内存中。&lt;/li>
+&lt;li>发送端 RDMA 网卡从内存中搬移数据，组装报文发送给对端。&lt;/li>
+&lt;li>对端收到报文，对其进行解析并通过 DMA 将有效载荷写入内存。然后以某种方式通知上层 APP，告知其数据已接收并妥善存放到指定位置。&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03.webp"
+alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>这一过程中的数据流向大致如上图所示。通过和 Socket 的对比，我们可以明显看到，&lt;strong>数据收发绕过了内核并且数据交换过程并不需要 CPU 参与，报文的组装和解析是由硬件完成的&lt;/strong>。&lt;/p>
+&lt;p>通过上面的对比，我们可以明显的体会到 RDMA 的优势，既将 CPU 从数据包封装和解析中解放出来，又减少了 CPU 拷贝数据的功率和时间损耗。需要注意的是，本文只描述了 SEND-RECV 流程，而 RDMA 技术所独有的，效率更高的 WRITE/READ 语义将在后续文章中介绍。&lt;/p>
+&lt;p>下一篇我们将介绍一些 RDMA 技术中的重要且基本的概念。&lt;/p></description></item><item><title>RDMA 概述</title><link>https://cuterwrite.top/p/rdma-overview/</link><pubDate>Mon, 01 Jan 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-overview/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_65b36f302c1d3715061e824224dcc9ca195413.jpg@1256w_1806h_!web-article-pic-2024-01-14.webp" alt="Featured image of post RDMA 概述" />&lt;h1 id="rdma-概述">RDMA 概述&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/138874738">&lt;cite>知乎专栏：1. RDMA 概述&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
