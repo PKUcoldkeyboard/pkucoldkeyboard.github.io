@@ -1,382 +1,1131 @@
-<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="数据结构之前缀树"><title>聊聊前缀树 Trie</title><link rel=canonical href=https://cuterwrite.top/p/trie/><link rel=stylesheet href=/scss/style.min.7d8b677c28e5b093d7ffba84a1e2b0a3c17b5fc91830b0cf6b35d4ecb5b4e001.css><meta property="og:title" content="聊聊前缀树 Trie"><meta property="og:description" content="数据结构之前缀树"><meta property="og:url" content="https://cuterwrite.top/p/trie/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:tag" content="Algorithm"><meta property="article:published_time" content="2021-08-16T00:00:00+00:00"><meta property="article:modified_time" content="2021-08-16T00:00:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp"><meta name=twitter:title content="聊聊前缀树 Trie"><meta name=twitter:description content="数据结构之前缀树"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
-<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
-<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>首页</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>个人</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>文章</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#trie-树简介>Trie 树简介</a></li><li><a href=#trie-树特点>Trie 树特点</a><ul><li><a href=#trie-树的插入操作>Trie 树的插入操作</a></li><li><a href=#trie-树的查询操作>Trie 树的查询操作</a></li><li><a href=#trie-树的删除操作>Trie 树的删除操作</a></li></ul></li><li><a href=#trie-树应用与实现>Trie 树应用与实现</a><ul><li><a href=#前缀匹配自动补全>前缀匹配/自动补全</a></li><li><a href=#字符串检索>字符串检索</a></li><li><a href=#动态路由>动态路由</a></li></ul></li><li><a href=#trie-树的局限性>Trie 树的局限性</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/trie/><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp loading=lazy alt="Featured image of post 聊聊前缀树 Trie"></a></div><div class=article-details><header class=article-category><a href=/categories/data-structure-and-algorithm/ style=background-color:#b7b2d0;color:#fff>数据结构与算法</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/trie/>聊聊前缀树 Trie</a></h2><h3 class=article-subtitle>数据结构之前缀树</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2021-08-16</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><h1 id=聊聊前缀树-trie>聊聊前缀树 Trie</h1><h2 id=trie-树简介>Trie 树简介</h2><p>Trie 树，也叫“字典树”。顾名思义，它是一个<strong>树形结构</strong>。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。</p><p>此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如 pan 是 panda 的前缀）。</p><p>它的 key 都为字符串，能做到高效查询和插入，时间复杂度为 O(k)，k 为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。</p><p><strong>它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。</strong></p><h2 id=trie-树特点>Trie 树特点</h2><p>假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。常见的方案有：①如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，时间复杂度为 O(n)。②将字符串存入 HashSet 中，查找的时候时间复杂度为 O(1)，但是缺点是空间复杂度高，假如有大量的字符串（比如 10 亿条）则会浪费大量的空间。</p><p>Trie 树则通过空间换时间的方式，将字符串组织成下图的结构：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-d82b7d102ad949dce0bfb92af3d41a11_720w.3xojsp6h3ig0.webp alt=v2-d82b7d102ad949dce0bfb92af3d41a11_720w width=90% loading=lazy></figure><p>通过上图，可以发现 Trie 树 的三个特点：</p><ul><li>根节点不包含字符，除根节点外每一个节点都只包含一个字符</li><li>从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串</li><li>每个节点的所有子节点包含的字符都不相同</li></ul><h3 id=trie-树的插入操作>Trie 树的插入操作</h3><p>Trie 树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie 树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词<code>cook</code>，就有下面几步：</p><ul><li>插入第一个字母 <code>c</code>，发现 <code>root</code> 节点下方存在子节点 <code>c</code>，则共享节点 <code>c</code></li><li>插入第二个字母 <code>o</code>，发现 <code>c</code> 节点下方存在子节点 <code>o</code>，则共享节点 <code>o</code></li><li>插入第三个字母 <code>o</code>，发现 <code>o</code> 节点下方不存在子节点 <code>o</code>，则创建子节点 <code>o</code></li><li>插入第三个字母 <code>k</code>，发现 <code>o</code> 节点下方不存在子节点 <code>k</code>，则创建子节点 <code>k</code></li><li>至此，单词 <code>cook</code> 中所有字母已被插入 Trie 树 中，然后设置节点 <code>k</code> 中的标志位，标记路径 <code>root->c->o->o->k</code> 这条路径上所有节点的字符可以组成一个单词<code>cook</code></li></ul><h3 id=trie-树的查询操作>Trie 树的查询操作</h3><p>在 Trie 树中查找一个字符串的时候，比如查找字符串 <code>code</code>，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/1.4i55q8qg8gi0.webp alt=1 width=90% loading=lazy></figure><h3 id=trie-树的删除操作>Trie 树的删除操作</h3><p>Trie 树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：
-<strong>删除整个单词（比如<code>hi</code>）</strong></p><ul><li>从根节点开始查找第一个字符<code>h</code></li><li>找到<code>h</code> 子节点后，继续查找<code>h</code> 的下一个子节点<code>i</code></li><li><code>i</code> 是单词<code>hi</code> 的标志位，将该标志位去掉</li><li><code>i</code> 节点是<code>hi</code> 的叶子节点，将其删除</li><li>删除后发现<code>h</code> 节点为叶子节点，并且不是单词标志位，也将其删除</li><li>这样就完成了<code>hi</code> 单词的删除操作</li></ul><p><strong>删除前缀单词（比如<code>cod</code>）</strong></p><p>这种方式删除比较简单。 只需要将<code>cod</code> 单词整个字符串查找完后，<code>d</code> 节点因为不是叶子节点，只需将其单词标志去掉即可。</p><p><strong>删除分支单词（比如<code>cook</code>）</strong></p><p>与 <strong>删除整个单词</strong> 情况类似，区别点在于删除到 <code>cook</code> 的第一个 <code>o</code> 时，该节点为非叶子节点，停止删除，这样就完成<code>cook</code> 字符串的删除操作。</p><h2 id=trie-树应用与实现>Trie 树应用与实现</h2><p>事实上 Trie 树 在日常生活中的使用随处可见，比如这个：
-具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。</p><p><strong>实现：最简单的字典树</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
-</span><span class=lnt>2
-</span><span class=lnt>3
-</span><span class=lnt>4
-</span><span class=lnt>5
-</span><span class=lnt>6
-</span><span class=lnt>7
-</span><span class=lnt>8
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>class</span> <span class=nc>TrieNode</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>    <span class=n>String</span> <span class=n>word</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=kt>boolean</span> <span class=n>isEnd</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=n>TrieNode</span><span class=o>[]</span> <span class=n>children</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>TrieNode</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>[</span><span class=n>26</span><span class=o>];</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=前缀匹配自动补全>前缀匹配/自动补全</h3><p>例如：找出一个字符串集合中所有以 <code>五分钟</code> 开头的字符串。我们只需要用所有字符串构造一个 trie 树，然后输出以 五−>分−>钟 开头的路径上的关键字即可。
-trie 树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能</p><p><strong>实现：自动补全功能</strong></p><p>（1）先找出匹配词语的节点（可能是中间的路径，不一定是最终节点）</p><p>（2）递归的查询该节点下的所有单词</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Trie</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>class</span> <span class=nc>TrieNode</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>word</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kt>boolean</span> <span class=n>isEnd</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>Map</span><span class=o>&lt;</span><span class=n>Character</span><span class=o>,</span> <span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>children</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kd>public</span> <span class=nf>TrieNode</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>HashMap</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=n>TrieNode</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Trie</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>root</span> <span class=o>=</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>();</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>insert</span><span class=o>(</span><span class=n>String</span> <span class=n>word</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>TrieNode</span> <span class=n>node</span> <span class=o>=</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=kt>char</span> <span class=n>c</span> <span class=o>:</span> <span class=n>word</span><span class=o>.</span><span class=na>toCharArray</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(!</span><span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>containsKey</span><span class=o>(</span><span class=n>c</span><span class=o>))</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>put</span><span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>());</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>node</span><span class=o>.</span><span class=na>isEnd</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>node</span><span class=o>.</span><span class=na>word</span> <span class=o>=</span> <span class=n>word</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=nf>autoComplete</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=n>String</span> <span class=n>word</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>res</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ArrayList</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=kt>char</span> <span class=n>c</span> <span class=o>:</span> <span class=n>word</span><span class=o>.</span><span class=na>toCharArray</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(!</span><span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>containsKey</span><span class=o>(</span><span class=n>c</span><span class=o>))</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=n>node</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>helper</span><span class=o>(</span><span class=n>node</span><span class=o>,</span> <span class=n>res</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>res</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kt>void</span> <span class=nf>helper</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>words</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>node</span><span class=o>.</span><span class=na>isEnd</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>words</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>node</span><span class=o>.</span><span class=na>word</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>Map</span><span class=o>.</span><span class=na>Entry</span><span class=o>&lt;</span><span class=n>Character</span><span class=o>,</span> <span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>entry</span> <span class=o>:</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>entrySet</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>helper</span><span class=o>(</span><span class=n>entry</span><span class=o>.</span><span class=na>getValue</span><span class=o>(),</span> <span class=n>words</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=字符串检索>字符串检索</h3><p>给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。
-检索/查询功能是 Trie 树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：</p><ul><li>如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。</li><li>如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Trie</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>class</span> <span class=nc>TrieNode</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>word</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kt>boolean</span> <span class=n>isEnd</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>Map</span><span class=o>&lt;</span><span class=n>Character</span><span class=o>,</span> <span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>children</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kd>public</span> <span class=nf>TrieNode</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>HashMap</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=n>TrieNode</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Trie</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>root</span> <span class=o>=</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>();</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>insert</span><span class=o>(</span><span class=n>String</span> <span class=n>word</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>TrieNode</span> <span class=n>node</span> <span class=o>=</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=kt>char</span> <span class=n>c</span> <span class=o>:</span> <span class=n>word</span><span class=o>.</span><span class=na>toCharArray</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(!</span><span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>containsKey</span><span class=o>(</span><span class=n>c</span><span class=o>))</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>put</span><span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>());</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>node</span><span class=o>.</span><span class=na>isEnd</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>node</span><span class=o>.</span><span class=na>word</span> <span class=o>=</span> <span class=n>word</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>boolean</span> <span class=nf>search</span><span class=o>(</span><span class=n>String</span> <span class=n>word</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>TrieNode</span> <span class=n>node</span> <span class=o>=</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=kt>char</span> <span class=n>c</span> <span class=o>:</span> <span class=n>word</span><span class=o>.</span><span class=na>toCharArray</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(!</span><span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>containsKey</span><span class=o>(</span><span class=n>c</span><span class=o>))</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>return</span> <span class=kc>false</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span> <span class=o>=</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>c</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>node</span><span class=o>.</span><span class=na>isEnd</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span></code></pre></td></tr></table></div></div><h3 id=动态路由>动态路由</h3><p>实现动态路由最常用的数据结构，被称为前缀树(Trie 树)。看到名字你大概也能知道前缀树长啥样了：每一个节点的所有的子节点都拥有相同的前缀。这种结构非常适用于路由匹配，比如我们定义了如下路由规则：</p><ul><li>/:lang/doc</li><li>/:lang/tutorial</li><li>/:lang/intro</li><li>/about</li><li>/p/blog</li><li>/p/related</li></ul><p>HTTP 请求的路径恰好是由<code>/</code>分隔的多段构成的，因此，每一段可以作为前缀树的一个节点。我们通过树结构查询，如果中间某一层的节点都不满足条件，那么就说明没有匹配到的路由，查询结束。</p><p>接下来我们实现的动态路由具备以下两个功能。</p><ul><li>参数匹配<code>:</code>。例如 <code>/p/:lang/doc</code>，可以匹配 <code>/p/c/doc</code> 和 <code>/p/go/doc</code>。</li><li>通配<code>*</code>。例如 <code>/static/*filepath</code>，可以匹配<code>/static/fav.ico</code>，也可以匹配<code>/static/js/jQuery.js</code>，这种模式常用于静态服务器，能够递归地匹配子路径。</li></ul><p><strong>实现：动态路由</strong></p><p>（1）由于路由规则允许模糊匹配，匹配子节点时可能还包括了含有模糊字符串的结构，比如插入<code>/:lang/tutorial</code> 这个路由 pattern 后再插入<code>/golang/intro</code> 时，虽然 golang 与:lang 并不匹配，但还是需要将 intro 插入在:lang 节点下，而不是再创建一个 golang 节点，所以仅使用哈希表查找子节点并不合适，需要改用为 ArrayList 来存 TrieNode，使用一个单独的字符串 part 来保存节点的信息，isWild 来判断节点是否是模糊节点。</p><p>（2）插入与查询的逻辑与字符串检索区别不大，关键修改在于：插入时还需要插入 part 和 isWild 信息，搜搜时如果碰到了*号开头的节点，需要终止查询，返回该节点。</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
-</span><span class=lnt> 2
-</span><span class=lnt> 3
-</span><span class=lnt> 4
-</span><span class=lnt> 5
-</span><span class=lnt> 6
-</span><span class=lnt> 7
-</span><span class=lnt> 8
-</span><span class=lnt> 9
-</span><span class=lnt>10
-</span><span class=lnt>11
-</span><span class=lnt>12
-</span><span class=lnt>13
-</span><span class=lnt>14
-</span><span class=lnt>15
-</span><span class=lnt>16
-</span><span class=lnt>17
-</span><span class=lnt>18
-</span><span class=lnt>19
-</span><span class=lnt>20
-</span><span class=lnt>21
-</span><span class=lnt>22
-</span><span class=lnt>23
-</span><span class=lnt>24
-</span><span class=lnt>25
-</span><span class=lnt>26
-</span><span class=lnt>27
-</span><span class=lnt>28
-</span><span class=lnt>29
-</span><span class=lnt>30
-</span><span class=lnt>31
-</span><span class=lnt>32
-</span><span class=lnt>33
-</span><span class=lnt>34
-</span><span class=lnt>35
-</span><span class=lnt>36
-</span><span class=lnt>37
-</span><span class=lnt>38
-</span><span class=lnt>39
-</span><span class=lnt>40
-</span><span class=lnt>41
-</span><span class=lnt>42
-</span><span class=lnt>43
-</span><span class=lnt>44
-</span><span class=lnt>45
-</span><span class=lnt>46
-</span><span class=lnt>47
-</span><span class=lnt>48
-</span><span class=lnt>49
-</span><span class=lnt>50
-</span><span class=lnt>51
-</span><span class=lnt>52
-</span><span class=lnt>53
-</span><span class=lnt>54
-</span><span class=lnt>55
-</span><span class=lnt>56
-</span><span class=lnt>57
-</span><span class=lnt>58
-</span><span class=lnt>59
-</span><span class=lnt>60
-</span><span class=lnt>61
-</span><span class=lnt>62
-</span><span class=lnt>63
-</span><span class=lnt>64
-</span><span class=lnt>65
-</span><span class=lnt>66
-</span><span class=lnt>67
-</span><span class=lnt>68
-</span><span class=lnt>69
-</span><span class=lnt>70
-</span><span class=lnt>71
-</span><span class=lnt>72
-</span><span class=lnt>73
-</span><span class=lnt>74
-</span><span class=lnt>75
-</span><span class=lnt>76
-</span><span class=lnt>77
-</span><span class=lnt>78
-</span><span class=lnt>79
-</span><span class=lnt>80
-</span><span class=lnt>81
-</span><span class=lnt>82
-</span><span class=lnt>83
-</span><span class=lnt>84
-</span><span class=lnt>85
-</span><span class=lnt>86
-</span><span class=lnt>87
-</span><span class=lnt>88
-</span><span class=lnt>89
-</span><span class=lnt>90
-</span><span class=lnt>91
-</span><span class=lnt>92
-</span><span class=lnt>93
-</span><span class=lnt>94
-</span><span class=lnt>95
-</span><span class=lnt>96
-</span><span class=lnt>97
-</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=kd>public</span> <span class=kd>class</span> <span class=nc>Trie</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kd>class</span> <span class=nc>TrieNode</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>part</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>pattern</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kt>boolean</span> <span class=n>isWild</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kt>boolean</span> <span class=n>isEnd</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>children</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=kd>public</span> <span class=nf>TrieNode</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ArrayList</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=kd>public</span> <span class=nf>TrieNode</span><span class=o>(</span><span class=kt>boolean</span> <span class=n>isWild</span><span class=o>,</span> <span class=n>String</span> <span class=n>part</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>this</span><span class=o>.</span><span class=na>isWild</span> <span class=o>=</span> <span class=n>isWild</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=k>this</span><span class=o>.</span><span class=na>part</span> <span class=o>=</span> <span class=n>part</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ArrayList</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=n>TrieNode</span> <span class=n>root</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=nf>Trie</span><span class=o>()</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>root</span> <span class=o>=</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>();</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=nf>parsePattern</span><span class=o>(</span><span class=n>String</span> <span class=n>pattern</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span><span class=o>[]</span> <span class=n>parts</span> <span class=o>=</span> <span class=n>pattern</span><span class=o>.</span><span class=na>split</span><span class=o>(</span><span class=s>&#34;/&#34;</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>res</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ArrayList</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>String</span> <span class=n>part</span> <span class=o>:</span> <span class=n>parts</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>part</span><span class=o>.</span><span class=na>isEmpty</span><span class=o>())</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>continue</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>            <span class=n>res</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>part</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>part</span><span class=o>.</span><span class=na>charAt</span><span class=o>(</span><span class=n>0</span><span class=o>)</span> <span class=o>==</span> <span class=sc>&#39;*&#39;</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>break</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>res</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>TrieNode</span> <span class=nf>matchChild</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=n>String</span> <span class=n>part</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>TrieNode</span> <span class=n>child</span> <span class=o>:</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>((</span><span class=n>child</span><span class=o>.</span><span class=na>part</span> <span class=o>!=</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>child</span><span class=o>.</span><span class=na>part</span><span class=o>.</span><span class=na>equals</span><span class=o>(</span><span class=n>part</span><span class=o>))</span> <span class=o>||</span> <span class=n>child</span><span class=o>.</span><span class=na>isWild</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>return</span> <span class=n>child</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>null</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span> <span class=nf>matchChildren</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=n>String</span> <span class=n>part</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>children</span> <span class=o>=</span> <span class=k>new</span> <span class=n>ArrayList</span><span class=o>&lt;&gt;();</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>TrieNode</span> <span class=n>child</span> <span class=o>:</span> <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>((</span><span class=n>child</span><span class=o>.</span><span class=na>part</span> <span class=o>!=</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>child</span><span class=o>.</span><span class=na>part</span><span class=o>.</span><span class=na>equals</span><span class=o>(</span><span class=n>part</span><span class=o>))</span> <span class=o>||</span> <span class=n>child</span><span class=o>.</span><span class=na>isWild</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=n>children</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>child</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>children</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=kt>void</span> <span class=nf>insert</span><span class=o>(</span><span class=n>String</span> <span class=n>pattern</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>parts</span> <span class=o>=</span> <span class=n>parsePattern</span><span class=o>(</span><span class=n>pattern</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=n>insert</span><span class=o>(</span><span class=n>root</span><span class=o>,</span> <span class=n>pattern</span><span class=o>,</span> <span class=n>parts</span><span class=o>,</span> <span class=n>0</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>private</span> <span class=kt>void</span> <span class=nf>insert</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=n>String</span> <span class=n>pattern</span><span class=o>,</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>parts</span><span class=o>,</span> <span class=kt>int</span> <span class=n>depth</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>parts</span><span class=o>.</span><span class=na>size</span><span class=o>()</span> <span class=o>==</span> <span class=n>depth</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span><span class=o>.</span><span class=na>pattern</span> <span class=o>=</span> <span class=n>pattern</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span><span class=o>.</span><span class=na>isEnd</span> <span class=o>=</span> <span class=kc>true</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>part</span> <span class=o>=</span> <span class=n>parts</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>depth</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=n>TrieNode</span> <span class=n>child</span> <span class=o>=</span> <span class=n>matchChild</span><span class=o>(</span><span class=n>node</span><span class=o>,</span> <span class=n>part</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>child</span> <span class=o>==</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=kt>boolean</span> <span class=n>isWild</span> <span class=o>=</span> <span class=n>part</span><span class=o>.</span><span class=na>charAt</span><span class=o>(</span><span class=n>0</span><span class=o>)</span> <span class=o>==</span> <span class=sc>&#39;:&#39;</span> <span class=o>||</span> <span class=n>part</span><span class=o>.</span><span class=na>charAt</span><span class=o>(</span><span class=n>0</span><span class=o>)</span> <span class=o>==</span> <span class=sc>&#39;*&#39;</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=n>child</span> <span class=o>=</span> <span class=k>new</span> <span class=n>TrieNode</span><span class=o>(</span><span class=n>isWild</span><span class=o>,</span> <span class=n>part</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>            <span class=n>node</span><span class=o>.</span><span class=na>children</span><span class=o>.</span><span class=na>add</span><span class=o>(</span><span class=n>child</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>insert</span><span class=o>(</span><span class=n>child</span><span class=o>,</span> <span class=n>pattern</span><span class=o>,</span> <span class=n>parts</span><span class=o>,</span> <span class=n>depth</span> <span class=o>+</span> <span class=n>1</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>TrieNode</span> <span class=nf>search</span><span class=o>(</span><span class=n>TrieNode</span> <span class=n>node</span><span class=o>,</span> <span class=kt>int</span> <span class=n>depth</span><span class=o>,</span> <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>parts</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>((</span><span class=n>parts</span><span class=o>.</span><span class=na>size</span><span class=o>()</span> <span class=o>==</span> <span class=n>depth</span><span class=o>)</span> <span class=o>||</span> <span class=o>(</span><span class=n>node</span><span class=o>.</span><span class=na>part</span> <span class=o>!=</span> <span class=kc>null</span> <span class=o>&amp;&amp;</span> <span class=n>node</span><span class=o>.</span><span class=na>part</span><span class=o>.</span><span class=na>startsWith</span><span class=o>(</span><span class=s>&#34;*&#34;</span><span class=o>)))</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>node</span><span class=o>.</span><span class=na>isEnd</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>return</span> <span class=n>node</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>null</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=n>String</span> <span class=n>part</span> <span class=o>=</span> <span class=n>parts</span><span class=o>.</span><span class=na>get</span><span class=o>(</span><span class=n>depth</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>TrieNode</span><span class=o>&gt;</span> <span class=n>children</span> <span class=o>=</span> <span class=n>matchChildren</span><span class=o>(</span><span class=n>node</span><span class=o>,</span> <span class=n>part</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>TrieNode</span> <span class=n>child</span> <span class=o>:</span> <span class=n>children</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=n>TrieNode</span> <span class=n>result</span> <span class=o>=</span> <span class=n>search</span><span class=o>(</span><span class=n>child</span><span class=o>,</span> <span class=n>depth</span> <span class=o>+</span> <span class=n>1</span><span class=o>,</span> <span class=n>parts</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=o>(</span><span class=n>result</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>                <span class=k>return</span> <span class=n>result</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>            <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>null</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl>    <span class=kd>public</span> <span class=n>String</span> <span class=nf>getPattern</span><span class=o>(</span><span class=n>String</span> <span class=n>path</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>        <span class=n>List</span><span class=o>&lt;</span><span class=n>String</span><span class=o>&gt;</span> <span class=n>searchParts</span> <span class=o>=</span> <span class=n>parsePattern</span><span class=o>(</span><span class=n>path</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>        <span class=n>TrieNode</span> <span class=n>node</span> <span class=o>=</span> <span class=n>search</span><span class=o>(</span><span class=n>root</span><span class=o>,</span> <span class=n>0</span><span class=o>,</span> <span class=n>searchParts</span><span class=o>);</span>
-</span></span><span class=line><span class=cl>
-</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>(</span><span class=n>node</span> <span class=o>!=</span> <span class=kc>null</span><span class=o>)</span> <span class=o>{</span>
-</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=n>node</span><span class=o>.</span><span class=na>pattern</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>        <span class=o>}</span>
-</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>null</span><span class=o>;</span>
-</span></span><span class=line><span class=cl>    <span class=o>}</span>
-</span></span><span class=line><span class=cl><span class=o>}</span>
-</span></span></code></pre></td></tr></table></div></div><h2 id=trie-树的局限性>Trie 树的局限性</h2><p>如前文所讲，Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+
+<head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='数据结构之前缀树'>
+<title>聊聊前缀树 Trie</title>
+
+<link rel='canonical' href='https://cuterwrite.top/p/trie/'>
+
+<link rel="stylesheet" href="/scss/style.min.948ad9fa334265050c110bac7860b466bf64440b826b4304382c221fe1eec34c.css"><meta property='og:title' content='聊聊前缀树 Trie'>
+<meta property='og:description' content='数据结构之前缀树'>
+<meta property='og:url' content='https://cuterwrite.top/p/trie/'>
+<meta property='og:site_name' content='cuterwrite'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Algorithm' /><meta property='article:published_time' content='2021-08-16T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2021-08-16T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp' />
+<meta name="twitter:title" content="聊聊前缀树 Trie">
+<meta name="twitter:description" content="数据结构之前缀树"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+
+    
+    <script async src="https://umami-gamma-virid.vercel.app/uma" data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276">
+    </script>
+</head>
+
+<body class="
+    article-page
+    ">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+                    
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+            
+        
+        
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
+            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+        </div>
+    </header><ol class="social-menu">
+            
+                <li>
+                    <a 
+                        href='https://github.com/PKUcoldkeyboard'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a 
+                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
+                        target="_blank"
+                        title="zhihu"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
+    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
+</svg>
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>首页</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>个人</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>文章</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索</span>
+            </a>
+        </li>
+        
+
+        <div class="menu-bottom-section">
+            
+            
+                <li id="dark-mode-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                    <span>暗色模式</span>
+                </li>
+            
+        </div>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#trie-树简介">Trie 树简介</a></li>
+    <li><a href="#trie-树特点">Trie 树特点</a>
+      <ul>
+        <li><a href="#trie-树的插入操作">Trie 树的插入操作</a></li>
+        <li><a href="#trie-树的查询操作">Trie 树的查询操作</a></li>
+        <li><a href="#trie-树的删除操作">Trie 树的删除操作</a></li>
+      </ul>
+    </li>
+    <li><a href="#trie-树应用与实现">Trie 树应用与实现</a>
+      <ul>
+        <li><a href="#前缀匹配自动补全">前缀匹配/自动补全</a></li>
+        <li><a href="#字符串检索">字符串检索</a></li>
+        <li><a href="#动态路由">动态路由</a></li>
+      </ul>
+    </li>
+    <li><a href="#trie-树的局限性">Trie 树的局限性</a></li>
+  </ul>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+        <main class="main full-width">
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/trie/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp" loading="lazy" alt="Featured image of post 聊聊前缀树 Trie" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/data-structure-and-algorithm/" style="background-color: #b7b2d0; color: #fff;">
+                数据结构与算法
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/trie/">聊聊前缀树 Trie</a>
+        </h2>
+    
+        
+        <h3 class="article-subtitle">
+            数据结构之前缀树
+        </h3>
+        
+    </div>
+
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2021-08-16</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 7 分钟
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="聊聊前缀树-trie">聊聊前缀树 Trie</h1>
+<h2 id="trie-树简介">Trie 树简介</h2>
+<p>Trie 树，也叫“字典树”。顾名思义，它是一个<strong>树形结构</strong>。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。</p>
+<p>此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如 pan 是 panda 的前缀）。</p>
+<p>它的 key 都为字符串，能做到高效查询和插入，时间复杂度为 O(k)，k 为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。</p>
+<p><strong>它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。</strong></p>
+<h2 id="trie-树特点">Trie 树特点</h2>
+<p>假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。常见的方案有：①如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，时间复杂度为 O(n)。②将字符串存入 HashSet 中，查找的时候时间复杂度为 O(1)，但是缺点是空间复杂度高，假如有大量的字符串（比如 10 亿条）则会浪费大量的空间。</p>
+<p>Trie 树则通过空间换时间的方式，将字符串组织成下图的结构：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-d82b7d102ad949dce0bfb92af3d41a11_720w.3xojsp6h3ig0.webp"
+         alt="v2-d82b7d102ad949dce0bfb92af3d41a11_720w" width="90%" loading="lazy"/>
+</figure>
+
+<p>通过上图，可以发现 Trie 树 的三个特点：</p>
+<ul>
+<li>根节点不包含字符，除根节点外每一个节点都只包含一个字符</li>
+<li>从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串</li>
+<li>每个节点的所有子节点包含的字符都不相同</li>
+</ul>
+<h3 id="trie-树的插入操作">Trie 树的插入操作</h3>
+<p>Trie 树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie 树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词<code>cook</code>，就有下面几步：</p>
+<ul>
+<li>插入第一个字母 <code>c</code>，发现 <code>root</code> 节点下方存在子节点 <code>c</code>，则共享节点 <code>c</code></li>
+<li>插入第二个字母 <code>o</code>，发现 <code>c</code> 节点下方存在子节点 <code>o</code>，则共享节点 <code>o</code></li>
+<li>插入第三个字母 <code>o</code>，发现 <code>o</code> 节点下方不存在子节点 <code>o</code>，则创建子节点 <code>o</code></li>
+<li>插入第三个字母 <code>k</code>，发现 <code>o</code> 节点下方不存在子节点 <code>k</code>，则创建子节点 <code>k</code></li>
+<li>至此，单词 <code>cook</code> 中所有字母已被插入 Trie 树 中，然后设置节点 <code>k</code> 中的标志位，标记路径 <code>root-&gt;c-&gt;o-&gt;o-&gt;k</code> 这条路径上所有节点的字符可以组成一个单词<code>cook</code></li>
+</ul>
+<h3 id="trie-树的查询操作">Trie 树的查询操作</h3>
+<p>在 Trie 树中查找一个字符串的时候，比如查找字符串 <code>code</code>，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/1.4i55q8qg8gi0.webp"
+         alt="1" width="90%" loading="lazy"/>
+</figure>
+
+<h3 id="trie-树的删除操作">Trie 树的删除操作</h3>
+<p>Trie 树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：
+<strong>删除整个单词（比如<code>hi</code>）</strong></p>
+<ul>
+<li>从根节点开始查找第一个字符<code>h</code></li>
+<li>找到<code>h</code> 子节点后，继续查找<code>h</code> 的下一个子节点<code>i</code></li>
+<li><code>i</code> 是单词<code>hi</code> 的标志位，将该标志位去掉</li>
+<li><code>i</code> 节点是<code>hi</code> 的叶子节点，将其删除</li>
+<li>删除后发现<code>h</code> 节点为叶子节点，并且不是单词标志位，也将其删除</li>
+<li>这样就完成了<code>hi</code> 单词的删除操作</li>
+</ul>
+<p><strong>删除前缀单词（比如<code>cod</code>）</strong></p>
+<p>这种方式删除比较简单。 只需要将<code>cod</code> 单词整个字符串查找完后，<code>d</code> 节点因为不是叶子节点，只需将其单词标志去掉即可。</p>
+<p><strong>删除分支单词（比如<code>cook</code>）</strong></p>
+<p>与 <strong>删除整个单词</strong> 情况类似，区别点在于删除到 <code>cook</code> 的第一个 <code>o</code> 时，该节点为非叶子节点，停止删除，这样就完成<code>cook</code> 字符串的删除操作。</p>
+<h2 id="trie-树应用与实现">Trie 树应用与实现</h2>
+<p>事实上 Trie 树 在日常生活中的使用随处可见，比如这个：
+具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。</p>
+<p><strong>实现：最简单的字典树</strong></p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">class</span> <span class="nc">TrieNode</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">String</span> <span class="n">word</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">boolean</span> <span class="n">isEnd</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TrieNode</span><span class="o">[]</span> <span class="n">children</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">[</span><span class="n">26</span><span class="o">];</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="前缀匹配自动补全">前缀匹配/自动补全</h3>
+<p>例如：找出一个字符串集合中所有以 <code>五分钟</code> 开头的字符串。我们只需要用所有字符串构造一个 trie 树，然后输出以 五−&gt;分−&gt;钟 开头的路径上的关键字即可。
+trie 树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能</p>
+<p><strong>实现：自动补全功能</strong></p>
+<p>（1）先找出匹配词语的节点（可能是中间的路径，不一定是最终节点）</p>
+<p>（2）递归的查询该节点下的所有单词</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Trie</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kd">class</span> <span class="nc">TrieNode</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">word</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">isEnd</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Map</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">children</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TrieNode</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">Trie</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">root</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="n">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(!</span><span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">c</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">());</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="o">.</span><span class="na">isEnd</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="o">.</span><span class="na">word</span> <span class="o">=</span> <span class="n">word</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">autoComplete</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="n">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">res</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(!</span><span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">c</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">helper</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">res</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">helper</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">words</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">isEnd</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">words</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">word</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="n">Map</span><span class="o">.</span><span class="na">Entry</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">entry</span> <span class="o">:</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">entrySet</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">helper</span><span class="o">(</span><span class="n">entry</span><span class="o">.</span><span class="na">getValue</span><span class="o">(),</span> <span class="n">words</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="字符串检索">字符串检索</h3>
+<p>给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。
+检索/查询功能是 Trie 树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：</p>
+<ul>
+<li>如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。</li>
+<li>如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Trie</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kd">class</span> <span class="nc">TrieNode</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">word</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">isEnd</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">Map</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">children</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="n">TrieNode</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">Trie</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">root</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="n">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(!</span><span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">c</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">());</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="o">.</span><span class="na">isEnd</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">node</span><span class="o">.</span><span class="na">word</span> <span class="o">=</span> <span class="n">word</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">search</span><span class="o">(</span><span class="n">String</span> <span class="n">word</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">word</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(!</span><span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">containsKey</span><span class="o">(</span><span class="n">c</span><span class="o">))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="na">isEnd</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="动态路由">动态路由</h3>
+<p>实现动态路由最常用的数据结构，被称为前缀树(Trie 树)。看到名字你大概也能知道前缀树长啥样了：每一个节点的所有的子节点都拥有相同的前缀。这种结构非常适用于路由匹配，比如我们定义了如下路由规则：</p>
+<ul>
+<li>/:lang/doc</li>
+<li>/:lang/tutorial</li>
+<li>/:lang/intro</li>
+<li>/about</li>
+<li>/p/blog</li>
+<li>/p/related</li>
+</ul>
+<p>HTTP 请求的路径恰好是由<code>/</code>分隔的多段构成的，因此，每一段可以作为前缀树的一个节点。我们通过树结构查询，如果中间某一层的节点都不满足条件，那么就说明没有匹配到的路由，查询结束。</p>
+<p>接下来我们实现的动态路由具备以下两个功能。</p>
+<ul>
+<li>参数匹配<code>:</code>。例如 <code>/p/:lang/doc</code>，可以匹配 <code>/p/c/doc</code> 和 <code>/p/go/doc</code>。</li>
+<li>通配<code>*</code>。例如 <code>/static/*filepath</code>，可以匹配<code>/static/fav.ico</code>，也可以匹配<code>/static/js/jQuery.js</code>，这种模式常用于静态服务器，能够递归地匹配子路径。</li>
+</ul>
+<p><strong>实现：动态路由</strong></p>
+<p>（1）由于路由规则允许模糊匹配，匹配子节点时可能还包括了含有模糊字符串的结构，比如插入<code>/:lang/tutorial</code> 这个路由 pattern 后再插入<code>/golang/intro</code> 时，虽然 golang 与:lang 并不匹配，但还是需要将 intro 插入在:lang 节点下，而不是再创建一个 golang 节点，所以仅使用哈希表查找子节点并不合适，需要改用为 ArrayList 来存 TrieNode，使用一个单独的字符串 part 来保存节点的信息，isWild 来判断节点是否是模糊节点。</p>
+<p>（2）插入与查询的逻辑与字符串检索区别不大，关键修改在于：插入时还需要插入 part 和 isWild 信息，搜搜时如果碰到了*号开头的节点，需要终止查询，返回该节点。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span><span class="lnt">84
+</span><span class="lnt">85
+</span><span class="lnt">86
+</span><span class="lnt">87
+</span><span class="lnt">88
+</span><span class="lnt">89
+</span><span class="lnt">90
+</span><span class="lnt">91
+</span><span class="lnt">92
+</span><span class="lnt">93
+</span><span class="lnt">94
+</span><span class="lnt">95
+</span><span class="lnt">96
+</span><span class="lnt">97
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-java" data-lang="java"><span class="line"><span class="cl"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Trie</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kd">class</span> <span class="nc">TrieNode</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">part</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">pattern</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">isWild</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">boolean</span> <span class="n">isEnd</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">children</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">public</span> <span class="nf">TrieNode</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">isWild</span><span class="o">,</span> <span class="n">String</span> <span class="n">part</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">this</span><span class="o">.</span><span class="na">isWild</span> <span class="o">=</span> <span class="n">isWild</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">this</span><span class="o">.</span><span class="na">part</span> <span class="o">=</span> <span class="n">part</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="n">TrieNode</span> <span class="n">root</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="nf">Trie</span><span class="o">()</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">root</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">();</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="nf">parsePattern</span><span class="o">(</span><span class="n">String</span> <span class="n">pattern</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span><span class="o">[]</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="na">split</span><span class="o">(</span><span class="s">&#34;/&#34;</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">res</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="n">String</span> <span class="n">part</span> <span class="o">:</span> <span class="n">parts</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(</span><span class="n">part</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">continue</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="n">res</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">part</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(</span><span class="n">part</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">0</span><span class="o">)</span> <span class="o">==</span> <span class="sc">&#39;*&#39;</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">break</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">res</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">TrieNode</span> <span class="nf">matchChild</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="n">String</span> <span class="n">part</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="n">TrieNode</span> <span class="n">child</span> <span class="o">:</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">((</span><span class="n">child</span><span class="o">.</span><span class="na">part</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">child</span><span class="o">.</span><span class="na">part</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">part</span><span class="o">))</span> <span class="o">||</span> <span class="n">child</span><span class="o">.</span><span class="na">isWild</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">child</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">TrieNode</span><span class="o">&gt;</span> <span class="nf">matchChildren</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="n">String</span> <span class="n">part</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">children</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;();</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="n">TrieNode</span> <span class="n">child</span> <span class="o">:</span> <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">((</span><span class="n">child</span><span class="o">.</span><span class="na">part</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">child</span><span class="o">.</span><span class="na">part</span><span class="o">.</span><span class="na">equals</span><span class="o">(</span><span class="n">part</span><span class="o">))</span> <span class="o">||</span> <span class="n">child</span><span class="o">.</span><span class="na">isWild</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">children</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">child</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="n">children</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="n">String</span> <span class="n">pattern</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">parts</span> <span class="o">=</span> <span class="n">parsePattern</span><span class="o">(</span><span class="n">pattern</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">insert</span><span class="o">(</span><span class="n">root</span><span class="o">,</span> <span class="n">pattern</span><span class="o">,</span> <span class="n">parts</span><span class="o">,</span> <span class="n">0</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">private</span> <span class="kt">void</span> <span class="nf">insert</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="n">String</span> <span class="n">pattern</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">parts</span><span class="o">,</span> <span class="kt">int</span> <span class="n">depth</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">parts</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="n">depth</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span><span class="o">.</span><span class="na">pattern</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span><span class="o">.</span><span class="na">isEnd</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">part</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">depth</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TrieNode</span> <span class="n">child</span> <span class="o">=</span> <span class="n">matchChild</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">part</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">child</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="kt">boolean</span> <span class="n">isWild</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">0</span><span class="o">)</span> <span class="o">==</span> <span class="sc">&#39;:&#39;</span> <span class="o">||</span> <span class="n">part</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">0</span><span class="o">)</span> <span class="o">==</span> <span class="sc">&#39;*&#39;</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="n">child</span> <span class="o">=</span> <span class="k">new</span> <span class="n">TrieNode</span><span class="o">(</span><span class="n">isWild</span><span class="o">,</span> <span class="n">part</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="n">node</span><span class="o">.</span><span class="na">children</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">child</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">insert</span><span class="o">(</span><span class="n">child</span><span class="o">,</span> <span class="n">pattern</span><span class="o">,</span> <span class="n">parts</span><span class="o">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="n">1</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">TrieNode</span> <span class="nf">search</span><span class="o">(</span><span class="n">TrieNode</span> <span class="n">node</span><span class="o">,</span> <span class="kt">int</span> <span class="n">depth</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">parts</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">((</span><span class="n">parts</span><span class="o">.</span><span class="na">size</span><span class="o">()</span> <span class="o">==</span> <span class="n">depth</span><span class="o">)</span> <span class="o">||</span> <span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">part</span> <span class="o">!=</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="n">node</span><span class="o">.</span><span class="na">part</span><span class="o">.</span><span class="na">startsWith</span><span class="o">(</span><span class="s">&#34;*&#34;</span><span class="o">)))</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(</span><span class="n">node</span><span class="o">.</span><span class="na">isEnd</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">node</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">String</span> <span class="n">part</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">depth</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">TrieNode</span><span class="o">&gt;</span> <span class="n">children</span> <span class="o">=</span> <span class="n">matchChildren</span><span class="o">(</span><span class="n">node</span><span class="o">,</span> <span class="n">part</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="o">(</span><span class="n">TrieNode</span> <span class="n">child</span> <span class="o">:</span> <span class="n">children</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">TrieNode</span> <span class="n">result</span> <span class="o">=</span> <span class="n">search</span><span class="o">(</span><span class="n">child</span><span class="o">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="n">1</span><span class="o">,</span> <span class="n">parts</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="o">(</span><span class="n">result</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">            <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">public</span> <span class="n">String</span> <span class="nf">getPattern</span><span class="o">(</span><span class="n">String</span> <span class="n">path</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">searchParts</span> <span class="o">=</span> <span class="n">parsePattern</span><span class="o">(</span><span class="n">path</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">        <span class="n">TrieNode</span> <span class="n">node</span> <span class="o">=</span> <span class="n">search</span><span class="o">(</span><span class="n">root</span><span class="o">,</span> <span class="n">0</span><span class="o">,</span> <span class="n">searchParts</span><span class="o">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="o">(</span><span class="n">node</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="n">node</span><span class="o">.</span><span class="na">pattern</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">        <span class="o">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+</span></span><span class="line"><span class="cl">    <span class="o">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="trie-树的局限性">Trie 树的局限性</h2>
+<p>如前文所讲，Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
 假设字符的种数有<code>m</code> 个，有若干个长度为 n 的字符串构成了一个 Trie 树 ，则每个节点的出度为 <code>m</code>（即每个节点的可能子节点数量为<code>m</code>），Trie 树 的高度为<code>n</code>。很明显我们浪费了大量的空间来存储字符，此时 Trie 树的最坏空间复杂度为<code>O(m^n)</code>。也正由于每个节点的出度为<code>m</code>，所以我们能够沿着树的一个个分支高效的向下逐个字符的查询，而不是遍历所有的字符串来查询，此时 Trie 树的最坏时间复杂度为<code>O(n)</code>。
-这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。</p></section><footer class=article-footer><section class=article-tags><a href=/tags/algorithm/>Algorithm</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/fas/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp loading=lazy data-key=fas data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp></div><div class=article-details><h2 class=article-title>最小反馈弧集合问题</h2></div></a></article><article class=has-image><a href=/p/route-planning-alogrithm/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp loading=lazy data-key=route-planning-alogrithm data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp></div><div class=article-details><h2 class=article-title>路径规划算法之 A* 与 D* Lite 原理详解</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
-2021 -
-2024 cuterwrite</section><section class=powerby>欢迎来到Cuterwrite的博客网站<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
-<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
+这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/algorithm/">Algorithm</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
+            ><script 
+                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.querySelector(`.article-content`), {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+    
+</article>
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="has-image">
+    <a href="/p/fas/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp" loading="lazy" data-key="fas" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">最小反馈弧集合问题</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/route-planning-alogrithm/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp" loading="lazy" data-key="route-planning-alogrithm" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">路径规划算法之 A* 与 D* Lite 原理详解</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    
+<script>
+    (function () {
+        if (/^localhost|^127/.test(location.hostname)) {
+            return;
+        }
+        let script = document.createElement('script');
+        script.src = 'https://giscus.app/client.js';
+        script.dataset.repo = "PKUcoldkeyboard\/pkucoldkeyboard.github.io";
+        script.dataset.repoId = "MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=";
+        script.dataset.category = "Comments";
+        script.dataset.categoryId = "DIC_kwDOFAUD4M4CZV4F";
+        script.dataset.mapping = "title";
+        script.dataset.strict = "0";
+        script.dataset.reactionsEnabled = "1";
+        script.dataset.emitMetadata = "0";
+        script.dataset.inputPosition = "top";
+        script.dataset.theme = "light";
+        script.dataset.lang = "zh-CN";
+        script.dataset.loading = "lazy";
+        script.crossOrigin = "anonymous";
+        script.async = true;
+        let main = document.querySelector('.main');
+        
+        let lastChild = main.childNodes[main.childNodes.length - 1];
+        main.insertBefore(script, lastChild.nextSibling);
+    })();
+
+    function setGiscusTheme(theme) {
+        let giscus = document.querySelector("iframe.giscus-frame");
+        if (giscus) {
+            giscus.contentWindow.postMessage(
+                {
+                    giscus: {
+                        setConfig: {
+                            theme: theme,
+                        },
+                    },
+                },
+                "https://giscus.app"
+            );
+        }
+    }
+
+    (function () {
+        if (/^localhost|^127/.test(location.hostname)) {
+            return;
+        }
+        addEventListener("message", (e) => {
+            if (event.origin !== "https://giscus.app") return;
+            handler();
+        });
+        window.addEventListener("onColorSchemeChange", handler);
+
+        function handler() {
+            if (document.documentElement.dataset.scheme === "light") {
+                setGiscusTheme('light');
+            } else {
+                setGiscusTheme('dark_dimmed');
+            }
+        }
+    })();
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy; 
+        
+            2021 - 
+        
+        2024 cuterwrite
+    </section>
+    
+    <section class="powerby">
+        
+            欢迎来到Cuterwrite的博客网站 <br/>
+        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
+    </section>
+</footer>
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+        </main>
+    </div>
+    <script 
+                src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
+                
+                >
+            </script><script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+</body>
+
+</html>
