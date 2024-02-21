@@ -1,1820 +1,459 @@
-<!DOCTYPE html>
-<html lang="zh-cn" dir="ltr">
-
-<head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。'>
-<title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</title>
-
-<link rel='canonical' href='https://cuterwrite.top/p/thead-tools/'>
-
-<link rel="stylesheet" href="/scss/style.min.948ad9fa334265050c110bac7860b466bf64440b826b4304382c221fe1eec34c.css"><meta property='og:title' content='搭建玄铁 900 系列工具链与 xuantie-qemu 环境'>
-<meta property='og:description' content='随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。'>
-<meta property='og:url' content='https://cuterwrite.top/p/thead-tools/'>
-<meta property='og:site_name' content='cuterwrite'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='RISC-V' /><meta property='article:published_time' content='2024-02-20T01:51:00&#43;00:00'/><meta property='article:modified_time' content='2024-02-20T01:51:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp' />
-<meta name="twitter:title" content="搭建玄铁 900 系列工具链与 xuantie-qemu 环境">
-<meta name="twitter:description" content="随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。"><meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp' />
-    <link rel="shortcut icon" href="/favicon.ico" />
-
-    
-    <script async src="https://umami-gamma-virid.vercel.app/uma" data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276">
-    </script>
-</head>
-
-<body class="
-    article-page
-    ">
-    <script>
-        (function() {
-            const colorSchemeKey = 'StackColorScheme';
-            if(!localStorage.getItem(colorSchemeKey)){
-                localStorage.setItem(colorSchemeKey, "auto");
-            }
-        })();
-    </script><script>
-    (function() {
-        const colorSchemeKey = 'StackColorScheme';
-        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
-        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
-            
-
-            document.documentElement.dataset.scheme = 'dark';
-        } else {
-            document.documentElement.dataset.scheme = 'light';
-        }
-    })();
-</script>
-<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
-    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
-        <span class="hamburger-box">
-            <span class="hamburger-inner"></span>
-        </span>
-    </button>
-
-    <header>
-        
-            
-            <figure class="site-avatar">
-                <a href="/">
-                
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
-                
-                </a>
-                
-                    <span class="emoji">😉</span>
-                
-            </figure>
-            
-        
-        
-        <div class="site-meta">
-            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
-            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-        </div>
-    </header><ol class="social-menu">
-            
-                <li>
-                    <a 
-                        href='https://github.com/PKUcoldkeyboard'
-                        target="_blank"
-                        title="GitHub"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
-</svg>
-
-
-
-                        
-                    </a>
-                </li>
-            
-                <li>
-                    <a 
-                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
-                        target="_blank"
-                        title="zhihu"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
-    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
-</svg>
-
-                        
-                    </a>
-                </li>
-            
-        </ol><ol class="menu" id="main-menu">
-        
-        
-        
-        <li >
-            <a href='/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <polyline points="5 12 3 12 12 3 21 12 19 12" />
-  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-</svg>
-
-
-
-                
-                <span>首页</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/about/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="7" r="4" />
-  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-</svg>
-
-
-
-                
-                <span>个人</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/archives/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <rect x="3" y="4" width="18" height="4" rx="2" />
-  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
-  <line x1="10" y1="12" x2="14" y2="12" />
-</svg>
-
-
-
-                
-                <span>文章</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/search/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="10" cy="10" r="7" />
-  <line x1="21" y1="21" x2="15" y2="15" />
-</svg>
-
-
-
-                
-                <span>搜索</span>
-            </a>
-        </li>
-        
-
-        <div class="menu-bottom-section">
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="8" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="16" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <span>暗色模式</span>
-                </li>
-            
-        </div>
-    </ol>
-</aside>
-
-    <aside class="sidebar right-sidebar sticky">
-        
-            
-                
-    <section class="widget archives">
-        <div class="widget-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <line x1="5" y1="9" x2="19" y2="9" />
-  <line x1="5" y1="15" x2="19" y2="15" />
-  <line x1="11" y1="4" x2="7" y2="20" />
-  <line x1="17" y1="4" x2="13" y2="20" />
-</svg>
-
-
-
-        </div>
-        <h2 class="widget-title section-title">目录</h2>
-        
-        <div class="widget--toc">
-            <nav id="TableOfContents">
-  <ul>
-    <li><a href="#一搭建平台">一、搭建平台</a></li>
-    <li><a href="#二搭建玄铁-900-系列工具链环境">二、搭建玄铁 900 系列工具链环境</a>
-      <ul>
-        <li><a href="#1-下载玄铁-900-系列工具链">1. 下载玄铁 900 系列工具链</a></li>
-        <li><a href="#2-验证工具链安装">2. 验证工具链安装</a></li>
-      </ul>
-    </li>
-    <li><a href="#三搭建-xuantie-qemu-环境">三、搭建 xuantie-qemu 环境</a>
-      <ul>
-        <li><a href="#1-前提条件">1. 前提条件</a></li>
-        <li><a href="#2-下载并安装-xuantie-qemu">2. 下载并安装 xuantie-qemu</a></li>
-        <li><a href="#3-编译安装-xuantie-qemu">3. 编译安装 xuantie-qemu</a></li>
-        <li><a href="#4-验证-xuantie-qemu-安装">4. 验证 xuantie-qemu 安装</a></li>
-      </ul>
-    </li>
-    <li><a href="#四在-qemu-上运行-risc-v-64-位-linux-系统">四、在 QEMU 上运行 RISC-V 64 位 Linux 系统</a>
-      <ul>
-        <li><a href="#1-制作内核">1. 制作内核</a>
-          <ul>
-            <li><a href="#11-下载内核源码">1.1 下载内核源码</a></li>
-            <li><a href="#12-配置和编译内核">1.2 配置和编译内核</a></li>
-          </ul>
-        </li>
-        <li><a href="#2-制作-rootfs">2. 制作 rootfs</a>
-          <ul>
-            <li><a href="#21-下载-busybox-源码">2.1 下载 busybox 源码</a></li>
-            <li><a href="#22-配置-busybox">2.2 配置 busybox</a></li>
-            <li><a href="#23-编译和安装-busybox">2.3 编译和安装 busybox</a></li>
-            <li><a href="#24-制作文件系统">2.4 制作文件系统</a></li>
-          </ul>
-        </li>
-        <li><a href="#3-启动运行">3. 启动运行</a></li>
-      </ul>
-    </li>
-    <li><a href="#五总结">五、总结</a></li>
-  </ul>
-</nav>
-        </div>
-    </section>
-
-            
-        
-    </aside>
-
-
-        <main class="main full-width">
-    <article class="has-image main-article">
-    <header class="article-header">
-        <div class="article-image">
-            <a href="/p/thead-tools/">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" loading="lazy" alt="Featured image of post 搭建玄铁 900 系列工具链与 xuantie-qemu 环境" />
-                
-            </a>
-        </div>
-    
-
-    <div class="article-details">
-    
-    <header class="article-category">
-        
-            <a href="/categories/hpc/" style="background-color: #FFD06F; color: #fff;">
-                高性能计算
-            </a>
-        
-            <a href="/categories/techstack/" style="background-color: #376795; color: #fff;">
-                综合技术栈
-            </a>
-        
-    </header>
-    
-
-    <div class="article-title-wrapper">
-        <h2 class="article-title">
-            <a href="/p/thead-tools/">搭建玄铁 900 系列工具链与 xuantie-qemu 环境</a>
-        </h2>
-    
-        
-        <h3 class="article-subtitle">
-            随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。
-        </h3>
-        
-    </div>
-
-    
-    
-    
-    
-    <footer class="article-time">
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
-  <circle cx="18" cy="18" r="4" />
-  <path d="M15 3v4" />
-  <path d="M7 3v4" />
-  <path d="M3 11h16" />
-  <path d="M18 16.496v1.504l1 1" />
-</svg>
-                <time class="article-time--published">2024-02-20</time>
-            </div>
-        
-
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <polyline points="12 7 12 12 15 15" />
-</svg>
-
-
-
-                <time class="article-time--reading">
-                    阅读时长: 8 分钟
-                </time>
-            </div>
-        
-    </footer>
-    
-
-    
-</div>
-
-</header>
-
-    <section class="article-content">
-    
-    
-    <h1 id="搭建玄铁-900-系列工具链与-xuantie-qemu-环境">搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h1>
-<h2 id="一搭建平台">一、搭建平台</h2>
-<ul>
-<li>Linux 发行版：CentOS Linux release 7.6.1810 (Core)</li>
-<li>内核版本：3.10.0-957.el7.x86_64</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ cat /etc/centos-release
-</span></span><span class="line"><span class="cl">CentOS Linux release 7.6.1810 <span class="o">(</span>Core<span class="o">)</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">$ uname -r
-</span></span><span class="line"><span class="cl">3.10.0-957.el7.x86_64
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="二搭建玄铁-900-系列工具链环境">二、搭建玄铁 900 系列工具链环境</h2>
-<h3 id="1-下载玄铁-900-系列工具链">1. 下载玄铁 900 系列工具链</h3>
-<p>首先，我们需要下载适用于 RISC-V 架构的 Xuantie GNU 工具链。前往<a class="link" href="https://www.xrvm.cn/"  target="_blank" rel="noopener"
-    >玄铁官网</a>获取最新版本的预编译包，并根据你的操作系统进行安装。在 Linux 系统中，通常解压后通过添加 <code>bin</code> 路径到 <code>$PATH</code> 环境变量即可。</p>
-<p>工具链安装包由于执行平台和目标程序平台的不同分为不同的版本，如 Xuantie-<em>-elf-</em>-x86_64-V*-.tar.gz 是 64 位 linux 平台的 riscv 裸程序工具链套件。具体分类如下：</p>
-<ul>
-<li>根据执行平台
-<ul>
-<li>x86_64：64 位 linux 平台</li>
-<li>i386：32 位 linux 平台</li>
-<li>mingw：Windows Mingw 平台</li>
-</ul>
-</li>
-<li>根据目标程序平台
-<ul>
-<li>elf：裸程序编译套件</li>
-<li>linux：linux 应用程序编译套件</li>
-</ul>
-</li>
-</ul>
-<p>这里我们下载最新的版本为 2.8.1 的适用于 64 位 linux 平台的 linux 应用程序编译套件，即 Xuantie-900-gcc-linux-5.10.4-glibc-x86_64 。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">wget https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1705395627867/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
-</span></span><span class="line"><span class="cl">tar -xzvf Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
-</span></span><span class="line"><span class="cl">sudo mv Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115 /opt
-</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115/bin:<span class="nv">$PATH</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="2-验证工具链安装">2. 验证工具链安装</h3>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span><span class="lnt">7
-</span><span class="lnt">8
-</span><span class="lnt">9
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ riscv64-unknown-linux-gnu-gcc -v
-</span></span><span class="line"><span class="cl">Using built-in specs.
-</span></span><span class="line"><span class="cl"><span class="nv">COLLECT_GCC</span><span class="o">=</span>riscv64-unknown-linux-gnu-gcc
-</span></span><span class="line"><span class="cl"><span class="nv">COLLECT_LTO_WRAPPER</span><span class="o">=</span>/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/bin/../libexec/gcc/riscv64-unknown-linux-gnu/10.4.0/lto-wrapper
-</span></span><span class="line"><span class="cl">Target: riscv64-unknown-linux-gnu
-</span></span><span class="line"><span class="cl">Configured with: /mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc/configure --target<span class="o">=</span>riscv64-unknown-linux-gnu --with-gmp<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpfr<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpc<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libexpat-prefix<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libmpfr-prefix<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-pkgversion<span class="o">=</span><span class="s1">&#39;Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018&#39;</span> <span class="nv">CXXFLAGS</span><span class="o">=</span><span class="s1">&#39;-g -O2 -DTHEAD_VERSION_NUMBER=2.8.0 &#39;</span> --prefix<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0 --with-sysroot<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/sysroot --with-system-zlib --enable-shared --enable-tls --enable-languages<span class="o">=</span>c,c++,fortran --disable-libmudflap --disable-libssp --disable-libquadmath --enable-libsanitizer --disable-nls --disable-bootstrap --src<span class="o">=</span>/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc --enable-multilib --with-abi<span class="o">=</span>lp64d --with-arch<span class="o">=</span>rv64gc_zfh_xtheadc <span class="s1">&#39;CFLAGS_FOR_TARGET=-O2   -mcmodel=medany&#39;</span> <span class="s1">&#39;CXXFLAGS_FOR_TARGET=-O2   -mcmodel=medany&#39;</span>
-</span></span><span class="line"><span class="cl">Thread model: posix
-</span></span><span class="line"><span class="cl">Supported LTO compression algorithms: zlib
-</span></span><span class="line"><span class="cl">gcc version 10.4.0 <span class="o">(</span>Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018<span class="o">)</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>可以看到输出了 gcc 的版本信息，说明工具链安装成功。</p>
-<h2 id="三搭建-xuantie-qemu-环境">三、搭建 xuantie-qemu 环境</h2>
-<h3 id="1-前提条件">1. 前提条件</h3>
-<p>在安装 xuantie-qemu 之前，需要确保系统含有以下工具或库。</p>
-<ul>
-<li>gcc 编译器</li>
-<li>automake</li>
-<li>autoconf</li>
-<li>libtool</li>
-<li>glib2 库</li>
-<li>其它&hellip;..</li>
-</ul>
-<p>通过以下命令安装上述工具或库。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo yum update -y
-</span></span><span class="line"><span class="cl">sudo yum install -y autoconf automake libtool make gcc gcc-c++ gawk bison flex texinfo gperf patchutils bc <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 zlib-devel mpfr-devel gmp-devel curl-devel expat-devel git <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 glib2-devel libfdt-devel pixman-devel ncurses-devel ncurses-compat-libs
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>如果是 Ubuntu/Dedian 系统，可以使用以下命令安装。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">sudo apt-get update
-</span></span><span class="line"><span class="cl">sudo apt-get install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 gawk build-essential bison flex texinfo gperf libtool patchutils bc <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 zlib1g-dev libexpat-dev git <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 libglib2.0-dev libfdt-dev libpixman-1-dev <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>                 libncurses5-dev libncursesw5-dev
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="2-下载并安装-xuantie-qemu">2. 下载并安装 xuantie-qemu</h3>
-<p>访问 <a class="link" href="https://github.com/T-head-Semi/qemu.git"  target="_blank" rel="noopener"
-    >Xuantie QEMU 官方仓库</a>，获取适用于玄铁 900 系列芯片的 xuantie-qemu 源代码，然后按照常规步骤编译安装：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">git clone https://github.com/T-head-Semi/qemu.git
-</span></span><span class="line"><span class="cl">git checkout xuantie-qemu-6.1.0
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="3-编译安装-xuantie-qemu">3. 编译安装 xuantie-qemu</h3>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span><span class="lnt">7
-</span><span class="lnt">8
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> qemu
-</span></span><span class="line"><span class="cl">mkdir build
-</span></span><span class="line"><span class="cl"><span class="nb">cd</span> build
-</span></span><span class="line"><span class="cl">../configure --target-list<span class="o">=</span>riscv64-softmmu,riscv64-linux-user --prefix<span class="o">=</span>/opt/qemu/6.1.0-xuantie
-</span></span><span class="line"><span class="cl">make -j <span class="k">$(</span>nproc<span class="k">)</span>
-</span></span><span class="line"><span class="cl">sudo make install
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">PATH</span><span class="o">=</span>/opt/qemu/6.1.0-xuantie/bin:<span class="nv">$PATH</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="4-验证-xuantie-qemu-安装">4. 验证 xuantie-qemu 安装</h3>
-<p>安装完毕后如果执行如下命令后能够查看到 qemu 的具体版本，则说明安装成功</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ qemu-riscv64 --version
-</span></span><span class="line"><span class="cl">qemu-riscv64 version 6.0.94 <span class="o">(</span>v6.1.0-12-g03813c9<span class="o">)</span>
-</span></span><span class="line"><span class="cl">Copyright <span class="o">(</span>c<span class="o">)</span> 2003-2021 Fabrice Bellard and the QEMU Project developers
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>编写一段 C 语言程序，如下所示：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Hello RISC-V </span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>使用 Xuantie 900 系列工具链编译该程序，并使用用户模式的 xuantie-qemu 运行程序。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ riscv64-unknown-linux-gnu-gcc -static -o hello hello.c
-</span></span><span class="line"><span class="cl">$ qemu-riscv64 ./hello
-</span></span><span class="line"><span class="cl">Hello RISC-V
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>再写一段 RVV 向量化的 C 语言程序，如下所示：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span><span class="lnt">47
-</span><span class="lnt">48
-</span><span class="lnt">49
-</span><span class="lnt">50
-</span><span class="lnt">51
-</span><span class="lnt">52
-</span><span class="lnt">53
-</span><span class="lnt">54
-</span><span class="lnt">55
-</span><span class="lnt">56
-</span><span class="lnt">57
-</span><span class="lnt">58
-</span><span class="lnt">59
-</span><span class="lnt">60
-</span><span class="lnt">61
-</span><span class="lnt">62
-</span><span class="lnt">63
-</span><span class="lnt">64
-</span><span class="lnt">65
-</span><span class="lnt">66
-</span><span class="lnt">67
-</span><span class="lnt">68
-</span><span class="lnt">69
-</span><span class="lnt">70
-</span><span class="lnt">71
-</span><span class="lnt">72
-</span><span class="lnt">73
-</span><span class="lnt">74
-</span><span class="lnt">75
-</span><span class="lnt">76
-</span><span class="lnt">77
-</span><span class="lnt">78
-</span><span class="lnt">79
-</span><span class="lnt">80
-</span><span class="lnt">81
-</span><span class="lnt">82
-</span><span class="lnt">83
-</span><span class="lnt">84
-</span><span class="lnt">85
-</span><span class="lnt">86
-</span><span class="lnt">87
-</span><span class="lnt">88
-</span><span class="lnt">89
-</span><span class="lnt">90
-</span><span class="lnt">91
-</span><span class="lnt">92
-</span><span class="lnt">93
-</span><span class="lnt">94
-</span><span class="lnt">95
-</span><span class="lnt">96
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;riscv_vector.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="cp">#define N 15
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">float</span> <span class="nf">vsum</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">vfloat32m1_t</span> <span class="n">vs</span><span class="p">,</span> <span class="n">vv</span><span class="p">,</span> <span class="n">vtmp</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">s</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">vlmax</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vlmax</span> <span class="o">=</span> <span class="nf">vsetvlmax_e32m1</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;vlmax:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfmv_v_f_f32m1</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vtmp</span> <span class="o">=</span> <span class="nf">vfmv_v_f_f32m1</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">-</span> <span class="n">vlmax</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="n">vlmax</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vv</span> <span class="o">=</span> <span class="nf">vle32_v_f32m1</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vtmp</span> <span class="o">=</span> <span class="nf">vfadd_vv_f32m1</span><span class="p">(</span><span class="n">vtmp</span><span class="p">,</span> <span class="n">vv</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfredusum_vs_f32m1_f32m1</span><span class="p">(</span><span class="n">vs</span><span class="p">,</span> <span class="n">vtmp</span><span class="p">,</span> <span class="n">vs</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">s</span> <span class="o">=</span> <span class="nf">vfmv_f_s_f32m1_f32</span><span class="p">(</span><span class="n">vs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">s</span> <span class="o">+=</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kt">float</span> <span class="nf">vsum1</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">vfloat32m1_t</span> <span class="n">vs</span><span class="p">,</span> <span class="n">vv</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">s</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">vl</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vlmax</span> <span class="o">=</span> <span class="nf">vsetvlmax_e32m1</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfmv_v_f_f32m1</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="n">vl</span><span class="p">,</span> <span class="n">n</span> <span class="o">-=</span> <span class="n">vl</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vl</span> <span class="o">=</span> <span class="nf">vsetvl_e32m1</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;vl:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vv</span> <span class="o">=</span> <span class="nf">vle32_v_f32m1</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfredusum_vs_f32m1_f32m1</span><span class="p">(</span><span class="n">vs</span><span class="p">,</span> <span class="n">vv</span><span class="p">,</span> <span class="n">vs</span><span class="p">,</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">s</span> <span class="o">=</span> <span class="nf">vfmv_f_s_f32m1_f32</span><span class="p">(</span><span class="n">vs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kt">float</span> <span class="nf">vsum2</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">v</span><span class="p">,</span> <span class="kt">int</span> <span class="n">n</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">vfloat32m2_t</span> <span class="n">vv</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">vfloat32m1_t</span> <span class="n">vs</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">s</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">vl</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vlmax</span> <span class="o">=</span> <span class="nf">vsetvlmax_e32m1</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfmv_v_f_f32m1</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">vlmax</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">+=</span> <span class="n">vl</span><span class="p">,</span> <span class="n">n</span> <span class="o">-=</span> <span class="n">vl</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vl</span> <span class="o">=</span> <span class="nf">vsetvl_e32m2</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;vl:%d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">vv</span> <span class="o">=</span> <span class="nf">vle32_v_f32m2</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">vs</span> <span class="o">=</span> <span class="nf">vfredusum_vs_f32m2_f32m1</span><span class="p">(</span><span class="n">vs</span><span class="p">,</span> <span class="n">vv</span><span class="p">,</span> <span class="n">vs</span><span class="p">,</span> <span class="n">vl</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">s</span> <span class="o">=</span> <span class="nf">vfmv_f_s_f32m1_f32</span><span class="p">(</span><span class="n">vs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">s</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">v</span><span class="p">[</span><span class="n">N</span><span class="p">],</span> <span class="n">sum</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Hello RISC-V!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">N</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">sum</span> <span class="o">=</span> <span class="nf">vsum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">N</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%f</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">sum</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>编译并运行该程序（这时需要指定 <code>-cpu</code> ，否则会报非法指定的异常，即 Illegal instruction (core dumped)）：</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ riscv64-unknown-linux-gnu-gcc -static -O3 -march<span class="o">=</span>rv64imafdcv0p7_zfh_xtheadc -o test_vec test_vec.c
-</span></span><span class="line"><span class="cl">$ qemu-riscv64 -cpu c920 ./test_vec
-</span></span><span class="line"><span class="cl">Hello RISC-V!
-</span></span><span class="line"><span class="cl">vlmax:4
-</span></span><span class="line"><span class="cl">105.000000
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="四在-qemu-上运行-risc-v-64-位-linux-系统">四、在 QEMU 上运行 RISC-V 64 位 Linux 系统</h2>
-<h3 id="1-制作内核">1. 制作内核</h3>
-<h4 id="11-下载内核源码">1.1 下载内核源码</h4>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.10.42.tar.gz
-</span></span><span class="line"><span class="cl">$ tar -xzvf linux-5.10.42.tar.gz
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>下载后进入内核源码目录</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> linux-5.10.42
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h4 id="12-配置和编译内核">1.2 配置和编译内核</h4>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- defconfig
-</span></span><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- -j <span class="k">$(</span>nproc<span class="k">)</span>
-</span></span><span class="line"><span class="cl">...
-</span></span><span class="line"><span class="cl">  AR      drivers/built-in.a
-</span></span><span class="line"><span class="cl">  GEN     .version
-</span></span><span class="line"><span class="cl">  CHK     include/generated/compile.h
-</span></span><span class="line"><span class="cl">  LD      vmlinux.o
-</span></span><span class="line"><span class="cl">  MODPOST vmlinux.symvers
-</span></span><span class="line"><span class="cl">  MODINFO modules.builtin.modinfo
-</span></span><span class="line"><span class="cl">  GEN     modules.builtin
-</span></span><span class="line"><span class="cl">  LD      .tmp_vmlinux.kallsyms1
-</span></span><span class="line"><span class="cl">  KSYMS   .tmp_vmlinux.kallsyms1.S
-</span></span><span class="line"><span class="cl">  AS      .tmp_vmlinux.kallsyms1.S
-</span></span><span class="line"><span class="cl">  LD      .tmp_vmlinux.kallsyms2
-</span></span><span class="line"><span class="cl">  KSYMS   .tmp_vmlinux.kallsyms2.S
-</span></span><span class="line"><span class="cl">  AS      .tmp_vmlinux.kallsyms2.S
-</span></span><span class="line"><span class="cl">  LD      vmlinux
-</span></span><span class="line"><span class="cl">  SYSMAP  System.map
-</span></span><span class="line"><span class="cl">  MODPOST modules-only.symvers
-</span></span><span class="line"><span class="cl">  GEN     Module.symvers
-</span></span><span class="line"><span class="cl">  CC <span class="o">[</span>M<span class="o">]</span>  fs/efivarfs/efivarfs.mod.o
-</span></span><span class="line"><span class="cl">  OBJCOPY arch/riscv/boot/Image
-</span></span><span class="line"><span class="cl">  GZIP    arch/riscv/boot/Image.gz
-</span></span><span class="line"><span class="cl">  LD <span class="o">[</span>M<span class="o">]</span>  fs/efivarfs/efivarfs.ko
-</span></span><span class="line"><span class="cl">  Kernel: arch/riscv/boot/Image.gz is ready
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="2-制作-rootfs">2. 制作 rootfs</h3>
-<h4 id="21-下载-busybox-源码">2.1 下载 busybox 源码</h4>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ wget https://busybox.net/downloads/busybox-1.33.1.tar.bz2
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>下载完后进入 busybox 源码目录</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">cd</span> busybox-1.33.1
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h4 id="22-配置-busybox">2.2 配置 busybox</h4>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- defconfig
-</span></span><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- menuconfig
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>打开配置菜单后进入第一行的 &ldquo;Settings&rdquo;，在 &ldquo;Build Options&rdquo; 节中，选中 “Build static binary (no shared libs)”，设置好后退出保存配置。</p>
-<p>检查 <code>.config</code> 文件中是否有 <code>CONFIG_STATIC=y</code> ，如果没有则手动添加。</p>
-<h4 id="23-编译和安装-busybox">2.3 编译和安装 busybox</h4>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- -j <span class="k">$(</span>nproc<span class="k">)</span>
-</span></span><span class="line"><span class="cl">$ make <span class="nv">ARCH</span><span class="o">=</span>riscv <span class="nv">CROSS_COMPILE</span><span class="o">=</span>riscv64-unknown-linux-gnu- install
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>此时源码目录 busyboxsource 下会新出现一个 <code>_install</code> 目录 ，可以看到生成的东西。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ ls _install
-</span></span><span class="line"><span class="cl">bin  linuxrc  sbin  usr
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>进入 <code>_install</code> 目录，创建以下目录</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> _install
-</span></span><span class="line"><span class="cl">$ mkdir proc sys dev etc etc/init.d
-</span></span><span class="line"><span class="cl">$ ls
-</span></span><span class="line"><span class="cl">bin  dev  etc  linuxrc  proc  sbin  sys  usr
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>然后另外再新建一个最简单的 init 的 RC 文件：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ <span class="nb">cd</span> etc/init.d/
-</span></span><span class="line"><span class="cl">$ touch rcS
-</span></span><span class="line"><span class="cl">$ vim rcS
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>编辑该文件内容为：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/sh
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>mount -t proc none /proc
-</span></span><span class="line"><span class="cl">mount -t sysfs none /sys
-</span></span><span class="line"><span class="cl">/sbin/mdev -s
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>然后修改 rcS 文件权限，加上可执行权限</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ chmod +x rcS
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h4 id="24-制作文件系统">2.4 制作文件系统</h4>
-<p>继续在 <code>_install</code> 目录下执行如下命令：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ find -print0 <span class="p">|</span> cpio -0oH newc <span class="p">|</span> gzip -9 &gt; ../rootfs.img
-</span></span><span class="line"><span class="cl"><span class="m">3276</span> blocks
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h3 id="3-启动运行">3. 启动运行</h3>
-<p>创建一个新的目录，将编译好的内核 <code>Image</code> 和制作好的 <code>rootfs.img</code> 移动到该目录下。</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ mkdir riscv64-linux
-</span></span><span class="line"><span class="cl">$ <span class="nb">cd</span> riscv64-linux
-</span></span><span class="line"><span class="cl">$ cp ../linux-5.10.42/arch/riscv/boot/Image .
-</span></span><span class="line"><span class="cl">$ cp ../busybox-1.33.1/rootfs.img .
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>执行如下命令：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">$ qemu-system-riscv64 <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>-nographic -machine virt <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>-kernel Image <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>-initrd rootfs.img <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>-append <span class="s2">&#34;root=/dev/ram rdinit=/sbin/init&#34;</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>将显示 Linux Kernel 启动流程：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">  1
-</span><span class="lnt">  2
-</span><span class="lnt">  3
-</span><span class="lnt">  4
-</span><span class="lnt">  5
-</span><span class="lnt">  6
-</span><span class="lnt">  7
-</span><span class="lnt">  8
-</span><span class="lnt">  9
-</span><span class="lnt"> 10
-</span><span class="lnt"> 11
-</span><span class="lnt"> 12
-</span><span class="lnt"> 13
-</span><span class="lnt"> 14
-</span><span class="lnt"> 15
-</span><span class="lnt"> 16
-</span><span class="lnt"> 17
-</span><span class="lnt"> 18
-</span><span class="lnt"> 19
-</span><span class="lnt"> 20
-</span><span class="lnt"> 21
-</span><span class="lnt"> 22
-</span><span class="lnt"> 23
-</span><span class="lnt"> 24
-</span><span class="lnt"> 25
-</span><span class="lnt"> 26
-</span><span class="lnt"> 27
-</span><span class="lnt"> 28
-</span><span class="lnt"> 29
-</span><span class="lnt"> 30
-</span><span class="lnt"> 31
-</span><span class="lnt"> 32
-</span><span class="lnt"> 33
-</span><span class="lnt"> 34
-</span><span class="lnt"> 35
-</span><span class="lnt"> 36
-</span><span class="lnt"> 37
-</span><span class="lnt"> 38
-</span><span class="lnt"> 39
-</span><span class="lnt"> 40
-</span><span class="lnt"> 41
-</span><span class="lnt"> 42
-</span><span class="lnt"> 43
-</span><span class="lnt"> 44
-</span><span class="lnt"> 45
-</span><span class="lnt"> 46
-</span><span class="lnt"> 47
-</span><span class="lnt"> 48
-</span><span class="lnt"> 49
-</span><span class="lnt"> 50
-</span><span class="lnt"> 51
-</span><span class="lnt"> 52
-</span><span class="lnt"> 53
-</span><span class="lnt"> 54
-</span><span class="lnt"> 55
-</span><span class="lnt"> 56
-</span><span class="lnt"> 57
-</span><span class="lnt"> 58
-</span><span class="lnt"> 59
-</span><span class="lnt"> 60
-</span><span class="lnt"> 61
-</span><span class="lnt"> 62
-</span><span class="lnt"> 63
-</span><span class="lnt"> 64
-</span><span class="lnt"> 65
-</span><span class="lnt"> 66
-</span><span class="lnt"> 67
-</span><span class="lnt"> 68
-</span><span class="lnt"> 69
-</span><span class="lnt"> 70
-</span><span class="lnt"> 71
-</span><span class="lnt"> 72
-</span><span class="lnt"> 73
-</span><span class="lnt"> 74
-</span><span class="lnt"> 75
-</span><span class="lnt"> 76
-</span><span class="lnt"> 77
-</span><span class="lnt"> 78
-</span><span class="lnt"> 79
-</span><span class="lnt"> 80
-</span><span class="lnt"> 81
-</span><span class="lnt"> 82
-</span><span class="lnt"> 83
-</span><span class="lnt"> 84
-</span><span class="lnt"> 85
-</span><span class="lnt"> 86
-</span><span class="lnt"> 87
-</span><span class="lnt"> 88
-</span><span class="lnt"> 89
-</span><span class="lnt"> 90
-</span><span class="lnt"> 91
-</span><span class="lnt"> 92
-</span><span class="lnt"> 93
-</span><span class="lnt"> 94
-</span><span class="lnt"> 95
-</span><span class="lnt"> 96
-</span><span class="lnt"> 97
-</span><span class="lnt"> 98
-</span><span class="lnt"> 99
-</span><span class="lnt">100
-</span><span class="lnt">101
-</span><span class="lnt">102
-</span><span class="lnt">103
-</span><span class="lnt">104
-</span><span class="lnt">105
-</span><span class="lnt">106
-</span><span class="lnt">107
-</span><span class="lnt">108
-</span><span class="lnt">109
-</span><span class="lnt">110
-</span><span class="lnt">111
-</span><span class="lnt">112
-</span><span class="lnt">113
-</span><span class="lnt">114
-</span><span class="lnt">115
-</span><span class="lnt">116
-</span><span class="lnt">117
-</span><span class="lnt">118
-</span><span class="lnt">119
-</span><span class="lnt">120
-</span><span class="lnt">121
-</span><span class="lnt">122
-</span><span class="lnt">123
-</span><span class="lnt">124
-</span><span class="lnt">125
-</span><span class="lnt">126
-</span><span class="lnt">127
-</span><span class="lnt">128
-</span><span class="lnt">129
-</span><span class="lnt">130
-</span><span class="lnt">131
-</span><span class="lnt">132
-</span><span class="lnt">133
-</span><span class="lnt">134
-</span><span class="lnt">135
-</span><span class="lnt">136
-</span><span class="lnt">137
-</span><span class="lnt">138
-</span><span class="lnt">139
-</span><span class="lnt">140
-</span><span class="lnt">141
-</span><span class="lnt">142
-</span><span class="lnt">143
-</span><span class="lnt">144
-</span><span class="lnt">145
-</span><span class="lnt">146
-</span><span class="lnt">147
-</span><span class="lnt">148
-</span><span class="lnt">149
-</span><span class="lnt">150
-</span><span class="lnt">151
-</span><span class="lnt">152
-</span><span class="lnt">153
-</span><span class="lnt">154
-</span><span class="lnt">155
-</span><span class="lnt">156
-</span><span class="lnt">157
-</span><span class="lnt">158
-</span><span class="lnt">159
-</span><span class="lnt">160
-</span><span class="lnt">161
-</span><span class="lnt">162
-</span><span class="lnt">163
-</span><span class="lnt">164
-</span><span class="lnt">165
-</span><span class="lnt">166
-</span><span class="lnt">167
-</span><span class="lnt">168
-</span><span class="lnt">169
-</span><span class="lnt">170
-</span><span class="lnt">171
-</span><span class="lnt">172
-</span><span class="lnt">173
-</span><span class="lnt">174
-</span><span class="lnt">175
-</span><span class="lnt">176
-</span><span class="lnt">177
-</span><span class="lnt">178
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">OpenSBI v0.9
-</span></span><span class="line"><span class="cl">   ____                    _____ ____ _____
-</span></span><span class="line"><span class="cl">  / __ <span class="se">\ </span>                 / ____<span class="p">|</span>  _ <span class="se">\_</span>   _<span class="p">|</span>
-</span></span><span class="line"><span class="cl"> <span class="p">|</span> <span class="p">|</span>  <span class="p">|</span> <span class="p">|</span>_ __   ___ _ __ <span class="p">|</span> <span class="o">(</span>___ <span class="p">|</span> <span class="p">|</span>_<span class="o">)</span> <span class="o">||</span> <span class="p">|</span>
-</span></span><span class="line"><span class="cl"> <span class="p">|</span> <span class="p">|</span>  <span class="p">|</span> <span class="p">|</span> <span class="s1">&#39;_ \ / _ \ &#39;</span>_ <span class="se">\ \_</span>__ <span class="se">\|</span>  _ &lt; <span class="p">|</span> <span class="p">|</span>
-</span></span><span class="line"><span class="cl"> <span class="p">|</span> <span class="p">|</span>__<span class="p">|</span> <span class="p">|</span> <span class="p">|</span>_<span class="o">)</span> <span class="p">|</span>  __/ <span class="p">|</span> <span class="p">|</span> <span class="p">|</span>____<span class="o">)</span> <span class="p">|</span> <span class="p">|</span>_<span class="o">)</span> <span class="o">||</span> <span class="p">|</span>_
-</span></span><span class="line"><span class="cl">  <span class="se">\_</span>___/<span class="p">|</span> .__/ <span class="se">\_</span>__<span class="p">|</span>_<span class="p">|</span> <span class="p">|</span>_<span class="p">|</span>_____/<span class="p">|</span>____/_____<span class="p">|</span>
-</span></span><span class="line"><span class="cl">        <span class="p">|</span> <span class="p">|</span>
-</span></span><span class="line"><span class="cl">        <span class="p">|</span>_<span class="p">|</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Platform Name             : riscv-virtio,qemu
-</span></span><span class="line"><span class="cl">Platform Features         : timer,mfdeleg
-</span></span><span class="line"><span class="cl">Platform HART Count       : <span class="m">1</span>
-</span></span><span class="line"><span class="cl">Firmware Base             : 0x80000000
-</span></span><span class="line"><span class="cl">Firmware Size             : <span class="m">100</span> KB
-</span></span><span class="line"><span class="cl">Runtime SBI Version       : 0.2
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Domain0 Name              : root
-</span></span><span class="line"><span class="cl">Domain0 Boot HART         : <span class="m">0</span>
-</span></span><span class="line"><span class="cl">Domain0 HARTs             : 0*
-</span></span><span class="line"><span class="cl">Domain0 Region00          : 0x0000000080000000-0x000000008001ffff <span class="o">()</span>
-</span></span><span class="line"><span class="cl">Domain0 Region01          : 0x0000000000000000-0xffffffffffffffff <span class="o">(</span>R,W,X<span class="o">)</span>
-</span></span><span class="line"><span class="cl">Domain0 Next Address      : 0x0000000080200000
-</span></span><span class="line"><span class="cl">Domain0 Next Arg1         : 0x0000000087000000
-</span></span><span class="line"><span class="cl">Domain0 Next Mode         : S-mode
-</span></span><span class="line"><span class="cl">Domain0 SysReset          : yes
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Boot HART ID              : <span class="m">0</span>
-</span></span><span class="line"><span class="cl">Boot HART Domain          : root
-</span></span><span class="line"><span class="cl">Boot HART ISA             : rv64imafdcvsu
-</span></span><span class="line"><span class="cl">Boot HART Features        : scounteren,mcounteren,time
-</span></span><span class="line"><span class="cl">Boot HART PMP Count       : <span class="m">16</span>
-</span></span><span class="line"><span class="cl">Boot HART PMP Granularity : <span class="m">4</span>
-</span></span><span class="line"><span class="cl">Boot HART PMP Address Bits: <span class="m">54</span>
-</span></span><span class="line"><span class="cl">Boot HART MHPM Count      : <span class="m">0</span>
-</span></span><span class="line"><span class="cl">Boot HART MHPM Count      : <span class="m">0</span>
-</span></span><span class="line"><span class="cl">Boot HART MIDELEG         : 0x0000000000000222
-</span></span><span class="line"><span class="cl">Boot HART MEDELEG         : 0x000000000000b109
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Linux version 5.10.42 <span class="o">(</span>root@centos<span class="o">)</span> <span class="o">(</span>riscv64-unknown-linux-gnu-gcc <span class="o">(</span>Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018<span class="o">)</span> 10.4.0, GNU ld <span class="o">(</span>GNU Binutils<span class="o">)</span> 2.35<span class="o">)</span> <span class="c1">#1 SMP Wed Feb 21 02:07:46 CST 2024</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> efi: UEFI not found.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Initial ramdisk at: 0x<span class="o">(</span>____ptrval____<span class="o">)</span> <span class="o">(</span><span class="m">1085440</span> bytes<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Zone ranges:
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>   DMA32    <span class="o">[</span>mem 0x0000000080200000-0x0000000087ffffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>   Normal   empty
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Movable zone start <span class="k">for</span> each node
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Early memory node ranges
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>   node   0: <span class="o">[</span>mem 0x0000000080200000-0x0000000087ffffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Initmem setup node <span class="m">0</span> <span class="o">[</span>mem 0x0000000080200000-0x0000000087ffffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> software IO TLB: Cannot allocate buffer
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI specification v0.2 detected
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI implementation <span class="nv">ID</span><span class="o">=</span>0x1 <span class="nv">Version</span><span class="o">=</span>0x9
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI v0.2 TIME extension detected
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI v0.2 IPI extension detected
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI v0.2 RFENCE extension detected
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SBI v0.2 HSM extension detected
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> riscv: ISA extensions acdfimsuv
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> riscv: ELF capabilities acdfim
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> percpu: Embedded <span class="m">17</span> pages/cpu s32360 r8192 d29080 u69632
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Built <span class="m">1</span> zonelists, mobility grouping on.  Total pages: <span class="m">31815</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Kernel <span class="nb">command</span> line: <span class="nv">root</span><span class="o">=</span>/dev/ram <span class="nv">rdinit</span><span class="o">=</span>/sbin/init
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Dentry cache <span class="nb">hash</span> table entries: <span class="m">16384</span> <span class="o">(</span>order: 5, <span class="m">131072</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Inode-cache <span class="nb">hash</span> table entries: <span class="m">8192</span> <span class="o">(</span>order: 4, <span class="m">65536</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Sorting __ex_table...
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> mem auto-init: stack:off, heap alloc:off, heap free:off
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Memory: 108240K/129024K available <span class="o">(</span>7084K kernel code, 3993K rwdata, 4096K rodata, 223K init, 342K bss, 20784K reserved, 0K cma-reserved<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> Virtual kernel memory layout:
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>       fixmap : 0xffffffcefee00000 - 0xffffffceff000000   <span class="o">(</span><span class="m">2048</span> kB<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>       pci io : 0xffffffceff000000 - 0xffffffcf00000000   <span class="o">(</span>  <span class="m">16</span> MB<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>      vmemmap : 0xffffffcf00000000 - 0xffffffcfffffffff   <span class="o">(</span><span class="m">4095</span> MB<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>      vmalloc : 0xffffffd000000000 - 0xffffffdfffffffff   <span class="o">(</span><span class="m">65535</span> MB<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>       lowmem : 0xffffffe000000000 - 0xffffffe007e00000   <span class="o">(</span> <span class="m">126</span> MB<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> SLUB: <span class="nv">HWalign</span><span class="o">=</span>64, <span class="nv">Order</span><span class="o">=</span>0-3, <span class="nv">MinObjects</span><span class="o">=</span>0, <span class="nv">CPUs</span><span class="o">=</span>1, <span class="nv">Nodes</span><span class="o">=</span><span class="m">1</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> rcu: Hierarchical RCU implementation.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> rcu:     RCU restricting CPUs from <span class="nv">NR_CPUS</span><span class="o">=</span><span class="m">8</span> to <span class="nv">nr_cpu_ids</span><span class="o">=</span>1.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> rcu:     RCU debug extended QS entry/exit.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span>  Tracing variant of Tasks RCU enabled.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> rcu: RCU calculated value of scheduler-enlistment delay is <span class="m">25</span> jiffies.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> rcu: Adjusting geometry <span class="k">for</span> <span class="nv">rcu_fanout_leaf</span><span class="o">=</span>16, <span class="nv">nr_cpu_ids</span><span class="o">=</span><span class="m">1</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> NR_IRQS: 64, nr_irqs: 64, preallocated irqs: <span class="m">0</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> riscv-intc: <span class="m">64</span> <span class="nb">local</span> interrupts mapped
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> plic: plic@c000000: mapped <span class="m">53</span> interrupts with <span class="m">1</span> handlers <span class="k">for</span> <span class="m">2</span> contexts.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> random: get_random_bytes called from start_kernel+0x31a/0x48c with <span class="nv">crng_init</span><span class="o">=</span><span class="m">0</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> riscv_timer_init_dt: Registering clocksource cpuid <span class="o">[</span>0<span class="o">]</span> hartid <span class="o">[</span>0<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000000<span class="o">]</span> clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: <span class="m">440795202120</span> ns
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.000150<span class="o">]</span> sched_clock: <span class="m">64</span> bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.003557<span class="o">]</span> Console: colour dummy device 80x25
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.008887<span class="o">]</span> printk: console <span class="o">[</span>tty0<span class="o">]</span> enabled
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.012368<span class="o">]</span> Calibrating delay loop <span class="o">(</span>skipped<span class="o">)</span>, value calculated using timer frequency.. 20.00 BogoMIPS <span class="o">(</span><span class="nv">lpj</span><span class="o">=</span>40000<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.012666<span class="o">]</span> pid_max: default: <span class="m">32768</span> minimum: <span class="m">301</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.014227<span class="o">]</span> Mount-cache <span class="nb">hash</span> table entries: <span class="m">512</span> <span class="o">(</span>order: 0, <span class="m">4096</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.014306<span class="o">]</span> Mountpoint-cache <span class="nb">hash</span> table entries: <span class="m">512</span> <span class="o">(</span>order: 0, <span class="m">4096</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.040922<span class="o">]</span> rcu: Hierarchical SRCU implementation.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.042741<span class="o">]</span> EFI services will not be available.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.044926<span class="o">]</span> smp: Bringing up secondary CPUs ...
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.045062<span class="o">]</span> smp: Brought up <span class="m">1</span> node, <span class="m">1</span> CPU
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.054128<span class="o">]</span> devtmpfs: initialized
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.061463<span class="o">]</span> clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: <span class="m">7645041785100000</span> ns
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.061753<span class="o">]</span> futex <span class="nb">hash</span> table entries: <span class="m">256</span> <span class="o">(</span>order: 2, <span class="m">16384</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.067460<span class="o">]</span> NET: Registered protocol family <span class="m">16</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.131233<span class="o">]</span> vgaarb: loaded
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.132530<span class="o">]</span> SCSI subsystem initialized
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.134485<span class="o">]</span> usbcore: registered new interface driver usbfs
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.134834<span class="o">]</span> usbcore: registered new interface driver hub
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.135035<span class="o">]</span> usbcore: registered new device driver usb
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.150024<span class="o">]</span> clocksource: Switched to clocksource riscv_clocksource
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.167109<span class="o">]</span> NET: Registered protocol family <span class="m">2</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.168330<span class="o">]</span> IP idents <span class="nb">hash</span> table entries: <span class="m">2048</span> <span class="o">(</span>order: 2, <span class="m">16384</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.172076<span class="o">]</span> tcp_listen_portaddr_hash <span class="nb">hash</span> table entries: <span class="m">128</span> <span class="o">(</span>order: 0, <span class="m">5120</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.172242<span class="o">]</span> TCP established <span class="nb">hash</span> table entries: <span class="m">1024</span> <span class="o">(</span>order: 1, <span class="m">8192</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.172480<span class="o">]</span> TCP <span class="nb">bind</span> <span class="nb">hash</span> table entries: <span class="m">1024</span> <span class="o">(</span>order: 3, <span class="m">32768</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.172690<span class="o">]</span> TCP: Hash tables configured <span class="o">(</span>established <span class="m">1024</span> <span class="nb">bind</span> 1024<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.173861<span class="o">]</span> UDP <span class="nb">hash</span> table entries: <span class="m">256</span> <span class="o">(</span>order: 2, <span class="m">24576</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.174481<span class="o">]</span> UDP-Lite <span class="nb">hash</span> table entries: <span class="m">256</span> <span class="o">(</span>order: 2, <span class="m">24576</span> bytes, linear<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.175963<span class="o">]</span> NET: Registered protocol family <span class="m">1</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.179024<span class="o">]</span> RPC: Registered named UNIX socket transport module.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.179111<span class="o">]</span> RPC: Registered udp transport module.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.179150<span class="o">]</span> RPC: Registered tcp transport module.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.179186<span class="o">]</span> RPC: Registered tcp NFSv4.1 backchannel transport module.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.179332<span class="o">]</span> PCI: CLS <span class="m">0</span> bytes, default <span class="m">64</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.182716<span class="o">]</span> Unpacking initramfs...
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.263706<span class="o">]</span> Freeing initrd memory: 1056K
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.265678<span class="o">]</span> workingset: <span class="nv">timestamp_bits</span><span class="o">=</span><span class="m">62</span> <span class="nv">max_order</span><span class="o">=</span><span class="m">15</span> <span class="nv">bucket_order</span><span class="o">=</span><span class="m">0</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.281052<span class="o">]</span> NFS: Registering the id_resolver key <span class="nb">type</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.282003<span class="o">]</span> Key <span class="nb">type</span> id_resolver registered
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.282074<span class="o">]</span> Key <span class="nb">type</span> id_legacy registered
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.282505<span class="o">]</span> nfs4filelayout_init: NFSv4 File Layout Driver Registering...
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.282631<span class="o">]</span> nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.283481<span class="o">]</span> 9p: Installing v9fs 9p2000 file system support
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.284918<span class="o">]</span> NET: Registered protocol family <span class="m">38</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.285416<span class="o">]</span> Block layer SCSI generic <span class="o">(</span>bsg<span class="o">)</span> driver version 0.4 loaded <span class="o">(</span>major 251<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.285593<span class="o">]</span> io scheduler mq-deadline registered
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.285692<span class="o">]</span> io scheduler kyber registered
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.295484<span class="o">]</span> pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.296336<span class="o">]</span> pci-host-generic 30000000.pci:       IO 0x0003000000..0x000300ffff -&gt; 0x0000000000
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.296861<span class="o">]</span> pci-host-generic 30000000.pci:      MEM 0x0040000000..0x007fffffff -&gt; 0x0040000000
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.296961<span class="o">]</span> pci-host-generic 30000000.pci:      MEM 0x0400000000..0x07ffffffff -&gt; 0x0400000000
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.299940<span class="o">]</span> pci-host-generic 30000000.pci: ECAM at <span class="o">[</span>mem 0x30000000-0x3fffffff<span class="o">]</span> <span class="k">for</span> <span class="o">[</span>bus 00-ff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.301083<span class="o">]</span> pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.301328<span class="o">]</span> pci_bus 0000:00: root bus resource <span class="o">[</span>bus 00-ff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.301486<span class="o">]</span> pci_bus 0000:00: root bus resource <span class="o">[</span>io  0x0000-0xffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.301528<span class="o">]</span> pci_bus 0000:00: root bus resource <span class="o">[</span>mem 0x40000000-0x7fffffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.301568<span class="o">]</span> pci_bus 0000:00: root bus resource <span class="o">[</span>mem 0x400000000-0x7ffffffff<span class="o">]</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.302864<span class="o">]</span> pci 0000:00:00.0: <span class="o">[</span>1b36:0008<span class="o">]</span> <span class="nb">type</span> <span class="m">00</span> class 0x060000
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.377412<span class="o">]</span> Serial: 8250/16550 driver, <span class="m">4</span> ports, IRQ sharing disabled
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.389894<span class="o">]</span> 10000000.uart: ttyS0 at MMIO 0x10000000 <span class="o">(</span><span class="nv">irq</span> <span class="o">=</span> 2, <span class="nv">base_baud</span> <span class="o">=</span> 230400<span class="o">)</span> is a 16550A
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.428017<span class="o">]</span> printk: console <span class="o">[</span>ttyS0<span class="o">]</span> enabled
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.430410<span class="o">]</span> <span class="o">[</span>drm<span class="o">]</span> radeon kernel modesetting enabled.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.457312<span class="o">]</span> loop: module loaded
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.460726<span class="o">]</span> libphy: Fixed MDIO Bus: probed
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.464996<span class="o">]</span> e1000e: Intel<span class="o">(</span>R<span class="o">)</span> PRO/1000 Network Driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.465383<span class="o">]</span> e1000e: Copyright<span class="o">(</span>c<span class="o">)</span> <span class="m">1999</span> - <span class="m">2015</span> Intel Corporation.
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.466272<span class="o">]</span> ehci_hcd: USB 2.0 <span class="s1">&#39;Enhanced&#39;</span> Host Controller <span class="o">(</span>EHCI<span class="o">)</span> Driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.466724<span class="o">]</span> ehci-pci: EHCI PCI platform driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.467203<span class="o">]</span> ehci-platform: EHCI generic platform driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.467683<span class="o">]</span> ohci_hcd: USB 1.1 <span class="s1">&#39;Open&#39;</span> Host Controller <span class="o">(</span>OHCI<span class="o">)</span> Driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.468129<span class="o">]</span> ohci-pci: OHCI PCI platform driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.468593<span class="o">]</span> ohci-platform: OHCI generic platform driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.469968<span class="o">]</span> usbcore: registered new interface driver uas
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.470477<span class="o">]</span> usbcore: registered new interface driver usb-storage
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.471603<span class="o">]</span> mousedev: PS/2 mouse device common <span class="k">for</span> all mice
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.475055<span class="o">]</span> goldfish_rtc 101000.rtc: registered as rtc0
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.476070<span class="o">]</span> goldfish_rtc 101000.rtc: setting system clock to 2024-02-20T19:37:51 UTC <span class="o">(</span>1708457871<span class="o">)</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.478889<span class="o">]</span> syscon-poweroff soc:poweroff: pm_power_off already claimed <span class="o">(</span>____ptrval____<span class="o">)</span> sbi_shutdown
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.479494<span class="o">]</span> syscon-poweroff: probe of soc:poweroff failed with error -16
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.480977<span class="o">]</span> usbcore: registered new interface driver usbhid
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.481324<span class="o">]</span> usbhid: USB HID core driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.483516<span class="o">]</span> NET: Registered protocol family <span class="m">10</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.491589<span class="o">]</span> Segment Routing with IPv6
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.492256<span class="o">]</span> sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.495528<span class="o">]</span> NET: Registered protocol family <span class="m">17</span>
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.497086<span class="o">]</span> 9pnet: Installing 9P2000 support
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.497667<span class="o">]</span> Key <span class="nb">type</span> dns_resolver registered
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.498706<span class="o">]</span> debug_vm_pgtable: <span class="o">[</span>debug_vm_pgtable         <span class="o">]</span>: Validating architecture page table helpers
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.533266<span class="o">]</span> Freeing unused kernel memory: 220K
-</span></span><span class="line"><span class="cl"><span class="o">[</span>    0.539682<span class="o">]</span> Run /sbin/init as init process
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">Please press Enter to activate this console.
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>见到 <code>&quot;Please press Enter to activate this console.&quot;</code> 提示后直接回车，无需密码就进入系统了。</p>
-<p>执行几个常用命令测试一下，都能正常工作：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">/ <span class="c1"># ls</span>
-</span></span><span class="line"><span class="cl">bin      etc      proc     sbin     usr
-</span></span><span class="line"><span class="cl">dev      linuxrc  root     sys
-</span></span><span class="line"><span class="cl">/ <span class="c1"># pwd</span>
-</span></span><span class="line"><span class="cl">/
-</span></span><span class="line"><span class="cl">/ <span class="c1"># cd bin</span>
-</span></span><span class="line"><span class="cl">/bin <span class="c1">#</span>
-</span></span><span class="line"><span class="cl">/ <span class="c1"># ls</span>
-</span></span><span class="line"><span class="cl">arch           dumpkmap       <span class="nb">kill</span>           netstat        setarch
-</span></span><span class="line"><span class="cl">ash            <span class="nb">echo</span>           link           nice           setpriv
-</span></span><span class="line"><span class="cl">base32         ed             linux32        nuke           setserial
-</span></span><span class="line"><span class="cl">base64         egrep          linux64        pidof          sh
-</span></span><span class="line"><span class="cl">busybox        <span class="nb">false</span>          ln             ping           sleep
-</span></span><span class="line"><span class="cl">cat            fatattr        login          ping6          stat
-</span></span><span class="line"><span class="cl">chattr         fdflush        ls             pipe_progress  stty
-</span></span><span class="line"><span class="cl">chgrp          fgrep          lsattr         printenv       su
-</span></span><span class="line"><span class="cl">chmod          fsync          lzop           ps             sync
-</span></span><span class="line"><span class="cl">chown          getopt         makemime       <span class="nb">pwd</span>            tar
-</span></span><span class="line"><span class="cl">conspy         grep           mkdir          reformime      touch
-</span></span><span class="line"><span class="cl">cp             gunzip         mknod          resume         <span class="nb">true</span>
-</span></span><span class="line"><span class="cl">cpio           gzip           mktemp         rev            umount
-</span></span><span class="line"><span class="cl">cttyhack       hostname       more           rm             uname
-</span></span><span class="line"><span class="cl">date           hush           mount          rmdir          usleep
-</span></span><span class="line"><span class="cl">dd             ionice         mountpoint     rpm            vi
-</span></span><span class="line"><span class="cl">df             iostat         mpstat         run-parts      watch
-</span></span><span class="line"><span class="cl">dmesg          ipcalc         mt             scriptreplay   zcat
-</span></span><span class="line"><span class="cl">dnsdomainname  kbd_mode       mv             sed
-</span></span><span class="line"><span class="cl">/bin <span class="c1">#</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><p>退出 QEMU 的方法是按下 <code>Ctrl + A</code> ，松开后再按下 <code>x</code> 键即可退出 QEMU 。</p>
-<h2 id="五总结">五、总结</h2>
-<p>至此，我们已经成功搭建了玄铁 900 系列的工具链环境以及 xuantie-qemu 仿真环境，这为后续的开发、编译、链接以及运行和调试基于玄铁 900 系列芯片的 RISC-V 应用程序奠定了基础。</p>
-
-</section>
-
-
-    <footer class="article-footer">
-    
-    <section class="article-tags">
-        
-            <a href="/tags/risc-v/">RISC-V</a>
-        
-    </section>
-
-
-    
-    <section class="article-copyright">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
-</svg>
-
-
-
-        <span>Licensed under CC BY-NC-SA 4.0</span>
-    </section>
-    </footer>
-
-
-    
-        <link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
-            ><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
-                defer
-                >
-            </script><script>
-    window.addEventListener("DOMContentLoaded", () => {
-        renderMathInElement(document.querySelector(`.article-content`), {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true }
-            ],
-            ignoredClasses: ["gist"]
-        });})
-</script>
-    
-</article>
-
-    
-
-    
-
-<aside class="related-content--wrapper">
-    <h2 class="section-title">相关文章</h2>
-    <div class="related-content">
-        <div class="flex article-list--tile">
-            
-                
-<article class="has-image">
-    <a href="/p/false-sharing/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">性能刺客之伪共享</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/efficient-liburing/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" loading="lazy" data-key="efficient-liburing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">高性能异步 I/O 框架：io_uring</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/openmp-intro/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp" loading="lazy" data-key="openmp-intro" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">OpenMP 简介</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/rdma-element/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" loading="lazy" data-key="rdma-element" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">RDMA 基本元素</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/ethernet-vs-rdma/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp" loading="lazy" data-key="ethernet-vs-rdma" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">比较基于传统以太网与 RDMA 技术的通信</h2>
-        </div>
-    </a>
-</article>
-
-            
-        </div>
-    </div>
-</aside>
-
-     
-    
-        
-    
-<script>
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        let script = document.createElement('script');
-        script.src = 'https://giscus.app/client.js';
-        script.dataset.repo = "PKUcoldkeyboard\/pkucoldkeyboard.github.io";
-        script.dataset.repoId = "MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=";
-        script.dataset.category = "Comments";
-        script.dataset.categoryId = "DIC_kwDOFAUD4M4CZV4F";
-        script.dataset.mapping = "title";
-        script.dataset.strict = "0";
-        script.dataset.reactionsEnabled = "1";
-        script.dataset.emitMetadata = "0";
-        script.dataset.inputPosition = "top";
-        script.dataset.theme = "light";
-        script.dataset.lang = "zh-CN";
-        script.dataset.loading = "lazy";
-        script.crossOrigin = "anonymous";
-        script.async = true;
-        let main = document.querySelector('.main');
-        
-        let lastChild = main.childNodes[main.childNodes.length - 1];
-        main.insertBefore(script, lastChild.nextSibling);
-    })();
-
-    function setGiscusTheme(theme) {
-        let giscus = document.querySelector("iframe.giscus-frame");
-        if (giscus) {
-            giscus.contentWindow.postMessage(
-                {
-                    giscus: {
-                        setConfig: {
-                            theme: theme,
-                        },
-                    },
-                },
-                "https://giscus.app"
-            );
-        }
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。"><title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</title><link rel=canonical href=https://cuterwrite.top/p/thead-tools/><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.css><link rel=stylesheet href=/scss/style.min.457c4bdff53183d90293f83f6e5357a514a8a88dd527e2cef6f18c33ac7a610b.css><meta property="og:title" content="搭建玄铁 900 系列工具链与 xuantie-qemu 环境"><meta property="og:description" content="随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。"><meta property="og:url" content="https://cuterwrite.top/p/thead-tools/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:tag" content="RISC-V"><meta property="article:tag" content="Linux 内核"><meta property="article:published_time" content="2024-02-20T01:51:00+00:00"><meta property="article:modified_time" content="2024-02-20T01:51:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp"><meta name=twitter:title content="搭建玄铁 900 系列工具链与 xuantie-qemu 环境"><meta name=twitter:description content="随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class="article-page
+line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
+<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://cuterwrite.top/index.xml target=_blank title=rss rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>主页 | Home</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>关于 | About</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>归档 | Archives</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索 | Search</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#一搭建平台>一、搭建平台</a></li><li><a href=#二搭建玄铁-900-系列工具链环境>二、搭建玄铁 900 系列工具链环境</a><ul><li><a href=#1-下载玄铁-900-系列工具链>1. 下载玄铁 900 系列工具链</a></li><li><a href=#2-验证工具链安装>2. 验证工具链安装</a></li></ul></li><li><a href=#三搭建-xuantie-qemu-环境>三、搭建 xuantie-qemu 环境</a><ul><li><a href=#1-前提条件>1. 前提条件</a></li><li><a href=#2-下载并安装-xuantie-qemu>2. 下载并安装 xuantie-qemu</a></li><li><a href=#3-编译安装-xuantie-qemu>3. 编译安装 xuantie-qemu</a></li><li><a href=#4-验证-xuantie-qemu-安装>4. 验证 xuantie-qemu 安装</a></li></ul></li><li><a href=#四在-qemu-上运行-risc-v-64-位-linux-系统>四、在 QEMU 上运行 RISC-V 64 位 Linux 系统</a><ul><li><a href=#1-制作内核>1. 制作内核</a><ul><li><a href=#11-下载内核源码>1.1 下载内核源码</a></li><li><a href=#12-配置和编译内核>1.2 配置和编译内核</a></li></ul></li><li><a href=#2-制作-rootfs>2. 制作 rootfs</a><ul><li><a href=#21-下载-busybox-源码>2.1 下载 busybox 源码</a></li><li><a href=#22-配置-busybox>2.2 配置 busybox</a></li><li><a href=#23-编译和安装-busybox>2.3 编译和安装 busybox</a></li><li><a href=#24-制作文件系统>2.4 制作文件系统</a></li></ul></li><li><a href=#3-启动运行>3. 启动运行</a></li></ul></li><li><a href=#五总结>五、总结</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/thead-tools/><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp loading=lazy alt="Featured image of post 搭建玄铁 900 系列工具链与 xuantie-qemu 环境"></a></div><div class=article-details><header class=article-category><a href=/categories/hpc/ style=background-color:#ffd06f;color:#fff>高性能计算</a>
+<a href=/categories/techstack/ style=background-color:#376795;color:#fff>综合技术栈</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/thead-tools/>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</a></h2><h3 class=article-subtitle>随着国产 RISC-V 芯片技术的快速发展，阿里巴巴平头哥的玄铁 900 系列处理器因其高性能、低功耗的特点备受瞩目。为了更好地支持基于玄铁 900 系列芯片的开发和调试工作，搭建一套完整的工具链和仿真环境至关重要。本文将详细介绍如何搭建玄铁 900 系列工具链及 xuantie-qemu 环境。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2024-02-20</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 7 分钟</time></div></footer></div></header><section class=article-content><h1 id=搭建玄铁-900-系列工具链与-xuantie-qemu-环境>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h1><h2 id=一搭建平台>一、搭建平台</h2><ul><li>Linux 发行版：CentOS Linux release 7.6.1810 (Core)</li><li>内核版本：3.10.0-957.el7.x86_64</li></ul><pre><code class=language-bash>$ cat /etc/centos-release
+CentOS Linux release 7.6.1810 (Core)
+
+$ uname -r
+3.10.0-957.el7.x86_64
+</code></pre><h2 id=二搭建玄铁-900-系列工具链环境>二、搭建玄铁 900 系列工具链环境</h2><h3 id=1-下载玄铁-900-系列工具链>1. 下载玄铁 900 系列工具链</h3><p>首先，我们需要下载适用于 RISC-V 架构的 Xuantie GNU 工具链。前往<a class=link href=https://www.xrvm.cn/ target=_blank rel=noopener>玄铁官网
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span></a>获取最新版本的预编译包，并根据你的操作系统进行安装。在 Linux 系统中，通常解压后通过添加 <code>bin</code> 路径到 <code>$PATH</code> 环境变量即可。</p><p>工具链安装包由于执行平台和目标程序平台的不同分为不同的版本，如 Xuantie-<em>-elf-</em>-x86_64-V*-.tar.gz 是 64 位 linux 平台的 riscv 裸程序工具链套件。具体分类如下：</p><ul><li>根据执行平台<ul><li>x86_64：64 位 linux 平台</li><li>i386：32 位 linux 平台</li><li>mingw：Windows Mingw 平台</li></ul></li><li>根据目标程序平台<ul><li>elf：裸程序编译套件</li><li>linux：linux 应用程序编译套件</li></ul></li></ul><p>这里我们下载最新的版本为 2.8.1 的适用于 64 位 linux 平台的 linux 应用程序编译套件，即 Xuantie-900-gcc-linux-5.10.4-glibc-x86_64 。</p><pre><code class=language-bash>wget https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1705395627867/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+tar -xzvf Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+sudo mv Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115 /opt
+export PATH=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115/bin:$PATH
+</code></pre><h3 id=2-验证工具链安装>2. 验证工具链安装</h3><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -v
+Using built-in specs.
+COLLECT_GCC=riscv64-unknown-linux-gnu-gcc
+COLLECT_LTO_WRAPPER=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/bin/../libexec/gcc/riscv64-unknown-linux-gnu/10.4.0/lto-wrapper
+Target: riscv64-unknown-linux-gnu
+Configured with: /mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc/configure --target=riscv64-unknown-linux-gnu --with-gmp=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpfr=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpc=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libexpat-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libmpfr-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-pkgversion='Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018' CXXFLAGS='-g -O2 -DTHEAD_VERSION_NUMBER=2.8.0 ' --prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0 --with-sysroot=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/sysroot --with-system-zlib --enable-shared --enable-tls --enable-languages=c,c++,fortran --disable-libmudflap --disable-libssp --disable-libquadmath --enable-libsanitizer --disable-nls --disable-bootstrap --src=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc --enable-multilib --with-abi=lp64d --with-arch=rv64gc_zfh_xtheadc 'CFLAGS_FOR_TARGET=-O2   -mcmodel=medany' 'CXXFLAGS_FOR_TARGET=-O2   -mcmodel=medany'
+Thread model: posix
+Supported LTO compression algorithms: zlib
+gcc version 10.4.0 (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018)
+</code></pre><p>可以看到输出了 gcc 的版本信息，说明工具链安装成功。</p><h2 id=三搭建-xuantie-qemu-环境>三、搭建 xuantie-qemu 环境</h2><h3 id=1-前提条件>1. 前提条件</h3><p>在安装 xuantie-qemu 之前，需要确保系统含有以下工具或库。</p><ul><li>gcc 编译器</li><li>automake</li><li>autoconf</li><li>libtool</li><li>glib2 库</li><li>其它&mldr;..</li></ul><p>通过以下命令安装上述工具或库。</p><pre><code class=language-bash>sudo yum update -y
+sudo yum install -y autoconf automake libtool make gcc gcc-c++ gawk bison flex texinfo gperf patchutils bc \
+                 zlib-devel mpfr-devel gmp-devel curl-devel expat-devel git \
+                 glib2-devel libfdt-devel pixman-devel ncurses-devel ncurses-compat-libs
+</code></pre><p>如果是 Ubuntu/Dedian 系统，可以使用以下命令安装。</p><pre><code class=language-bash>sudo apt-get update
+sudo apt-get install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev \
+                 gawk build-essential bison flex texinfo gperf libtool patchutils bc \
+                 zlib1g-dev libexpat-dev git \
+                 libglib2.0-dev libfdt-dev libpixman-1-dev \
+                 libncurses5-dev libncursesw5-dev
+</code></pre><h3 id=2-下载并安装-xuantie-qemu>2. 下载并安装 xuantie-qemu</h3><p>访问 <a class=link href=https://github.com/T-head-Semi/qemu.git target=_blank rel=noopener>Xuantie QEMU 官方仓库
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span></a>，获取适用于玄铁 900 系列芯片的 xuantie-qemu 源代码，然后按照常规步骤编译安装：</p><pre><code class=language-bash>git clone https://github.com/T-head-Semi/qemu.git
+git checkout xuantie-qemu-6.1.0
+</code></pre><h3 id=3-编译安装-xuantie-qemu>3. 编译安装 xuantie-qemu</h3><pre><code class=language-bash>cd qemu
+mkdir build
+cd build
+../configure --target-list=riscv64-softmmu,riscv64-linux-user --prefix=/opt/qemu/6.1.0-xuantie
+make -j $(nproc)
+sudo make install
+
+export PATH=/opt/qemu/6.1.0-xuantie/bin:$PATH
+</code></pre><h3 id=4-验证-xuantie-qemu-安装>4. 验证 xuantie-qemu 安装</h3><p>安装完毕后如果执行如下命令后能够查看到 qemu 的具体版本，则说明安装成功</p><pre><code class=language-bash>$ qemu-riscv64 --version
+qemu-riscv64 version 6.0.94 (v6.1.0-12-g03813c9)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+</code></pre><p>编写一段 C 语言程序，如下所示：</p><pre><code class=language-c>#include &lt;stdio.h&gt;
+
+int main() {
+    printf(&quot;Hello RISC-V \n&quot;);
+    return 0;
+}
+</code></pre><p>使用 Xuantie 900 系列工具链编译该程序，并使用用户模式的 xuantie-qemu 运行程序。</p><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -static -o hello hello.c
+$ qemu-riscv64 ./hello
+Hello RISC-V
+</code></pre><p>再写一段 RVV 向量化的 C 语言程序，如下所示：</p><pre><code class=language-c>#include &lt;riscv_vector.h&gt;
+#include &lt;stdio.h&gt;
+
+#define N 15
+
+float vsum(float* v, int n) {
+    vfloat32m1_t vs, vv, vtmp;
+    float s = 0.0;
+    int i;
+    int vlmax;
+
+    vlmax = vsetvlmax_e32m1();
+
+    printf(&quot;vlmax:%d\n&quot;, vlmax);
+
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
+
+    vtmp = vfmv_v_f_f32m1(0.0, vlmax);
+
+    for (i = 0; i &lt; n - vlmax; i += vlmax) {
+        vv = vle32_v_f32m1(&amp;v[i], vlmax);
+        vtmp = vfadd_vv_f32m1(vtmp, vv, vlmax);
     }
 
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        addEventListener("message", (e) => {
-            if (event.origin !== "https://giscus.app") return;
-            handler();
-        });
-        window.addEventListener("onColorSchemeChange", handler);
+    vs = vfredusum_vs_f32m1_f32m1(vs, vtmp, vs, vlmax);
 
-        function handler() {
-            if (document.documentElement.dataset.scheme === "light") {
-                setGiscusTheme('light');
-            } else {
-                setGiscusTheme('dark_dimmed');
-            }
-        }
-    })();
-</script>
+    s = vfmv_f_s_f32m1_f32(vs);
 
-    
+    for (; i &lt; n; i++) {
+        s += v[i];
+    }
+    return s;
+}
 
-    <footer class="site-footer">
-    <section class="copyright">
-        &copy; 
-        
-            2021 - 
-        
-        2024 cuterwrite
-    </section>
-    
-    <section class="powerby">
-        
-            欢迎来到Cuterwrite的博客网站 <br/>
-        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
-    </section>
-</footer>
+float vsum1(float* v, int n) {
+    vfloat32m1_t vs, vv;
+    float s;
+    int i;
+    int vl, vlmax;
 
+    vlmax = vsetvlmax_e32m1();
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
 
-    
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    for (i = 0; n &gt; 0; i += vl, n -= vl) {
+        vl = vsetvl_e32m1(n);
+        printf(&quot;vl:%d\n&quot;, vl);
+        vv = vle32_v_f32m1(&amp;v[i], vl);
 
-    
-    <div class="pswp__bg"></div>
+        vs = vfredusum_vs_f32m1_f32m1(vs, vv, vs, vl);
+    }
 
-    
-    <div class="pswp__scroll-wrap">
+    s = vfmv_f_s_f32m1_f32(vs);
 
-        
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
+    return s;
+}
 
-        
-        <div class="pswp__ui pswp__ui--hidden">
+float vsum2(float* v, int n) {
+    vfloat32m2_t vv;
+    vfloat32m1_t vs;
+    float s;
+    int i;
+    int vl, vlmax;
 
-            <div class="pswp__top-bar">
+    vlmax = vsetvlmax_e32m1();
 
-                
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
 
-                <div class="pswp__counter"></div>
+    for (i = 0; n &gt; 0; i += vl, n -= vl) {
+        vl = vsetvl_e32m2(n);
+        printf(&quot;vl:%d\n&quot;, vl);
+        vv = vle32_v_f32m2(&amp;v[i], vl);
 
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+        vs = vfredusum_vs_f32m2_f32m1(vs, vv, vs, vl);
+    }
 
-                <button class="pswp__button pswp__button--share" title="Share"></button>
+    s = vfmv_f_s_f32m1_f32(vs);
 
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+    return s;
+}
 
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+int main() {
+    int i;
+    float v[N], sum = 0.0;
 
-                
-                
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                        <div class="pswp__preloader__cut">
-                            <div class="pswp__preloader__donut"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    printf(&quot;Hello RISC-V!\n&quot;);
 
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div>
-            </div>
+    for (i = 0; i &lt; N; i++) {
+        v[i] = i;
+    }
 
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
+    sum = vsum(v, N);
 
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
+    printf(&quot;%f\n&quot;, sum);
 
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
+    return 0;
+}
+</code></pre><ul><li>编译并运行该程序（这时需要指定 <code>-cpu</code> ，否则会报非法指定的异常，即 Illegal instruction (core dumped)）：</li></ul><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -static -O3 -march=rv64imafdcv0p7_zfh_xtheadc -o test_vec test_vec.c
+$ qemu-riscv64 -cpu c920 ./test_vec
+Hello RISC-V!
+vlmax:4
+105.000000
+</code></pre><h2 id=四在-qemu-上运行-risc-v-64-位-linux-系统>四、在 QEMU 上运行 RISC-V 64 位 Linux 系统</h2><h3 id=1-制作内核>1. 制作内核</h3><h4 id=11-下载内核源码>1.1 下载内核源码</h4><pre><code class=language-bash>$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.10.42.tar.gz
+$ tar -xzvf linux-5.10.42.tar.gz
+</code></pre><p>下载后进入内核源码目录</p><pre><code class=language-bash>$ cd linux-5.10.42
+</code></pre><h4 id=12-配置和编译内核>1.2 配置和编译内核</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+...
+  AR      drivers/built-in.a
+  GEN     .version
+  CHK     include/generated/compile.h
+  LD      vmlinux.o
+  MODPOST vmlinux.symvers
+  MODINFO modules.builtin.modinfo
+  GEN     modules.builtin
+  LD      .tmp_vmlinux.kallsyms1
+  KSYMS   .tmp_vmlinux.kallsyms1.S
+  AS      .tmp_vmlinux.kallsyms1.S
+  LD      .tmp_vmlinux.kallsyms2
+  KSYMS   .tmp_vmlinux.kallsyms2.S
+  AS      .tmp_vmlinux.kallsyms2.S
+  LD      vmlinux
+  SYSMAP  System.map
+  MODPOST modules-only.symvers
+  GEN     Module.symvers
+  CC [M]  fs/efivarfs/efivarfs.mod.o
+  OBJCOPY arch/riscv/boot/Image
+  GZIP    arch/riscv/boot/Image.gz
+  LD [M]  fs/efivarfs/efivarfs.ko
+  Kernel: arch/riscv/boot/Image.gz is ready
+</code></pre><h3 id=2-制作-rootfs>2. 制作 rootfs</h3><h4 id=21-下载-busybox-源码>2.1 下载 busybox 源码</h4><pre><code class=language-bash>$ wget https://busybox.net/downloads/busybox-1.33.1.tar.bz2
+</code></pre><p>下载完后进入 busybox 源码目录</p><pre><code class=language-bash>cd busybox-1.33.1
+</code></pre><h4 id=22-配置-busybox>2.2 配置 busybox</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
+</code></pre><p>打开配置菜单后进入第一行的 &ldquo;Settings&rdquo;，在 &ldquo;Build Options&rdquo; 节中，选中 “Build static binary (no shared libs)”，设置好后退出保存配置。</p><p>检查 <code>.config</code> 文件中是否有 <code>CONFIG_STATIC=y</code> ，如果没有则手动添加。</p><h4 id=23-编译和安装-busybox>2.3 编译和安装 busybox</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- install
+</code></pre><p>此时源码目录 busyboxsource 下会新出现一个 <code>_install</code> 目录 ，可以看到生成的东西。</p><pre><code class=language-bash>$ ls _install
+bin  linuxrc  sbin  usr
+</code></pre><p>进入 <code>_install</code> 目录，创建以下目录</p><pre><code class=language-bash>$ cd _install
+$ mkdir proc sys dev etc etc/init.d
+$ ls
+bin  dev  etc  linuxrc  proc  sbin  sys  usr
+</code></pre><p>然后另外再新建一个最简单的 init 的 RC 文件：</p><pre><code class=language-bash>$ cd etc/init.d/
+$ touch rcS
+$ vim rcS
+</code></pre><p>编辑该文件内容为：</p><pre><code class=language-bash>#!/bin/sh
+mount -t proc none /proc
+mount -t sysfs none /sys
+/sbin/mdev -s
+</code></pre><p>然后修改 rcS 文件权限，加上可执行权限</p><pre><code class=language-bash>$ chmod +x rcS
+</code></pre><h4 id=24-制作文件系统>2.4 制作文件系统</h4><p>继续在 <code>_install</code> 目录下执行如下命令：</p><pre><code class=language-bash>$ find -print0 | cpio -0oH newc | gzip -9 &gt; ../rootfs.img
+3276 blocks
+</code></pre><h3 id=3-启动运行>3. 启动运行</h3><p>创建一个新的目录，将编译好的内核 <code>Image</code> 和制作好的 <code>rootfs.img</code> 移动到该目录下。</p><pre><code class=language-bash>$ mkdir riscv64-linux
+$ cd riscv64-linux
+$ cp ../linux-5.10.42/arch/riscv/boot/Image .
+$ cp ../busybox-1.33.1/rootfs.img .
+</code></pre><p>执行如下命令：</p><pre><code class=language-bash>$ qemu-system-riscv64 \
+-nographic -machine virt \
+-kernel Image \
+-initrd rootfs.img \
+-append &quot;root=/dev/ram rdinit=/sbin/init&quot;
+</code></pre><p>将显示 Linux Kernel 启动流程：</p><pre><code class=language-bash>OpenSBI v0.9
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ &lt; | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
 
-        </div>
+Platform Name             : riscv-virtio,qemu
+Platform Features         : timer,mfdeleg
+Platform HART Count       : 1
+Firmware Base             : 0x80000000
+Firmware Size             : 100 KB
+Runtime SBI Version       : 0.2
 
-    </div>
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000080000000-0x000000008001ffff ()
+Domain0 Region01          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x0000000087000000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
 
-</div><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
-                defer
-                >
-            </script><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
-            ><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
-            >
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcvsu
+Boot HART Features        : scounteren,mcounteren,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 0
+Boot HART MHPM Count      : 0
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+[    0.000000] Linux version 5.10.42 (root@centos) (riscv64-unknown-linux-gnu-gcc (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018) 10.4.0, GNU ld (GNU Binutils) 2.35) #1 SMP Wed Feb 21 02:07:46 CST 2024
+[    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[    0.000000] efi: UEFI not found.
+[    0.000000] Initial ramdisk at: 0x(____ptrval____) (1085440 bytes)
+[    0.000000] Zone ranges:
+[    0.000000]   DMA32    [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000] software IO TLB: Cannot allocate buffer
+[    0.000000] SBI specification v0.2 detected
+[    0.000000] SBI implementation ID=0x1 Version=0x9
+[    0.000000] SBI v0.2 TIME extension detected
+[    0.000000] SBI v0.2 IPI extension detected
+[    0.000000] SBI v0.2 RFENCE extension detected
+[    0.000000] SBI v0.2 HSM extension detected
+[    0.000000] riscv: ISA extensions acdfimsuv
+[    0.000000] riscv: ELF capabilities acdfim
+[    0.000000] percpu: Embedded 17 pages/cpu s32360 r8192 d29080 u69632
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 31815
+[    0.000000] Kernel command line: root=/dev/ram rdinit=/sbin/init
+[    0.000000] Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000000] Sorting __ex_table...
+[    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[    0.000000] Memory: 108240K/129024K available (7084K kernel code, 3993K rwdata, 4096K rodata, 223K init, 342K bss, 20784K reserved, 0K cma-reserved)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]       fixmap : 0xffffffcefee00000 - 0xffffffceff000000   (2048 kB)
+[    0.000000]       pci io : 0xffffffceff000000 - 0xffffffcf00000000   (  16 MB)
+[    0.000000]      vmemmap : 0xffffffcf00000000 - 0xffffffcfffffffff   (4095 MB)
+[    0.000000]      vmalloc : 0xffffffd000000000 - 0xffffffdfffffffff   (65535 MB)
+[    0.000000]       lowmem : 0xffffffe000000000 - 0xffffffe007e00000   ( 126 MB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Hierarchical RCU implementation.
+[    0.000000] rcu:     RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
+[    0.000000] rcu:     RCU debug extended QS entry/exit.
+[    0.000000]  Tracing variant of Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] riscv-intc: 64 local interrupts mapped
+[    0.000000] plic: plic@c000000: mapped 53 interrupts with 1 handlers for 2 contexts.
+[    0.000000] random: get_random_bytes called from start_kernel+0x31a/0x48c with crng_init=0
+[    0.000000] riscv_timer_init_dt: Registering clocksource cpuid [0] hartid [0]
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.000150] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
+[    0.003557] Console: colour dummy device 80x25
+[    0.008887] printk: console [tty0] enabled
+[    0.012368] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
+[    0.012666] pid_max: default: 32768 minimum: 301
+[    0.014227] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.014306] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.040922] rcu: Hierarchical SRCU implementation.
+[    0.042741] EFI services will not be available.
+[    0.044926] smp: Bringing up secondary CPUs ...
+[    0.045062] smp: Brought up 1 node, 1 CPU
+[    0.054128] devtmpfs: initialized
+[    0.061463] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.061753] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+[    0.067460] NET: Registered protocol family 16
+[    0.131233] vgaarb: loaded
+[    0.132530] SCSI subsystem initialized
+[    0.134485] usbcore: registered new interface driver usbfs
+[    0.134834] usbcore: registered new interface driver hub
+[    0.135035] usbcore: registered new device driver usb
+[    0.150024] clocksource: Switched to clocksource riscv_clocksource
+[    0.167109] NET: Registered protocol family 2
+[    0.168330] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.172076] tcp_listen_portaddr_hash hash table entries: 128 (order: 0, 5120 bytes, linear)
+[    0.172242] TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[    0.172480] TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
+[    0.172690] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.173861] UDP hash table entries: 256 (order: 2, 24576 bytes, linear)
+[    0.174481] UDP-Lite hash table entries: 256 (order: 2, 24576 bytes, linear)
+[    0.175963] NET: Registered protocol family 1
+[    0.179024] RPC: Registered named UNIX socket transport module.
+[    0.179111] RPC: Registered udp transport module.
+[    0.179150] RPC: Registered tcp transport module.
+[    0.179186] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.179332] PCI: CLS 0 bytes, default 64
+[    0.182716] Unpacking initramfs...
+[    0.263706] Freeing initrd memory: 1056K
+[    0.265678] workingset: timestamp_bits=62 max_order=15 bucket_order=0
+[    0.281052] NFS: Registering the id_resolver key type
+[    0.282003] Key type id_resolver registered
+[    0.282074] Key type id_legacy registered
+[    0.282505] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    0.282631] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+[    0.283481] 9p: Installing v9fs 9p2000 file system support
+[    0.284918] NET: Registered protocol family 38
+[    0.285416] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+[    0.285593] io scheduler mq-deadline registered
+[    0.285692] io scheduler kyber registered
+[    0.295484] pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
+[    0.296336] pci-host-generic 30000000.pci:       IO 0x0003000000..0x000300ffff -&gt; 0x0000000000
+[    0.296861] pci-host-generic 30000000.pci:      MEM 0x0040000000..0x007fffffff -&gt; 0x0040000000
+[    0.296961] pci-host-generic 30000000.pci:      MEM 0x0400000000..0x07ffffffff -&gt; 0x0400000000
+[    0.299940] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-ff]
+[    0.301083] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
+[    0.301328] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.301486] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.301528] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
+[    0.301568] pci_bus 0000:00: root bus resource [mem 0x400000000-0x7ffffffff]
+[    0.302864] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000
+[    0.377412] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.389894] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 2, base_baud = 230400) is a 16550A
+[    0.428017] printk: console [ttyS0] enabled
+[    0.430410] [drm] radeon kernel modesetting enabled.
+[    0.457312] loop: module loaded
+[    0.460726] libphy: Fixed MDIO Bus: probed
+[    0.464996] e1000e: Intel(R) PRO/1000 Network Driver
+[    0.465383] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+[    0.466272] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.466724] ehci-pci: EHCI PCI platform driver
+[    0.467203] ehci-platform: EHCI generic platform driver
+[    0.467683] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    0.468129] ohci-pci: OHCI PCI platform driver
+[    0.468593] ohci-platform: OHCI generic platform driver
+[    0.469968] usbcore: registered new interface driver uas
+[    0.470477] usbcore: registered new interface driver usb-storage
+[    0.471603] mousedev: PS/2 mouse device common for all mice
+[    0.475055] goldfish_rtc 101000.rtc: registered as rtc0
+[    0.476070] goldfish_rtc 101000.rtc: setting system clock to 2024-02-20T19:37:51 UTC (1708457871)
+[    0.478889] syscon-poweroff soc:poweroff: pm_power_off already claimed (____ptrval____) sbi_shutdown
+[    0.479494] syscon-poweroff: probe of soc:poweroff failed with error -16
+[    0.480977] usbcore: registered new interface driver usbhid
+[    0.481324] usbhid: USB HID core driver
+[    0.483516] NET: Registered protocol family 10
+[    0.491589] Segment Routing with IPv6
+[    0.492256] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.495528] NET: Registered protocol family 17
+[    0.497086] 9pnet: Installing 9P2000 support
+[    0.497667] Key type dns_resolver registered
+[    0.498706] debug_vm_pgtable: [debug_vm_pgtable         ]: Validating architecture page table helpers
+[    0.533266] Freeing unused kernel memory: 220K
+[    0.539682] Run /sbin/init as init process
 
-        </main>
-    </div>
-    <script 
-                src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
-                
-                >
-            </script><script type="text/javascript" src="/ts/main.js" defer></script>
-<script>
-    (function () {
-        const customFont = document.createElement('link');
-        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
-
-        customFont.type = "text/css";
-        customFont.rel = "stylesheet";
-
-        document.head.appendChild(customFont);
-    }());
-</script>
-
-</body>
-
-</html>
+Please press Enter to activate this console.
+</code></pre><p>见到 <code>"Please press Enter to activate this console."</code> 提示后直接回车，无需密码就进入系统了。</p><p>执行几个常用命令测试一下，都能正常工作：</p><pre><code class=language-bash>/ # ls
+bin      etc      proc     sbin     usr
+dev      linuxrc  root     sys
+/ # pwd
+/
+/ # cd bin
+/bin #
+/ # ls
+arch           dumpkmap       kill           netstat        setarch
+ash            echo           link           nice           setpriv
+base32         ed             linux32        nuke           setserial
+base64         egrep          linux64        pidof          sh
+busybox        false          ln             ping           sleep
+cat            fatattr        login          ping6          stat
+chattr         fdflush        ls             pipe_progress  stty
+chgrp          fgrep          lsattr         printenv       su
+chmod          fsync          lzop           ps             sync
+chown          getopt         makemime       pwd            tar
+conspy         grep           mkdir          reformime      touch
+cp             gunzip         mknod          resume         true
+cpio           gzip           mktemp         rev            umount
+cttyhack       hostname       more           rm             uname
+date           hush           mount          rmdir          usleep
+dd             ionice         mountpoint     rpm            vi
+df             iostat         mpstat         run-parts      watch
+dmesg          ipcalc         mt             scriptreplay   zcat
+dnsdomainname  kbd_mode       mv             sed
+/bin #
+</code></pre><p>退出 QEMU 的方法是按下 <code>Ctrl + A</code> ，松开后再按下 <code>x</code> 键即可退出 QEMU 。</p><p>如果想要往 QEMU 里面传输文件，可以使用挂载的方式，如下所示：</p><pre><code class=language-bash>$ mkdir rootfs
+$ sudo mount -o loop rootfs.img rootfs
+$ cp [-r] [file] ./rootfs/
+$ sudo umount rootfs
+</code></pre><h2 id=五总结>五、总结</h2><p>至此，我们已经成功搭建了玄铁 900 系列的工具链环境以及 xuantie-qemu 仿真环境，这为后续的开发、编译、链接以及运行和调试基于玄铁 900 系列芯片的 RISC-V 应用程序奠定了基础。</p></section><footer class=article-footer><section class=article-tags><a href=/tags/risc-v/>RISC-V</a>
+<a href=/tags/linux-kernel/>Linux 内核</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/false-sharing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp loading=lazy data-key=false-sharing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp></div><div class=article-details><h2 class=article-title>性能刺客之伪共享</h2></div></a></article><article class=has-image><a href=/p/efficient-liburing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp loading=lazy data-key=efficient-liburing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp></div><div class=article-details><h2 class=article-title>高性能异步 I/O 框架：io_uring</h2></div></a></article><article class=has-image><a href=/p/openmp-intro/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp loading=lazy data-key=openmp-intro data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp></div><div class=article-details><h2 class=article-title>OpenMP 简介</h2></div></a></article><article class=has-image><a href=/p/rdma-element/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp loading=lazy data-key=rdma-element data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp></div><div class=article-details><h2 class=article-title>RDMA 基本元素</h2></div></a></article><article class=has-image><a href=/p/ethernet-vs-rdma/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp loading=lazy data-key=ethernet-vs-rdma data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp></div><div class=article-details><h2 class=article-title>比较基于传统以太网与 RDMA 技术的通信</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=running-time>本博客已稳定运行
+<span id=runningdays class=running-days></span></section><section class=totalcount>发表了55篇文章 ·
+总计239.87k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><script>(function(){var t,e=window;if(e.ChannelIO)return e.console.error("ChannelIO script included twice.");t=function(){t.c(arguments)},t.q=[],t.c=function(e){t.q.push(e)},e.ChannelIO=t;function n(){if(e.ChannelIOInitialized)return;e.ChannelIOInitialized=!0;var n,t=document.createElement("script");t.type="text/javascript",t.async=!0,t.src="https://cdn.channel.io/plugin/ch-plugin-web.js",n=document.getElementsByTagName("script")[0],n.parentNode&&n.parentNode.insertBefore(t,n)}document.readyState==="complete"?n():(e.addEventListener("DOMContentLoaded",n),e.addEventListener("load",n))})(),ChannelIO("boot",{pluginKey:"3182ceac-0382-4734-98f5-1e6fec11c935"})</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/prism.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-bash.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-java.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-toml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-yaml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-nginx.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-python.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-c.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-cpp.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-rust.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-javascript.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markdown.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-css.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-json.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-go.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-sql.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-scss.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markup.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/show-language/prism-show-language.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js></script>
+<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

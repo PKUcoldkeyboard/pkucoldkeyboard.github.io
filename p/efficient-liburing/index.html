@@ -1,1742 +1,358 @@
-<!DOCTYPE html>
-<html lang="zh-cn" dir="ltr">
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。"><title>高性能异步 I/O 框架：io_uring</title><link rel=canonical href=https://cuterwrite.top/p/efficient-liburing/><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.css><link rel=stylesheet href=/scss/style.min.457c4bdff53183d90293f83f6e5357a514a8a88dd527e2cef6f18c33ac7a610b.css><meta property="og:title" content="高性能异步 I/O 框架：io_uring"><meta property="og:description" content="本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。"><meta property="og:url" content="https://cuterwrite.top/p/efficient-liburing/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:tag" content="AIO"><meta property="article:tag" content="Linux-内核"><meta property="article:published_time" content="2023-08-01T01:00:00+00:00"><meta property="article:modified_time" content="2023-08-01T01:00:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp"><meta name=twitter:title content="高性能异步 I/O 框架：io_uring"><meta name=twitter:description content="本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class="article-page
+line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
+<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://cuterwrite.top/index.xml target=_blank title=rss rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>主页 | Home</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>关于 | About</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>归档 | Archives</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索 | Search</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#一-引言>一、 引言</a><ul><li><a href=#1-linux-原生-aio-接口>1. Linux 原生 aio 接口</a></li><li><a href=#2-io_uring-接口>2. io_uring 接口</a></li><li><a href=#3-liburing-库>3. liburing 库</a></li></ul></li><li><a href=#二io_uring-的核心数据结构与原理>二、io_uring 的核心数据结构与原理</a><ul><li><a href=#1-io_uring-的核心数据结构>1. io_uring 的核心数据结构</a></li><li><a href=#2-io_uring-的三种工作模式>2. io_uring 的三种工作模式：</a></li><li><a href=#3-io_uring-的系统调用-api>3. io_uring 的系统调用 API</a></li><li><a href=#4-io_uring-的高级特性>4. io_uring 的高级特性</a></li></ul></li><li><a href=#三io_uring-的使用示例>三、io_uring 的使用示例</a><ul><li><a href=#1-在项目中引入-liburing>1. 在项目中引入 liburing</a></li><li><a href=#2-代码示例>2. 代码示例</a></li><li><a href=#3-最佳实践>3. 最佳实践</a></li></ul></li><li><a href=#结论>结论</a></li><li><a href=#参考文献>参考文献</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/efficient-liburing/><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp loading=lazy alt="Featured image of post 高性能异步 I/O 框架：io_uring"></a></div><div class=article-details><header class=article-category><a href=/categories/hpc/ style=background-color:#ffd06f;color:#fff>高性能计算</a>
+<a href=/categories/techstack/ style=background-color:#376795;color:#fff>综合技术栈</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/efficient-liburing/>高性能异步 I/O 框架：io_uring</a></h2><h3 class=article-subtitle>本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2023-08-01</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 16 分钟</time></div></footer></div></header><section class=article-content><h1 id=高性能异步-io-框架io_uring>高性能异步 I/O 框架：io_uring</h1><h2 id=一-引言>一、 引言</h2><h3 id=1-linux-原生-aio-接口>1. Linux 原生 aio 接口</h3><p>在 Linux 中，有很多方法可以进行基于文件的 I/O。最早的和最基本的就是系统调用 read(2)和 write(2)。后来增加了允许传入偏移量的 pread(2)和 pwrite(2)，以及基于 vector 的 preadv(2)和 pwrite(2)。再后来，Linux 提供了 preadv2(2)和 pwritev2(2)。它们进一步扩展了 API 以允许修饰符标志。抛开这些系统调用的不同点不谈，它们有一个共同的特点：都是同步接口。这意味着当数据准备好读（或写入）时，系统调用才会返回。对于某些场景，这远远不够，因此还需要异步接口。POSIX 提供了 aio_read(3)和 aio_write(3)来满足这种需求，但是它们的实现通常性能不佳。Linux 原生 aio 接口是 Linux 内核中提供的一种异步 I/O 接口，它使用 io_submit(2)、io_getevents(2)等系统调用来提交和获取 I/O 请求，并使用 struct iocb 来描述每个 I/O 请求。它支持 O_DIRECT（或非缓冲）访问的异步 I/O，并且可以使用信号或回调函数来通知 I/O 完成事件。</p><p>然而，Linux 原生 aio 接口存在着许多的限制与不足之处：</p><ul><li>最大的限制是它只能支持 O_DIRECT（或非缓冲）访问的异步 I/O。由于 O_DIRECT 的限制（缓存绕过和大小/对齐限制），这使得原生 aio 接口在大多数情况下都无法使用。对于普遍的缓冲 I/O，接口会以同步方式运行。</li><li>即使满足了 I/O 异步的所有约束条件，有时也会出现阻塞。I/O 提交可能会通过多种方式导致阻塞：<ol><li>如果执行 I/O 时需要元数据，提交就会阻塞，等待元数据。</li><li>对于存储设备，有固定数量的请求槽可用。如果这些插槽目前都在使用中，提交就会阻塞，等待有一个插槽可用。</li></ol></li><li>I/O 请求元数据开销大：每次 I/O 提交都需要复制 64 + 8 字节的数据，而每次完成则需要复制 32 字节的数据。这意味着对于所谓的零拷贝 I/O 来说，每次操作都需要复制 104 字节的内存。根据 I/O 的大小不同，这种内存复制的开销可能是明显可见的。而且，暴露的完成事件环缓冲区实际上会妨碍完成操作的速度，并且很难（甚至不可能）从应用程序中正确地使用。这可能意味着使用这个 API 进行 I/O 操作时，完成操作的效率会受到影响。此外，在 Spectre/Meltdown 漏洞修复后，I/O 总是需要至少两个系统调用（提交+等待完成），这会导致严重的性能下降。这可能是因为在修复这些漏洞后，系统对于系统调用的处理变得更加复杂和缓慢。</li><li>IOPOLL 支持不好。</li></ul><p>随着时间的推移，尽管有一些努力试图解决这些限制，但没有成功。随着具备亚 10 微秒延迟和非常高 IOPS 的设备的出现，这个接口开始显现出其性能缺陷。对于这些类型的设备来说，慢速和非确定性的提交延迟是一个很大的问题，而且单个核心无法提供足够的性能。此外，由于前面提到的限制，可以说原生的 Linux aio 接口用途并不广泛。它被限制在应用程序的一小部分领域中，并且伴随着一些问题。</p><h3 id=2-io_uring-接口>2. io_uring 接口</h3><p>io_uring 是 Linux 内核中的一种新的异步 I/O 接口，旨在提供高效和可扩展的 I/O 操作。它通过使用一对环形队列（提交队列和完成队列）作为应用程序和内核之间的通信通道，实现了零拷贝的 I/O 操作。</p><p>io_uring 的设计目标是在提供高性能的同时解决传统异步 I/O 接口的一些限制和问题。它避免了内存复制和内存方向性，通过共享数据结构和内存来优雅地实现应用程序和内核之间的协调。这种设计使得 io_uring 能够更高效地处理 I/O 请求，并且不需要频繁的系统调用来同步和通信。</p><p>通过 io_uring，应用程序可以作为生产者将 I/O 请求提交到提交队列，而内核作为消费者处理这些请求。一旦请求完成，内核会生成相应的完成事件，并将其放入完成队列中，应用程序可以从完成队列中消费这些事件。这种异步的方式使得应用程序能够更好地利用系统资源，提高 I/O 操作的效率和性能。</p><p>io_uring 的优势主要在于：</p><ul><li>使用方便：简单且强大的系统调用，提供三个系统调用，liburing 用户态库编程友好 (io_uring_setup, io_uring_enter, io_uring_register)。</li><li>通用性强：提供内核统一的异步编程框架，既支持传统 I/O (Buffer I/O + Direct I/O)，也支持类 epoll 型编程。</li><li>特性丰富：支持非常多的高级特性。</li><li>高性能：I/O 请求 overhead 小。</li></ul><h3 id=3-liburing-库>3. liburing 库</h3><p>liburing 是一个基于 io_uring 接口的用户空间库，它是 Linux 内核开发者 Axboe 于 2019 年发布的一个开源项目。io_uring 是一种新的 Linux 异步 I/O 接口，它通过使用一对环形缓冲区（ring buffer）来实现用户空间和内核空间之间的通信，从而避免了传统异步 I/O 接口（如 AIO）所需的系统调用、信号、回调等机制。这样，用户空间可以直接向内核提交 I/O 请求，并从内核获取 I/O 结果，而无需等待或切换上下文。这大大提高了异步 I/O 操作的效率和性能。</p><p>liburing 是对 io_uring 接口的封装和扩展，它提供了一套简洁和灵活的 API，让开发者可以方便地使用 io_uring 的功能，而无需关心底层的细节和复杂性。liburing 主要包括以下几个组件：</p><ul><li>liburing.h：定义了 liburing 库的主要数据结构和函数</li><li>liburing.a：提供了 liburing 库的静态链接版本</li><li>liburing.so：提供了 liburing 库的动态链接版本</li><li>liburing/io_uring.h：定义了 io_uring 接口相关的数据结构和常量</li><li>liburing/compat.h：提供了一些兼容性相关的宏定义</li></ul><h2 id=二io_uring-的核心数据结构与原理>二、io_uring 的核心数据结构与原理</h2><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802172119.webp alt=20230802172119 width=90% loading=lazy></figure><h3 id=1-io_uring-的核心数据结构>1. io_uring 的核心数据结构</h3><ul><li>每个 io_uring 实例都有两个环形队列(称为 ring)，在内核和应用程序之间共享：<ol><li>提交队列：submission queue( SQ )</li><li>完成队列：completion queue( CQ )</li></ol></li></ul><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802000924.webp alt=20230802000924 width=90% loading=lazy></figure><ul><li>这两个队列：<ol><li>都是单生产者、单消费者的队列，size 为 2 的幂次方。</li><li>提供无锁接口，内部使用内存屏障来进行同步。</li></ol></li><li>请求时：<ol><li>应用创建 SQ Entries (SQE)，更新 SQ tail</li><li>内核消费 SQE，更新 SQ head</li></ol></li><li>完成后：<ol><li>内核为完成的一个或多个请求创建 CQ Entries (CQE)，更新 CQ tail</li><li>应用消费 CQE，更新 CQ head</li><li>完成事件可能以任意顺序到达，到总是与特定的 SQE 相关联的</li><li>消费 CQE 过程无需切换内核态</li></ol></li><li>这样做的好处在于：<ol><li>原本需要多次系统调用，现在变成批处理一次提交</li><li>此外，io_uring 使异步 I/O 的使用场景也不再仅限于数据库应用， 普通的非数据库应用也能用</li></ol></li></ul><h3 id=2-io_uring-的三种工作模式>2. io_uring 的三种工作模式：</h3><ol><li>中断驱动模式 (interrupt-driven)<ul><li>默认模式, 可通过 io_uring_enter()提交 I/O 请求，然后直接检查 CQ 状态判断是否完成。</li></ul></li><li>轮询模式 (polling)<ul><li>Busy waiting for I/O completion，而不是通过异步 IRQ(Interrupt Request)来接收通知</li><li>这种模式需要文件系统和块设备支持轮询功能。相比中断驱动模式，这种方式延迟更低，但是 CPU 占用率可能会更高。</li><li>目前，只有指定了 O_DIRECT 标志打开的文件描述符才能使用这种模式。当一个读或写请求提交给轮询上下文之后，应用必须调用 io_uring_enter()来轮询 CQ 队列，判断请求是否完成。</li><li>对于一个 io_uring 实例来说，不支持混合使用轮询和非轮询模式。</li></ul></li><li>内核轮询模式 (kernel polling)<ul><li>这种模式会创建一个内核线程来执行 SQ 的轮询工作。</li><li>使用这种模式的 io_uring 实例，应用无需切到内核态就能触发 I/O 操作。通过 SQ 来提交 SQE，以及监控 CQ 的完成状态，应用无需任何系统调用，就能提交和收割 I/O。</li><li>如果内核线程的空闲事件超过了用户的配置值，它会通知应用，然后进入 idle 状态。这种情况下，应用必须调用 io_uring_enter()来唤醒内核线程。如果 I/O 一直很繁忙，内核线程是不会 sleep 的。</li></ul></li></ol><h3 id=3-io_uring-的系统调用-api>3. io_uring 的系统调用 API</h3><ul><li><p>io_uring 的系统调用 API 有三个，分别是：</p><ul><li>io_uring_setup(2)</li><li>io_uring_register(2)</li><li>io_uring_enter(2)</li></ul></li><li><p>首先是 io_uring_setup(2)：</p><pre><code class=language-c>int io_uring_setup(unsigned entries, struct io_uring_params *p);
+</code></pre><ul><li>用于创建一个 io_uring 实例，返回一个文件描述符，用于后续的 io_uring 系统调用。</li><li>参数：<ul><li>entries：SQ 和 CQ 的大小，必须是 2 的幂次方</li><li>params：io_uring 的参数，包括 flags、sq_thread_cpu 等</li></ul></li><li>返回值：<ul><li>成功：返回一个文件描述符</li><li>失败：返回-1，并设置 errno</li></ul></li><li>创建一个 SQ 和一个 CQ，它们的大小都是 entries。如果 entries 是 0，那么 SQ 和 CQ 的大小都是默认值(4096)。SQ 和 CQ 在应用和内核之间共享，避免了在初始化和完成 I/O 时拷贝数据</li></ul></li><li><p>io_uring_register(2)：</p><pre><code class=language-c>int io_uring_register(int fd, unsigned int opcode, const void *arg, unsigned int nr_args);
+</code></pre><ul><li>注册用于异步 I/O 的文件或用户缓冲区，使内核能长时间持有对该文件在内核内部的数据结构引用，或创建应用内存的长期映射，这个操作只会在注册时执行一次，而不是每个 I/O 操作都会处理，因此减少了 per-I/O 的 overhead 开销。</li><li>参数：<ul><li>fd：文件描述符</li><li>opcode：操作码，用于指定注册的类型，如 IORING_REGISTER_BUFFERS、IORING_REGISTER_FILES 等</li><li>arg：指向一个数组，数组中的每个元素都是一个指向用户缓冲区或文件描述符的指针</li><li>nr_args：arg 数组的大小</li></ul></li><li>返回值：<ul><li>成功：返回 0</li><li>失败：返回-1，并设置 errno</li></ul></li><li>注册的缓冲区将会被锁定到内存中，并计入用户的 RLIMIT_MEMLOCK 限制。如果注册的是文件描述符，那么内核会增加对该文件的引用计数，直到应用调用 io_uring_unregister(2)来注销它。</li><li>每个缓冲区有 1GB 的大小限制。</li><li>缓冲区必须是匿名的、非文件后端的内存，例如 malloc(3)或带 MAP_ANONYMOUS 标识的 mmap(2)返回的内存。</li><li>Huge pages 也是支持的。整个 Huge page 都会被 pin 到内核，即使只使用其中一部分。</li><li>已经注册的缓冲区无法调整大小，想调整只能先 unregister，再重新注册。</li></ul></li><li><p>io_uring_enter(2):</p><pre><code class=language-c>int io_uring_enter(unsigned int fd, unsigned int to_submit, unsigned int min_complete, unsigned int flags, sigset_t *sig);
+</code></pre><ul><li>这个系统调用用于初始化和完成（initiate and complete）I/O，使用共享的 SQ 和 CQ。单次调用同时执行：<ol><li>提交新的 I/O 请求</li><li>等待 I/O 完成</li></ol></li><li>参数：<ul><li>fd：io_uring 实例的文件描述符</li><li>to_submit：SQ 中提交的 I/O 请求数量</li><li>min_complete：最少完成的 I/O 请求数量</li><li>flags：用于指定 I/O 请求的类型，如 IORING_ENTER_GETEVENTS、IORING_ENTER_SQ_WAKEUP 等</li><li>sig：用于指定信号集，如果 flags 指定了 IORING_ENTER_GETEVENTS，那么 sig 必须是一个有效的信号集</li></ul></li><li>在默认模式下，如果指定了 min_complete，那么 io_uring_enter(2)会等待至少 min_complete 个 I/O 请求完成，然后返回。如果没有指定 min_complete，那么 io_uring_enter(2)会等待 SQ 中所有的 I/O 请求完成，然后返回。在 polling 模式下，如果指定了 min_complete，如果 min_complete 为 0，则要求内核返回当前以及完成的所有 events，无阻塞；如果 min_complete 大于 0，如果有事件完成，内核仍然立即返回；如果没有完成事件，内核会 poll，等待指定的次数完成，或者这个进程的时间片用完。</li></ul></li></ul><h3 id=4-io_uring-的高级特性>4. io_uring 的高级特性</h3><ul><li>io_uring 还提供了一些用于特殊场景的高级特性<ul><li>File registration(文件注册)：每次发起一个指定文件描述的操作，内核都需要花费一些时钟周期(cycles)文件描述符映射到内部表示。对于那些 <strong>针对同一文件进行重复操作</strong> 的场景，io_uring 支持提前注册这些文件，后面直接查找就行了。</li><li>Buffer registration(缓冲区注册)：与 file registration 类似，Direct I/O 场景中，内核需要 map/unmap memory areas。io_uring 支持提前注册这些缓冲区（buffers）。</li><li>Poll ring(轮询环形缓冲区)：对于非常快是设备，处理中断的开销是比较大的。io_uring 允许用户关闭中断，使用轮询模式。</li><li>Linked operations(链接操作)：允许用户发送串联的请求。这两个请求同时提交，但后面的会等前面的处理完才开始执行。</li></ul></li></ul><h2 id=三io_uring-的使用示例>三、io_uring 的使用示例</h2><p>liburing 提供了一个简单的高层 API， 可用于一些基本场景，应用程序避免了直接使用更底层的系统调用。此外，这个 API 还避免了一些重复操作的代码，如设置 io_uring 实例。</p><h3 id=1-在项目中引入-liburing>1. 在项目中引入 liburing</h3><ol><li>apt-get 安装 liburing<ul><li>在 ubuntu 系统下安装 liburing 十分简单，只需要执行以下命令即可 （注意：ubuntu 版本需要大于等于 20.04，因为内核版本需要大于等于 5.4）<pre><code class=language-shell>sudo apt-get install liburing-dev
+</code></pre></li><li>在项目中引入 liburing 的头文件<pre><code class=language-c>#include &quot;liburing.h&quot;
+</code></pre></li><li>在项目中引入 liburing 的库文件<pre><code class=language-c>-luring
+</code></pre></li></ul></li><li>手动安装<ul><li>下载 liburing 的源码<pre><code class=language-shell>git clone https://github.com/axboe/liburing.git
+</code></pre></li><li>编译 liburing<pre><code class=language-shell>cd liburing
+./configure
+make -j
+sudo make install
+</code></pre></li><li>在项目中引入 liburing 的头文件<pre><code class=language-c>#include &quot;liburing.h&quot;
+</code></pre></li><li>在项目中引入 liburing 的库文件<pre><code class=language-c>-luring
+</code></pre></li></ul></li></ol><h3 id=2-代码示例>2. 代码示例</h3><ul><li>使用 4 个 SQE，从输入文件中读取最多 16KB 的数据。</li></ul><pre><code class=language-c>#include &quot;liburing.h&quot;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;errno.h&gt;
 
-<head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。'>
-<title>高性能异步 I/O 框架：io_uring</title>
+// io_uring 队列长度
+#define QUEUE_DEPTH 4
 
-<link rel='canonical' href='https://cuterwrite.top/p/efficient-liburing/'>
+int main(int argc, char** argv)
+{
+  int fd, pending, done;
+  void* buf;
 
-<link rel="stylesheet" href="/scss/style.min.948ad9fa334265050c110bac7860b466bf64440b826b4304382c221fe1eec34c.css"><meta property='og:title' content='高性能异步 I/O 框架：io_uring'>
-<meta property='og:description' content='本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。'>
-<meta property='og:url' content='https://cuterwrite.top/p/efficient-liburing/'>
-<meta property='og:site_name' content='cuterwrite'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='AIO' /><meta property='article:tag' content='Linux-内核' /><meta property='article:published_time' content='2023-08-01T01:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-08-01T01:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp' />
-<meta name="twitter:title" content="高性能异步 I/O 框架：io_uring">
-<meta name="twitter:description" content="本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。"><meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp' />
-    <link rel="shortcut icon" href="/favicon.ico" />
+  // 1. 初始化一个 io_uring 实例
+  struct io_uring ring;
+  // 创建一个 io_uring 实例，队列长度为 QUEUE_DEPTH，flags 为 0，使用默认模式
+  int ret = io_uring_queue_init(QUEUE_DEPTH, &amp;ring, 0);
+  if (ret)
+  {
+    fprintf(stderr, &quot;io_uring_queue_init: %s\n&quot;, strerror(-ret));
+    return 1;
+  }
+  // 2. 打开输入文件，指定 O_DIRECT 标志
+  fd = open(argv[1], O_RDONLY | O_DIRECT);
+  struct stat st;
+  fstat(fd, &amp;st);
 
-    
-    <script async src="https://umami-gamma-virid.vercel.app/uma" data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276">
-    </script>
-</head>
+  // 3. 初始化 4 个读缓冲区
+  size_t filesize = 0;
+  struct iovec *iovecs = calloc(QUEUE_DEPTH, sizeof(struct iovec));
+  for (int i = 0; i &lt; QUEUE_DEPTH; i++)
+  {
+      if (posix_memalign(&amp;buf, 4096, 4096))
+      {
+          perror(&quot;posix_memalign&quot;);
+          return 1;
+      }
+      iovecs[i].iov_base = buf;
+      iovecs[i].iov_len = 4096;
+      filesize += 4096;
+  }
+  // 4. 依次准备 4 个读请求，指定将随后读入的数据写入 iovecs 中
+  struct io_uring_sqe *sqe;
+  size_t offset = 0;
+  int i = 0;
+  do
+  {
+    sqe = io_uring_get_sqe(&amp;ring);
+    io_uring_prep_readv(sqe, fd, &amp;iovecs[i], 1, offset);
+    offset += iovecs[i].iov_len;
+    i++;
+    // 如果超出文件大小，停止准备后面的 SQE
+    if (offset &gt;= st.st_size)
+    {
+        break;
+    }
+  } while (1);
 
-<body class="
-    article-page
-    ">
-    <script>
-        (function() {
-            const colorSchemeKey = 'StackColorScheme';
-            if(!localStorage.getItem(colorSchemeKey)){
-                localStorage.setItem(colorSchemeKey, "auto");
-            }
-        })();
-    </script><script>
-    (function() {
-        const colorSchemeKey = 'StackColorScheme';
-        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
-        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+  // 5. 提交 SQE 读请求
+  ret = io_uring_submit(&amp;ring);
+  if (ret &lt; 0)
+  {
+      fprintf(stderr, &quot;io_uring_submit: %s\n&quot;, strerror(-ret));
+      return 1;
+  } else if (ret != i) {
+      fprintf(stderr, &quot;io_uring_submit submitted less %d\n&quot;, ret);
+      return 1;
+  }
 
-        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
-            
+  // 6. 等待读请求完成
+  struct io_uring_cqe *cqe;
+  done = 0;
+  pending = ret;
+  filesize = 0;
+  for (int i = 0; i &lt; pending; i++) {
+      // 等待一个读完成事件
+      io_uring_wait_cqe(&amp;ring, &amp;cqe);
+      done++;
+      if (cqe-&gt;res != 4096 &amp;&amp; cqe-&gt;res + filesize != st.st_size) {
+            fprintf(stderr, &quot;cqe-&gt;res: %d\n&quot;, cqe-&gt;res);
+            return 1;
+      }
+      filesize += cqe-&gt;res;
+      // 更新完成队列
+      io_uring_cqe_seen(&amp;ring, cqe);
+  }
 
-            document.documentElement.dataset.scheme = 'dark';
-        } else {
-            document.documentElement.dataset.scheme = 'light';
+  // 7. 打印统计信息
+  printf(&quot;Submitted = %d, completed = %d, bytes = %lu\n&quot;, pending, done, (unsigned long)filesize);
+
+  // 8. 销毁资源
+  close(fd);
+  io_uring_queue_exit(&amp;ring);
+  return 0;
+}
+</code></pre><ul><li>link-cp：使用 io_uring 高级特性 SQE chaining 实现复制文件功能，将创建一个长度为 2 的 SQE 链，第一个 SQE 用于读，第二个 SQE 用于写。</li></ul><pre><code class=language-c>#include &lt;assert.h&gt;
+#include &lt;errno.h&gt;
+#include &lt;fcntl.h&gt;
+#include &lt;inttypes.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;sys/ioctl.h&gt;
+#include &lt;sys/stat.h&gt;
+#include &lt;sys/types.h&gt;
+#include &lt;unistd.h&gt;
+#include &quot;liburing.h&quot;
+
+#define QD 64
+#define BS (32 * 1024)
+
+struct io_data
+{
+    size_t offset;
+    int index;
+    struct iovec iov;
+};
+
+static int infd, outfd;
+static int inflight;
+
+static int setup_context(unsigned entries, struct io_uring *ring)
+{
+    int ret;
+
+    ret = io_uring_queue_init(entries, ring, 0);
+    if (ret &lt; 0)
+    {
+        fprintf(stderr, &quot;queue_init: %s\n&quot;, strerror(-ret));
+        return -1;
+    }
+
+    return 0;
+}
+
+static int get_file_size(int fd, off_t *size)
+{
+    struct stat st;
+
+    if (fstat(fd, &amp;st) &lt; 0)
+        return -1;
+    if (S_ISREG(st.st_mode))
+    {
+        *size = st.st_size;
+        return 0;
+    }
+    else if (S_ISBLK(st.st_mode))
+    {
+        unsigned long long bytes;
+
+        if (ioctl(fd, BLKGETSIZE64, &amp;bytes) != 0)
+            return -1;
+
+        *size = bytes;
+        return 0;
+    }
+
+    return -1;
+}
+
+static void queue_rw_pair(struct io_uring *ring, off_t size, off_t offset)
+{
+    struct io_uring_sqe *sqe;
+    struct io_data *data;
+    void *ptr;
+
+    ptr                = malloc(size + sizeof(*data));
+    data               = ptr + size;
+    data-&gt;index        = 0;
+    data-&gt;offset       = offset;
+    data-&gt;iov.iov_base = ptr;
+    data-&gt;iov.iov_len  = size;
+
+    sqe = io_uring_get_sqe(ring);
+    io_uring_prep_readv(sqe, infd, &amp;data-&gt;iov, 1, offset);
+    sqe-&gt;flags |= IOSQE_IO_LINK;
+    io_uring_sqe_set_data(sqe, data);
+
+    sqe = io_uring_get_sqe(ring);
+    io_uring_prep_writev(sqe, outfd, &amp;data-&gt;iov, 1, offset);
+    io_uring_sqe_set_data(sqe, data);
+}
+
+static int handle_cqe(struct io_uring *ring, struct io_uring_cqe *cqe)
+{
+    struct io_data *data = io_uring_cqe_get_data(cqe);
+    int ret              = 0;
+
+    data-&gt;index++;
+
+    if (cqe-&gt;res &lt; 0)
+    {
+        if (cqe-&gt;res == -ECANCELED)
+        {
+            queue_rw_pair(ring, data-&gt;iov.iov_len, data-&gt;offset);
+            inflight += 2;
         }
-    })();
-</script>
-<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
-    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
-        <span class="hamburger-box">
-            <span class="hamburger-inner"></span>
-        </span>
-    </button>
-
-    <header>
-        
-            
-            <figure class="site-avatar">
-                <a href="/">
-                
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
-                
-                </a>
-                
-                    <span class="emoji">😉</span>
-                
-            </figure>
-            
-        
-        
-        <div class="site-meta">
-            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
-            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-        </div>
-    </header><ol class="social-menu">
-            
-                <li>
-                    <a 
-                        href='https://github.com/PKUcoldkeyboard'
-                        target="_blank"
-                        title="GitHub"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
-</svg>
-
-
-
-                        
-                    </a>
-                </li>
-            
-                <li>
-                    <a 
-                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
-                        target="_blank"
-                        title="zhihu"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
-    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
-</svg>
-
-                        
-                    </a>
-                </li>
-            
-        </ol><ol class="menu" id="main-menu">
-        
-        
-        
-        <li >
-            <a href='/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <polyline points="5 12 3 12 12 3 21 12 19 12" />
-  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-</svg>
-
-
-
-                
-                <span>首页</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/about/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="7" r="4" />
-  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-</svg>
-
-
-
-                
-                <span>个人</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/archives/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <rect x="3" y="4" width="18" height="4" rx="2" />
-  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
-  <line x1="10" y1="12" x2="14" y2="12" />
-</svg>
-
-
-
-                
-                <span>文章</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/search/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="10" cy="10" r="7" />
-  <line x1="21" y1="21" x2="15" y2="15" />
-</svg>
-
-
-
-                
-                <span>搜索</span>
-            </a>
-        </li>
-        
-
-        <div class="menu-bottom-section">
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="8" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="16" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <span>暗色模式</span>
-                </li>
-            
-        </div>
-    </ol>
-</aside>
-
-    <aside class="sidebar right-sidebar sticky">
-        
-            
-                
-    <section class="widget archives">
-        <div class="widget-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <line x1="5" y1="9" x2="19" y2="9" />
-  <line x1="5" y1="15" x2="19" y2="15" />
-  <line x1="11" y1="4" x2="7" y2="20" />
-  <line x1="17" y1="4" x2="13" y2="20" />
-</svg>
-
-
-
-        </div>
-        <h2 class="widget-title section-title">目录</h2>
-        
-        <div class="widget--toc">
-            <nav id="TableOfContents">
-  <ul>
-    <li><a href="#一-引言">一、 引言</a>
-      <ul>
-        <li><a href="#1-linux-原生-aio-接口">1. Linux 原生 aio 接口</a></li>
-        <li><a href="#2-io_uring-接口">2. io_uring 接口</a></li>
-        <li><a href="#3-liburing-库">3. liburing 库</a></li>
-      </ul>
-    </li>
-    <li><a href="#二io_uring-的核心数据结构与原理">二、io_uring 的核心数据结构与原理</a>
-      <ul>
-        <li><a href="#1-io_uring-的核心数据结构">1. io_uring 的核心数据结构</a></li>
-        <li><a href="#2-io_uring-的三种工作模式">2. io_uring 的三种工作模式：</a></li>
-        <li><a href="#3-io_uring-的系统调用-api">3. io_uring 的系统调用 API</a></li>
-        <li><a href="#4-io_uring-的高级特性">4. io_uring 的高级特性</a></li>
-      </ul>
-    </li>
-    <li><a href="#三io_uring-的使用示例">三、io_uring 的使用示例</a>
-      <ul>
-        <li><a href="#1-在项目中引入-liburing">1. 在项目中引入 liburing</a></li>
-        <li><a href="#2-代码示例">2. 代码示例</a></li>
-        <li><a href="#3-最佳实践">3. 最佳实践</a></li>
-      </ul>
-    </li>
-    <li><a href="#结论">结论</a></li>
-    <li><a href="#参考文献">参考文献</a></li>
-  </ul>
-</nav>
-        </div>
-    </section>
-
-            
-        
-    </aside>
-
-
-        <main class="main full-width">
-    <article class="has-image main-article">
-    <header class="article-header">
-        <div class="article-image">
-            <a href="/p/efficient-liburing/">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" loading="lazy" alt="Featured image of post 高性能异步 I/O 框架：io_uring" />
-                
-            </a>
-        </div>
-    
-
-    <div class="article-details">
-    
-    <header class="article-category">
-        
-            <a href="/categories/hpc/" style="background-color: #FFD06F; color: #fff;">
-                高性能计算
-            </a>
-        
-            <a href="/categories/techstack/" style="background-color: #376795; color: #fff;">
-                综合技术栈
-            </a>
-        
-    </header>
-    
-
-    <div class="article-title-wrapper">
-        <h2 class="article-title">
-            <a href="/p/efficient-liburing/">高性能异步 I/O 框架：io_uring</a>
-        </h2>
-    
-        
-        <h3 class="article-subtitle">
-            本文介绍了高性能异步 I/O 框架 io_uring 的原理、核心数据结构和使用示例。首先，文章对比了 Linux 原生 aio 接口和 io_uring 接口，并介绍了 liburing 库。接着，详细解释了 io_uring 的核心数据结构和三种工作模式，以及系统调用 API 和高级特性。然后，文章提供了在项目中引入 liburing 的方法，并给出了代码示例和最佳实践。最后，文章总结了 io_uring 的优点和结论。
-        </h3>
-        
-    </div>
-
-    
-    
-    
-    
-    <footer class="article-time">
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
-  <circle cx="18" cy="18" r="4" />
-  <path d="M15 3v4" />
-  <path d="M7 3v4" />
-  <path d="M3 11h16" />
-  <path d="M18 16.496v1.504l1 1" />
-</svg>
-                <time class="article-time--published">2023-08-01</time>
-            </div>
-        
-
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <polyline points="12 7 12 12 15 15" />
-</svg>
-
-
-
-                <time class="article-time--reading">
-                    阅读时长: 16 分钟
-                </time>
-            </div>
-        
-    </footer>
-    
-
-    
-</div>
-
-</header>
-
-    <section class="article-content">
-    
-    
-    <h1 id="高性能异步-io-框架io_uring">高性能异步 I/O 框架：io_uring</h1>
-<h2 id="一-引言">一、 引言</h2>
-<h3 id="1-linux-原生-aio-接口">1. Linux 原生 aio 接口</h3>
-<p>在 Linux 中，有很多方法可以进行基于文件的 I/O。最早的和最基本的就是系统调用 read(2)和 write(2)。后来增加了允许传入偏移量的 pread(2)和 pwrite(2)，以及基于 vector 的 preadv(2)和 pwrite(2)。再后来，Linux 提供了 preadv2(2)和 pwritev2(2)。它们进一步扩展了 API 以允许修饰符标志。抛开这些系统调用的不同点不谈，它们有一个共同的特点：都是同步接口。这意味着当数据准备好读（或写入）时，系统调用才会返回。对于某些场景，这远远不够，因此还需要异步接口。POSIX 提供了 aio_read(3)和 aio_write(3)来满足这种需求，但是它们的实现通常性能不佳。Linux 原生 aio 接口是 Linux 内核中提供的一种异步 I/O 接口，它使用 io_submit(2)、io_getevents(2)等系统调用来提交和获取 I/O 请求，并使用 struct iocb 来描述每个 I/O 请求。它支持 O_DIRECT（或非缓冲）访问的异步 I/O，并且可以使用信号或回调函数来通知 I/O 完成事件。</p>
-<p>然而，Linux 原生 aio 接口存在着许多的限制与不足之处：</p>
-<ul>
-<li>最大的限制是它只能支持 O_DIRECT（或非缓冲）访问的异步 I/O。由于 O_DIRECT 的限制（缓存绕过和大小/对齐限制），这使得原生 aio 接口在大多数情况下都无法使用。对于普遍的缓冲 I/O，接口会以同步方式运行。</li>
-<li>即使满足了 I/O 异步的所有约束条件，有时也会出现阻塞。I/O 提交可能会通过多种方式导致阻塞：
-<ol>
-<li>如果执行 I/O 时需要元数据，提交就会阻塞，等待元数据。</li>
-<li>对于存储设备，有固定数量的请求槽可用。如果这些插槽目前都在使用中，提交就会阻塞，等待有一个插槽可用。</li>
-</ol>
-</li>
-<li>I/O 请求元数据开销大：每次 I/O 提交都需要复制 64 + 8 字节的数据，而每次完成则需要复制 32 字节的数据。这意味着对于所谓的零拷贝 I/O 来说，每次操作都需要复制 104 字节的内存。根据 I/O 的大小不同，这种内存复制的开销可能是明显可见的。而且，暴露的完成事件环缓冲区实际上会妨碍完成操作的速度，并且很难（甚至不可能）从应用程序中正确地使用。这可能意味着使用这个 API 进行 I/O 操作时，完成操作的效率会受到影响。此外，在 Spectre/Meltdown 漏洞修复后，I/O 总是需要至少两个系统调用（提交+等待完成），这会导致严重的性能下降。这可能是因为在修复这些漏洞后，系统对于系统调用的处理变得更加复杂和缓慢。</li>
-<li>IOPOLL 支持不好。</li>
-</ul>
-<p>随着时间的推移，尽管有一些努力试图解决这些限制，但没有成功。随着具备亚 10 微秒延迟和非常高 IOPS 的设备的出现，这个接口开始显现出其性能缺陷。对于这些类型的设备来说，慢速和非确定性的提交延迟是一个很大的问题，而且单个核心无法提供足够的性能。此外，由于前面提到的限制，可以说原生的 Linux aio 接口用途并不广泛。它被限制在应用程序的一小部分领域中，并且伴随着一些问题。</p>
-<h3 id="2-io_uring-接口">2. io_uring 接口</h3>
-<p>io_uring 是 Linux 内核中的一种新的异步 I/O 接口，旨在提供高效和可扩展的 I/O 操作。它通过使用一对环形队列（提交队列和完成队列）作为应用程序和内核之间的通信通道，实现了零拷贝的 I/O 操作。</p>
-<p>io_uring 的设计目标是在提供高性能的同时解决传统异步 I/O 接口的一些限制和问题。它避免了内存复制和内存方向性，通过共享数据结构和内存来优雅地实现应用程序和内核之间的协调。这种设计使得 io_uring 能够更高效地处理 I/O 请求，并且不需要频繁的系统调用来同步和通信。</p>
-<p>通过 io_uring，应用程序可以作为生产者将 I/O 请求提交到提交队列，而内核作为消费者处理这些请求。一旦请求完成，内核会生成相应的完成事件，并将其放入完成队列中，应用程序可以从完成队列中消费这些事件。这种异步的方式使得应用程序能够更好地利用系统资源，提高 I/O 操作的效率和性能。</p>
-<p>io_uring 的优势主要在于：</p>
-<ul>
-<li>使用方便：简单且强大的系统调用，提供三个系统调用，liburing 用户态库编程友好 (io_uring_setup, io_uring_enter, io_uring_register)。</li>
-<li>通用性强：提供内核统一的异步编程框架，既支持传统 I/O (Buffer I/O + Direct I/O)，也支持类 epoll 型编程。</li>
-<li>特性丰富：支持非常多的高级特性。</li>
-<li>高性能：I/O 请求 overhead 小。</li>
-</ul>
-<h3 id="3-liburing-库">3. liburing 库</h3>
-<p>liburing 是一个基于 io_uring 接口的用户空间库，它是 Linux 内核开发者 Axboe 于 2019 年发布的一个开源项目。io_uring 是一种新的 Linux 异步 I/O 接口，它通过使用一对环形缓冲区（ring buffer）来实现用户空间和内核空间之间的通信，从而避免了传统异步 I/O 接口（如 AIO）所需的系统调用、信号、回调等机制。这样，用户空间可以直接向内核提交 I/O 请求，并从内核获取 I/O 结果，而无需等待或切换上下文。这大大提高了异步 I/O 操作的效率和性能。</p>
-<p>liburing 是对 io_uring 接口的封装和扩展，它提供了一套简洁和灵活的 API，让开发者可以方便地使用 io_uring 的功能，而无需关心底层的细节和复杂性。liburing 主要包括以下几个组件：</p>
-<ul>
-<li>liburing.h：定义了 liburing 库的主要数据结构和函数</li>
-<li>liburing.a：提供了 liburing 库的静态链接版本</li>
-<li>liburing.so：提供了 liburing 库的动态链接版本</li>
-<li>liburing/io_uring.h：定义了 io_uring 接口相关的数据结构和常量</li>
-<li>liburing/compat.h：提供了一些兼容性相关的宏定义</li>
-</ul>
-<h2 id="二io_uring-的核心数据结构与原理">二、io_uring 的核心数据结构与原理</h2>
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802172119.webp"
-         alt="20230802172119" width="90%" loading="lazy"/>
-</figure>
-
-<h3 id="1-io_uring-的核心数据结构">1. io_uring 的核心数据结构</h3>
-<ul>
-<li>每个 io_uring 实例都有两个环形队列(称为 ring)，在内核和应用程序之间共享：
-<ol>
-<li>提交队列：submission queue( SQ )</li>
-<li>完成队列：completion queue( CQ )</li>
-</ol>
-</li>
-</ul>
-<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802000924.webp"
-         alt="20230802000924" width="90%" loading="lazy"/>
-</figure>
-
-<ul>
-<li>这两个队列：
-<ol>
-<li>都是单生产者、单消费者的队列，size 为 2 的幂次方。</li>
-<li>提供无锁接口，内部使用内存屏障来进行同步。</li>
-</ol>
-</li>
-<li>请求时：
-<ol>
-<li>应用创建 SQ Entries (SQE)，更新 SQ tail</li>
-<li>内核消费 SQE，更新 SQ head</li>
-</ol>
-</li>
-<li>完成后：
-<ol>
-<li>内核为完成的一个或多个请求创建 CQ Entries (CQE)，更新 CQ tail</li>
-<li>应用消费 CQE，更新 CQ head</li>
-<li>完成事件可能以任意顺序到达，到总是与特定的 SQE 相关联的</li>
-<li>消费 CQE 过程无需切换内核态</li>
-</ol>
-</li>
-<li>这样做的好处在于：
-<ol>
-<li>原本需要多次系统调用，现在变成批处理一次提交</li>
-<li>此外，io_uring 使异步 I/O 的使用场景也不再仅限于数据库应用， 普通的非数据库应用也能用</li>
-</ol>
-</li>
-</ul>
-<h3 id="2-io_uring-的三种工作模式">2. io_uring 的三种工作模式：</h3>
-<ol>
-<li>中断驱动模式 (interrupt-driven)
-<ul>
-<li>默认模式, 可通过 io_uring_enter()提交 I/O 请求，然后直接检查 CQ 状态判断是否完成。</li>
-</ul>
-</li>
-<li>轮询模式 (polling)
-<ul>
-<li>Busy waiting for I/O completion，而不是通过异步 IRQ(Interrupt Request)来接收通知</li>
-<li>这种模式需要文件系统和块设备支持轮询功能。相比中断驱动模式，这种方式延迟更低，但是 CPU 占用率可能会更高。</li>
-<li>目前，只有指定了 O_DIRECT 标志打开的文件描述符才能使用这种模式。当一个读或写请求提交给轮询上下文之后，应用必须调用 io_uring_enter()来轮询 CQ 队列，判断请求是否完成。</li>
-<li>对于一个 io_uring 实例来说，不支持混合使用轮询和非轮询模式。</li>
-</ul>
-</li>
-<li>内核轮询模式 (kernel polling)
-<ul>
-<li>这种模式会创建一个内核线程来执行 SQ 的轮询工作。</li>
-<li>使用这种模式的 io_uring 实例，应用无需切到内核态就能触发 I/O 操作。通过 SQ 来提交 SQE，以及监控 CQ 的完成状态，应用无需任何系统调用，就能提交和收割 I/O。</li>
-<li>如果内核线程的空闲事件超过了用户的配置值，它会通知应用，然后进入 idle 状态。这种情况下，应用必须调用 io_uring_enter()来唤醒内核线程。如果 I/O 一直很繁忙，内核线程是不会 sleep 的。</li>
-</ul>
-</li>
-</ol>
-<h3 id="3-io_uring-的系统调用-api">3. io_uring 的系统调用 API</h3>
-<ul>
-<li>
-<p>io_uring 的系统调用 API 有三个，分别是：</p>
-<ul>
-<li>io_uring_setup(2)</li>
-<li>io_uring_register(2)</li>
-<li>io_uring_enter(2)</li>
-</ul>
-</li>
-<li>
-<p>首先是 io_uring_setup(2)：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">io_uring_setup</span><span class="p">(</span><span class="kt">unsigned</span> <span class="n">entries</span><span class="p">,</span> <span class="k">struct</span> <span class="n">io_uring_params</span> <span class="o">*</span><span class="n">p</span><span class="p">);</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>用于创建一个 io_uring 实例，返回一个文件描述符，用于后续的 io_uring 系统调用。</li>
-<li>参数：
-<ul>
-<li>entries：SQ 和 CQ 的大小，必须是 2 的幂次方</li>
-<li>params：io_uring 的参数，包括 flags、sq_thread_cpu 等</li>
-</ul>
-</li>
-<li>返回值：
-<ul>
-<li>成功：返回一个文件描述符</li>
-<li>失败：返回-1，并设置 errno</li>
-</ul>
-</li>
-<li>创建一个 SQ 和一个 CQ，它们的大小都是 entries。如果 entries 是 0，那么 SQ 和 CQ 的大小都是默认值(4096)。SQ 和 CQ 在应用和内核之间共享，避免了在初始化和完成 I/O 时拷贝数据</li>
-</ul>
-</li>
-<li>
-<p>io_uring_register(2)：</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">io_uring_register</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">opcode</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span><span class="n">arg</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">nr_args</span><span class="p">);</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>注册用于异步 I/O 的文件或用户缓冲区，使内核能长时间持有对该文件在内核内部的数据结构引用，或创建应用内存的长期映射，这个操作只会在注册时执行一次，而不是每个 I/O 操作都会处理，因此减少了 per-I/O 的 overhead 开销。</li>
-<li>参数：
-<ul>
-<li>fd：文件描述符</li>
-<li>opcode：操作码，用于指定注册的类型，如 IORING_REGISTER_BUFFERS、IORING_REGISTER_FILES 等</li>
-<li>arg：指向一个数组，数组中的每个元素都是一个指向用户缓冲区或文件描述符的指针</li>
-<li>nr_args：arg 数组的大小</li>
-</ul>
-</li>
-<li>返回值：
-<ul>
-<li>成功：返回 0</li>
-<li>失败：返回-1，并设置 errno</li>
-</ul>
-</li>
-<li>注册的缓冲区将会被锁定到内存中，并计入用户的 RLIMIT_MEMLOCK 限制。如果注册的是文件描述符，那么内核会增加对该文件的引用计数，直到应用调用 io_uring_unregister(2)来注销它。</li>
-<li>每个缓冲区有 1GB 的大小限制。</li>
-<li>缓冲区必须是匿名的、非文件后端的内存，例如 malloc(3)或带 MAP_ANONYMOUS 标识的 mmap(2)返回的内存。</li>
-<li>Huge pages 也是支持的。整个 Huge page 都会被 pin 到内核，即使只使用其中一部分。</li>
-<li>已经注册的缓冲区无法调整大小，想调整只能先 unregister，再重新注册。</li>
-</ul>
-</li>
-<li>
-<p>io_uring_enter(2):</p>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">io_uring_enter</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">to_submit</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">min_complete</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">flags</span><span class="p">,</span> <span class="kt">sigset_t</span> <span class="o">*</span><span class="n">sig</span><span class="p">);</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>这个系统调用用于初始化和完成（initiate and complete）I/O，使用共享的 SQ 和 CQ。单次调用同时执行：
-<ol>
-<li>提交新的 I/O 请求</li>
-<li>等待 I/O 完成</li>
-</ol>
-</li>
-<li>参数：
-<ul>
-<li>fd：io_uring 实例的文件描述符</li>
-<li>to_submit：SQ 中提交的 I/O 请求数量</li>
-<li>min_complete：最少完成的 I/O 请求数量</li>
-<li>flags：用于指定 I/O 请求的类型，如 IORING_ENTER_GETEVENTS、IORING_ENTER_SQ_WAKEUP 等</li>
-<li>sig：用于指定信号集，如果 flags 指定了 IORING_ENTER_GETEVENTS，那么 sig 必须是一个有效的信号集</li>
-</ul>
-</li>
-<li>在默认模式下，如果指定了 min_complete，那么 io_uring_enter(2)会等待至少 min_complete 个 I/O 请求完成，然后返回。如果没有指定 min_complete，那么 io_uring_enter(2)会等待 SQ 中所有的 I/O 请求完成，然后返回。在 polling 模式下，如果指定了 min_complete，如果 min_complete 为 0，则要求内核返回当前以及完成的所有 events，无阻塞；如果 min_complete 大于 0，如果有事件完成，内核仍然立即返回；如果没有完成事件，内核会 poll，等待指定的次数完成，或者这个进程的时间片用完。</li>
-</ul>
-</li>
-</ul>
-<h3 id="4-io_uring-的高级特性">4. io_uring 的高级特性</h3>
-<ul>
-<li>io_uring 还提供了一些用于特殊场景的高级特性
-<ul>
-<li>File registration(文件注册)：每次发起一个指定文件描述的操作，内核都需要花费一些时钟周期(cycles)文件描述符映射到内部表示。对于那些 <strong>针对同一文件进行重复操作</strong> 的场景，io_uring 支持提前注册这些文件，后面直接查找就行了。</li>
-<li>Buffer registration(缓冲区注册)：与 file registration 类似，Direct I/O 场景中，内核需要 map/unmap memory areas。io_uring 支持提前注册这些缓冲区（buffers）。</li>
-<li>Poll ring(轮询环形缓冲区)：对于非常快是设备，处理中断的开销是比较大的。io_uring 允许用户关闭中断，使用轮询模式。</li>
-<li>Linked operations(链接操作)：允许用户发送串联的请求。这两个请求同时提交，但后面的会等前面的处理完才开始执行。</li>
-</ul>
-</li>
-</ul>
-<h2 id="三io_uring-的使用示例">三、io_uring 的使用示例</h2>
-<p>liburing 提供了一个简单的高层 API， 可用于一些基本场景，应用程序避免了直接使用更底层的系统调用。此外，这个 API 还避免了一些重复操作的代码，如设置 io_uring 实例。</p>
-<h3 id="1-在项目中引入-liburing">1. 在项目中引入 liburing</h3>
-<ol>
-<li>apt-get 安装 liburing
-<ul>
-<li>在 ubuntu 系统下安装 liburing 十分简单，只需要执行以下命令即可 （注意：ubuntu 版本需要大于等于 20.04，因为内核版本需要大于等于 5.4）
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">sudo apt-get install liburing-dev
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>在项目中引入 liburing 的头文件
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;liburing.h&#34;</span><span class="cp">
-</span></span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>在项目中引入 liburing 的库文件
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="o">-</span><span class="n">luring</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-</ul>
-</li>
-<li>手动安装
-<ul>
-<li>下载 liburing 的源码
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">git clone https://github.com/axboe/liburing.git
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>编译 liburing
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">cd</span> liburing
-</span></span><span class="line"><span class="cl">./configure
-</span></span><span class="line"><span class="cl">make -j
-</span></span><span class="line"><span class="cl">sudo make install
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>在项目中引入 liburing 的头文件
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;liburing.h&#34;</span><span class="cp">
-</span></span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-<li>在项目中引入 liburing 的库文件
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="o">-</span><span class="n">luring</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div></li>
-</ul>
-</li>
-</ol>
-<h3 id="2-代码示例">2. 代码示例</h3>
-<ul>
-<li>使用 4 个 SQE，从输入文件中读取最多 16KB 的数据。</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">  1
-</span><span class="lnt">  2
-</span><span class="lnt">  3
-</span><span class="lnt">  4
-</span><span class="lnt">  5
-</span><span class="lnt">  6
-</span><span class="lnt">  7
-</span><span class="lnt">  8
-</span><span class="lnt">  9
-</span><span class="lnt"> 10
-</span><span class="lnt"> 11
-</span><span class="lnt"> 12
-</span><span class="lnt"> 13
-</span><span class="lnt"> 14
-</span><span class="lnt"> 15
-</span><span class="lnt"> 16
-</span><span class="lnt"> 17
-</span><span class="lnt"> 18
-</span><span class="lnt"> 19
-</span><span class="lnt"> 20
-</span><span class="lnt"> 21
-</span><span class="lnt"> 22
-</span><span class="lnt"> 23
-</span><span class="lnt"> 24
-</span><span class="lnt"> 25
-</span><span class="lnt"> 26
-</span><span class="lnt"> 27
-</span><span class="lnt"> 28
-</span><span class="lnt"> 29
-</span><span class="lnt"> 30
-</span><span class="lnt"> 31
-</span><span class="lnt"> 32
-</span><span class="lnt"> 33
-</span><span class="lnt"> 34
-</span><span class="lnt"> 35
-</span><span class="lnt"> 36
-</span><span class="lnt"> 37
-</span><span class="lnt"> 38
-</span><span class="lnt"> 39
-</span><span class="lnt"> 40
-</span><span class="lnt"> 41
-</span><span class="lnt"> 42
-</span><span class="lnt"> 43
-</span><span class="lnt"> 44
-</span><span class="lnt"> 45
-</span><span class="lnt"> 46
-</span><span class="lnt"> 47
-</span><span class="lnt"> 48
-</span><span class="lnt"> 49
-</span><span class="lnt"> 50
-</span><span class="lnt"> 51
-</span><span class="lnt"> 52
-</span><span class="lnt"> 53
-</span><span class="lnt"> 54
-</span><span class="lnt"> 55
-</span><span class="lnt"> 56
-</span><span class="lnt"> 57
-</span><span class="lnt"> 58
-</span><span class="lnt"> 59
-</span><span class="lnt"> 60
-</span><span class="lnt"> 61
-</span><span class="lnt"> 62
-</span><span class="lnt"> 63
-</span><span class="lnt"> 64
-</span><span class="lnt"> 65
-</span><span class="lnt"> 66
-</span><span class="lnt"> 67
-</span><span class="lnt"> 68
-</span><span class="lnt"> 69
-</span><span class="lnt"> 70
-</span><span class="lnt"> 71
-</span><span class="lnt"> 72
-</span><span class="lnt"> 73
-</span><span class="lnt"> 74
-</span><span class="lnt"> 75
-</span><span class="lnt"> 76
-</span><span class="lnt"> 77
-</span><span class="lnt"> 78
-</span><span class="lnt"> 79
-</span><span class="lnt"> 80
-</span><span class="lnt"> 81
-</span><span class="lnt"> 82
-</span><span class="lnt"> 83
-</span><span class="lnt"> 84
-</span><span class="lnt"> 85
-</span><span class="lnt"> 86
-</span><span class="lnt"> 87
-</span><span class="lnt"> 88
-</span><span class="lnt"> 89
-</span><span class="lnt"> 90
-</span><span class="lnt"> 91
-</span><span class="lnt"> 92
-</span><span class="lnt"> 93
-</span><span class="lnt"> 94
-</span><span class="lnt"> 95
-</span><span class="lnt"> 96
-</span><span class="lnt"> 97
-</span><span class="lnt"> 98
-</span><span class="lnt"> 99
-</span><span class="lnt">100
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;liburing.h&#34;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/stat.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;fcntl.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;errno.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="c1">// io_uring 队列长度
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="cp">#define QUEUE_DEPTH 4
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span><span class="o">**</span> <span class="n">argv</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="n">pending</span><span class="p">,</span> <span class="n">done</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">void</span><span class="o">*</span> <span class="n">buf</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 1. 初始化一个 io_uring 实例
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">io_uring</span> <span class="n">ring</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="c1">// 创建一个 io_uring 实例，队列长度为 QUEUE_DEPTH，flags 为 0，使用默认模式
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_queue_init</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl">  <span class="c1">// 2. 打开输入文件，指定 O_DIRECT 标志
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">fd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span> <span class="o">|</span> <span class="n">O_DIRECT</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">stat</span> <span class="n">st</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="nf">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 3. 初始化 4 个读缓冲区
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">size_t</span> <span class="n">filesize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">struct</span> <span class="n">iovec</span> <span class="o">*</span><span class="n">iovecs</span> <span class="o">=</span> <span class="nf">calloc</span><span class="p">(</span><span class="n">QUEUE_DEPTH</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">iovec</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">QUEUE_DEPTH</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="nf">posix_memalign</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buf</span><span class="p">,</span> <span class="mi">4096</span><span class="p">,</span> <span class="mi">4096</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">      <span class="p">{</span>
-</span></span><span class="line"><span class="cl">          <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;posix_memalign&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="p">}</span>
-</span></span><span class="line"><span class="cl">      <span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">iov_base</span> <span class="o">=</span> <span class="n">buf</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">iov_len</span> <span class="o">=</span> <span class="mi">4096</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="n">filesize</span> <span class="o">+=</span> <span class="mi">4096</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl">  <span class="c1">// 4. 依次准备 4 个读请求，指定将随后读入的数据写入 iovecs 中
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">io_uring_sqe</span> <span class="o">*</span><span class="n">sqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">size_t</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">do</span>
-</span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">offset</span> <span class="o">+=</span> <span class="n">iovecs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">iov_len</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">i</span><span class="o">++</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 如果超出文件大小，停止准备后面的 SQE
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">offset</span> <span class="o">&gt;=</span> <span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">break</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 5. 提交 SQE 读请求
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_submit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">  <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">!=</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;io_uring_submit submitted less %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">ret</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 6. 等待读请求完成
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">struct</span> <span class="n">io_uring_cqe</span> <span class="o">*</span><span class="n">cqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">done</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">pending</span> <span class="o">=</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">filesize</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">pending</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">      <span class="c1">// 等待一个读完成事件
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nf">io_uring_wait_cqe</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">      <span class="n">done</span><span class="o">++</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="k">if</span> <span class="p">(</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">!=</span> <span class="mi">4096</span> <span class="o">&amp;&amp;</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">+</span> <span class="n">filesize</span> <span class="o">!=</span> <span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;cqe-&gt;res: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="p">}</span>
-</span></span><span class="line"><span class="cl">      <span class="n">filesize</span> <span class="o">+=</span> <span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">      <span class="c1">// 更新完成队列
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nf">io_uring_cqe_seen</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 7. 打印统计信息
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Submitted = %d, completed = %d, bytes = %lu</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pending</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">)</span><span class="n">filesize</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 8. 销毁资源
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="nf">close</span><span class="p">(</span><span class="n">fd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="nf">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>link-cp：使用 io_uring 高级特性 SQE chaining 实现复制文件功能，将创建一个长度为 2 的 SQE 链，第一个 SQE 用于读，第二个 SQE 用于写。</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">  1
-</span><span class="lnt">  2
-</span><span class="lnt">  3
-</span><span class="lnt">  4
-</span><span class="lnt">  5
-</span><span class="lnt">  6
-</span><span class="lnt">  7
-</span><span class="lnt">  8
-</span><span class="lnt">  9
-</span><span class="lnt"> 10
-</span><span class="lnt"> 11
-</span><span class="lnt"> 12
-</span><span class="lnt"> 13
-</span><span class="lnt"> 14
-</span><span class="lnt"> 15
-</span><span class="lnt"> 16
-</span><span class="lnt"> 17
-</span><span class="lnt"> 18
-</span><span class="lnt"> 19
-</span><span class="lnt"> 20
-</span><span class="lnt"> 21
-</span><span class="lnt"> 22
-</span><span class="lnt"> 23
-</span><span class="lnt"> 24
-</span><span class="lnt"> 25
-</span><span class="lnt"> 26
-</span><span class="lnt"> 27
-</span><span class="lnt"> 28
-</span><span class="lnt"> 29
-</span><span class="lnt"> 30
-</span><span class="lnt"> 31
-</span><span class="lnt"> 32
-</span><span class="lnt"> 33
-</span><span class="lnt"> 34
-</span><span class="lnt"> 35
-</span><span class="lnt"> 36
-</span><span class="lnt"> 37
-</span><span class="lnt"> 38
-</span><span class="lnt"> 39
-</span><span class="lnt"> 40
-</span><span class="lnt"> 41
-</span><span class="lnt"> 42
-</span><span class="lnt"> 43
-</span><span class="lnt"> 44
-</span><span class="lnt"> 45
-</span><span class="lnt"> 46
-</span><span class="lnt"> 47
-</span><span class="lnt"> 48
-</span><span class="lnt"> 49
-</span><span class="lnt"> 50
-</span><span class="lnt"> 51
-</span><span class="lnt"> 52
-</span><span class="lnt"> 53
-</span><span class="lnt"> 54
-</span><span class="lnt"> 55
-</span><span class="lnt"> 56
-</span><span class="lnt"> 57
-</span><span class="lnt"> 58
-</span><span class="lnt"> 59
-</span><span class="lnt"> 60
-</span><span class="lnt"> 61
-</span><span class="lnt"> 62
-</span><span class="lnt"> 63
-</span><span class="lnt"> 64
-</span><span class="lnt"> 65
-</span><span class="lnt"> 66
-</span><span class="lnt"> 67
-</span><span class="lnt"> 68
-</span><span class="lnt"> 69
-</span><span class="lnt"> 70
-</span><span class="lnt"> 71
-</span><span class="lnt"> 72
-</span><span class="lnt"> 73
-</span><span class="lnt"> 74
-</span><span class="lnt"> 75
-</span><span class="lnt"> 76
-</span><span class="lnt"> 77
-</span><span class="lnt"> 78
-</span><span class="lnt"> 79
-</span><span class="lnt"> 80
-</span><span class="lnt"> 81
-</span><span class="lnt"> 82
-</span><span class="lnt"> 83
-</span><span class="lnt"> 84
-</span><span class="lnt"> 85
-</span><span class="lnt"> 86
-</span><span class="lnt"> 87
-</span><span class="lnt"> 88
-</span><span class="lnt"> 89
-</span><span class="lnt"> 90
-</span><span class="lnt"> 91
-</span><span class="lnt"> 92
-</span><span class="lnt"> 93
-</span><span class="lnt"> 94
-</span><span class="lnt"> 95
-</span><span class="lnt"> 96
-</span><span class="lnt"> 97
-</span><span class="lnt"> 98
-</span><span class="lnt"> 99
-</span><span class="lnt">100
-</span><span class="lnt">101
-</span><span class="lnt">102
-</span><span class="lnt">103
-</span><span class="lnt">104
-</span><span class="lnt">105
-</span><span class="lnt">106
-</span><span class="lnt">107
-</span><span class="lnt">108
-</span><span class="lnt">109
-</span><span class="lnt">110
-</span><span class="lnt">111
-</span><span class="lnt">112
-</span><span class="lnt">113
-</span><span class="lnt">114
-</span><span class="lnt">115
-</span><span class="lnt">116
-</span><span class="lnt">117
-</span><span class="lnt">118
-</span><span class="lnt">119
-</span><span class="lnt">120
-</span><span class="lnt">121
-</span><span class="lnt">122
-</span><span class="lnt">123
-</span><span class="lnt">124
-</span><span class="lnt">125
-</span><span class="lnt">126
-</span><span class="lnt">127
-</span><span class="lnt">128
-</span><span class="lnt">129
-</span><span class="lnt">130
-</span><span class="lnt">131
-</span><span class="lnt">132
-</span><span class="lnt">133
-</span><span class="lnt">134
-</span><span class="lnt">135
-</span><span class="lnt">136
-</span><span class="lnt">137
-</span><span class="lnt">138
-</span><span class="lnt">139
-</span><span class="lnt">140
-</span><span class="lnt">141
-</span><span class="lnt">142
-</span><span class="lnt">143
-</span><span class="lnt">144
-</span><span class="lnt">145
-</span><span class="lnt">146
-</span><span class="lnt">147
-</span><span class="lnt">148
-</span><span class="lnt">149
-</span><span class="lnt">150
-</span><span class="lnt">151
-</span><span class="lnt">152
-</span><span class="lnt">153
-</span><span class="lnt">154
-</span><span class="lnt">155
-</span><span class="lnt">156
-</span><span class="lnt">157
-</span><span class="lnt">158
-</span><span class="lnt">159
-</span><span class="lnt">160
-</span><span class="lnt">161
-</span><span class="lnt">162
-</span><span class="lnt">163
-</span><span class="lnt">164
-</span><span class="lnt">165
-</span><span class="lnt">166
-</span><span class="lnt">167
-</span><span class="lnt">168
-</span><span class="lnt">169
-</span><span class="lnt">170
-</span><span class="lnt">171
-</span><span class="lnt">172
-</span><span class="lnt">173
-</span><span class="lnt">174
-</span><span class="lnt">175
-</span><span class="lnt">176
-</span><span class="lnt">177
-</span><span class="lnt">178
-</span><span class="lnt">179
-</span><span class="lnt">180
-</span><span class="lnt">181
-</span><span class="lnt">182
-</span><span class="lnt">183
-</span><span class="lnt">184
-</span><span class="lnt">185
-</span><span class="lnt">186
-</span><span class="lnt">187
-</span><span class="lnt">188
-</span><span class="lnt">189
-</span><span class="lnt">190
-</span><span class="lnt">191
-</span><span class="lnt">192
-</span><span class="lnt">193
-</span><span class="lnt">194
-</span><span class="lnt">195
-</span><span class="lnt">196
-</span><span class="lnt">197
-</span><span class="lnt">198
-</span><span class="lnt">199
-</span><span class="lnt">200
-</span><span class="lnt">201
-</span><span class="lnt">202
-</span><span class="lnt">203
-</span><span class="lnt">204
-</span><span class="lnt">205
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;assert.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;errno.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;fcntl.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;inttypes.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/ioctl.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/stat.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/types.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;unistd.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;liburing.h&#34;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="cp">#define QD 64
-</span></span></span><span class="line"><span class="cl"><span class="cp">#define BS (32 * 1024)
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">io_data</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">size_t</span> <span class="n">offset</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">index</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">iovec</span> <span class="n">iov</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">};</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">infd</span><span class="p">,</span> <span class="n">outfd</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">inflight</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">setup_context</span><span class="p">(</span><span class="kt">unsigned</span> <span class="n">entries</span><span class="p">,</span> <span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_queue_init</span><span class="p">(</span><span class="n">entries</span><span class="p">,</span> <span class="n">ring</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span> <span class="s">&#34;queue_init: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">get_file_size</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">off_t</span> <span class="o">*</span><span class="n">size</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">stat</span> <span class="n">st</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">fstat</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">S_ISREG</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="n">size</span> <span class="o">=</span> <span class="n">st</span><span class="p">.</span><span class="n">st_size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nf">S_ISBLK</span><span class="p">(</span><span class="n">st</span><span class="p">.</span><span class="n">st_mode</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="kt">unsigned</span> <span class="kt">long</span> <span class="kt">long</span> <span class="n">bytes</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="nf">ioctl</span><span class="p">(</span><span class="n">fd</span><span class="p">,</span> <span class="n">BLKGETSIZE64</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bytes</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="o">*</span><span class="n">size</span> <span class="o">=</span> <span class="n">bytes</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">void</span> <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">size</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">offset</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring_sqe</span> <span class="o">*</span><span class="n">sqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_data</span> <span class="o">*</span><span class="n">data</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ptr</span>                <span class="o">=</span> <span class="nf">malloc</span><span class="p">(</span><span class="n">size</span> <span class="o">+</span> <span class="k">sizeof</span><span class="p">(</span><span class="o">*</span><span class="n">data</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">    <span class="n">data</span>               <span class="o">=</span> <span class="n">ptr</span> <span class="o">+</span> <span class="n">size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">index</span>        <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">offset</span>       <span class="o">=</span> <span class="n">offset</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_base</span> <span class="o">=</span> <span class="n">ptr</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span>  <span class="o">=</span> <span class="n">size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_readv</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span><span class="o">-&gt;</span><span class="n">flags</span> <span class="o">|=</span> <span class="n">IOSQE_IO_LINK</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">sqe</span> <span class="o">=</span> <span class="nf">io_uring_get_sqe</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_prep_writev</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">outfd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_sqe_set_data</span><span class="p">(</span><span class="n">sqe</span><span class="p">,</span> <span class="n">data</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">handle_cqe</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="k">struct</span> <span class="n">io_uring_cqe</span> <span class="o">*</span><span class="n">cqe</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_data</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="nf">io_uring_cqe_get_data</span><span class="p">(</span><span class="n">cqe</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span>              <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">data</span><span class="o">-&gt;</span><span class="n">index</span><span class="o">++</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span> <span class="o">==</span> <span class="o">-</span><span class="n">ECANCELED</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span><span class="p">,</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="n">inflight</span> <span class="o">+=</span> <span class="mi">2</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="k">else</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;cqe error: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">cqe</span><span class="o">-&gt;</span><span class="n">res</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">            <span class="n">ret</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="o">-&gt;</span><span class="n">index</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="kt">void</span> <span class="o">*</span><span class="n">ptr</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">data</span> <span class="o">-</span> <span class="n">data</span><span class="o">-&gt;</span><span class="n">iov</span><span class="p">.</span><span class="n">iov_len</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="nf">free</span><span class="p">(</span><span class="n">ptr</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_cqe_seen</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">copy_file</span><span class="p">(</span><span class="k">struct</span> <span class="n">io_uring</span> <span class="o">*</span><span class="n">ring</span><span class="p">,</span> <span class="kt">off_t</span> <span class="n">insize</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring_cqe</span> <span class="o">*</span><span class="n">cqe</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">this_size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">offset</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">while</span> <span class="p">(</span><span class="n">insize</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">has_inflight</span> <span class="o">=</span> <span class="n">inflight</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">depth</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">insize</span> <span class="o">&amp;&amp;</span> <span class="n">inflight</span> <span class="o">&lt;</span> <span class="n">QD</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">this_size</span> <span class="o">=</span> <span class="n">BS</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">this_size</span> <span class="o">&gt;</span> <span class="n">insize</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">this_size</span> <span class="o">=</span> <span class="n">insize</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="nf">queue_rw_pair</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">this_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="n">offset</span> <span class="o">+=</span> <span class="n">this_size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="n">insize</span> <span class="o">-=</span> <span class="n">this_size</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="n">inflight</span> <span class="o">+=</span> <span class="mi">2</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">has_inflight</span> <span class="o">!=</span> <span class="n">inflight</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="nf">io_uring_submit</span><span class="p">(</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">insize</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">depth</span> <span class="o">=</span> <span class="n">QD</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">else</span>
-</span></span><span class="line"><span class="cl">            <span class="n">depth</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">inflight</span> <span class="o">&gt;=</span> <span class="n">depth</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">            <span class="n">ret</span> <span class="o">=</span> <span class="nf">io_uring_wait_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">cqe</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">ret</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;wait cqe: %s</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="nf">strerror</span><span class="p">(</span><span class="o">-</span><span class="n">ret</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="nf">handle_cqe</span><span class="p">(</span><span class="n">ring</span><span class="p">,</span> <span class="n">cqe</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">                <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="n">inflight</span><span class="o">--</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">io_uring</span> <span class="n">ring</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">off_t</span> <span class="n">insize</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">argc</span> <span class="o">&lt;</span> <span class="mi">3</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;%s: infile outfile</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">infd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">O_RDONLY</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">infd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;open infile&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">outfd</span> <span class="o">=</span> <span class="nf">open</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">O_WRONLY</span> <span class="o">|</span> <span class="n">O_CREAT</span> <span class="o">|</span> <span class="n">O_TRUNC</span><span class="p">,</span> <span class="mo">0644</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">outfd</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="nf">perror</span><span class="p">(</span><span class="s">&#34;open outfile&#34;</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">setup_context</span><span class="p">(</span><span class="n">QD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">ring</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="nf">get_file_size</span><span class="p">(</span><span class="n">infd</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">insize</span><span class="p">))</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">ret</span> <span class="o">=</span> <span class="nf">copy_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">,</span> <span class="n">insize</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">infd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">close</span><span class="p">(</span><span class="n">outfd</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="nf">io_uring_queue_exit</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ring</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>copy_file()：高层复制循环逻辑；它会调用 queue_rw_pair(ring, this_size, offset) 来构造 SQE pair；并通过一次 io_uring_submit() 调用将所有构建的 SQE pair 提交。 这个函数维护了一个最大 DQ 数量的 inflight SQE，只要数据 copy 还在进行中；否则，即数据已经全部读取完成，就开始等待和收割所有的 CQE。</li>
-<li>queue_rw_pair() 构造一个 read-write SQE pair. read SQE 的 IOSQE_IO_LINK flag 表示开始一个 chain，write SQE 不用设置这个 flag，标志着这个 chain 的结束。用户 data 字段设置为同一个 data 描述符，并且在随后的 completion 处理中会用到。</li>
-<li>handle_cqe() 从 CQE 中提取之前由  queue_rw_pair() 保存的 data 描述符，并在描述符中记录处理进展（index）。 如果之前请求被取消，它还会重新提交 read-write pair。 一个 CQE pair 的两个 member 都处理完成之后（index==2），释放共享的 data descriptor。最后通知内核这个 CQE 已经被消费。</li>
-</ul>
-<h3 id="3-最佳实践">3. 最佳实践</h3>
-<p>io_uring 是一个高性能的异步 I/O 框架，它在 Linux 内核中引入了一种新的 I/O 模型，可以显著提高 I/O 操作的吞吐量和响应速度。然而，要充分发挥 io_uring 的优势，需要注意一些优化和最佳实践。</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th>优化</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>批量提交（Batch Submission）</td>
-<td>io_uring 支持批量提交多个 I/O 请求，以减少系统调用的开销。通过一次性提交多个请求，可以减少上下文切换和系统调用的次数，提高效率。建议根据系统的负载和性能需求，合理选择批量提交的数量。</td>
-</tr>
-<tr>
-<td>预分配 I/O 请求（Pre-allocate I/O Requests）</td>
-<td>在使用 io_uring 之前，可以预先分配一定数量的 I/O 请求，避免在运行时动态分配请求的开销。这样可以减少内存分配和释放的次数，提高性能。</td>
-</tr>
-<tr>
-<td>使用 I/O 链接（I/O Linking）</td>
-<td>io_uring 支持将多个 I/O 请求链接在一起，形成一个链表。这样可以减少上下文切换的开销，提高效率。在链接 I/O 请求时，需要注意保持请求的顺序和正确处理链接的完成。</td>
-</tr>
-<tr>
-<td>使用 I/O 向量（I/O Vector）</td>
-<td>io_uring 支持使用 I/O 向量来进行批量的读写操作。通过使用 I/O 向量，可以减少系统调用的次数，提高效率。在使用 I/O 向量时，需要注意正确设置每个向量的偏移量和长度。</td>
-</tr>
-<tr>
-<td>使用事件完成通知（Event Completion Notification）</td>
-<td>io_uring 支持使用事件完成通知来提高效率。通过使用事件完成通知，可以避免轮询等待 I/O 完成，而是在 I/O 完成时立即得到通知。这样可以减少 CPU 的占用和响应时间。</td>
-</tr>
-<tr>
-<td>合理设置 I/O 队列深度（I/O Queue Depth）</td>
-<td>io_uring 的性能受到 I/O 队列深度的影响。较大的队列深度可以提高并发性能，但也会增加内存开销。建议根据系统的负载和性能需求，合理设置 I/O 队列深度。</td>
-</tr>
-<tr>
-<td>使用合适的内存分配策略</td>
-<td>io_uring 的性能也受到内存分配策略的影响。建议使用高效的内存分配器，如 jemalloc 或 tcmalloc，来减少内存分配和释放的开销。</td>
-</tr>
-<tr>
-<td>避免阻塞操作</td>
-<td>io_uring 是一个异步 I/O 框架，应尽量避免在 io_uring 的上下文中进行阻塞操作。阻塞操作会导致 io_uring 的性能下降，甚至可能引起死锁。</td>
-</tr>
-<tr>
-<td>使用合适的文件描述符（File Descriptor）</td>
-<td>io_uring 支持对文件、套接字和管道等不同类型的文件描述符进行操作。在使用 io_uring 时，需要根据实际情况选择合适的文件描述符类型，并正确设置相关的参数。</td>
-</tr>
-<tr>
-<td>注意错误处理</td>
-<td>在使用 io_uring 时，需要注意正确处理错误。io_uring 的错误码可能是负数，可以使用 errno.h 中定义的错误码来进行解析和处理。</td>
-</tr>
-</tbody>
-</table></div>
-<p>通过遵循上述优化和最佳实践，可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。</p>
-<h2 id="结论">结论</h2>
-<ul>
-<li>
-<p>io_uring 是一个高性能的异步 I/O 框架，通过在 Linux 内核中引入新的 I/O 模型，它能够显著提高 I/O 操作的吞吐量和响应速度。本章节我们深入探讨了 io_uring 的优化和最佳实践，以帮助开发者充分发挥其性能优势。</p>
-</li>
-<li>
-<p>在使用 io_uring 时，我们可以采取一系列优化措施来提高性能。首先，批量提交多个 I/O 请求可以减少系统调用的开销，提高效率。此外，预分配 I/O 请求、使用 I/O 链接和 I/O 向量等技术也能够减少内存分配和系统调用的次数，进一步提升性能。</p>
-</li>
-<li>
-<p>除了以上的优化技巧，我们还介绍了一些最佳实践。合理设置 I/O 队列深度、使用事件完成通知和选择合适的文件描述符类型等都能够对性能产生积极影响。此外，避免阻塞操作和正确处理错误也是使用 io_uring 时需要注意的事项。</p>
-</li>
-<li>
-<p>通过遵循这些优化和最佳实践，开发者可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。</p>
-</li>
-<li>
-<p>io_uring 作为一个新兴的异步 I/O 框架，具有很大的潜力和广阔的应用前景。它已经在许多领域得到了广泛的应用，如数据库、网络服务器和存储系统等。随着对 io_uring 的进一步研究和优化，相信它将在未来发挥更大的作用，并成为开发者们的首选工具之一。</p>
-</li>
-</ul>
-<h2 id="参考文献">参考文献</h2>
-<p>[1] io_uring 官方文档：<a class="link" href="https://kernel.dk/io_uring.pdf"  target="_blank" rel="noopener"
-    >https://kernel.dk/io_uring.pdf</a></p>
-<p>[2] How io_uring and eBPF Will Revolutionize Programming in Linux[1], ScyllaDB</p>
-<p>[3] 2020 An Introduction to the io_uring Asynchronous I/O Framework[2], Oracle, 2020</p>
-<p>[4] liburing GitHub 仓库：<a class="link" href="https://github.com/axboe/liburing"  target="_blank" rel="noopener"
-    >https://github.com/axboe/liburing</a></p>
-
-</section>
-
-
-    <footer class="article-footer">
-    
-    <section class="article-tags">
-        
-            <a href="/tags/aio/">AIO</a>
-        
-            <a href="/tags/linux-kernel/">Linux 内核</a>
-        
-    </section>
-
-
-    
-    <section class="article-copyright">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
-</svg>
-
-
-
-        <span>Licensed under CC BY-NC-SA 4.0</span>
-    </section>
-    </footer>
-
-
-    
-        <link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
-            ><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
-                defer
-                >
-            </script><script>
-    window.addEventListener("DOMContentLoaded", () => {
-        renderMathInElement(document.querySelector(`.article-content`), {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true }
-            ],
-            ignoredClasses: ["gist"]
-        });})
-</script>
-    
-</article>
-
-    
-
-    
-
-<aside class="related-content--wrapper">
-    <h2 class="section-title">相关文章</h2>
-    <div class="related-content">
-        <div class="flex article-list--tile">
-            
-                
-<article class="has-image">
-    <a href="/p/thead-tools/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" loading="lazy" data-key="thead-tools" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/false-sharing/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">性能刺客之伪共享</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/openmp-intro/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp" loading="lazy" data-key="openmp-intro" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">OpenMP 简介</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/rdma-element/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" loading="lazy" data-key="rdma-element" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">RDMA 基本元素</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/ethernet-vs-rdma/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp" loading="lazy" data-key="ethernet-vs-rdma" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">比较基于传统以太网与 RDMA 技术的通信</h2>
-        </div>
-    </a>
-</article>
-
-            
-        </div>
-    </div>
-</aside>
-
-     
-    
-        
-    
-<script>
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        let script = document.createElement('script');
-        script.src = 'https://giscus.app/client.js';
-        script.dataset.repo = "PKUcoldkeyboard\/pkucoldkeyboard.github.io";
-        script.dataset.repoId = "MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=";
-        script.dataset.category = "Comments";
-        script.dataset.categoryId = "DIC_kwDOFAUD4M4CZV4F";
-        script.dataset.mapping = "title";
-        script.dataset.strict = "0";
-        script.dataset.reactionsEnabled = "1";
-        script.dataset.emitMetadata = "0";
-        script.dataset.inputPosition = "top";
-        script.dataset.theme = "light";
-        script.dataset.lang = "zh-CN";
-        script.dataset.loading = "lazy";
-        script.crossOrigin = "anonymous";
-        script.async = true;
-        let main = document.querySelector('.main');
-        
-        let lastChild = main.childNodes[main.childNodes.length - 1];
-        main.insertBefore(script, lastChild.nextSibling);
-    })();
-
-    function setGiscusTheme(theme) {
-        let giscus = document.querySelector("iframe.giscus-frame");
-        if (giscus) {
-            giscus.contentWindow.postMessage(
-                {
-                    giscus: {
-                        setConfig: {
-                            theme: theme,
-                        },
-                    },
-                },
-                "https://giscus.app"
-            );
+        else
+        {
+            printf(&quot;cqe error: %s\n&quot;, strerror(-cqe-&gt;res));
+            ret = 1;
         }
     }
 
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        addEventListener("message", (e) => {
-            if (event.origin !== "https://giscus.app") return;
-            handler();
-        });
-        window.addEventListener("onColorSchemeChange", handler);
+    if (data-&gt;index == 2)
+    {
+        void *ptr = (void *)data - data-&gt;iov.iov_len;
 
-        function handler() {
-            if (document.documentElement.dataset.scheme === "light") {
-                setGiscusTheme('light');
-            } else {
-                setGiscusTheme('dark_dimmed');
+        free(ptr);
+    }
+    io_uring_cqe_seen(ring, cqe);
+    return ret;
+}
+
+static int copy_file(struct io_uring *ring, off_t insize)
+{
+    struct io_uring_cqe *cqe;
+    off_t this_size;
+    off_t offset;
+
+    offset = 0;
+    while (insize)
+    {
+        int has_inflight = inflight;
+        int depth;
+
+        while (insize &amp;&amp; inflight &lt; QD)
+        {
+            this_size = BS;
+            if (this_size &gt; insize)
+                this_size = insize;
+            queue_rw_pair(ring, this_size, offset);
+            offset += this_size;
+            insize -= this_size;
+            inflight += 2;
+        }
+
+        if (has_inflight != inflight)
+            io_uring_submit(ring);
+
+        if (insize)
+            depth = QD;
+        else
+            depth = 1;
+        while (inflight &gt;= depth)
+        {
+            int ret;
+
+            ret = io_uring_wait_cqe(ring, &amp;cqe);
+            if (ret &lt; 0)
+            {
+                printf(&quot;wait cqe: %s\n&quot;, strerror(-ret));
+                return 1;
             }
+            if (handle_cqe(ring, cqe))
+                return 1;
+            inflight--;
         }
-    })();
-</script>
+    }
 
-    
+    return 0;
+}
 
-    <footer class="site-footer">
-    <section class="copyright">
-        &copy; 
-        
-            2021 - 
-        
-        2024 cuterwrite
-    </section>
-    
-    <section class="powerby">
-        
-            欢迎来到Cuterwrite的博客网站 <br/>
-        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
-    </section>
-</footer>
+int main(int argc, char *argv[])
+{
+    struct io_uring ring;
+    off_t insize;
+    int ret;
 
+    if (argc &lt; 3)
+    {
+        printf(&quot;%s: infile outfile\n&quot;, argv[0]);
+        return 1;
+    }
 
-    
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    infd = open(argv[1], O_RDONLY);
+    if (infd &lt; 0)
+    {
+        perror(&quot;open infile&quot;);
+        return 1;
+    }
+    outfd = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (outfd &lt; 0)
+    {
+        perror(&quot;open outfile&quot;);
+        return 1;
+    }
 
-    
-    <div class="pswp__bg"></div>
+    if (setup_context(QD, &amp;ring))
+        return 1;
+    if (get_file_size(infd, &amp;insize))
+        return 1;
 
-    
-    <div class="pswp__scroll-wrap">
+    ret = copy_file(&amp;ring, insize);
 
-        
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
+    close(infd);
+    close(outfd);
+    io_uring_queue_exit(&amp;ring);
+    return ret;
+}
 
-        
-        <div class="pswp__ui pswp__ui--hidden">
-
-            <div class="pswp__top-bar">
-
-                
-
-                <div class="pswp__counter"></div>
-
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-
-                <button class="pswp__button pswp__button--share" title="Share"></button>
-
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-
-                
-                
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                        <div class="pswp__preloader__cut">
-                            <div class="pswp__preloader__donut"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div>
-            </div>
-
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
-
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
-
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
-
-        </div>
-
-    </div>
-
-</div><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
-                defer
-                >
-            </script><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
-            ><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
-            >
-
-        </main>
-    </div>
-    <script 
-                src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
-                
-                >
-            </script><script type="text/javascript" src="/ts/main.js" defer></script>
-<script>
-    (function () {
-        const customFont = document.createElement('link');
-        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
-
-        customFont.type = "text/css";
-        customFont.rel = "stylesheet";
-
-        document.head.appendChild(customFont);
-    }());
-</script>
-
-</body>
-
-</html>
+</code></pre><ul><li>copy_file()：高层复制循环逻辑；它会调用 queue_rw_pair(ring, this_size, offset) 来构造 SQE pair；并通过一次 io_uring_submit() 调用将所有构建的 SQE pair 提交。 这个函数维护了一个最大 DQ 数量的 inflight SQE，只要数据 copy 还在进行中；否则，即数据已经全部读取完成，就开始等待和收割所有的 CQE。</li><li>queue_rw_pair() 构造一个 read-write SQE pair. read SQE 的 IOSQE_IO_LINK flag 表示开始一个 chain，write SQE 不用设置这个 flag，标志着这个 chain 的结束。用户 data 字段设置为同一个 data 描述符，并且在随后的 completion 处理中会用到。</li><li>handle_cqe() 从 CQE 中提取之前由  queue_rw_pair() 保存的 data 描述符，并在描述符中记录处理进展（index）。 如果之前请求被取消，它还会重新提交 read-write pair。 一个 CQE pair 的两个 member 都处理完成之后（index==2），释放共享的 data descriptor。最后通知内核这个 CQE 已经被消费。</li></ul><h3 id=3-最佳实践>3. 最佳实践</h3><p>io_uring 是一个高性能的异步 I/O 框架，它在 Linux 内核中引入了一种新的 I/O 模型，可以显著提高 I/O 操作的吞吐量和响应速度。然而，要充分发挥 io_uring 的优势，需要注意一些优化和最佳实践。</p><div class=table-wrapper><table><thead><tr><th>优化</th><th>说明</th></tr></thead><tbody><tr><td>批量提交（Batch Submission）</td><td>io_uring 支持批量提交多个 I/O 请求，以减少系统调用的开销。通过一次性提交多个请求，可以减少上下文切换和系统调用的次数，提高效率。建议根据系统的负载和性能需求，合理选择批量提交的数量。</td></tr><tr><td>预分配 I/O 请求（Pre-allocate I/O Requests）</td><td>在使用 io_uring 之前，可以预先分配一定数量的 I/O 请求，避免在运行时动态分配请求的开销。这样可以减少内存分配和释放的次数，提高性能。</td></tr><tr><td>使用 I/O 链接（I/O Linking）</td><td>io_uring 支持将多个 I/O 请求链接在一起，形成一个链表。这样可以减少上下文切换的开销，提高效率。在链接 I/O 请求时，需要注意保持请求的顺序和正确处理链接的完成。</td></tr><tr><td>使用 I/O 向量（I/O Vector）</td><td>io_uring 支持使用 I/O 向量来进行批量的读写操作。通过使用 I/O 向量，可以减少系统调用的次数，提高效率。在使用 I/O 向量时，需要注意正确设置每个向量的偏移量和长度。</td></tr><tr><td>使用事件完成通知（Event Completion Notification）</td><td>io_uring 支持使用事件完成通知来提高效率。通过使用事件完成通知，可以避免轮询等待 I/O 完成，而是在 I/O 完成时立即得到通知。这样可以减少 CPU 的占用和响应时间。</td></tr><tr><td>合理设置 I/O 队列深度（I/O Queue Depth）</td><td>io_uring 的性能受到 I/O 队列深度的影响。较大的队列深度可以提高并发性能，但也会增加内存开销。建议根据系统的负载和性能需求，合理设置 I/O 队列深度。</td></tr><tr><td>使用合适的内存分配策略</td><td>io_uring 的性能也受到内存分配策略的影响。建议使用高效的内存分配器，如 jemalloc 或 tcmalloc，来减少内存分配和释放的开销。</td></tr><tr><td>避免阻塞操作</td><td>io_uring 是一个异步 I/O 框架，应尽量避免在 io_uring 的上下文中进行阻塞操作。阻塞操作会导致 io_uring 的性能下降，甚至可能引起死锁。</td></tr><tr><td>使用合适的文件描述符（File Descriptor）</td><td>io_uring 支持对文件、套接字和管道等不同类型的文件描述符进行操作。在使用 io_uring 时，需要根据实际情况选择合适的文件描述符类型，并正确设置相关的参数。</td></tr><tr><td>注意错误处理</td><td>在使用 io_uring 时，需要注意正确处理错误。io_uring 的错误码可能是负数，可以使用 errno.h 中定义的错误码来进行解析和处理。</td></tr></tbody></table></div><p>通过遵循上述优化和最佳实践，可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。</p><h2 id=结论>结论</h2><ul><li><p>io_uring 是一个高性能的异步 I/O 框架，通过在 Linux 内核中引入新的 I/O 模型，它能够显著提高 I/O 操作的吞吐量和响应速度。本章节我们深入探讨了 io_uring 的优化和最佳实践，以帮助开发者充分发挥其性能优势。</p></li><li><p>在使用 io_uring 时，我们可以采取一系列优化措施来提高性能。首先，批量提交多个 I/O 请求可以减少系统调用的开销，提高效率。此外，预分配 I/O 请求、使用 I/O 链接和 I/O 向量等技术也能够减少内存分配和系统调用的次数，进一步提升性能。</p></li><li><p>除了以上的优化技巧，我们还介绍了一些最佳实践。合理设置 I/O 队列深度、使用事件完成通知和选择合适的文件描述符类型等都能够对性能产生积极影响。此外，避免阻塞操作和正确处理错误也是使用 io_uring 时需要注意的事项。</p></li><li><p>通过遵循这些优化和最佳实践，开发者可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。</p></li><li><p>io_uring 作为一个新兴的异步 I/O 框架，具有很大的潜力和广阔的应用前景。它已经在许多领域得到了广泛的应用，如数据库、网络服务器和存储系统等。随着对 io_uring 的进一步研究和优化，相信它将在未来发挥更大的作用，并成为开发者们的首选工具之一。</p></li></ul><h2 id=参考文献>参考文献</h2><p>[1] io_uring 官方文档：<a class=link href=https://kernel.dk/io_uring.pdf target=_blank rel=noopener>https://kernel.dk/io_uring.pdf
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span></a></p><p>[2] How io_uring and eBPF Will Revolutionize Programming in Linux[1], ScyllaDB</p><p>[3] 2020 An Introduction to the io_uring Asynchronous I/O Framework[2], Oracle, 2020</p><p>[4] liburing GitHub 仓库：<a class=link href=https://github.com/axboe/liburing target=_blank rel=noopener>https://github.com/axboe/liburing
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span></a></p></section><footer class=article-footer><section class=article-tags><a href=/tags/aio/>AIO</a>
+<a href=/tags/linux-kernel/>Linux 内核</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/thead-tools/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp loading=lazy data-key=thead-tools data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp></div><div class=article-details><h2 class=article-title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h2></div></a></article><article class=has-image><a href=/p/false-sharing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp loading=lazy data-key=false-sharing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp></div><div class=article-details><h2 class=article-title>性能刺客之伪共享</h2></div></a></article><article class=has-image><a href=/p/openmp-intro/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp loading=lazy data-key=openmp-intro data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp></div><div class=article-details><h2 class=article-title>OpenMP 简介</h2></div></a></article><article class=has-image><a href=/p/rdma-element/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp loading=lazy data-key=rdma-element data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp></div><div class=article-details><h2 class=article-title>RDMA 基本元素</h2></div></a></article><article class=has-image><a href=/p/ethernet-vs-rdma/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp loading=lazy data-key=ethernet-vs-rdma data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp></div><div class=article-details><h2 class=article-title>比较基于传统以太网与 RDMA 技术的通信</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=running-time>本博客已稳定运行
+<span id=runningdays class=running-days></span></section><section class=totalcount>发表了55篇文章 ·
+总计239.87k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><script>(function(){var t,e=window;if(e.ChannelIO)return e.console.error("ChannelIO script included twice.");t=function(){t.c(arguments)},t.q=[],t.c=function(e){t.q.push(e)},e.ChannelIO=t;function n(){if(e.ChannelIOInitialized)return;e.ChannelIOInitialized=!0;var n,t=document.createElement("script");t.type="text/javascript",t.async=!0,t.src="https://cdn.channel.io/plugin/ch-plugin-web.js",n=document.getElementsByTagName("script")[0],n.parentNode&&n.parentNode.insertBefore(t,n)}document.readyState==="complete"?n():(e.addEventListener("DOMContentLoaded",n),e.addEventListener("load",n))})(),ChannelIO("boot",{pluginKey:"3182ceac-0382-4734-98f5-1e6fec11c935"})</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/prism.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-bash.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-java.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-toml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-yaml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-nginx.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-python.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-c.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-cpp.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-rust.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-javascript.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markdown.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-css.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-json.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-go.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-sql.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-scss.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markup.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/show-language/prism-show-language.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js></script>
+<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

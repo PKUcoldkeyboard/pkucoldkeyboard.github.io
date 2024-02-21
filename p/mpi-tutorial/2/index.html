@@ -1,1707 +1,409 @@
-<!DOCTYPE html>
-<html lang="zh-cn" dir="ltr">
-
-<head><meta charset='utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content='本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。'>
-<title>MPI 与并行计算（二）：点到点通信</title>
-
-<link rel='canonical' href='https://cuterwrite.top/p/mpi-tutorial/2/'>
-
-<link rel="stylesheet" href="/scss/style.min.948ad9fa334265050c110bac7860b466bf64440b826b4304382c221fe1eec34c.css"><meta property='og:title' content='MPI 与并行计算（二）：点到点通信'>
-<meta property='og:description' content='本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。'>
-<meta property='og:url' content='https://cuterwrite.top/p/mpi-tutorial/2/'>
-<meta property='og:site_name' content='cuterwrite'>
-<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='MPI' /><meta property='article:tag' content='并行计算' /><meta property='article:published_time' content='2023-07-19T13:00:00&#43;00:00'/><meta property='article:modified_time' content='2023-07-19T13:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp' />
-<meta name="twitter:title" content="MPI 与并行计算（二）：点到点通信">
-<meta name="twitter:description" content="本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。"><meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp' />
-    <link rel="shortcut icon" href="/favicon.ico" />
-
-    
-    <script async src="https://umami-gamma-virid.vercel.app/uma" data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276">
-    </script>
-</head>
-
-<body class="
-    article-page
-    ">
-    <script>
-        (function() {
-            const colorSchemeKey = 'StackColorScheme';
-            if(!localStorage.getItem(colorSchemeKey)){
-                localStorage.setItem(colorSchemeKey, "auto");
-            }
-        })();
-    </script><script>
-    (function() {
-        const colorSchemeKey = 'StackColorScheme';
-        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
-        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
-
-        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
-            
-
-            document.documentElement.dataset.scheme = 'dark';
-        } else {
-            document.documentElement.dataset.scheme = 'light';
-        }
-    })();
-</script>
-<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
-    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
-        <span class="hamburger-box">
-            <span class="hamburger-inner"></span>
-        </span>
-    </button>
-
-    <header>
-        
-            
-            <figure class="site-avatar">
-                <a href="/">
-                
-                    
-                    
-                    
-                        
-                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
-                            height="300" class="site-logo" loading="lazy" alt="Avatar">
-                    
-                
-                </a>
-                
-                    <span class="emoji">😉</span>
-                
-            </figure>
-            
-        
-        
-        <div class="site-meta">
-            <h1 class="site-name"><a href="/">cuterwrite</a></h1>
-            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
-        </div>
-    </header><ol class="social-menu">
-            
-                <li>
-                    <a 
-                        href='https://github.com/PKUcoldkeyboard'
-                        target="_blank"
-                        title="GitHub"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
-</svg>
-
-
-
-                        
-                    </a>
-                </li>
-            
-                <li>
-                    <a 
-                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
-                        target="_blank"
-                        title="zhihu"
-                        rel="me"
-                    >
-                        
-                        
-                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
-    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
-</svg>
-
-                        
-                    </a>
-                </li>
-            
-        </ol><ol class="menu" id="main-menu">
-        
-        
-        
-        <li >
-            <a href='/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <polyline points="5 12 3 12 12 3 21 12 19 12" />
-  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
-  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
-</svg>
-
-
-
-                
-                <span>首页</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/about/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="7" r="4" />
-  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
-</svg>
-
-
-
-                
-                <span>个人</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/archives/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <rect x="3" y="4" width="18" height="4" rx="2" />
-  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
-  <line x1="10" y1="12" x2="14" y2="12" />
-</svg>
-
-
-
-                
-                <span>文章</span>
-            </a>
-        </li>
-        
-        
-        <li >
-            <a href='/search/' >
-                
-                
-                
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="10" cy="10" r="7" />
-  <line x1="21" y1="21" x2="15" y2="15" />
-</svg>
-
-
-
-                
-                <span>搜索</span>
-            </a>
-        </li>
-        
-
-        <div class="menu-bottom-section">
-            
-            
-                <li id="dark-mode-toggle">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="8" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="16" cy="12" r="2" />
-  <rect x="2" y="6" width="20" height="12" rx="6" />
-</svg>
-
-
-
-                    <span>暗色模式</span>
-                </li>
-            
-        </div>
-    </ol>
-</aside>
-
-    <aside class="sidebar right-sidebar sticky">
-        
-            
-                
-    <section class="widget archives">
-        <div class="widget-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <line x1="5" y1="9" x2="19" y2="9" />
-  <line x1="5" y1="15" x2="19" y2="15" />
-  <line x1="11" y1="4" x2="7" y2="20" />
-  <line x1="17" y1="4" x2="13" y2="20" />
-</svg>
-
-
-
-        </div>
-        <h2 class="widget-title section-title">目录</h2>
-        
-        <div class="widget--toc">
-            <nav id="TableOfContents">
-  <ul>
-    <li><a href="#1-mpi-的通信模式">1. MPI 的通信模式</a></li>
-    <li><a href="#2-标准通信模式mpi_send-和-mpi_recv">2. 标准通信模式：MPI_Send 和 MPI_Recv</a></li>
-    <li><a href="#3-缓冲通信模式">3. 缓冲通信模式</a></li>
-    <li><a href="#4-就绪通信模式">4. 就绪通信模式</a></li>
-    <li><a href="#5-同步通信模式">5. 同步通信模式</a></li>
-    <li><a href="#6-阻塞通信与非阻塞通信">6. 阻塞通信与非阻塞通信</a></li>
-    <li><a href="#7-非阻塞的发送和接收">7. 非阻塞的发送和接收</a></li>
-    <li><a href="#8-探测-probe">8. 探测 Probe</a></li>
-    <li><a href="#9-总结">9. 总结</a></li>
-  </ul>
-</nav>
-        </div>
-    </section>
-
-            
-        
-    </aside>
-
-
-        <main class="main full-width">
-    <article class="has-image main-article">
-    <header class="article-header">
-        <div class="article-image">
-            <a href="/p/mpi-tutorial/2/">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp" loading="lazy" alt="Featured image of post MPI 与并行计算（二）：点到点通信" />
-                
-            </a>
-        </div>
-    
-
-    <div class="article-details">
-    
-    <header class="article-category">
-        
-            <a href="/categories/hpc/" style="background-color: #FFD06F; color: #fff;">
-                高性能计算
-            </a>
-        
-    </header>
-    
-
-    <div class="article-title-wrapper">
-        <h2 class="article-title">
-            <a href="/p/mpi-tutorial/2/">MPI 与并行计算（二）：点到点通信</a>
-        </h2>
-    
-        
-        <h3 class="article-subtitle">
-            本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。
-        </h3>
-        
-    </div>
-
-    
-    
-    
-    
-    <footer class="article-time">
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
-  <circle cx="18" cy="18" r="4" />
-  <path d="M15 3v4" />
-  <path d="M7 3v4" />
-  <path d="M3 11h16" />
-  <path d="M18 16.496v1.504l1 1" />
-</svg>
-                <time class="article-time--published">2023-07-19</time>
-            </div>
-        
-
-        
-            <div>
-                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <polyline points="12 7 12 12 15 15" />
-</svg>
-
-
-
-                <time class="article-time--reading">
-                    阅读时长: 9 分钟
-                </time>
-            </div>
-        
-    </footer>
-    
-
-    
-</div>
-
-</header>
-
-    <section class="article-content">
-    
-    
-    <h1 id="mpi-与并行计算二点到点通信">MPI 与并行计算（二）：点到点通信</h1>
-<h2 id="1-mpi-的通信模式">1. MPI 的通信模式</h2>
-<ul>
-<li>通信模式：指的是缓冲管理以及发送方和接收方之间的同步方式。</li>
-<li>MPI 支持四种通信模式：标准通信模式、缓冲通信模式、就绪通信模式和同步通信模式</li>
-</ul>
-<h2 id="2-标准通信模式mpi_send-和-mpi_recv">2. 标准通信模式：MPI_Send 和 MPI_Recv</h2>
-<ul>
-<li>由 MPI 决定是否缓冲消息</li>
-<li>没有足够的系统缓冲区时或出于性能的考虑， MPI 可能进行直接拷贝： 仅当相应的接收开始后，发送语句才能返回</li>
-<li>MPI 缓冲消息：发送语句地相应的接收语句完成前返回</li>
-<li>发送的结束 == 消息已从发送方发出，而不是滞留在发送方的系统缓冲区中</li>
-<li>非本地的：发送操作的成功与否依赖于接收操作</li>
-<li>理论上要求有接收进程的 recv 调用配合，发送函数是<code>MPI_Send()</code>。</li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 1：标准通信模式</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span><span class="lnt">47
-</span><span class="lnt">48
-</span><span class="lnt">49
-</span><span class="lnt">50
-</span><span class="lnt">51
-</span><span class="lnt">52
-</span><span class="lnt">53
-</span><span class="lnt">54
-</span><span class="lnt">55
-</span><span class="lnt">56
-</span><span class="lnt">57
-</span><span class="lnt">58
-</span><span class="lnt">59
-</span><span class="lnt">60
-</span><span class="lnt">61
-</span><span class="lnt">62
-</span><span class="lnt">63
-</span><span class="lnt">64
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;thread&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#define BUF_SIZE 10
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">other</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">sb</span><span class="p">[</span><span class="n">BUF_SIZE</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">rb</span><span class="p">[</span><span class="n">BUF_SIZE</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 初始化 MPI 环境
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myid</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">numprocs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">BUF_SIZE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">sb</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">myid</span> <span class="o">+</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">other</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">other</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; tring send...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Send</span><span class="p">(</span><span class="n">sb</span><span class="p">,</span> <span class="n">BUF_SIZE</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; tring receiving...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">rb</span><span class="p">,</span> <span class="n">BUF_SIZE</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// sleep 10s, 与缓冲通信模式相比，这里的发送和接收操作是阻塞的
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; tring receiving...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">rb</span><span class="p">,</span> <span class="n">BUF_SIZE</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; tring send...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Send</span><span class="p">(</span><span class="n">sb</span><span class="p">,</span> <span class="n">BUF_SIZE</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Hello World! Process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; of &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">numprocs</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Send buffer: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">BUF_SIZE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">sb</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; &#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Receive buffer: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">BUF_SIZE</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">rb</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; &#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>运行结果：</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicxx -o mpi mpi.cpp
-</span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./mpi
-</span></span><span class="line"><span class="cl">process <span class="m">0</span> tring send...
-</span></span><span class="line"><span class="cl">process <span class="m">0</span> tring receiving...
-</span></span><span class="line"><span class="cl">process <span class="m">1</span> tring receiving...
-</span></span><span class="line"><span class="cl">process <span class="m">1</span> tring send...
-</span></span><span class="line"><span class="cl">Hello World! Process <span class="m">1</span> of <span class="m">2</span>
-</span></span><span class="line"><span class="cl">Send buffer:
-</span></span><span class="line"><span class="cl"><span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">4</span> <span class="m">5</span> <span class="m">6</span> <span class="m">7</span> <span class="m">8</span> <span class="m">9</span> <span class="m">10</span>
-</span></span><span class="line"><span class="cl">Receive buffer:
-</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">4</span> <span class="m">5</span> <span class="m">6</span> <span class="m">7</span> <span class="m">8</span> <span class="m">9</span>
-</span></span><span class="line"><span class="cl">Hello World! Process <span class="m">0</span> of <span class="m">2</span>
-</span></span><span class="line"><span class="cl">Send buffer:
-</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">4</span> <span class="m">5</span> <span class="m">6</span> <span class="m">7</span> <span class="m">8</span> <span class="m">9</span>
-</span></span><span class="line"><span class="cl">Receive buffer:
-</span></span><span class="line"><span class="cl"><span class="m">1</span> <span class="m">2</span> <span class="m">3</span> <span class="m">4</span> <span class="m">5</span> <span class="m">6</span> <span class="m">7</span> <span class="m">8</span> <span class="m">9</span> <span class="m">10</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>这就是点对点通信的基本用法，通过发送和接收操作，进程之间可以进行数据交换和协调工作。</li>
-</ul>
-<h2 id="3-缓冲通信模式">3. 缓冲通信模式</h2>
-<ul>
-<li>前提: 用户显示地指定用于缓冲消息的系统缓冲区<code>MPI_Buffer_attach(*buffer, *size)</code> 。</li>
-<li>发送是本地的: 完成不依赖于与其匹配的接收操作。 发送的结束仅表明消息进入系统的缓冲区中，发送缓冲区可以重用，而对接收方的情况并不知道。</li>
-<li>缓冲模式在相匹配的接收未开始的情况下，总是将送出的消息放在缓冲区内，这样发送者可以很快地继续计算,然后由系统处理放在缓冲区中的消息。</li>
-<li>占用内存，一次内存拷贝。</li>
-<li>函数调用形式为：<code>MPI_Bsend()</code>。B 表示缓冲，缓冲通信模式主要用于解开阻塞通信的发送与接收之间的耦合。</li>
-<li>作用总结：通常情况下，MPI 发送和接收操作是阻塞的，即发送操作会等待接收方准备好接收，接收操作会等待发送方发送数据。但是，MPI 提供了一种称为缓冲区（buffering）的机制，可以使<strong>发送操作立即返回，而不需要等待接收方准备好</strong>。</li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 2：缓冲通信模式</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span><span class="lnt">47
-</span><span class="lnt">48
-</span><span class="lnt">49
-</span><span class="lnt">50
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;thread&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 初始化
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myid</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">numprocs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 取缓冲区的上界，以字节为单位
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Pack_size</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="n">MPI_CHAR</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Pack_size</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">buffer_size</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">MPI_BSEND_OVERHEAD</span> <span class="o">+</span> <span class="n">s1</span> <span class="o">+</span> <span class="n">s2</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="o">*</span><span class="n">buffer</span>    <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="p">[</span><span class="n">buffer_size</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 装配一个用于通信的缓冲区
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Buffer_attach</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_size</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">msg1</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>   <span class="o">=</span> <span class="s">&#34;Hello&#34;</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">msg2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">};</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kt">char</span> <span class="n">rmsg1</span><span class="p">[</span><span class="mi">7</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">rmsg2</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Bsend</span><span class="p">(</span><span class="n">msg1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="n">MPI_CHAR</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Bsend</span><span class="p">(</span><span class="n">msg2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Send msg1: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">msg1</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Send msg2: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">msg2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">msg2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// sleep 10s
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">std</span><span class="o">::</span><span class="n">this_thread</span><span class="o">::</span><span class="n">sleep_for</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">seconds</span><span class="p">(</span><span class="mi">10</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">rmsg1</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="n">MPI_CHAR</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">rmsg2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Receive msg1: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">rmsg1</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Receive msg2: &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">rmsg2</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">rmsg2</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Buffer_detach</span><span class="p">(</span><span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buffer_size</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">free</span><span class="p">(</span><span class="n">buffer</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>运行结果：</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span><span class="lnt">3
-</span><span class="lnt">4
-</span><span class="lnt">5
-</span><span class="lnt">6
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl">root@ubuntu:~# mpicxx -o mpi mpi.cpp
-</span></span><span class="line"><span class="cl">root@ubuntu:~# mpirun -n <span class="m">2</span> ./mpi
-</span></span><span class="line"><span class="cl">Send msg1: Hello
-</span></span><span class="line"><span class="cl">Send msg2: <span class="m">1</span> <span class="m">2</span>
-</span></span><span class="line"><span class="cl">Receive msg1: Hello
-</span></span><span class="line"><span class="cl">Receive msg2: <span class="m">1</span> <span class="m">2</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="4-就绪通信模式">4. 就绪通信模式</h2>
-<ul>
-<li><strong>发送请求仅当有匹配的接收后才能发出，否则出错</strong>。在就绪模式下，系统默认与其相匹配的接收已经调用。 接收必须先于发送。</li>
-<li>它不可以不依赖于接收方的匹配的接收请求而任意发出</li>
-<li>其函数调用形式为：<code>MPI_RSend()</code>。R 表示就绪，仅当对方的接收操作启动并准备就绪时，才可以发送数据。</li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 3：就绪通信模式</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 初始化
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myid</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">numprocs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">i</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;error&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">                <span class="k">break</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Rsend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="5-同步通信模式">5. 同步通信模式</h2>
-<ul>
-<li>本质特征：收方接收该消息的缓冲区已准备好， 不需要附加的系统缓冲区</li>
-<li>任意发出：发送请求可以不依赖于收方的匹配的接收请求而任意发出</li>
-<li>成功结束： 仅当收方已发出接收该消息的请求后才成功返回，否则将阻塞。意味着：
-<ul>
-<li>发送方缓冲区可以重用</li>
-<li>收方已发出接收请求</li>
-</ul>
-</li>
-<li>是非本地的</li>
-<li>函数调用形式为：<code>MPI_Ssend()</code>。S 表示同步。</li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 4：同步通信模式</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span><span class="lnt">24
-</span><span class="lnt">25
-</span><span class="lnt">26
-</span><span class="lnt">27
-</span><span class="lnt">28
-</span><span class="lnt">29
-</span><span class="lnt">30
-</span><span class="lnt">31
-</span><span class="lnt">32
-</span><span class="lnt">33
-</span><span class="lnt">34
-</span><span class="lnt">35
-</span><span class="lnt">36
-</span><span class="lnt">37
-</span><span class="lnt">38
-</span><span class="lnt">39
-</span><span class="lnt">40
-</span><span class="lnt">41
-</span><span class="lnt">42
-</span><span class="lnt">43
-</span><span class="lnt">44
-</span><span class="lnt">45
-</span><span class="lnt">46
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;mpi.h&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp">
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">myid</span><span class="p">,</span> <span class="n">numprocs</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// 初始化
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">MPI_Init</span><span class="p">(</span><span class="o">&amp;</span><span class="n">argc</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">argv</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_rank</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">myid</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Comm_size</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">numprocs</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">buffer</span><span class="p">[</span><span class="mi">10</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Recv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; receiving...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">i</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;error&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">                <span class="k">break</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">myid</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">myid</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; sending...&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="n">MPI_Ssend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Finalize</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="6-阻塞通信与非阻塞通信">6. 阻塞通信与非阻塞通信</h2>
-<p>阻塞通信调用时，整个程序只能执行通信相关的内容，而无法执行计算相关的内容；非阻塞调用的初衷是尽量让通信和计算重叠进行，提高程序整体执行效率。</p>
-<p>非阻塞通信调用返回意味着通信开始启动；而非阻塞通信完成则需要调用其他的接口来查询。</p>
-<ul>
-<li>非阻塞通信的调用接口</li>
-<li>非阻塞通信的完成查询接口</li>
-</ul>
-<p>非阻塞通信的<strong>发送</strong>和<strong>接受</strong>过程都需要同时具备以上两个要素：调用与完成。（1）”调用“按照通信方式的不同（标准、缓存、同步、就绪），有各种函数接口；（2）”完成“是重点，因为程序员需要知道非阻塞调用是否执行完成了，来做下一步的操作。</p>
-<p>MPI 为“完成”定义了一个内部变量 MPI_Request request，每个 request 与一个在非阻塞调用发生时与该调用发生关联（这里的调用包括发送和接收）。“完成”不区分通信方式的不同，统一用 MPI_Wait 系列函数来完成。</p>
-<ol>
-<li><code>MPI_Wait(MPI_Request *request)</code>，均等着 request 执行完毕了，再往下进行</li>
-<li>对于非重复非阻塞通信，<code>MPI_Wait</code> 系列函数调用的返回，还意味着 request 对象被释放了，程序员不用再显式释放 request 变量。</li>
-<li>对于重复非阻塞通信，<code>MPI_Wait</code> 系列函数调用的返回，意味着将于 request 对象关联的非阻塞通信处于不激活状态，并不释放 request</li>
-</ol>
-<ul>
-<li>MPI_Wait 会迫使进程进入“阻塞模式”。发送过程将简单地等待请求完成。如果进程在 MPI_Isend 之后立即等待，则 Send 与调用 MPI_Send 相同。等待 MPI_WAIT 和 MPI_WAITANY 有两种方式</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Wait</span><span class="p">(</span><span class="n">MPI_Request</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Waitany</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="n">MPI_Request</span> <span class="n">array_of_requests</span><span class="p">[],</span> <span class="kt">int</span> <span class="o">*</span><span class="n">index</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>
-<p>前者 MPI_WAIT 只是等待给定请求的完成。请求一完成，就会返回一个状态为 MPI_STATUS 的实例。后者<code>MPI_Waitany</code> 等待一系列请求中的第一个完成的请求继续。一旦请求完成，INDEX 的值被设置为存储 ARRAY_OF_REQUESTS 中已完成请求的索引。该调用还存储已完成请求的状态。</p>
-</li>
-<li>
-<p>对于阻塞通信，如果不想跟踪此信息，可以将指向 MPI_STATUS 实例的指针替换为 MPI_STATUS_IGNORE。</p>
-</li>
-<li>
-<p>正如我们之前看到的，等待会阻止进程，直到请求（或某个请求）被满足。测试则是检查请求是否可以完成。如果可以，请求将自动完成并传输数据。关于等待，有两种测试等待：MPI_Test 和 MPI_Testany。它们的调用方式如下</p>
-</li>
-</ul>
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">1
-</span><span class="lnt">2
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Test</span><span class="p">(</span><span class="n">MPI_Request</span> <span class="o">*</span><span class="n">request</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">MPI_Testany</span><span class="p">(</span><span class="kt">int</span> <span class="n">count</span><span class="p">,</span> <span class="n">MPI_Request</span> <span class="n">array_of_requests</span><span class="p">[],</span> <span class="kt">int</span> <span class="o">*</span><span class="n">index</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">flag</span><span class="p">,</span> <span class="n">MPI_Status</span> <span class="o">*</span><span class="n">status</span><span class="p">);</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><ul>
-<li>让我们从 MPI_Test 开始。至于 MPI_Wait，参数 request 和 status 并不神秘。请记住，测试是非阻塞的，因此在任何情况下，调用后进程都会继续执行。变量 flag 的作用是告诉你请求是否在测试过程中完成。如果 flag != 0 表示请求已完成</li>
-<li>MPI_Testany 现在应该是完全显而易见的。如果有任何请求可完成，它会将 FLAG 设置为非零值。如果是这样的话，状态和索引也被赋予一个值</li>
-</ul>
-<h2 id="7-非阻塞的发送和接收">7. 非阻塞的发送和接收</h2>
-<ul>
-<li><code>int MPI_Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)</code>
-<ul>
-<li>buf: 发送缓冲区的起始地址</li>
-<li>count: 发送数据的个数</li>
-<li>datatype: 发送数据的类型</li>
-<li>dest: 目标进程的 rank</li>
-<li>tag: 消息标签</li>
-<li>comm: 通信子</li>
-<li>request: 非阻塞通信完成对象</li>
-</ul>
-</li>
-<li><code>MPI_Ibsend/MPI_Issend/MPI_Irsend</code>: 缓冲/同步/就绪通信的非阻塞发送</li>
-<li><code>int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)</code></li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 5：非阻塞通信</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt">  1
-</span><span class="lnt">  2
-</span><span class="lnt">  3
-</span><span class="lnt">  4
-</span><span class="lnt">  5
-</span><span class="lnt">  6
-</span><span class="lnt">  7
-</span><span class="lnt">  8
-</span><span class="lnt">  9
-</span><span class="lnt"> 10
-</span><span class="lnt"> 11
-</span><span class="lnt"> 12
-</span><span class="lnt"> 13
-</span><span class="lnt"> 14
-</span><span class="lnt"> 15
-</span><span class="lnt"> 16
-</span><span class="lnt"> 17
-</span><span class="lnt"> 18
-</span><span class="lnt"> 19
-</span><span class="lnt"> 20
-</span><span class="lnt"> 21
-</span><span class="lnt"> 22
-</span><span class="lnt"> 23
-</span><span class="lnt"> 24
-</span><span class="lnt"> 25
-</span><span class="lnt"> 26
-</span><span class="lnt"> 27
-</span><span class="lnt"> 28
-</span><span class="lnt"> 29
-</span><span class="lnt"> 30
-</span><span class="lnt"> 31
-</span><span class="lnt"> 32
-</span><span class="lnt"> 33
-</span><span class="lnt"> 34
-</span><span class="lnt"> 35
-</span><span class="lnt"> 36
-</span><span class="lnt"> 37
-</span><span class="lnt"> 38
-</span><span class="lnt"> 39
-</span><span class="lnt"> 40
-</span><span class="lnt"> 41
-</span><span class="lnt"> 42
-</span><span class="lnt"> 43
-</span><span class="lnt"> 44
-</span><span class="lnt"> 45
-</span><span class="lnt"> 46
-</span><span class="lnt"> 47
-</span><span class="lnt"> 48
-</span><span class="lnt"> 49
-</span><span class="lnt"> 50
-</span><span class="lnt"> 51
-</span><span class="lnt"> 52
-</span><span class="lnt"> 53
-</span><span class="lnt"> 54
-</span><span class="lnt"> 55
-</span><span class="lnt"> 56
-</span><span class="lnt"> 57
-</span><span class="lnt"> 58
-</span><span class="lnt"> 59
-</span><span class="lnt"> 60
-</span><span class="lnt"> 61
-</span><span class="lnt"> 62
-</span><span class="lnt"> 63
-</span><span class="lnt"> 64
-</span><span class="lnt"> 65
-</span><span class="lnt"> 66
-</span><span class="lnt"> 67
-</span><span class="lnt"> 68
-</span><span class="lnt"> 69
-</span><span class="lnt"> 70
-</span><span class="lnt"> 71
-</span><span class="lnt"> 72
-</span><span class="lnt"> 73
-</span><span class="lnt"> 74
-</span><span class="lnt"> 75
-</span><span class="lnt"> 76
-</span><span class="lnt"> 77
-</span><span class="lnt"> 78
-</span><span class="lnt"> 79
-</span><span class="lnt"> 80
-</span><span class="lnt"> 81
-</span><span class="lnt"> 82
-</span><span class="lnt"> 83
-</span><span class="lnt"> 84
-</span><span class="lnt"> 85
-</span><span class="lnt"> 86
-</span><span class="lnt"> 87
-</span><span class="lnt"> 88
-</span><span class="lnt"> 89
-</span><span class="lnt"> 90
-</span><span class="lnt"> 91
-</span><span class="lnt"> 92
-</span><span class="lnt"> 93
-</span><span class="lnt"> 94
-</span><span class="lnt"> 95
-</span><span class="lnt"> 96
-</span><span class="lnt"> 97
-</span><span class="lnt"> 98
-</span><span class="lnt"> 99
-</span><span class="lnt">100
-</span><span class="lnt">101
-</span><span class="lnt">102
-</span><span class="lnt">103
-</span><span class="lnt">104
-</span><span class="lnt">105
-</span><span class="lnt">106
-</span><span class="lnt">107
-</span><span class="lnt">108
-</span><span class="lnt">109
-</span><span class="lnt">110
-</span><span class="lnt">111
-</span><span class="lnt">112
-</span><span class="lnt">113
-</span><span class="lnt">114
-</span><span class="lnt">115
-</span><span class="lnt">116
-</span><span class="lnt">117
-</span><span class="lnt">118
-</span><span class="lnt">119
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">play_non_blocking_scenario</span><span class="p">()</span>
-</span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Request</span> <span class="n">request</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">request_finished</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="c1">// Initialising buffer :
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">?</span> <span class="n">i</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">:</span> <span class="mi">0</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Barrier</span><span class="p">(</span><span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="c1">// Starting the chronometer
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">double</span> <span class="n">time</span> <span class="o">=</span> <span class="o">-</span><span class="n">MPI_Wtime</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// 1- Initialise the non-blocking send to process 1
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Isend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="kt">double</span> <span class="n">time_left</span> <span class="o">=</span> <span class="mf">6000.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">time_left</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">usleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>  <span class="c1">// We work for 1ms
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
-</span></span><span class="line"><span class="cl">            <span class="c1">// 2- Test if the request is finished (only if not already finished)
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">MPI_Test</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request_finished</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">            <span class="c1">// 1ms left to work
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">time_left</span> <span class="o">-=</span> <span class="mf">1000.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 3- If the request is not yet complete, wait here.
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// Modifying the buffer for second step
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer_count</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">buffer</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 4- Prepare another request for process 1 with a different tag
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Isend</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">time_left</span> <span class="o">=</span> <span class="mf">3000.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="k">while</span> <span class="p">(</span><span class="n">time_left</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">usleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>  <span class="c1">// We work for 1ms
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>
-</span></span><span class="line"><span class="cl">            <span class="c1">// 5- Test if the request is finished (only if not already finished)
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">            <span class="c1">// 1ms left to work
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">time_left</span> <span class="o">-=</span> <span class="mf">1000.0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// 6- Wait for it to finish
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">request_finished</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">else</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="c1">// Work for 5 seconds
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 7- Initialise the non-blocking receive from process 0
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Irecv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 8- Wait here for the request to be completed
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">print_buffer</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// Work for 3 seconds
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">sleep</span><span class="p">(</span><span class="mi">3</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 9- Initialise another non-blocking receive
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Irecv</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="n">buffer_count</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">request</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="c1">// 10- Wait for it to be completed
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">// [...]
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">MPI_Wait</span><span class="p">(</span><span class="o">&amp;</span><span class="n">request</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">print_buffer</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="c1">// Stopping the chronometer
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">time</span> <span class="o">+=</span> <span class="n">MPI_Wtime</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="c1">// This line gives us the maximum time elapsed on each process.
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="kt">double</span> <span class="n">final_time</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Reduce</span><span class="p">(</span><span class="o">&amp;</span><span class="n">time</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">final_time</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_DOUBLE</span><span class="p">,</span> <span class="n">MPI_MAX</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">rank</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">    <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Total time for non-blocking scenario : &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">final_time</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;s&#34;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="8-探测-probe">8. 探测 Probe</h2>
-<ul>
-<li>探测实际上非常有用，它有很多用途，例如获取即将接收的元素数量、接收进程的 ID 和标记，或者是否真的接收到了任何信息。</li>
-<li>用于探测的函数有两个：MPI_Probe 和 MPI_IProbe。第一个是阻塞调用，而第二个则不是。现在，MPI_Probe 只会给出与收到的下一条消息相关的 MPI_Status 值，该消息对应于某个标签和 ID。如果想探测任何类型或来自任何来源的消息接收情况，可以使用 MPI_ANY_SOURCE 和 MPI_ANY_TAG。然后，可以将生成的 MPI_Status 对象与其他函数结合使用，以获取更多信息。</li>
-</ul>
-
-
-
-<div class="notice notice-note" >
-    <div class="notice-title"><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff"></path></svg></div><p>示例 6：探测</p></div>
-
-<div class="highlight"><div class="chroma">
-<table class="lntable"><tr><td class="lntd">
-<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
-</span><span class="lnt"> 2
-</span><span class="lnt"> 3
-</span><span class="lnt"> 4
-</span><span class="lnt"> 5
-</span><span class="lnt"> 6
-</span><span class="lnt"> 7
-</span><span class="lnt"> 8
-</span><span class="lnt"> 9
-</span><span class="lnt">10
-</span><span class="lnt">11
-</span><span class="lnt">12
-</span><span class="lnt">13
-</span><span class="lnt">14
-</span><span class="lnt">15
-</span><span class="lnt">16
-</span><span class="lnt">17
-</span><span class="lnt">18
-</span><span class="lnt">19
-</span><span class="lnt">20
-</span><span class="lnt">21
-</span><span class="lnt">22
-</span><span class="lnt">23
-</span></code></pre></td>
-<td class="lntd">
-<pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">probing_process</span><span class="p">(</span><span class="kt">int</span> <span class="o">&amp;</span><span class="n">int_sum</span><span class="p">,</span> <span class="kt">float</span> <span class="o">&amp;</span><span class="n">float_sum</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">  <span class="n">MPI_Status</span> <span class="n">status</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 1- Probe the incoming message
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">MPI_Probe</span><span class="p">(</span><span class="n">MPI_ANY_SOURCE</span><span class="p">,</span> <span class="n">MPI_ANY_TAG</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">status</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">  <span class="c1">// 2- Get the tag and the source
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">tag</span> <span class="o">=</span> <span class="n">status</span><span class="p">.</span><span class="n">MPI_TAG</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">source</span> <span class="o">=</span> <span class="n">status</span><span class="p">.</span><span class="n">MPI_SOURCE</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// Printing the message
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="s">&#34;Received a message from process &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">source</span> <span class="o">&lt;&lt;</span> <span class="s">&#34; with tag &#34;</span> <span class="o">&lt;&lt;</span> <span class="n">tag</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">  <span class="c1">// 3- Add to int_sum or float_sum depending on the tag of the message
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">if</span> <span class="p">(</span><span class="n">tag</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">other</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Recv</span><span class="p">(</span><span class="o">&amp;</span><span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_INT</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">int_sum</span> <span class="o">+=</span> <span class="n">other</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">tag</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">float</span> <span class="n">other</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">MPI_Recv</span><span class="p">(</span><span class="o">&amp;</span><span class="n">other</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">MPI_FLOAT</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="n">MPI_COMM_WORLD</span><span class="p">,</span> <span class="n">MPI_STATUS_IGNORE</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">float_sum</span> <span class="o">+=</span> <span class="n">other</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="p">}</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></td></tr></table>
-</div>
-</div><h2 id="9-总结">9. 总结</h2>
-<p>理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的 Send 实际利用了 MPI 环境提供的默认缓冲区；Bsend 实际相当于将 MPI 环境提供的 buffer 放在用户空间管理；Rsend 实际相当于不要缓冲区，但发送端不能提前等待；Ssend 实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为 MPI 环境会另起一个线程在后台做实际的消息传输，通过 Wait、Test 等机制与 MPI 进程的主线程进行通信和同步。</p>
-<div class="table-wrapper"><table>
-<thead>
-<tr>
-<th style="text-align:center">通信模式</th>
-<th style="text-align:center">阻塞型</th>
-<th style="text-align:center">非阻塞型</th>
-<th style="text-align:center">缓冲方式</th>
-<th style="text-align:center">发送方等待</th>
-<th style="text-align:center">接收方等待</th>
-<th style="text-align:center">是否本地</th>
-<th style="text-align:center">是否阻塞</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:center">标准通信</td>
-<td style="text-align:center">MPI_Send</td>
-<td style="text-align:center">MPI_Isend</td>
-<td style="text-align:center">MPI 环境提供的默认缓冲区</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是</td>
-</tr>
-<tr>
-<td style="text-align:center">缓冲通信</td>
-<td style="text-align:center">MPI_Bsend</td>
-<td style="text-align:center">MPI_Ibsend</td>
-<td style="text-align:center">用户空间管理</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">是</td>
-</tr>
-<tr>
-<td style="text-align:center">就绪通信</td>
-<td style="text-align:center">MPI_Rsend</td>
-<td style="text-align:center">MPI_Irsend</td>
-<td style="text-align:center">无</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是</td>
-</tr>
-<tr>
-<td style="text-align:center">同步通信</td>
-<td style="text-align:center">MPI_Ssend</td>
-<td style="text-align:center">MPI_Issend</td>
-<td style="text-align:center">无</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是</td>
-<td style="text-align:center">否</td>
-<td style="text-align:center">是</td>
-</tr>
-</tbody>
-</table></div>
-
-</section>
-
-
-    <footer class="article-footer">
-    
-    <section class="article-tags">
-        
-            <a href="/tags/mpi/">MPI</a>
-        
-            <a href="/tags/parallel-computing/">并行计算</a>
-        
-    </section>
-
-
-    
-    <section class="article-copyright">
-        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-  <path stroke="none" d="M0 0h24v24H0z"/>
-  <circle cx="12" cy="12" r="9" />
-  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
-</svg>
-
-
-
-        <span>Licensed under CC BY-NC-SA 4.0</span>
-    </section>
-    </footer>
-
-
-    
-        <link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css"integrity="sha256-J&#43;iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s="crossorigin="anonymous"
-            ><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js"integrity="sha256-InsNdER1b2xUewP&#43;pKCUJpkhiqwHgqiPXDlIk7GzBu4="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js"integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI="crossorigin="anonymous"
-                defer
-                >
-            </script><script>
-    window.addEventListener("DOMContentLoaded", () => {
-        renderMathInElement(document.querySelector(`.article-content`), {
-            delimiters: [
-                { left: "$$", right: "$$", display: true },
-                { left: "$", right: "$", display: false },
-                { left: "\\(", right: "\\)", display: false },
-                { left: "\\[", right: "\\]", display: true }
-            ],
-            ignoredClasses: ["gist"]
-        });})
-</script>
-    
-</article>
-
-    
-
-    
-
-<aside class="related-content--wrapper">
-    <h2 class="section-title">相关文章</h2>
-    <div class="related-content">
-        <div class="flex article-list--tile">
-            
-                
-<article class="has-image">
-    <a href="/p/openmpi-with-ucx/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" loading="lazy" data-key="openmpi-with-ucx" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/mpi-tutorial/5/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif" loading="lazy" data-key="mpi-tutorial/5" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MPI 与并行计算（五）：MPI 扩展</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/mpi-tutorial/4/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp" loading="lazy" data-key="mpi-tutorial/4" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MPI 与并行计算（四）：数据类型</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/mpi-tutorial/3/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp" loading="lazy" data-key="mpi-tutorial/3" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MPI 与并行计算（三）：集合通信</h2>
-        </div>
-    </a>
-</article>
-
-            
-                
-<article class="has-image">
-    <a href="/p/mpi-tutorial/1/">
-        
-        
-            <div class="article-image">
-                
-                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp" loading="lazy" data-key="mpi-tutorial/1" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp"/>
-                
-            </div>
-        
-
-        <div class="article-details">
-            <h2 class="article-title">MPI 与并行计算（一）：并行环境及编程模型</h2>
-        </div>
-    </a>
-</article>
-
-            
-        </div>
-    </div>
-</aside>
-
-     
-    
-        
-    
-<script>
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        let script = document.createElement('script');
-        script.src = 'https://giscus.app/client.js';
-        script.dataset.repo = "PKUcoldkeyboard\/pkucoldkeyboard.github.io";
-        script.dataset.repoId = "MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=";
-        script.dataset.category = "Comments";
-        script.dataset.categoryId = "DIC_kwDOFAUD4M4CZV4F";
-        script.dataset.mapping = "title";
-        script.dataset.strict = "0";
-        script.dataset.reactionsEnabled = "1";
-        script.dataset.emitMetadata = "0";
-        script.dataset.inputPosition = "top";
-        script.dataset.theme = "light";
-        script.dataset.lang = "zh-CN";
-        script.dataset.loading = "lazy";
-        script.crossOrigin = "anonymous";
-        script.async = true;
-        let main = document.querySelector('.main');
-        
-        let lastChild = main.childNodes[main.childNodes.length - 1];
-        main.insertBefore(script, lastChild.nextSibling);
-    })();
-
-    function setGiscusTheme(theme) {
-        let giscus = document.querySelector("iframe.giscus-frame");
-        if (giscus) {
-            giscus.contentWindow.postMessage(
-                {
-                    giscus: {
-                        setConfig: {
-                            theme: theme,
-                        },
-                    },
-                },
-                "https://giscus.app"
-            );
-        }
+<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content="本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。"><title>MPI 与并行计算（二）：点到点通信</title><link rel=canonical href=https://cuterwrite.top/p/mpi-tutorial/2/><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.css><link rel=stylesheet href=/scss/style.min.457c4bdff53183d90293f83f6e5357a514a8a88dd527e2cef6f18c33ac7a610b.css><meta property="og:title" content="MPI 与并行计算（二）：点到点通信"><meta property="og:description" content="本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。"><meta property="og:url" content="https://cuterwrite.top/p/mpi-tutorial/2/"><meta property="og:site_name" content="cuterwrite"><meta property="og:type" content="article"><meta property="article:section" content="Post"><meta property="article:tag" content="MPI"><meta property="article:tag" content="并行计算"><meta property="article:published_time" content="2023-07-19T13:00:00+00:00"><meta property="article:modified_time" content="2023-07-19T13:00:00+00:00"><meta property="og:image" content="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp"><meta name=twitter:title content="MPI 与并行计算（二）：点到点通信"><meta name=twitter:description content="本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp"><link rel="shortcut icon" href=/favicon.ico><script async src=https://umami-gamma-virid.vercel.app/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276></script></head><body class="article-page
+line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a>
+<span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>cuterwrite</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=social-menu><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://cuterwrite.top/index.xml target=_blank title=rss rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg><span>主页 | Home</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg><span>关于 | About</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg><span>归档 | Archives</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg><span>搜索 | Search</span></a></li><div class=menu-bottom-section><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg><span>暗色模式</span></li></div></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#1-mpi-的通信模式>1. MPI 的通信模式</a></li><li><a href=#2-标准通信模式mpi_send-和-mpi_recv>2. 标准通信模式：MPI_Send 和 MPI_Recv</a></li><li><a href=#3-缓冲通信模式>3. 缓冲通信模式</a></li><li><a href=#4-就绪通信模式>4. 就绪通信模式</a></li><li><a href=#5-同步通信模式>5. 同步通信模式</a></li><li><a href=#6-阻塞通信与非阻塞通信>6. 阻塞通信与非阻塞通信</a></li><li><a href=#7-非阻塞的发送和接收>7. 非阻塞的发送和接收</a></li><li><a href=#8-探测-probe>8. 探测 Probe</a></li><li><a href=#9-总结>9. 总结</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/mpi-tutorial/2/><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719212254.webp loading=lazy alt="Featured image of post MPI 与并行计算（二）：点到点通信"></a></div><div class=article-details><header class=article-category><a href=/categories/hpc/ style=background-color:#ffd06f;color:#fff>高性能计算</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/mpi-tutorial/2/>MPI 与并行计算（二）：点到点通信</a></h2><h3 class=article-subtitle>本文详细介绍了 MPI 中的点到点通信模式，主要包括标准通信模式、缓冲通信模式、就绪通信模式、同步通信模式，然后介绍了阻塞与非阻塞通信的概念。并且举了多个例子说明如何编写不同通信模式的 MPI 程序。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg><time class=article-time--published>2023-07-19</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg><time class=article-time--reading>阅读时长: 8 分钟</time></div></footer></div></header><section class=article-content><h1 id=mpi-与并行计算二点到点通信>MPI 与并行计算（二）：点到点通信</h1><h2 id=1-mpi-的通信模式>1. MPI 的通信模式</h2><ul><li>通信模式：指的是缓冲管理以及发送方和接收方之间的同步方式。</li><li>MPI 支持四种通信模式：标准通信模式、缓冲通信模式、就绪通信模式和同步通信模式</li></ul><h2 id=2-标准通信模式mpi_send-和-mpi_recv>2. 标准通信模式：MPI_Send 和 MPI_Recv</h2><ul><li>由 MPI 决定是否缓冲消息</li><li>没有足够的系统缓冲区时或出于性能的考虑， MPI 可能进行直接拷贝： 仅当相应的接收开始后，发送语句才能返回</li><li>MPI 缓冲消息：发送语句地相应的接收语句完成前返回</li><li>发送的结束 == 消息已从发送方发出，而不是滞留在发送方的系统缓冲区中</li><li>非本地的：发送操作的成功与否依赖于接收操作</li><li>理论上要求有接收进程的 recv 调用配合，发送函数是<code>MPI_Send()</code>。</li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 1：标准通信模式</p></div><pre><code class=language-cpp>#include &lt;mpi.h&gt;
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+#define BUF_SIZE 10
+
+int main(int argc, char *argv[])
+{
+    int myid, numprocs;
+    int other;
+    int sb[BUF_SIZE];
+    int rb[BUF_SIZE];
+    // 初始化 MPI 环境
+    MPI_Init(&amp;argc, &amp;argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &amp;myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &amp;numprocs);
+    MPI_Status status;
+
+    for (int i = 0; i &lt; BUF_SIZE; i++)
+    {
+        sb[i] = myid + i;
     }
 
-    (function () {
-        if (/^localhost|^127/.test(location.hostname)) {
-            return;
-        }
-        addEventListener("message", (e) => {
-            if (event.origin !== "https://giscus.app") return;
-            handler();
-        });
-        window.addEventListener("onColorSchemeChange", handler);
+    if (myid == 0)
+    {
+        other = 1;
+    }
+    else if (myid == 1)
+    {
+        other = 0;
+    }
 
-        function handler() {
-            if (document.documentElement.dataset.scheme === "light") {
-                setGiscusTheme('light');
-            } else {
-                setGiscusTheme('dark_dimmed');
+    if (myid == 0)
+    {
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; tring send...&quot; &lt;&lt; std::endl;
+        MPI_Send(sb, BUF_SIZE, MPI_INT, other, 1, MPI_COMM_WORLD);
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; tring receiving...&quot; &lt;&lt; std::endl;
+        MPI_Recv(rb, BUF_SIZE, MPI_INT, other, 1, MPI_COMM_WORLD, &amp;status);
+    }
+    else if (myid == 1)
+    {
+        // sleep 10s, 与缓冲通信模式相比，这里的发送和接收操作是阻塞的
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; tring receiving...&quot; &lt;&lt; std::endl;
+        MPI_Recv(rb, BUF_SIZE, MPI_INT, other, 1, MPI_COMM_WORLD, &amp;status);
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; tring send...&quot; &lt;&lt; std::endl;
+        MPI_Send(sb, BUF_SIZE, MPI_INT, other, 1, MPI_COMM_WORLD);
+    }
+
+    std::cout &lt;&lt; &quot;Hello World! Process &quot; &lt;&lt; myid &lt;&lt; &quot; of &quot; &lt;&lt; numprocs &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;Send buffer: &quot; &lt;&lt; std::endl;
+    for (int i = 0; i &lt; BUF_SIZE; i++)
+    {
+        std::cout &lt;&lt; sb[i] &lt;&lt; &quot; &quot;;
+    }
+    std::cout &lt;&lt; std::endl;
+    std::cout &lt;&lt; &quot;Receive buffer: &quot; &lt;&lt; std::endl;
+    for (int i = 0; i &lt; BUF_SIZE; i++)
+    {
+        std::cout &lt;&lt; rb[i] &lt;&lt; &quot; &quot;;
+    }
+    std::cout &lt;&lt; std::endl;
+    MPI_Finalize();
+    return 0;
+}
+</code></pre><ul><li>运行结果：</li></ul><pre><code class=language-shell>root@ubuntu:~# mpicxx -o mpi mpi.cpp
+root@ubuntu:~# mpirun -n 2 ./mpi
+process 0 tring send...
+process 0 tring receiving...
+process 1 tring receiving...
+process 1 tring send...
+Hello World! Process 1 of 2
+Send buffer:
+1 2 3 4 5 6 7 8 9 10
+Receive buffer:
+0 1 2 3 4 5 6 7 8 9
+Hello World! Process 0 of 2
+Send buffer:
+0 1 2 3 4 5 6 7 8 9
+Receive buffer:
+1 2 3 4 5 6 7 8 9 10
+</code></pre><ul><li>这就是点对点通信的基本用法，通过发送和接收操作，进程之间可以进行数据交换和协调工作。</li></ul><h2 id=3-缓冲通信模式>3. 缓冲通信模式</h2><ul><li>前提: 用户显示地指定用于缓冲消息的系统缓冲区<code>MPI_Buffer_attach(*buffer, *size)</code> 。</li><li>发送是本地的: 完成不依赖于与其匹配的接收操作。 发送的结束仅表明消息进入系统的缓冲区中，发送缓冲区可以重用，而对接收方的情况并不知道。</li><li>缓冲模式在相匹配的接收未开始的情况下，总是将送出的消息放在缓冲区内，这样发送者可以很快地继续计算,然后由系统处理放在缓冲区中的消息。</li><li>占用内存，一次内存拷贝。</li><li>函数调用形式为：<code>MPI_Bsend()</code>。B 表示缓冲，缓冲通信模式主要用于解开阻塞通信的发送与接收之间的耦合。</li><li>作用总结：通常情况下，MPI 发送和接收操作是阻塞的，即发送操作会等待接收方准备好接收，接收操作会等待发送方发送数据。但是，MPI 提供了一种称为缓冲区（buffering）的机制，可以使<strong>发送操作立即返回，而不需要等待接收方准备好</strong>。</li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 2：缓冲通信模式</p></div><pre><code class=language-cpp>#include &lt;mpi.h&gt;
+#include &lt;iostream&gt;
+#include &lt;thread&gt;
+
+int main(int argc, char **argv)
+{
+    int myid, numprocs;
+    // 初始化
+    MPI_Init(&amp;argc, &amp;argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &amp;myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &amp;numprocs);
+
+    int s1, s2;
+    // 取缓冲区的上界，以字节为单位
+    MPI_Pack_size(7, MPI_CHAR, MPI_COMM_WORLD, &amp;s1);
+    MPI_Pack_size(2, MPI_DOUBLE, MPI_COMM_WORLD, &amp;s2);
+    int buffer_size = 2 * MPI_BSEND_OVERHEAD + s1 + s2;
+    char *buffer    = new char[buffer_size];
+    // 装配一个用于通信的缓冲区
+    MPI_Buffer_attach(buffer, buffer_size);
+
+    char msg1[7]   = &quot;Hello&quot;;
+    double msg2[2] = {1.0, 2.0};
+
+    char rmsg1[7];
+    double rmsg2[2];
+
+    if (myid == 0)
+    {
+        MPI_Bsend(msg1, 7, MPI_CHAR, 1, 1, MPI_COMM_WORLD);
+        MPI_Bsend(msg2, 2, MPI_DOUBLE, 1, 2, MPI_COMM_WORLD);
+        std::cout &lt;&lt; &quot;Send msg1: &quot; &lt;&lt; msg1 &lt;&lt; std::endl;
+        std::cout &lt;&lt; &quot;Send msg2: &quot; &lt;&lt; msg2[0] &lt;&lt; &quot; &quot; &lt;&lt; msg2[1] &lt;&lt; std::endl;
+    }
+    else if (myid == 1)
+    {
+        // sleep 10s
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        MPI_Recv(rmsg1, 7, MPI_CHAR, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(rmsg2, 2, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        std::cout &lt;&lt; &quot;Receive msg1: &quot; &lt;&lt; rmsg1 &lt;&lt; std::endl;
+        std::cout &lt;&lt; &quot;Receive msg2: &quot; &lt;&lt; rmsg2[0] &lt;&lt; &quot; &quot; &lt;&lt; rmsg2[1] &lt;&lt; std::endl;
+    }
+
+    MPI_Buffer_detach(&amp;buffer, &amp;buffer_size);
+    free(buffer);
+
+    MPI_Finalize();
+    return 0;
+}
+</code></pre><ul><li>运行结果：</li></ul><pre><code class=language-shell>root@ubuntu:~# mpicxx -o mpi mpi.cpp
+root@ubuntu:~# mpirun -n 2 ./mpi
+Send msg1: Hello
+Send msg2: 1 2
+Receive msg1: Hello
+Receive msg2: 1 2
+</code></pre><h2 id=4-就绪通信模式>4. 就绪通信模式</h2><ul><li><strong>发送请求仅当有匹配的接收后才能发出，否则出错</strong>。在就绪模式下，系统默认与其相匹配的接收已经调用。 接收必须先于发送。</li><li>它不可以不依赖于接收方的匹配的接收请求而任意发出</li><li>其函数调用形式为：<code>MPI_RSend()</code>。R 表示就绪，仅当对方的接收操作启动并准备就绪时，才可以发送数据。</li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 3：就绪通信模式</p></div><pre><code class=language-cpp>#include &lt;mpi.h&gt;
+#include &lt;iostream&gt;
+
+int main(int argc, char **argv)
+{
+    int myid, numprocs;
+    // 初始化
+    MPI_Init(&amp;argc, &amp;argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &amp;myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &amp;numprocs);
+    MPI_Status status;
+
+    int buffer[10];
+
+    if (myid == 0)
+    {
+
+        for (int i = 0; i &lt; 10; i++)
+        {
+            buffer[i] = -1;
+        }
+
+        MPI_Recv(buffer, 10, MPI_INT, 1, 1, MPI_COMM_WORLD, &amp;status);
+
+        for (int i = 0; i &lt; 10; i++)
+        {
+            if (buffer[i] != i)
+            {
+                std::cout &lt;&lt; &quot;error&quot; &lt;&lt; std::endl;
+                break;
             }
         }
-    })();
-</script>
+    }
+    else if (myid == 1)
+    {
+        for (int i = 0; i &lt; 10; i++)
+        {
+            buffer[i] = i;
+        }
+        MPI_Rsend(buffer, 10, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    }
+    MPI_Finalize();
+    return 0;
+}
+</code></pre><h2 id=5-同步通信模式>5. 同步通信模式</h2><ul><li>本质特征：收方接收该消息的缓冲区已准备好， 不需要附加的系统缓冲区</li><li>任意发出：发送请求可以不依赖于收方的匹配的接收请求而任意发出</li><li>成功结束： 仅当收方已发出接收该消息的请求后才成功返回，否则将阻塞。意味着：<ul><li>发送方缓冲区可以重用</li><li>收方已发出接收请求</li></ul></li><li>是非本地的</li><li>函数调用形式为：<code>MPI_Ssend()</code>。S 表示同步。</li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 4：同步通信模式</p></div><pre><code class=language-cpp>#include &lt;mpi.h&gt;
+#include &lt;iostream&gt;
 
-    
+int main(int argc, char **argv)
+{
+    int myid, numprocs;
+    // 初始化
+    MPI_Init(&amp;argc, &amp;argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &amp;myid);
+    MPI_Comm_size(MPI_COMM_WORLD, &amp;numprocs);
+    MPI_Status status;
 
-    <footer class="site-footer">
-    <section class="copyright">
-        &copy; 
-        
-            2021 - 
-        
-        2024 cuterwrite
-    </section>
-    
-    <section class="powerby">
-        
-            欢迎来到Cuterwrite的博客网站 <br/>
-        Built with <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> <br />
-        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener" data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计
-    </section>
-</footer>
+    int buffer[10];
 
+    if (myid == 0)
+    {
 
-    
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+        for (int i = 0; i &lt; 10; i++)
+        {
+            buffer[i] = -1;
+        }
 
-    
-    <div class="pswp__bg"></div>
+        MPI_Recv(buffer, 10, MPI_INT, 1, 1, MPI_COMM_WORLD, &amp;status);
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; receiving...&quot; &lt;&lt; std::endl;
 
-    
-    <div class="pswp__scroll-wrap">
+        for (int i = 0; i &lt; 10; i++)
+        {
+            if (buffer[i] != i)
+            {
+                std::cout &lt;&lt; &quot;error&quot; &lt;&lt; std::endl;
+                break;
+            }
+        }
+    }
+    else if (myid == 1)
+    {
+        for (int i = 0; i &lt; 10; i++)
+        {
+            buffer[i] = i;
+        }
+        std::cout &lt;&lt; &quot;process &quot; &lt;&lt; myid &lt;&lt; &quot; sending...&quot; &lt;&lt; std::endl;
+        MPI_Ssend(buffer, 10, MPI_INT, 0, 1, MPI_COMM_WORLD);
+    }
+    MPI_Finalize();
+    return 0;
+}
+</code></pre><h2 id=6-阻塞通信与非阻塞通信>6. 阻塞通信与非阻塞通信</h2><p>阻塞通信调用时，整个程序只能执行通信相关的内容，而无法执行计算相关的内容；非阻塞调用的初衷是尽量让通信和计算重叠进行，提高程序整体执行效率。</p><p>非阻塞通信调用返回意味着通信开始启动；而非阻塞通信完成则需要调用其他的接口来查询。</p><ul><li>非阻塞通信的调用接口</li><li>非阻塞通信的完成查询接口</li></ul><p>非阻塞通信的<strong>发送</strong>和<strong>接受</strong>过程都需要同时具备以上两个要素：调用与完成。（1）”调用“按照通信方式的不同（标准、缓存、同步、就绪），有各种函数接口；（2）”完成“是重点，因为程序员需要知道非阻塞调用是否执行完成了，来做下一步的操作。</p><p>MPI 为“完成”定义了一个内部变量 MPI_Request request，每个 request 与一个在非阻塞调用发生时与该调用发生关联（这里的调用包括发送和接收）。“完成”不区分通信方式的不同，统一用 MPI_Wait 系列函数来完成。</p><ol><li><code>MPI_Wait(MPI_Request *request)</code>，均等着 request 执行完毕了，再往下进行</li><li>对于非重复非阻塞通信，<code>MPI_Wait</code> 系列函数调用的返回，还意味着 request 对象被释放了，程序员不用再显式释放 request 变量。</li><li>对于重复非阻塞通信，<code>MPI_Wait</code> 系列函数调用的返回，意味着将于 request 对象关联的非阻塞通信处于不激活状态，并不释放 request</li></ol><ul><li>MPI_Wait 会迫使进程进入“阻塞模式”。发送过程将简单地等待请求完成。如果进程在 MPI_Isend 之后立即等待，则 Send 与调用 MPI_Send 相同。等待 MPI_WAIT 和 MPI_WAITANY 有两种方式</li></ul><pre><code class=language-cpp>int MPI_Wait(MPI_Request *request, MPI_Status *status);
+int MPI_Waitany(int count, MPI_Request array_of_requests[], int *index, MPI_Status *status);
+</code></pre><ul><li><p>前者 MPI_WAIT 只是等待给定请求的完成。请求一完成，就会返回一个状态为 MPI_STATUS 的实例。后者<code>MPI_Waitany</code> 等待一系列请求中的第一个完成的请求继续。一旦请求完成，INDEX 的值被设置为存储 ARRAY_OF_REQUESTS 中已完成请求的索引。该调用还存储已完成请求的状态。</p></li><li><p>对于阻塞通信，如果不想跟踪此信息，可以将指向 MPI_STATUS 实例的指针替换为 MPI_STATUS_IGNORE。</p></li><li><p>正如我们之前看到的，等待会阻止进程，直到请求（或某个请求）被满足。测试则是检查请求是否可以完成。如果可以，请求将自动完成并传输数据。关于等待，有两种测试等待：MPI_Test 和 MPI_Testany。它们的调用方式如下</p></li></ul><pre><code class=language-cpp>int MPI_Test(MPI_Request *request, int *flag, MPI_Status *status);
+int MPI_Testany(int count, MPI_Request array_of_requests[], int *index, int *flag, MPI_Status *status);
+</code></pre><ul><li>让我们从 MPI_Test 开始。至于 MPI_Wait，参数 request 和 status 并不神秘。请记住，测试是非阻塞的，因此在任何情况下，调用后进程都会继续执行。变量 flag 的作用是告诉你请求是否在测试过程中完成。如果 flag != 0 表示请求已完成</li><li>MPI_Testany 现在应该是完全显而易见的。如果有任何请求可完成，它会将 FLAG 设置为非零值。如果是这样的话，状态和索引也被赋予一个值</li></ul><h2 id=7-非阻塞的发送和接收>7. 非阻塞的发送和接收</h2><ul><li><code>int MPI_Isend(void *buf, int count, MPI_Datatype datatype, int dest, int tag, MPI_Comm comm, MPI_Request *request)</code><ul><li>buf: 发送缓冲区的起始地址</li><li>count: 发送数据的个数</li><li>datatype: 发送数据的类型</li><li>dest: 目标进程的 rank</li><li>tag: 消息标签</li><li>comm: 通信子</li><li>request: 非阻塞通信完成对象</li></ul></li><li><code>MPI_Ibsend/MPI_Issend/MPI_Irsend</code>: 缓冲/同步/就绪通信的非阻塞发送</li><li><code>int MPI_Irecv(void *buf, int count, MPI_Datatype datatype, int source, int tag, MPI_Comm comm, MPI_Request *request)</code></li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 5：非阻塞通信</p></div><pre><code class=language-cpp>void play_non_blocking_scenario()
+{
+    MPI_Request request;
+    MPI_Status status;
+    int request_finished = 0;
 
-        
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
+    // Initialising buffer :
+    for (int i = 0; i &lt; buffer_count; ++i)
+    {
+        buffer[i] = (rank == 0 ? i * 2 : 0);
+    }
 
-        
-        <div class="pswp__ui pswp__ui--hidden">
+    MPI_Barrier(MPI_COMM_WORLD);
+    // Starting the chronometer
+    double time = -MPI_Wtime();
 
-            <div class="pswp__top-bar">
+    if (rank == 0)
+    {
+        sleep(3);
+        // 1- Initialise the non-blocking send to process 1
+        // [...]
+        MPI_Isend(buffer, buffer_count, MPI_INT, 1, 0, MPI_COMM_WORLD, &amp;request);
 
-                
+        double time_left = 6000.0;
+        while (time_left &gt; 0.0)
+        {
+            usleep(1000);  // We work for 1ms
 
-                <div class="pswp__counter"></div>
+            // 2- Test if the request is finished (only if not already finished)
+            // [...]
+            if (!request_finished)
+            {
+                MPI_Test(&amp;request, &amp;request_finished, &amp;status);
+            }
 
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+            // 1ms left to work
+            time_left -= 1000.0;
+        }
 
-                <button class="pswp__button pswp__button--share" title="Share"></button>
+        // 3- If the request is not yet complete, wait here.
+        // [...]
+        if (!request_finished)
+        {
+            MPI_Wait(&amp;request, &amp;status);
+        }
 
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+        // Modifying the buffer for second step
+        for (int i = 0; i &lt; buffer_count; ++i)
+        {
+            buffer[i] = -i;
+        }
 
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+        // 4- Prepare another request for process 1 with a different tag
+        // [...]
+        MPI_Isend(buffer, buffer_count, MPI_INT, 1, 1, MPI_COMM_WORLD, &amp;request);
 
-                
-                
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                        <div class="pswp__preloader__cut">
-                            <div class="pswp__preloader__donut"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        time_left = 3000.0;
+        while (time_left &gt; 0.0)
+        {
+            usleep(1000);  // We work for 1ms
 
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div>
-            </div>
+            // 5- Test if the request is finished (only if not already finished)
+            // [...]
+            if (!request_finished)
+            {
+                MPI_Wait(&amp;request, &amp;status);
+            }
 
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
+            // 1ms left to work
+            time_left -= 1000.0;
+        }
+        // 6- Wait for it to finish
+        // [...]
+        if (!request_finished)
+        {
+            MPI_Wait(&amp;request, &amp;status);
+        }
+    }
+    else
+    {
+        // Work for 5 seconds
+        sleep(5);
 
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
+        // 7- Initialise the non-blocking receive from process 0
+        // [...]
+        MPI_Irecv(buffer, buffer_count, MPI_INT, 0, 0, MPI_COMM_WORLD, &amp;request);
 
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
+        // 8- Wait here for the request to be completed
+        // [...]
+        MPI_Wait(&amp;request, &amp;status);
 
-        </div>
+        print_buffer();
 
-    </div>
+        // Work for 3 seconds
+        sleep(3);
 
-</div><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
-                defer
-                >
-            </script><script 
-                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
-                defer
-                >
-            </script><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
-            ><link 
-                rel="stylesheet" 
-                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
-            >
+        // 9- Initialise another non-blocking receive
+        // [...]
+        MPI_Irecv(buffer, buffer_count, MPI_INT, 0, 1, MPI_COMM_WORLD, &amp;request);
 
-        </main>
-    </div>
-    <script 
-                src="https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js"integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z&#43;KMkF24hUW8WePSA9HM="crossorigin="anonymous"
-                
-                >
-            </script><script type="text/javascript" src="/ts/main.js" defer></script>
-<script>
-    (function () {
-        const customFont = document.createElement('link');
-        customFont.href = "https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap";
+        // 10- Wait for it to be completed
+        // [...]
+        MPI_Wait(&amp;request, &amp;status);
 
-        customFont.type = "text/css";
-        customFont.rel = "stylesheet";
+        print_buffer();
+    }
 
-        document.head.appendChild(customFont);
-    }());
-</script>
+    // Stopping the chronometer
+    time += MPI_Wtime();
 
-</body>
+    // This line gives us the maximum time elapsed on each process.
+    double final_time;
+    MPI_Reduce(&amp;time, &amp;final_time, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
-</html>
+    if (rank == 0)
+    {
+        std::cout &lt;&lt; &quot;Total time for non-blocking scenario : &quot; &lt;&lt; final_time &lt;&lt; &quot;s&quot; &lt;&lt; std::endl;
+    }
+}
+
+</code></pre><h2 id=8-探测-probe>8. 探测 Probe</h2><ul><li>探测实际上非常有用，它有很多用途，例如获取即将接收的元素数量、接收进程的 ID 和标记，或者是否真的接收到了任何信息。</li><li>用于探测的函数有两个：MPI_Probe 和 MPI_IProbe。第一个是阻塞调用，而第二个则不是。现在，MPI_Probe 只会给出与收到的下一条消息相关的 MPI_Status 值，该消息对应于某个标签和 ID。如果想探测任何类型或来自任何来源的消息接收情况，可以使用 MPI_ANY_SOURCE 和 MPI_ANY_TAG。然后，可以将生成的 MPI_Status 对象与其他函数结合使用，以获取更多信息。</li></ul><div class="notice notice-note"><div class=notice-title><svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200"><path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L423.381333 264.576C281.088 341.546667 253.269333 441.429333 242.176 504.405333c22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864A149.333333 149.333333.0 01312.789333 789.333333a165.162667 165.162667.0 01-117.248-50.304zm426.666667.0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667L850.048 264.576c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864A149.333333 149.333333.0 01739.456 789.333333a165.162667 165.162667.0 01-117.248-50.304z" p-id="23142" fill="#fff"/></svg></div><p>示例 6：探测</p></div><pre><code class=language-cpp>void probing_process(int &amp;int_sum, float &amp;float_sum) {
+  MPI_Status status;
+
+  // 1- Probe the incoming message
+  MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &amp;status);
+  // 2- Get the tag and the source
+  int tag = status.MPI_TAG;
+  int source = status.MPI_SOURCE;
+
+  // Printing the message
+  std::cout &lt;&lt; &quot;Received a message from process &quot; &lt;&lt; source &lt;&lt; &quot; with tag &quot; &lt;&lt; tag &lt;&lt; std::endl;
+
+  // 3- Add to int_sum or float_sum depending on the tag of the message
+  if (tag == 0) {
+    int other;
+    MPI_Recv(&amp;other, 1, MPI_INT, source, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    int_sum += other;
+  } else if (tag == 1) {
+    float other;
+    MPI_Recv(&amp;other, 1, MPI_FLOAT, source, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    float_sum += other;
+  }
+}
+</code></pre><h2 id=9-总结>9. 总结</h2><p>理解各种模式通信过程的行为，关键是弄清楚各个模式对缓冲使用的方式。简而言之，各个模式使用缓冲的特点可总结为：标准的 Send 实际利用了 MPI 环境提供的默认缓冲区；Bsend 实际相当于将 MPI 环境提供的 buffer 放在用户空间管理；Rsend 实际相当于不要缓冲区，但发送端不能提前等待；Ssend 实际也相当于不要缓冲区，但允许等待；异步方式下各个模式工作原理也是类似的，只不过可将其理解为 MPI 环境会另起一个线程在后台做实际的消息传输，通过 Wait、Test 等机制与 MPI 进程的主线程进行通信和同步。</p><div class=table-wrapper><table><thead><tr><th style=text-align:center>通信模式</th><th style=text-align:center>阻塞型</th><th style=text-align:center>非阻塞型</th><th style=text-align:center>缓冲方式</th><th style=text-align:center>发送方等待</th><th style=text-align:center>接收方等待</th><th style=text-align:center>是否本地</th><th style=text-align:center>是否阻塞</th></tr></thead><tbody><tr><td style=text-align:center>标准通信</td><td style=text-align:center>MPI_Send</td><td style=text-align:center>MPI_Isend</td><td style=text-align:center>MPI 环境提供的默认缓冲区</td><td style=text-align:center>是</td><td style=text-align:center>是</td><td style=text-align:center>是</td><td style=text-align:center>是</td></tr><tr><td style=text-align:center>缓冲通信</td><td style=text-align:center>MPI_Bsend</td><td style=text-align:center>MPI_Ibsend</td><td style=text-align:center>用户空间管理</td><td style=text-align:center>否</td><td style=text-align:center>是</td><td style=text-align:center>是</td><td style=text-align:center>是</td></tr><tr><td style=text-align:center>就绪通信</td><td style=text-align:center>MPI_Rsend</td><td style=text-align:center>MPI_Irsend</td><td style=text-align:center>无</td><td style=text-align:center>否</td><td style=text-align:center>是</td><td style=text-align:center>否</td><td style=text-align:center>是</td></tr><tr><td style=text-align:center>同步通信</td><td style=text-align:center>MPI_Ssend</td><td style=text-align:center>MPI_Issend</td><td style=text-align:center>无</td><td style=text-align:center>否</td><td style=text-align:center>是</td><td style=text-align:center>否</td><td style=text-align:center>是</td></tr></tbody></table></div></section><footer class=article-footer><section class=article-tags><a href=/tags/mpi/>MPI</a>
+<a href=/tags/parallel-computing/>并行计算</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg><span>Licensed under CC BY-NC-SA 4.0</span></section></footer><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.css integrity="sha256-J+iAE0sgH8QSz9hpcDxXIftnj65JEZgNhGcgReTTK9s=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/katex.min.js integrity="sha256-InsNdER1b2xUewP+pKCUJpkhiqwHgqiPXDlIk7GzBu4=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.15.6/contrib/auto-render.min.js integrity="sha256-y39Mpg7V3D4lhBX4x6O0bUqTV4pSrfgwEfGKfxkOdgI=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.querySelector(`.article-content`),{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/openmpi-with-ucx/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp loading=lazy data-key=openmpi-with-ucx data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp></div><div class=article-details><h2 class=article-title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</h2></div></a></article><article class=has-image><a href=/p/mpi-tutorial/5/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif loading=lazy data-key=mpi-tutorial/5 data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/9a5806864623b04c918b9d8bee35c49fc2790c52.jpg@1256w_828h_!web-article-pic.avif></div><div class=article-details><h2 class=article-title>MPI 与并行计算（五）：MPI 扩展</h2></div></a></article><article class=has-image><a href=/p/mpi-tutorial/4/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp loading=lazy data-key=mpi-tutorial/4 data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720120242.webp></div><div class=article-details><h2 class=article-title>MPI 与并行计算（四）：数据类型</h2></div></a></article><article class=has-image><a href=/p/mpi-tutorial/3/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp loading=lazy data-key=mpi-tutorial/3 data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230720002052.webp></div><div class=article-details><h2 class=article-title>MPI 与并行计算（三）：集合通信</h2></div></a></article><article class=has-image><a href=/p/mpi-tutorial/1/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp loading=lazy data-key=mpi-tutorial/1 data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/20230719012753.webp></div><div class=article-details><h2 class=article-title>MPI 与并行计算（一）：并行环境及编程模型</h2></div></a></article></div></div></aside><script>(function(){if(/^localhost|^127/.test(location.hostname))return;let e=document.createElement("script");e.src="https://giscus.app/client.js",e.dataset.repo="PKUcoldkeyboard/pkucoldkeyboard.github.io",e.dataset.repoId="MDEwOlJlcG9zaXRvcnkzMzU4NzI5OTI=",e.dataset.category="Comments",e.dataset.categoryId="DIC_kwDOFAUD4M4CZV4F",e.dataset.mapping="title",e.dataset.strict="0",e.dataset.reactionsEnabled="1",e.dataset.emitMetadata="0",e.dataset.inputPosition="top",e.dataset.theme="light",e.dataset.lang="zh-CN",e.dataset.loading="lazy",e.crossOrigin="anonymous",e.async=!0;let t=document.querySelector(".main"),n=t.childNodes[t.childNodes.length-1];t.insertBefore(e,n.nextSibling)})();function setGiscusTheme(e){let t=document.querySelector("iframe.giscus-frame");t&&t.contentWindow.postMessage({giscus:{setConfig:{theme:e}}},"https://giscus.app")}(function(){if(/^localhost|^127/.test(location.hostname))return;addEventListener("message",t=>{if(event.origin!=="https://giscus.app")return;e()}),window.addEventListener("onColorSchemeChange",e);function e(){setGiscusTheme(document.documentElement.dataset.scheme==="light"?"light":"dark_dimmed")}})()</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=running-time>本博客已稳定运行
+<span id=runningdays class=running-days></span></section><section class=totalcount>发表了55篇文章 ·
+总计239.87k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计</section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><script>(function(){var t,e=window;if(e.ChannelIO)return e.console.error("ChannelIO script included twice.");t=function(){t.c(arguments)},t.q=[],t.c=function(e){t.q.push(e)},e.ChannelIO=t;function n(){if(e.ChannelIOInitialized)return;e.ChannelIOInitialized=!0;var n,t=document.createElement("script");t.type="text/javascript",t.async=!0,t.src="https://cdn.channel.io/plugin/ch-plugin-web.js",n=document.getElementsByTagName("script")[0],n.parentNode&&n.parentNode.insertBefore(t,n)}document.readyState==="complete"?n():(e.addEventListener("DOMContentLoaded",n),e.addEventListener("load",n))})(),ChannelIO("boot",{pluginKey:"3182ceac-0382-4734-98f5-1e6fec11c935"})</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)"></button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://unpkg.com/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.js defer></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/prism.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-bash.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-java.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-toml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-yaml.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-nginx.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-python.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-c.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-cpp.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-rust.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-javascript.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markdown.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-css.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-json.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-go.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-sql.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-scss.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/components/prism-markup.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/toolbar/prism-toolbar.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/show-language/prism-show-language.min.js></script>
+<script src=https://cdn.bootcdn.net/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js></script>
+<script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
