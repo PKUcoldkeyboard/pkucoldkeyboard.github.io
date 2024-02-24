@@ -1,4 +1,74 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 20 Feb 2024 01:51:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</title><link>https://cuterwrite.top/p/thead-tools/</link><pubDate>Tue, 20 Feb 2024 01:51:00 +0000</pubDate><guid>https://cuterwrite.top/p/thead-tools/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" alt="Featured image of post 搭建玄铁 900 系列工具链与 xuantie-qemu 环境" />&lt;h1 id="搭建玄铁-900-系列工具链与-xuantie-qemu-环境">搭建玄铁 900 系列工具链与 xuantie-qemu 环境&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 24 Feb 2024 03:09:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 操作类型</title><link>https://cuterwrite.top/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA 操作类型" />&lt;h1 id="rdma-操作类型">RDMA 操作类型&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/142175657">&lt;cite>知乎专栏：4. RDMA 操作类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>前面几篇涉及 RDMA 的通信流程时一直在讲 SEND-RECV，然而它其实称不上是“RDMA”，只是一种加入了 0 拷贝和协议栈卸载的传统收发模型的“升级版”，这种操作类型没有完全发挥 RDMA 技术全部实力，常用于两端交换控制信息等场景。当涉及大量数据的收发时，更多使用的是两种 RDMA 独有的操作：WRITE 和 READ。&lt;/p>
+&lt;p>我们先来复习下双端操作——SEND 和 RECV，然后再对比介绍单端操作——WRITE 和 READ。&lt;/p>
+&lt;h2 id="send--recv">SEND &amp;amp; RECV&lt;/h2>
+&lt;p>SEND 和 RECV 是两种不同的操作类型，但是因为如果一端进行 SEND 操作，对端必须进行 RECV 操作，所以通常都把他们放到一起描述。&lt;/p>
+&lt;p>为什么称之为“双端操作”？因为&lt;strong>完成一次通信过程需要两端 CPU 的参与&lt;/strong>，并且收端需要提前显式的下发 WQE。下图是一次 SEND-RECV 操作的过程示意图。原图来自于[1]，我做了一些修改。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-1-2024-02-25.webp"
+alt="rdma-op-1-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>上一篇我们讲过，上层应用通过 WQE（WR）来给硬件下任务。在 SEND-RECV 操作中，不止发送端需要下发 WQE，接收端也需要下发 WQE 来告诉硬件收到的数据需要放到哪个地址。发送端并不知道发送的数据会放到哪里，每次发送数据，接收端都要提前准备好接收 Buffer，而接收端 CPU 自然会感知这一过程。&lt;/p>
+&lt;p>为了下文对比 SEND/RECV 与 WRITE/READ 的异同，我们将上一篇的 SEND-RECV 流程中补充内存读写这一环节，即下图中的步骤④——发送端硬件根据 WQE 从内存中取出数据封装成可在链路上传输数据包和步骤⑦——接收端硬件将数据包解析后根据 WQE 将数据放到指定内存区域，其他步骤不再赘述。另外再次强调一下，收发端的步骤未必是图中这个顺序，比如步骤⑧⑪⑫和步骤⑨⑩的先后顺序就是不一定的。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-2-2024-02-25.webp"
+alt="rdma-op-2-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>下面将介绍 WRITE 操作，对比之后相信大家可以理解的更好。&lt;/p>
+&lt;h2 id="write">WRITE&lt;/h2>
+&lt;p>WRITE 全称是 RDMA WRITE 操作，是本端主动写入远端内存的行为，除了准备阶段，远端 CPU 不需要参与，也不感知何时有数据写入、数据在何时接收完毕。所以这是一种单端操作。&lt;/p>
+&lt;p>通过下图我们对比一下 WRITE 和 SEND-RECV 操作的差异，本端在准备阶段通过数据交互，获取了对端某一片可用的内存的&lt;strong>地址&lt;/strong>和“&lt;strong>钥匙&lt;/strong>” ，相当于获得了这片远端内存的读写权限。拿到权限之后，本端就可以像访问自己的内存一样&lt;strong>直接对这一远端内存区域进行读写&lt;/strong>，这也是 RDMA——远程直接地址访问的内涵所在。&lt;/p>
+&lt;p>WRITE/READ 操作中的目的地址和钥匙是如何获取的呢？通常可以通过我们刚刚讲过的 SEND-RECV 操作来完成，因为拿到钥匙这个过程总归是要由远端内存的控制者——CPU 允许的。虽然准备工作还比较复杂， 但是一旦完成准备工作，RDMA 就可以发挥其优势，对大量数据进行读写。一旦远端的 CPU 把内存授权给本端使用，它便不再会参与数据收发的过程，这就解放了远端 CPU，也降低了通信的时延。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-3-2024-02-25.webp"
+alt="rdma-op-3-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>需要注意的是，本端是通过&lt;strong>虚拟地址&lt;/strong>来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址—物理地址的转换是由 RDMA 网卡完成的。具体是如何转换的，将在后面的文章介绍。&lt;/p>
+&lt;p>忽略准备阶段 key 和 addr 的获取过程，下面我们描述一次 WRITE 操作的流程，此后我们不再将本端和对端称为“发送”和“接收”端，而是改为“请求”和“响应”端，这样对于描述 WRITE 和 READ 操作都更恰当一些，也不容易产生歧义。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-4-2024-02-25.webp"
+alt="rdma-op-4-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol>
+&lt;li>请求端 APP 以 WQE（WR）的形式下发一次 WRITE 任务。&lt;/li>
+&lt;li>请求端硬件从 SQ 中取出 WQE，解析信息。&lt;/li>
+&lt;li>请求端网卡根据 WQE 中的虚拟地址，转换得到物理地址，然后从内存中拿到待发送数据，组装数据包。&lt;/li>
+&lt;li>请求端网卡将数据包通过物理链路发送给响应端网卡。&lt;/li>
+&lt;li>响应端收到数据包，解析目的虚拟地址，转换成本地物理地址，解析数据，将数据放置到指定内存区域。&lt;/li>
+&lt;li>响应端回复 ACK 报文给请求端。&lt;/li>
+&lt;li>请求端网卡收到 ACK 后，生成 CQE，放置到 CQ 中。&lt;/li>
+&lt;li>请求端 APP 取得任务完成信息。&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>注：严谨地说，第 6 步回复 ACK 之时，RDMA 网卡只能保证数据包中的 Payload 已经被”暂存“了下来，但不能保证一定已经把数据放到目的内存里面了。不过这一点不影响我们对整理流程的理解，感谢@nekomii 同学的提醒。&lt;/p>
+&lt;p>IB Spec. 9.7.5.1.6 ACKNOWLEDGE MESSAGE SCHEDULING 原文：”For SEND or RDMA WRITE requests, an ACK may be scheduled before data is actually written into the responder’s memory. The ACK simply indicates that the data has successfully reached the fault domain of the responding node. That is, the data has been received by the channel adapter and the channel adapter will write that data to the memory system of the responding node, or the responding application will at least be informed of the failure.“&lt;/p>
+&lt;/blockquote>
+&lt;h2 id="read">READ&lt;/h2>
+&lt;p>顾名思义，READ 跟 WRITE 是相反的过程，是本端主动读取远端内存的行为。同 WRITE 一样，远端 CPU 不需要参与，也不感知数据在内存中被读取的过程。&lt;/p>
+&lt;p>获取 key 和虚拟地址的流程也跟 WRITE 没有区别，需要注意的是 &lt;strong>&amp;ldquo;读”这个动作所请求的数据&lt;/strong>，是在对端回复的报文中携带的。&lt;/p>
+&lt;p>下面描述一次 READ 操作的流程，注意跟 WRITE 只是方向和步骤顺序的差别。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma5-2024-02-25.webp"
+alt="rdma5-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ol>
+&lt;li>请求端 APP 以 WQE 的形式下发一次 READ 任务。&lt;/li>
+&lt;li>请求端网卡从 SQ 中取出 WQE，解析信息。&lt;/li>
+&lt;li>请求端网卡将 READ 请求包通过物理链路发送给响应端网卡。&lt;/li>
+&lt;li>响应端收到数据包，解析目的虚拟地址，转换成本地物理地址，解析数据，从指定内存区域取出数据。&lt;/li>
+&lt;li>响应端硬件将数据组装成回复数据包发送到物理链路。&lt;/li>
+&lt;li>请求端硬件收到数据包，解析提取出数据后放到 READ WQE 指定的内存区域中。&lt;/li>
+&lt;li>请求端网卡生成 CQE，放置到 CQ 中。&lt;/li>
+&lt;li>请求端 APP 取得任务完成信息。&lt;/li>
+&lt;/ol>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>我们忽略各种细节进行抽象，RDMA WRITE 和 READ 操作就是在利用网卡完成下面左图的内存拷贝操作而已，只不过复制的过程是由 RDMA 网卡通过网络链路完成的；而本地内存拷贝则如下面右图所示由 CPU 通过总线完成的：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-6-2024-02-25.webp"
+alt="rdma-op-6-2024-02-25" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>RDMA 标准定义上述几种操作的时候使用的单词是非常贴切的，“收”和“发”是需要有对端主动参与的语义 ，而‘读“和”写“更像是本端对一个没有主动性的对端进行操作的语义。&lt;/p>
+&lt;p>通过对比 SEND/RECV 和 WRITE/READ 操作，我们可以发现传输数据时不需要响应端 CPU 参与的 WRITE/READ 有更大的优势，缺点就是请求端需要在准备阶段获得响应端的一段内存的读写权限。但是实际数据传输时，这个准备阶段的功率和时间损耗都是可以忽略不计的，所以 RDMA WRITE/READ 才是大量传输数据时所应用的操作类型，SEND/RECV 通常只是用来传输一些控制信息。&lt;/p>
+&lt;p>除了本文介绍的几种操作之外，还有 ATOMIC 等更复杂一些的操作类型，将在后面的协议解读部分详细分析。本篇就到这里，下一篇将介绍 RDMA 基本服务类型。&lt;/p>
+&lt;h2 id="参考资料">参考资料&lt;/h2>
+&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</title><link>https://cuterwrite.top/p/thead-tools/</link><pubDate>Tue, 20 Feb 2024 01:51:00 +0000</pubDate><guid>https://cuterwrite.top/p/thead-tools/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" alt="Featured image of post 搭建玄铁 900 系列工具链与 xuantie-qemu 环境" />&lt;h1 id="搭建玄铁-900-系列工具链与-xuantie-qemu-环境">搭建玄铁 900 系列工具链与 xuantie-qemu 环境&lt;/h1>
 &lt;h2 id="一搭建平台">一、搭建平台&lt;/h2>
 &lt;ul>
 &lt;li>Linux 发行版：CentOS Linux release 7.6.1810 (Core)&lt;/li>
@@ -1690,232 +1760,4 @@ IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都�
 &lt;/ul>
 &lt;h2 id="用户">用户&lt;/h2>
 &lt;p>微软、IBM 和国内的阿里、京东都正在使用 RDMA，另外还有很多大型 IT 公司在做初步的开发和测试。在数据中心和高性能计算场景下，RDMA 代替传统网络是大势所趋。笔者对于市场接触不多，所以并不能提供更详细的应用情况。&lt;/p>
-&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item><item><title>在 HPC 上运行 Apache Spark</title><link>https://cuterwrite.top/p/run-spark-on-hpc/</link><pubDate>Sat, 30 Dec 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/run-spark-on-hpc/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp" alt="Featured image of post 在 HPC 上运行 Apache Spark" />&lt;h1 id="在-hpc-上运行-apache-spark">在 HPC 上运行 Apache Spark&lt;/h1>
-&lt;h2 id="一概述">一、概述&lt;/h2>
-&lt;p>&lt;a class="link" href="https://spark.apache.org/" target="_blank" rel="noopener" >Apache Spark
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-是一个多语言引擎，用于在单节点机器或集群上执行数据工程、数据科学和机器学习任务。本文将为您提供在高性能计算（HPC）集群系统上运行多节点 Spark 集群的指南，并展示一个使用 PySpark 的作业示例。&lt;/p>
-&lt;h2 id="二开始">二、开始&lt;/h2>
-&lt;h3 id="1-下载-openjdk-1102">1. 下载 OpenJDK-11.0.2&lt;/h3>
-&lt;p>从 &lt;a class="link" href="https://jdk.java.net/archive/" target="_blank" rel="noopener" >OpenJDK 官方网站
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-下载 OpenJDK-11.0.2。选择 Linux 的对应版本并下载。解压下载的文件并将其放置在 &lt;code>${HOME}/software/openjdk&lt;/code> 中并重命名为 &lt;code>11.0.2&lt;/code> 。&lt;/p>
-&lt;h3 id="2-下载-spark-342">2. 下载 Spark-3.4.2&lt;/h3>
-&lt;p>从 &lt;a class="link" href="https://spark.apache.org/downloads.html" target="_blank" rel="noopener" >Apache Spark 下载页面
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-下载 Spark 。本文使用的是 Spark-3.4.2，但本指南应该也适用于更新的版本。解压下载的文件并将目录重命名为 3.4.2，放置在 ${HOME}/software/spark 文件夹中。&lt;/p>
-&lt;h3 id="3-配置-modulefile">3. 配置 modulefile&lt;/h3>
-&lt;p>在自定义目录中安装软件后，需要将软件的可执行文件路径等添加到相应的环境变量中才能使用。&lt;code>module&lt;/code> 是一款环境变量管理工具，通过 &lt;code>module&lt;/code> 实现软件环境变量的管理，快速加载和切换软件环境。集群中安装了一些常用的软件和库，可以通过 &lt;code>module&lt;/code> 进行加载使用。&lt;/p>
-&lt;p>在这里，我们需要编写 &lt;code>modulefile&lt;/code> 来管理自己的 JDK 和 Spark 软件环境，以便快速加载 Java 和 Spark 环境。&lt;/p>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/modulefiles/openjdk&lt;/code> 中创建名为 &lt;code>11.0.2&lt;/code> 的文本文件，内容为：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#%Module1.0
-##
-## openjdk modulefile
-##
-proc ModulesHelp { } {
-puts stderr &amp;quot;This module sets up the environment for OpenJdk 11.0.2 \n&amp;quot;
-}
-module-whatis &amp;quot;For more information, \$ module help openjdk/11.0.2\n&amp;quot;
-conflict openjdk
-# 注意！这里需要进行修改
-set root &amp;lt;PATH/WHERE/OPENJDK/DIRECTORY/IS&amp;gt;
-prepend-path PATH ${root}/bin
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/modulefiles/spark&lt;/code> 中创建名为 &lt;code>3.4.2&lt;/code> 的文本文件， 内容为：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#%Module1.0
-##
-## spark modulefile
-##
-proc ModulesHelp { } {
-global version
-puts stderr &amp;quot;This module loads Apache Spark environment variables and updates the PATH.&amp;quot;
-puts stderr &amp;quot; &amp;quot;
-puts stderr &amp;quot;Version: $version&amp;quot;
-}
-module-whatis &amp;quot;Loads Apache Spark environment variables and updates the PATH. \n For more information, \$ module help spark/3.4.2 .\n&amp;quot;
-conflict spark
-# Set the version and installation path
-set version 3.4.2
-# 注意！这里需要进行修改
-set root &amp;lt;PATH/WHERE/SPARK/DIRECTORY/IS&amp;gt;
-# Set the environment variables
-setenv SPARK_HOME ${root}
-setenv SPARK_CONF_DIR ${root}/conf
-setenv PYSPARK_PYTHON python3
-# Update the PATH
-prepend-path PATH ${root}/bin
-prepend-path PATH ${root}/sbin
-# Update the CLASSPATH
-prepend-path CLASSPATH ${root}/jars/*
-&lt;/code>&lt;/pre>
-&lt;h3 id="4-使用-pip-安装-pyspark-库">4. 使用 pip 安装 pyspark 库&lt;/h3>
-&lt;ul>
-&lt;li>创建虚拟 Conda 环境 pyspark&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">conda create -n pyspark python=3.10
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>安装 pyspark&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">conda activate pyspark
-pip install pyspark
-&lt;/code>&lt;/pre>
-&lt;h3 id="5-编写环境加载脚本-set-spark-envsh">5. 编写环境加载脚本 set-spark-env.sh&lt;/h3>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/scripts&lt;/code> 目录下编写 &lt;code>set-spark-env.sh&lt;/code> 脚本文件：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
-source /etc/profile
-# 注意！这里需要修改为你的 Conda 的安装路径
-export CONDA_PATH=&amp;lt;PATH/WHERE/CONDA/DIRECTORY/IS&amp;gt;
-export PATH=$CONDA_PATH/bin:$PATH
-export MODULEPATH=${HOME}/modulefiles:$MODULEPATH
-source activate
-conda activate pyspark
-module load openjdk
-module load spark
-&lt;/code>&lt;/pre>
-&lt;h3 id="6-编写-sbatch-脚本">6. 编写 sbatch 脚本&lt;/h3>
-&lt;ul>
-&lt;li>为了启动 Spark 集群，我们使用以下 Slurm 脚本来请求计算节点。Slurm 脚本请求四个节点，并生成一个 master 节点和三个 worker 节点的 Spark 集群。可以通过更改 Slurm 脚本中的 &lt;code>-N&lt;/code> 选项的值来增加或减少工作节点的数量。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
-#SBATCH --export=ALL
-#SBATCH --mem=0
-#SBATCH -p C28M250G
-#SBATCH -t 1:00:00
-#SBATCH -N 4
-#SBATCH -J spark_test
-#SBATCH -o o.spark_test
-#SBATCH -e e.spark_test
-source ~/scripts/set-spark-env.sh
-workdir=`pwd`
-nodes=($(scontrol show hostnames ${SLURM_JOB_NODELIST} | sort | uniq ))
-numnodes=${#nodes[@]}
-last=$(( $numnodes - 1 ))
-export SCRATCH=${workdir}/scratch
-master=${nodes[0]}
-masterurl=&amp;quot;spark://${master}:7077&amp;quot;
-ssh ${nodes[0]} &amp;quot;source ~/scripts/set-spark-env.sh; start-master.sh&amp;quot;
-for i in $( seq 1 $last )
-do
-ssh ${nodes[$i]} &amp;quot;source ~/scripts/set-spark-env.sh; start-worker.sh ${masterurl}&amp;quot;
-done
-ssh ${nodes[0]} &amp;quot;cd ${workdir}; source ~/scripts/set-spark-env.sh; /usr/bin/time -v spark-submit --deploy-mode client --executor-cores 28 --executor-memory 240G --conf spark.standalone.submit.waitAppCompletion=true --master $masterurl spark_test.py&amp;quot;
-wait
-echo 'end'
-exit
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>该 Slurm 脚本会提交一个用于测试的 python 脚本（ &lt;code>spark_test.py&lt;/code> ），内容如下。此脚本运行 PySpark 代码来测试 Spark 集群。复制下面的内容，并将其保存在 sbatch 脚本所在目录中的 &lt;code>spark_test.py&lt;/code> 文件。你也可以更改 &lt;code>spark_test.py&lt;/code> 文件的路径，但必须适当地更新 Slurm 脚本。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-py">#spark_test.py
-import random
-from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
-spark = SparkSession.builder.appName('Test-app').getOrCreate()
-#Generate sample dataset
-cola_list = ['2022-01-01', '2022-01-02', '2022-01-03' ]
-colb_list = ['CSC', 'PHY', 'MAT', 'ENG', 'CHE', 'ENV', 'BIO', 'PHRM']
-colc_list = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-# declaring a random.seed value to generate same data in every run
-random.seed(1)
-sample_data = []
-for idx in range(1000):
-sample_data.append([random.choice(cola_list), random.choice(colb_list), random.choice(colc_list)])
-columns= [&amp;quot;date&amp;quot;, &amp;quot;org&amp;quot;, &amp;quot;value&amp;quot;]
-#creating a Spark dataframe
-df = spark.createDataFrame(data = sample_data, schema = columns)
-res = (df.groupBy('date','org')
-.agg(F.count('value').alias('count_value')))
-res.show()
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>如果启动了 Spark 集群并且 &lt;code>spark-test.py&lt;/code> 成功执行，那么日志文件 &lt;code>o.spark_test&lt;/code> 中的输出应该如下：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-log">starting org.apache.spark.deploy.master.Master, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-+----------+----+-----------+
-| date| org|count_value|
-+----------+----+-----------+
-|2022-01-03| BIO| 37|
-|2022-01-02| ENV| 53|
-|2022-01-03| CHE| 39|
-|2022-01-03| PHY| 46|
-|2022-01-01| CSC| 45|
-|2022-01-03| CSC| 48|
-|2022-01-01| BIO| 39|
-|2022-01-01| MAT| 42|
-|2022-01-02| CHE| 44|
-|2022-01-03| ENV| 33|
-|2022-01-01| ENG| 33|
-|2022-01-02| ENG| 28|
-|2022-01-01| ENV| 33|
-|2022-01-02| CSC| 45|
-|2022-01-02| MAT| 51|
-|2022-01-01| PHY| 38|
-|2022-01-01|PHRM| 40|
-|2022-01-03|PHRM| 42|
-|2022-01-02|PHRM| 43|
-|2022-01-03| ENG| 56|
-+----------+----+-----------+
-only showing top 20 rows
-end
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>Spark 还提供了一个 web UI 来监控集群，您可以通过将 master 节点端口转发到本地机器来在本地机器上访问它。
-&lt;ul>
-&lt;li>例如，如果 master 节点在 &lt;code>cpu1&lt;/code> 上运行，则可以在本地计算机终端上运行以下代码。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-cmd"> ssh -t -t &amp;lt;USERNAME&amp;gt;@&amp;lt;LOGIN_NODE_IP&amp;gt; -L 8080:localhost:8080 \
--i &amp;lt;PRIVATE_KEY_LOCATION&amp;gt; ssh cpu1 -L 8080:127.0.0.1:8080
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;a class="link" href="http://localhost:8080/" target="_blank" rel="noopener" >http://localhost:8080/
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-访问 Spark Web UI。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="三总结">三、总结&lt;/h2>
-&lt;p>在本文中，我们介绍了如何在 HPC 集群上部署和运行 Apache Spark 集群。通过遵循本指南中的步骤，你应该能够成功地在 HPC 环境中运行 Spark 作业。请注意，根据你的具体 HPC 环境和配置，可能需要进行一些调整。&lt;/p>
-&lt;div class="notice notice-note" >
-&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>&lt;a class="link" href="https://spark.apache.org/docs/latest/" target="_blank" rel="noopener" >Spark 官方文档
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-是一个非常有用的工具，通过它可以帮助你找到 Spark 的具体说明并解决问题。所以实际遇到问题时要多使用它。&lt;/p>&lt;/div></description></item></channel></rss>
+&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item></channel></rss>
