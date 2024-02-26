@@ -109,9 +109,23 @@ make install
 &lt;/code>&lt;/pre>
 &lt;h2 id="四验证安装与设置环境变量">四、验证安装与设置环境变量&lt;/h2>
 &lt;p>安装完成后，可以通过运行简单的 MPI 程序来验证 UCX 和 OpenMPI 是否成功集成：&lt;/p>
-&lt;pre>&lt;code class="language-bash">mpirun -np 2 --mca pml ucx --mca btl ^vader,tcp,openib,uct [-x UCX_NET_DEVICES=mlx5_0:1] hostname
+&lt;pre>&lt;code class="language-bash">mpirun -np 2 --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
 &lt;/code>&lt;/pre>
 &lt;p>（如果在 root 上运行则需要加上 &lt;code>--allow-run-as-root&lt;/code> 选项，如果有 RDMA 设备可以设置 &lt;code>-x UCX_NET_DEVICES&lt;/code> ）&lt;/p>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>如果需要结合 &lt;code>Slurm&lt;/code> 使用，可以参考 &lt;a class="link" href="https://github.com/open-mpi/ompi/blob/v5.0.x/docs/launching-apps/slurm.rst" target="_blank" rel="noopener" >Launching with Slurm
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+。&lt;/p>
+&lt;p>其中一种方式就是，先通过 &lt;code>salloc&lt;/code> 分配资源，然后在分配的资源上运行 &lt;code>mpirun&lt;/code> 命令。此时 &lt;code>--hostfile&lt;/code> 、 &lt;code>--host&lt;/code> 、 &lt;code>-n&lt;/code> 等是不需要设置的，例如：&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-bash">salloc -n 2
+mpirun --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
+&lt;/code>&lt;/pre>
 &lt;p>如果一切正常，您会看到两台主机名的输出。为了方便使用，可以将 OpenMPI 的 bin 目录等添加到系统 PATH 环境变量中：&lt;/p>
 &lt;pre>&lt;code class="language-bash">vim ~/.bashrc
 export PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/bin:$PATH

@@ -1,4 +1,118 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 24 Feb 2024 03:09:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 操作类型</title><link>https://cuterwrite.top/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA 操作类型" />&lt;h1 id="rdma-操作类型">RDMA 操作类型&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 25 Feb 2024 22:04:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/144099636">&lt;cite>知乎专栏：5. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >“3. RDMA 基本元素”
+&lt;/a>
+一文中提到过，&lt;strong>RDMA 的基本通信单元是 QP&lt;/strong>，而基于 QP 的通信模型有很多种，我们在 RDMA 领域称其为“服务类型”。IB 协议中通过“可靠”和“连接”两个维度来描述一种服务类型。&lt;/p>
+&lt;h2 id="可靠">可靠&lt;/h2>
+&lt;p>通信中的可靠性指的是通过一些机制保证发出去的数据包都能够被正常接收。IB 协议中是这样描述可靠服务的：&lt;/p>
+&lt;blockquote>
+&lt;p>&lt;strong>Reliable Service&lt;/strong> provides a guarantee that messages are delivered from a requester to a responder at most once, in order and without corruption.&lt;/p>
+&lt;/blockquote>
+&lt;p>即“可靠服务在发送和接受者之间保证了信息最多只会传递一次，并且能够保证其按照发送顺序完整的被接收”。&lt;/p>
+&lt;p>IB 通过以下三个机制来保证可靠性：&lt;/p>
+&lt;h2 id="应答机制">应答机制&lt;/h2>
+&lt;p>假设 A 给 B 发了一个数据包，A 怎样才能知道 B 收到了呢，自然是 B 回复一个“我收到了”消息给 A。在通信领域我们一般称这个回复为应答包或者 ACK（Acknowledge）。在 IB 协议的可靠服务类型中，使用了应答机制来保证数据包被对方收到。IB 的可靠服务类型中，接收方不是每一个包都必须回复，也可以一次回复多个包的 ACK，以后我们再展开讨论。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ib_ack-2024-02-26.webp"
+alt="ib_ack-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="数据校验机制">数据校验机制&lt;/h2>
+&lt;p>这个比较好理解，发端会对 Header 和 Payload（有效载荷，也就是真正要收发的数据）通过一定的算法得到一个校验值放到数据包的末尾。对端收到数据包后，也会用相同的算法计算出校验值，然后与数据包中的校验值比对，如果不一致，说明数据中包含错误（一般是链路问题导致的），那么接收端就会丢弃这个数据包。IB 协议使用的 CRC 校验，本文对 CRC 不做展开介绍。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crc-2024-02-26.png"
+alt="crc-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="保序机制">保序机制&lt;/h2>
+&lt;p>保序指的是，保证先被发送到物理链路上的数据包一定要先于后发送的数据包被接收方收到。有一些业务对数据包的先后顺序是有严格要求的，比如语音或者视频。IB 协议中有 PSN（Packet Sequence Number，包序号）的概念，即每个包都有一个递增的编号。PSN 可以用来检测是否丢包，比如收端收到了 1，但是在没收到 2 的情况下就收到了 3，那么其就会认为传输过程中发生了错误，之后会回复一个 NAK 给发端，让其重发丢失的包。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/psn-2024-02-26.webp"
+alt="psn-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>不可靠服务，没有上述这些机制来保证数据包被正确的接收，属于“发出去就行，我不关心有没有被收到”的服务类型。&lt;/p>
+&lt;h2 id="连接与数据报">连接与数据报&lt;/h2>
+&lt;p>&lt;strong>连接（Connection）&lt;/strong> 在这里指的是一个抽象的逻辑概念，需要区别于物理连接，熟悉 Socket 的读者一定对这个其不陌生。连接是一条通信的“管道”，一旦管道建立好了，管道这端发出的数据一定会沿着这条管道到达另一端。&lt;/p>
+&lt;p>对于“连接”或者说“面向连接”的定义有很多种，有的侧重于保证消息顺序，有的侧重于消息的传递路径唯一，有的强调需要软硬件开销来维护连接，有的还和可靠性的概念有交集。本专栏既然是介绍 RDMA 技术，那么我们就看一下 IB 协议 3.2.2 节中对其的描述：&lt;/p>
+&lt;blockquote>
+&lt;p>IBA supports both connection oriented and datagram service. For connected service, each QP is associated with exactly one remote consumer. In this case the QP context is configured with the identity of the remote consumer’s queue pair. &amp;hellip; During the communication establishment process, this and other information is exchanged between the two nodes.&lt;/p>
+&lt;/blockquote>
+&lt;p>即“IBA 支持基于连接和数据报的服务。对于基于连接的服务来说，每个 QP 都和另一个远端节点相关联。在这种情况下，QP Context 中包含有远端节点的 QP 信息。在建立通信的过程中，两个节点会交换包括稍后用于通信的 QP 在内的对端信息&amp;quot;。&lt;/p>
+&lt;p>上面这端描述中的 Context 一般被翻译成上下文，QP Context（简称 QPC）可以简单理解为是记录一个 QP 相关信息的表格。我们知道 QP 是两个队列，除了这两个队列之外，我们还需要把关于 QP 的信息记录到一张表里面，这些信息可能包括队列的深度，队列的编号等等，后面我们会展开讲。&lt;/p>
+&lt;p>可能还是有点抽象，我们用图说话：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/QPC-2024-02-26.webp"
+alt="QPC-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>A、B 和 A、C 节点的网卡在物理上是连接在一起的，A 上面的 QP2 和 B 上面的 QP7、A 上面的 QP4 和 B 上面的 QP2 建立了逻辑上的连接，或者说“绑定到了一起”。&lt;strong>在连接服务类型中的每个 QP，都和唯一的另一个 QP 建立了连接，也就是说 QP 下发的每个 WQE 的目的地都是唯一的&lt;/strong>。拿上图来说，对于 A 的 QP2 下发的每个 WQE，硬件都可以通过 QPC 得知其目的为 B 的 QP7，就会把组装好的数据包发送给 B，然后 B 会根据 QP7 下发的 RQ WQE 来存放数据；同理，对于 A 的 QP4 下发的每个 WQE，A 的硬件都知道应该把数据发给 Node C 的 QP2。&lt;/p>
+&lt;p>“连接”是如何维护的呢？其实就是在 QPC 里面的一个记录而已。如果 A 的 QP2 想断开与 B 的 QP7 的“连接”然后与其他 QP 相“连接”，只需要修改 QPC 就可以了。两个节点在建立连接的过程中，会交换稍后用于数据交互的 QP Number，然后分别记录在 QPC 中。&lt;/p>
+&lt;p>&lt;strong>数据报（Datagram）&lt;/strong> 与连接相反，发端和收端间不需要“建立管道”的步骤，只要发端到收端物理上是可以到达的，那么我就可能从任何路径发给任意的收端节点。IB 协议对其的定义是这样的：&lt;/p>
+&lt;blockquote>
+&lt;p>For datagram service, a QP is not tied to a single remote consumer, but rather information in the WQE identifies the destination. A communication setup process similar to the connection setup process needs to occur with each destination to exchange that information.&lt;/p>
+&lt;p>即“对于数据报服务来说，QP 不会跟一个唯一的远端节点绑定，而是通过 WQE 来指定目的节点。和连接类型的服务一样，建立通信的过程也需要两端交换对端信息，但是数据报服务对于每个目的节点都需要执行一次这个交换过程。”&lt;/p>
+&lt;/blockquote>
+&lt;p>我们举个例子：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Datagram-2024-02-26.webp"
+alt="Datagram-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>在数据报类型的 QP 的 Context 中，不包含对端信息，即每个 QP 不跟另一个 QP 绑定。&lt;strong>QP 下发给硬件的每个 WQE 都可能指向不同的目的地&lt;/strong>。比如节点 A 的 QP2 下发的第一个 WQE，指示给节点 C 的 QP3 发数据；而下一个 WQE，可以指示硬件发给节点 B 的 QP7。&lt;/p>
+&lt;p>与连接服务类型一样，本端 QP 可以和哪个对端 QP 发送数据，是在准备阶段提前通过某些方式相互告知的。这也是上文“数据报服务对于每个目的节点都需要执行一次这个交换过程”的含义。&lt;/p>
+&lt;h2 id="服务类型">服务类型&lt;/h2>
+&lt;p>上面介绍的两个维度两两组合就形成了 IB 的四种基本服务类型：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>可靠(Reliable)&lt;/th>
+&lt;th>不可靠(Unreliable)&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>连接(Connection)&lt;/td>
+&lt;td>RC（Reliable Connection）&lt;/td>
+&lt;td>UC（Unreliable Connection）&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>数据报(Datagram)&lt;/td>
+&lt;td>RD（Reliable Datagram）&lt;/td>
+&lt;td>UD（Unreliable Datagram）&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>RC 和 UD 是应用最多也是最基础的两种服务类型，我们可以将他们分别类比成 TCP/IP 协议栈传输层的 TCP 和 UDP。&lt;/p>
+&lt;p>RC 用于对数据完整性和可靠性要求较高的场景，跟 TCP 一样，因为需要各种机制来保证可靠，所以开销自然会大一些。另外由于 RC 服务类型和每个节点间需要各自维护一个 QP，假设有 N 个节点要相互通信，那么至少需要 &lt;strong>N * (N - 1)&lt;/strong> 个 QP，而 QP 和 QPC 本身是需要占用网卡资源或者内存的，当节点数很多时，存储资源消耗将会非常大。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/RC_Connect-2024-02-26.webp"
+alt="RC_Connect-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>UD 硬件开销小并且节省存储资源，比如 N 个节点需要相互通信，只需要创建 &lt;strong>N&lt;/strong> 个 QP 就可以了，但是可靠性跟 UDP 一样没法保证。用户如果想基于 UD 服务类型实现可靠性，那么需要自己基于 IB 传输层实现应用层的可靠传输机制。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/UD_Connect-2024-02-26.webp"
+alt="UD_Connect-2024-02-26" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>除此之外，还有 RD 和 UC 类型，以及 XRC（Extended Reliable Connection），SRD（Scalable Reliable Datagram）等更复杂的服务类型，我们将在协议解析部分对其进行详细的描述。&lt;/p>
+&lt;p>更多关于 QP 类型选择的信息可以参考 RDMAmojo 上的&lt;a class="link" href="https://www.rdmamojo.com/2013/06/01/which-queue-pair-type-to-use/" target="_blank" rel="noopener" >Which Queue Pair type to use?
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+这篇文章，感谢 &lt;a class="link" href="https://www.zhihu.com/people/fc04fe143ad43b66fabb7050dadef923" target="_blank" rel="noopener" >@sinkinben
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+同学在评论区指路。&lt;/p>
+&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;p>在 RDMA 编程中，我们可以通过 &lt;code>ibv_create_qp&lt;/code> 函数来创建 QP，其中的 &lt;code>struct ibv_qp_init_attr&lt;/code> 结构体中的 &lt;code>qp_type&lt;/code> 字段就是用来指定 QP 的服务类型的。下面是一个简单的示例代码：&lt;/p>
+&lt;pre>&lt;code class="language-c">struct ibv_qp_init_attr qp_init_attr;
+qp_init_attr.qp_type = IBV_QPT_RC; // RC 类型
+qp_init_attr.sq_sig_all = 1; // 1 表示 SQ 中的每个 WQE 都需要对应的接收一个 CQE
+qp_init_attr.send_cq = cq; // 发送 CQ
+qp_init_attr.recv_cq = cq; // 接收 CQ
+qp_init_attr.cap.max_send_wr = 1024; // SQ 的深度
+struct ibv_qp *qp = ibv_create_qp(pd, &amp;amp;qp_init_attr);
+&lt;/code>&lt;/pre></description></item><item><title>RDMA 操作类型</title><link>https://cuterwrite.top/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA 操作类型" />&lt;h1 id="rdma-操作类型">RDMA 操作类型&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/142175657">&lt;cite>知乎专栏：4. RDMA 操作类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -67,6 +181,44 @@ alt="rdma-op-6-2024-02-25" width="auto" loading="lazy"/>
 &lt;p>RDMA 标准定义上述几种操作的时候使用的单词是非常贴切的，“收”和“发”是需要有对端主动参与的语义 ，而‘读“和”写“更像是本端对一个没有主动性的对端进行操作的语义。&lt;/p>
 &lt;p>通过对比 SEND/RECV 和 WRITE/READ 操作，我们可以发现传输数据时不需要响应端 CPU 参与的 WRITE/READ 有更大的优势，缺点就是请求端需要在准备阶段获得响应端的一段内存的读写权限。但是实际数据传输时，这个准备阶段的功率和时间损耗都是可以忽略不计的，所以 RDMA WRITE/READ 才是大量传输数据时所应用的操作类型，SEND/RECV 通常只是用来传输一些控制信息。&lt;/p>
 &lt;p>除了本文介绍的几种操作之外，还有 ATOMIC 等更复杂一些的操作类型，将在后面的协议解读部分详细分析。本篇就到这里，下一篇将介绍 RDMA 基本服务类型。&lt;/p>
+&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;p>本文中的操作类型都是通过 WQE 来下发的，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过 WQE 来下发一个 WRITE 操作。&lt;/p>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;stdlib.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+int main() {
+struct ibv_device **dev_list = ibv_get_device_list(NULL);
+struct ibv_context *ctx = ibv_open_device(dev_list[0]);
+struct ibv_pd *pd = ibv_alloc_pd(ctx);
+struct ibv_cq *cq = ibv_create_cq(ctx, 10, NULL, NULL, 0);
+struct ibv_qp *qp;
+struct ibv_qp_init_attr qp_init_attr = {
+.send_cq = cq,
+.recv_cq = cq,
+.qp_type = IBV_QPT_RC,
+};
+qp = ibv_create_qp(pd, &amp;amp;qp_init_attr);
+struct ibv_mr *mr;
+char *buf = malloc(1024);
+mr = ibv_reg_mr(pd, buf, 1024, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE);
+struct ibv_sge sge = {
+.addr = (uintptr_t)buf,
+.length = 1024,
+.lkey = mr-&amp;gt;lkey,
+};
+struct ibv_send_wr wr = {
+.wr_id = 1,
+.sg_list = &amp;amp;sge,
+.num_sge = 1,
+.opcode = IBV_WR_RDMA_WRITE,
+.send_flags = IBV_SEND_SIGNALED,
+};
+struct ibv_send_wr *bad_wr;
+ibv_post_send(qp, &amp;amp;wr, &amp;amp;bad_wr);
+return 0;
+}
+&lt;/code>&lt;/pre>
 &lt;h2 id="参考资料">参考资料&lt;/h2>
 &lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">RDMA 基本元素&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
@@ -145,6 +297,38 @@ alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
 alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy"/>
 &lt;/figure>
+&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;p>最后，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过这个 QP 来发送一次数据。这是一个非常简单的例子，只是为了让读者对上文中的概念有一个直观的认识。&lt;/p>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
+int main() {
+struct ibv_context *ctx;
+struct ibv_pd *pd;
+struct ibv_cq *cq;
+struct ibv_qp *qp;
+struct ibv_mr *mr;
+struct ibv_sge sge;
+struct ibv_send_wr wr;
+struct ibv_send_wr *bad_wr;
+struct ibv_wc wc;
+ctx = ibv_open_device();
+pd = ibv_alloc_pd(ctx);
+cq = ibv_create_cq(ctx, 100, NULL, NULL, 0);
+qp = ibv_create_qp(pd, NULL, NULL);
+mr = ibv_reg_mr(pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE);
+sge.addr = (uintptr_t)buf;
+sge.length = size;
+sge.lkey = mr-&amp;gt;lkey;
+wr.wr_id = 1;
+wr.sg_list = &amp;amp;sge;
+wr.num_sge = 1;
+wr.opcode = IBV_WR_SEND;
+wr.send_flags = IBV_SEND_SIGNALED;
+wr.next = NULL;
+ibv_post_send(qp, &amp;amp;wr, &amp;amp;bad_wr);
+ibv_poll_cq(cq, 1, &amp;amp;wc);
+return 0;
+}
+&lt;/code>&lt;/pre>
 &lt;h2 id="总结">总结&lt;/h2>
 &lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
