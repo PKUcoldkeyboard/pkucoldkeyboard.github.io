@@ -1,0 +1,505 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>科研相关 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/research/</link><description>Recent content in 科研相关 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 03 Mar 2024 01:16:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/research/index.xml" rel="self" type="application/rss+xml"/><item><title>笔记：Pure - 改进消息传递以更好地利用节点内的共享内存</title><link>https://cuterwrite.top/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/p/pure/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post 笔记：Pure - 改进消息传递以更好地利用节点内的共享内存" />&lt;h1 id="笔记pure-改进消息传递以更好地利用节点内的共享内存">笔记：Pure: 改进消息传递以更好地利用节点内的共享内存&lt;/h1>
+&lt;h2 id="citation">Citation&lt;/h2>
+&lt;p>James Psota and Armando Solar-Lezama. 2024. Pure: Evolving Message Passing To Better Leverage Shared Memory Within Nodes. In Proceedings of the 29th ACM SIGPLAN Annual Symposium on Principles and Practice of Parallel Programming (&lt;strong>PPoPP &amp;lsquo;24&lt;/strong>). Association for Computing Machinery, New York, NY, USA, 133–146. &lt;a class="link" href="https://doi.org/10.1145/3627535.3638503" target="_blank" rel="noopener" >https://doi.org/10.1145/3627535.3638503
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;h2 id="关键词">关键词&lt;/h2>
+&lt;p>parallel programming models; distributed runtime systems; task-based parallelism; concurrent data structures; lock-free data structures&lt;/p>
+&lt;h2 id="摘要">摘要&lt;/h2>
+&lt;p>Pure 是一种新的编程模型和运行时系统，旨在在基于消息传递接口（增强使用任务利用空闲核心能力）的环境中充分利用节点内部的共享内存。Pure 通过两种方式利用共享内存：(1) 允许 rank 在等待消息到达时从彼此那里窃取工作；(2) 利用高效无锁的数据结构实现节点内各进程间高性能的消息传递和集合操作。研究者通过 micro benchmark 测试评估了 Pure 的关键消息传递和集合特性，并展示了在 CoMD 分子动力学和 miniAMR 自适应网格细化应用中，当扩展到 4096 个 rank 时，Pure 可实现高达 &lt;strong>2.1x&lt;/strong> 的应用加速。&lt;/p>
+&lt;h2 id="1-引言">1. 引言&lt;/h2>
+&lt;p>在过去的几十年里，高性能计算从大型向量机转向由单处理器机器组成的集群并通过网络连接。MPI 成为分布式内存机器上并行编程的标准方法。随着硬件发展为多核集群，节点内的核心共享内存并通过网络通信，社区一直在寻找新范式以更充分地利用现代集群。目前主要有两种方法：一是保持统一的 MPI 编程方法，改进 MPI 运行时系统以更好地利用共享内存；二是采用 MPI+X 等混合编程方法，在节点内部使用共享内存并行性，而在节点之间仍使用 MPI。&lt;strong>然而，这些方法要么可能受限于 MPI 标准对接口行为的规定而无法充分发挥性能，要么给程序员带来管理优化两个编程模型的挑战&lt;/strong>。&lt;/p>
+&lt;p>社区已经尝试了许多其他方法，其中包括&lt;strong>PGAS&lt;/strong>模型，它提供了一种集群范围内的共享内存假象，以及诸如&lt;strong>Legion、Chapel&lt;/strong>和&lt;strong>X10&lt;/strong>等隐式并行编程语言，这些语言为程序员提供了更高级别的抽象，并试图自动有效地协调应用程序。尽管取得了进展且新方法不断涌现，但现代 HPC 应用中仍有相当一部分仍在使用 MPI。&lt;strong>MPC&lt;/strong>和&lt;strong>AMPI&lt;/strong>也同样将线程作为 MPI Rank，并努力利用内部的共享内存来提高性能。&lt;/p>
+&lt;p>然而，仅使用 MPI 的方法往往胜过混合编程方法。这很大程度上可能由于接口的局限性以及无法充分利用节点内的共享内存，导致 MPI 未能发挥出很多潜在性能。因此，论文提出的 Pure 系统建立在 MPI-everywhere 方法之上，打破了一些 MPI 的假设，更有效地利用共享内存，同时不需要对程序进行重大重写。它是一个与 MPI 相似的编程模型，从而能够利用上 HPC 社区现有的 MPI 知识和现有应用程序基础。&lt;/p>
+&lt;p>Pure 设计灵感来源于 MPI，其编程模型本质上是消息传递，并可选择性地利用任务。不过，Pure 打破了对使用进程级别 rank 以及支持旧版语言的限制，使用线程作为 rank 而不是进程，如此一来能够高效地运用轻量级、无锁同步机制，在同一节点内各线程间进行协调。基于线程化的 rank，Pure 构建了高效的节点内部集体操作功能，利用高效的无锁算法实现这一目标。此外，Pure 允许应用程序的部分并行代码块以标准 C++ lambda 表达式形式运行，这些表达式可以被拥有 rank 和其他空闲 rank 自动且并发地执行，所有这一切均由 Pure Runtime 运行时系统自动调度。将 Pure Runtime 运行时系统的职责扩展至包括可选的并发任务执行具有重要价值，因为它使得 Pure Runtime 运行时系统能够在无需程序员编排的情况下，高效地自动化重叠通信与计算过程。&lt;/p>
+&lt;p>论文提出的优化策略包括：&lt;/p>
+&lt;ul>
+&lt;li>小消息和大数据消息都适用的无锁消息传递方法。&lt;/li>
+&lt;li>用于实现集合通信算法的无锁数据结构。&lt;/li>
+&lt;li>允许空闲线程从其他线程高效窃取工作的无锁任务调度器。&lt;/li>
+&lt;/ul>
+&lt;p>作者采用标准 C++库以确保广泛兼容性，并展示出相较于高度优化的 MPI 基准有显著的性能提升。同时，作者也证明了 Pure 编程模型在语义上与 MPI 相似，这意味着学习并从现有应用程序迁移至 Pure 十分直接简便，并且展示了源码到源码的转换工具 mpi2pure 。总的来说，论文的主要贡献如下：&lt;/p>
+&lt;ol>
+&lt;li>引入一种编程模型及运行时系统，它有效地整合了消息传递与任务并行性，利用标准 C++特性实现。&lt;/li>
+&lt;li>展示了现代 C++如何帮助支持更灵活的并行运行时系统应用接口。&lt;/li>
+&lt;li>描述了一种设计良好的无锁、多线程和分布式运行时系统，相比 MPI，在节点内部获得了显著的速度提升。&lt;/li>
+&lt;li>证明仅需要对现有 MPI 应用程序进行最小程度的源代码修改，就能在 micro benchmark 测试和三个实际应用中获得相较于最先进的 MPI 实现的显著性能提升。&lt;/li>
+&lt;/ol>
+&lt;h2 id="2-pure-使用示例">2. Pure 使用示例&lt;/h2>
+&lt;p>首先通过一个简单的示例程序来说明如何使用 Pure。尽管该应用程序是一个简单的 1-D stencil 算法，但通过这个例子可以展示出 Pure 的基本原理及其与 MPI 的共同之处，从而帮助开发者编写更复杂的应用程序。&lt;/p>
+&lt;p>在 MPI 版本的实现代码 &lt;code>rand_stencil_mpi&lt;/code> 中，大部分计算工作集中在函数 &lt;code>random_work&lt;/code> 中执行。简单来说，&lt;code>rand_stencil_mpi&lt;/code> 函数首先会进入一个循环，迭代次数为 &lt;code>iters&lt;/code> ，在数组 &lt;code>a&lt;/code> 的每个元素上计算 &lt;code>random_work&lt;/code> 。值得注意的是，&lt;code>random_work&lt;/code> 执行的时间长度是可变且未知的，因此会引入负载不平衡。此外，&lt;code>random_work&lt;/code> 不会修改数组 &lt;code>a&lt;/code> 的内容，而是接着通过对相邻元素求平均值更新数组 &lt;code>a&lt;/code> 。最后，程序利用 &lt;code>MPI_Send&lt;/code> 和 &lt;code>MPI_Recv&lt;/code> 交换 &lt;code>temp&lt;/code> 数组的首尾元素，以便计算数组 &lt;code>a&lt;/code> 的首尾元素。由于 &lt;code>random_work&lt;/code> 所需时间长短不一，某些处理单元会提前完成任务，有时会在等待发送方较慢的 &lt;code>MPI_Recv&lt;/code> 调用时陷入阻塞状态。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1D_stencil-2024-03-14.webp"
+alt="1D_stencil-2024-03-14" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 1：1-D Stencil with Random Work, MPI Version&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-cpp">void rand_stencil_mpi(double* const a, size_t arr_sz, size_t iters, int my_rank,
+int n_ranks) {
+double temp[arr_sz];
+for (auto it = 0; it &amp;lt; iters; ++it) {
+for (auto i = 0; i &amp;lt; arr_sz; ++i) {
+temp[i] = random_work(a[i]);
+}
+for (auto i = 1; i &amp;lt; arr_sz - 1; ++i) {
+a[i] = (temp[i - 1] + temp[i] + temp[i + 1]) / 3.0;
+}
+if (my_rank &amp;gt; 0) {
+MPI_Send(&amp;amp;temp[0], 1, MPI_DOUBLE, my_rank - 1, 0, MPI_COMM_WORLD);
+double neighbor_hi_val;
+MPI_Recv(&amp;amp;neighbor_hi_val, 1, MPI_DOUBLE, my_rank - 1, 0, MPI_COMM_WORLD,
+MPI_STATUS_IGNORE);
+a[0] = (neighbor_hi_val + temp[0] + temp[1]) / 3.0;
+} // ends if not first rank
+if (my_rank &amp;lt; n_ranks - 1) {
+MPI_Send(&amp;amp;temp[arr_sz - 1], 1, MPI_DOUBLE, my_rank + 1, 0,
+MPI_COMM_WORLD);
+double neighbor_lo_val;
+MPI_Recv(&amp;amp;neighbor_lo_val, 1, MPI_DOUBLE, my_rank + 1, 0, MPI_COMM_WORLD,
+MPI_STATUS_IGNORE);
+a[arr_sz - 1] =
+(temp[arr_sz - 2] + temp[arr_sz - 1] + neighbor_lo_val) / 3.0;
+} // ends if not last rank
+} // ends for all iterations
+}
+&lt;/code>&lt;/pre>
+&lt;p>示例 2 则展示了实现同样功能的 Pure 版本。其中存在一些关键差异。首先，消息调用函数接口不同，使用的是相应的 Pure 消息传递函数 &lt;code>pure_send_msg&lt;/code> 和 &lt;code>pure_recv_msg&lt;/code> ，而非 MPI 调用，但参数实质上与 MPI 对应函数基本相同。Pure 的消息传递语义类似于 MPI：发送端缓冲区被复制到接收端缓冲区。实现区别主要在于：Pure 在&lt;strong>节点内部采用了轻量级的消息传递方法&lt;/strong>，从而在节点内的消息传递比 MPI 的延迟更低。&lt;/p>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 2：Pure 版本&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-cpp">void rand_stencil_pure(double* a, const int arr_sz, const int n_iter,
+const int my_rank, const int n_ranks) {
+double temp[arr_sz];
+PureTask rand_work_task = [a, temp, arr_sz, my_rank](
+chunk_id_t start_chunk, chunk_id_t end_chunk,
+std::optinal&amp;lt;void&amp;gt; cont_params) {
+auto [min_idx, max_idx] =
+pure_aligned_idx_range&amp;lt;double&amp;gt;(arr_sz, start_chunk, end_chunk);
+for (auto i = min_idx; i &amp;lt; max_idx; i++) {
+temp[i] = random_work(a[i]);
+}
+}; // ends definding the Pure Task for rand_work_task
+for (auto it = 0; it &amp;lt; n_iter; it++) {
+rand_work_task.execute(); // execute all chunks of rank_work_task
+for (auto i = 1; i &amp;lt; arr_sz - 1; ++i) {
+a[i] = (temp[i - 1] + temp[i] + temp[i + 1]) / 3.0;
+}
+if (my_rank &amp;gt; 0) {
+pure_send_msg(&amp;amp;temp[0], 1, MPI_DOUBLE, my_rank - 1, 0, PURE_COMM_WORLD);
+double neighbor_hi_val;
+pure_recv_msg(&amp;amp;neighbor_hi_val, 1, MPI_DOUBLE, my_rank - 1, 0,
+PURE_COMM_WORLD);
+a[0] = (neighbor_hi_val + temp[0] + temp[1]) / 3.0;
+} // ends if not first rank
+if (my_rank &amp;lt; n_ranks - 1) {
+pure_send_msg(&amp;amp;temp[arr_sz - 1], 1, MPI_DOUBLE, my_rank + 1, 0,
+PURE_COMM_WORLD);
+double neighbor_lo_val;
+pure_recv_msg(&amp;amp;neighbor_lo_val, 1, MPI_DOUBLE, my_rank + 1, 0,
+PURE_COMM_WORLD);
+a[arr_sz - 1] =
+(temp[arr_sz - 2] + temp[arr_sz - 1] + neighbor_lo_val) / 3.0;
+} // ends if not last rank
+} // ends definding the Pure Task for rand_work_task
+}
+&lt;/code>&lt;/pre>
+&lt;p>更重要的差异在于 Pure 中增加的 &lt;strong>Pure Task&lt;/strong> ，用带有一组特定参数定义的 lambda 表达式，其利用 lambda 的捕获参数特性，允许外部于 lambda 体内的变量以值或引用形式被捕获并在 lambda 执行时使用。Pure Task 可以被视为由 Pure Runtime 运行时系统负责执行应用程序代码片段，可以通过多线程并发执行。因此，Pure 任务应结构化为类似数据并行的形式。此外，PureTask 需要由程序员保证线程安全。&lt;/p>
+&lt;p>在以上 Pure 实现中，程序员可以利用 chunk ranges 来描述并发性。这些子范围或 chunk 是通过 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> 参数传递给 Pure Task 的，而它们是由 Pure Runtime 运行时系统提供。Pure Runtime 运行时系统负责确保所有工作顺利完成。由于可能涉及到不同的多个线程，Pure Runtime 运行时系统会通过追踪哪些 chunk 已分配和完成来实现这一点。&lt;/p>
+&lt;p>其次，程序员需要将 Pure Runtime 运行时系统提供的 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> 参数映射到与应用计算相关的具体内容上。在这里，代码使用了 &lt;code>pure_aligned_idx_range&lt;/code> 辅助函数将其转化为循环索引子范围。这个辅助函数考虑到了缓存行，所以有利于避免伪共享问题。&lt;/p>
+&lt;p>由于 &lt;code>random_work&lt;/code> 引入了负载不平衡，因此某些 rank 不可避免地会等待其他 rank 发送消息。Pure 任务调度器自动利用这些空闲 rank ，在同一节点内执行待执行的 Pure 任务块。以下图中在同一节点内的三个 rank 为例：&lt;strong>rank 0&lt;/strong> 正在执行一个被划分为 6 个 chunks 的 Pure Task，而 &lt;strong>rank 1&lt;/strong> 和 &lt;strong>rank 2&lt;/strong> 因为接收消息而阻塞。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/timeline-2024-03-14.png"
+alt="timeline-2024-03-14" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>示例 Pure 代码的时间线示意图&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>可以观察到：&lt;/p>
+&lt;ul>
+&lt;li>rank 0 首先处理 chunk 0 。&lt;/li>
+&lt;li>rank 1 窃取且并行执行 chunk 1 。&lt;/li>
+&lt;li>Pure 任务调度器接着将 chunk 2 分配给 rank 0，把 chunk 3 分配给 rank 1 。&lt;/li>
+&lt;li>rank 2 尝试窃取 task 并得到 chunk 4 。由于 &lt;code>random_work&lt;/code> 的随机特性，chunk 2 和 chunk 4 事实上是耗时较长的任务量。&lt;/li>
+&lt;li>chunk 5 被分配给 rank 0，这部分任务量较小，以至于 rank 2 完成 chunk 4 之前就已经结束。&lt;/li>
+&lt;li>调度器确保所有 chunks 都完成之前，rank 0 不会返回。这里直到 chunk 4 完成之后 rank 0 才会返回。&lt;/li>
+&lt;li>当 rank 1 和 rank 2 还处于阻塞状态时，它们会继续尝试从任何其它 rank 中窃取更多的 chunks。&lt;/li>
+&lt;li>由于 lambda 支持变量捕获，因此可以在不同 rank 之间高效共享上下文信息。&lt;/li>
+&lt;/ul>
+&lt;p>实验结果表明，在单节点上使用 32 个 rank 运行的 Pure 版本时，由于更快的消息传递速度和 Pure Task 的使用，Pure 版本相比 MPI 版本获得了 10% 的速度提升，并且在存在负载不均衡的情况下实现了超过 200% 的加速。尽管这些提升取决于负载不均衡的程度，但在实际应用中，Pure 也能取得类似的性能提升。这是因为 Pure Runtime 运行时系统能够自动识别并有效利用闲置计算资源。&lt;/p>
+&lt;h2 id="3-编程模型">3. 编程模型&lt;/h2>
+&lt;p>Pure 的编程模型可以概述为”带有可选任务的消息传递“。Pure 的消息传递和集合通信操作在语义上与 MPI 等效，只是存在一些语法上的细微差异。&lt;/p>
+&lt;p>尽管在节点内使用了线程，Pure 的 rank 命名空间在整个节点间仍是非层级结构的。此外，在 Pure 程序的生命周期内，rank 的数量不会发生改变。&lt;/p>
+&lt;p>Pure 采用 C++ 编写，并通过 SPMD 方式运行，其内部实现了多线程化。同一节点内的所有 rank 都是通过内核线程来实现。&lt;/p>
+&lt;p>&lt;strong>Pure 应用程序并不支持全局变量&lt;/strong>，所以应当移除或者使用 thread_local 关键字来限制变量的作用域，从而保证线程安全。&lt;/p>
+&lt;p>针对包含负载不均衡问题的应用程序，程序员可在满足以下条件的部分应用中使用 Pure Task：&lt;/p>
+&lt;ol>
+&lt;li>计算密集型热点区域&lt;/li>
+&lt;li>可以被构造为并发执行&lt;/li>
+&lt;/ol>
+&lt;h3 id="消息传递和集合通信操作">消息传递和集合通信操作&lt;/h3>
+&lt;p>Pure 消息传递中的 &lt;code>pure_send_msg&lt;/code> 和 &lt;code>pure_recv_msg&lt;/code> 函数与 MPI 中的 &lt;code>MPI_Send&lt;/code> 和 &lt;code>MPI_Recv&lt;/code> 函数类似。同时，Pure 也提供了非阻塞版本。&lt;/p>
+&lt;p>Pure Runtime 运行时系统会保证消息最终会送达且按发送顺序交付。而且，Pure 还实现以下集合通信操作：&lt;/p>
+&lt;ul>
+&lt;li>Reduce&lt;/li>
+&lt;li>All-Reduce&lt;/li>
+&lt;li>Barrier&lt;/li>
+&lt;li>Broadcast&lt;/li>
+&lt;/ul>
+&lt;p>除此之外，Pure 还设计了通信子的概念，可以通过 &lt;code>pure_comm_split&lt;/code> 函数将通信子分割为更小的子集。&lt;/p>
+&lt;p>Pure 应用程序应当使用现代 C++ 编写，必须指定 &lt;code>std=c++11&lt;/code> 或更高版本来对其进行编译。Pure 的分发包中包含了一个基于 Make 的构建系统，其自动设置了恰当的编译器选项，并且链接好了 Pure Runtime 运行时系统，即 &lt;code>libpure&lt;/code> ，定义了一系列用于调试和性能分析的 Target。&lt;/p>
+&lt;h3 id="pure-task">Pure Task&lt;/h3>
+&lt;p>首先，Pure Task 允许程序员描述应用程序中的计算部分如何能够被分解为 chunks ，这些 chunks 可以由 Pure Runtime 运行时系统自动地并发执行。&lt;/p>
+&lt;p>需要注意的是，Pure Task 并不是一个必须选项，只有当任务能被划分为多个小块且有助于解决负载不均衡问题时，才应该使用 Pure Task。&lt;/p>
+&lt;p>其次，Pure Task 使用 C++ Lambda 表达式实现，并且拥有该任务的 rank 调用 &lt;code>execute&lt;/code> 方法时同步执行。任何给定的 rank 在同一时间内至多只能执行一个任务。由于 C++ Lambda 表达式支持变量捕获，因此可以高效地在执行任务不同 chunks 的不同 rank 之间共享上下文信息。通常情况下，同一个任务在应用程序运行过程中定义一次并多次执行，如科学应用中每一个时间步的迭代。&lt;/p>
+&lt;p>再次，Pure Task 在定义时需要指定 chunk 的数量，以及来自应用程序的额外参数。任务间还必须避免依赖关系，但由于它们会在 &lt;code>execute&lt;/code> 调用期间完全执行，因此它们的执行不会与任务外部的代码发生竞争。&lt;/p>
+&lt;p>此外，Pure Task 具有一个名为 &lt;code>execute&lt;/code> 的方法，该方法由应用程序代码调用，并接受一个 &lt;code>optional&amp;lt;void*&amp;gt; per_exe_args&lt;/code> 参数，运行时将其传递给任务进行每一次的调用。当任务主体的输入值在连续执行任务时发生变化时，这个功能会非常有用。例如，程序员可以在堆栈上定义一个局部结构体，并将指向它的指针传递给 &lt;code>execute&lt;/code> 方法。&lt;/p>
+&lt;p>另外，Pure Task 的前两个参数是无符号整数 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> ，用于指定要执行的 chunk 的范围。chunk 参数则由 Pure Runtime 运行时系统分配以确保所有 chunks 仅被精确地执行一次，即使这些 chunks 可能同时并发执行且乱序。&lt;/p>
+&lt;p>值得一提的是，Pure Task 使用 chunk 范围赋予调度程序灵活性，以便一次性分配多个 chunk。chunks 数量由 Pure 任务调度器决定，但是不会超过 Makefile 文件中定义的 &lt;code>PURE_MAX_TASK_CHUNKS&lt;/code> 。&lt;/p>
+&lt;p>除此之外，当前实现的接口需要手动将 chunk 编号转换为数组索引，这对于多维数组来说这项工作尤为繁琐。因此作者的目标是扩展当前接口，提供更简洁、更高级的接口，类似于 TBB 的 &lt;code>parallel_for&lt;/code> 。&lt;/p>
+&lt;p>最后，程序员需要确保在 Pure Task 定义内部的实现线程安全，以防止同一任务的多个并发执行的 chunk 相互竞争。在后续的 CoMD 分子动力学 Benchmark 中，就不得不处理多个线程同时写入同一内存位置的问题，因此需要使用 &lt;code>std::atomic&lt;/code> 数组代替 &lt;code>int&lt;/code> 数组。&lt;/p>
+&lt;h2 id="4-运行时系统">4. 运行时系统&lt;/h2>
+&lt;p>Pure 的运行时系统实现为一个多线程和分布式运行时的动态库。Pure 应用程序开发时需要引入 &lt;code>pure.h&lt;/code> 头文件，并使用 C++17 编译选项构建，然后链接 &lt;code>libpure&lt;/code> 库。Pure 运行时系统会自动寻找并透明地利用计算与通信的重叠机会，这通常发生在高延迟通信事件期间。&lt;/p>
+&lt;p>总的来说，Pure 运行时系统的职责为：&lt;/p>
+&lt;ul>
+&lt;li>创建并绑定必要的进程以及线程，启动应用程序。&lt;/li>
+&lt;li>管理节点内各个 rank 之间的通信和集合操作。&lt;/li>
+&lt;li>管理内部的内存缓冲区和数据结构。&lt;/li>
+&lt;li>如果定义了 Pure Task，则需要负责调度和执行这些任务。&lt;/li>
+&lt;/ul>
+&lt;h3 id="rank-初始化与映射">Rank 初始化与映射&lt;/h3>
+&lt;p>Pure rank 作为 MPI 进程的内核线程实现。在内部机制上，Pure 在多节点应用中运行 MPI 以支持跨节点通信，而在单节点运行时则完全不使用 MPI ，但 Pure 应用程序不能直接调用 MPI 函数。Pure 程序可通过 Makefile 配置，使其在一个节点或 NUMA 节点上运行一个 MPI 进程，并按每个节点或 NUMA 节点的核心数来运行相同数量的线程。应用程序程序员只知道非层次结构的 rank 命名空间，而节点、线程、MPI 进程、可变延迟等概念均被抽象化，对程序员不可见。&lt;/p>
+&lt;p>类似于 MPI ，Pure 支持任意方式将 rank 映射到节点上。默认情况下，Pure 采用 SMP 风格的分配策略放置 rank ，但同时支持任意 rank 到节点再到核心的映射。Pure 还支持 CrayPAT 的 rank 重排文件。虽然这些层次化的硬件细节从程序员角度看已被抽象，但 Pure 在内部会利用这些信息优化关键功能。&lt;/p>
+&lt;p>当 Pure 应用程序启动时，并不会直接调用应用程序原始的 &lt;code>main&lt;/code> 函数。底层的 MPI 程序包含了定义在 Pure 运行时系统中的 &lt;code>main&lt;/code> 函数。这个函数首先初始化 Pure 核心的数据结构，然后 fork 并绑定线程，这些线程各自运行一个 &lt;code>original_main&lt;/code> 函数，这是从应用程序代码中原始 &lt;code>main&lt;/code> 函数的改名版本。当应用程序完成执行后，该应用程序的 &lt;code>__original_main&lt;/code> 函数返回至 Pure 运行时系统，后者接着完成 MPI 的终止过程，清理资源。&lt;/p>
+&lt;h3 id="spin-steal-waiting-loop-ssw-loop">Spin-Steal Waiting Loop (SSW-Loop)&lt;/h3>
+&lt;p>当 Pure rank 遇到阻塞事件，例如等待消息到达时，它必须进行等待。然而，在 Pure 中，它会执行&lt;strong>自旋、窃取等待循环（SSW-Loop）&lt;/strong>，而非简单地放弃或空闲等待。这个循环会检查阻塞条件，例如消息是否已到达，如若未到达，则尝试窃取其它 rank 的任务。若该被阻塞的 rank 能够帮助其进程中恰好处于并发执行状态的其它线程完成任务，那么就会进行协助。&lt;/p>
+&lt;p>鉴于线程固定在 CPU ，并且每个 rank 仅运行一个应用程序，我们选择主动进行自旋等待而非让出 CPU 。SSW-Loop 使得计算中的 rank 具备“多态性”，一方面既要作为主程序的计算节点，另一方面也要协助其它 rank 执行窃取到的任务 chunk ，然后再检查其自身所关注的阻塞事件。&lt;/p>
+&lt;p>Pure 采取优先处理 rank 拥有的窃取到的任务负载的策略，遵循以任务负载优先的调度策略。&lt;/p>
+&lt;p>相对于利用辅助线程来实现工作负载窃取或通信的系统，Pure 的独特之处在于由应用级别的计算节点直接执行窃取操作。&lt;/p>
+&lt;h3 id="实现复杂度">实现复杂度&lt;/h3>
+&lt;p>Pure 使用 C++17 标准库进行编写。Pure 运行时系统包含 21,000 行源代码，而 Pure 工具则另外包含大约 14,000 行源代码。Pure 已经在笔记本电脑和集群上进行了测试，所需环境仅为支持 C++17 的编译器、类 Unix 操作系统以及 MPI 。Pure 的源代码可从 &lt;a class="link" href="https://github.com/psota/pure" target="_blank" rel="noopener" >https://github.com/psota/pure
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+获取。&lt;/p>
+&lt;h3 id="点对点通信">点对点通信&lt;/h3>
+&lt;p>Pure 实现了阻塞和非阻塞的点对点消息传递，语义上等同于 MPI 的消息传递。&lt;/p>
+&lt;p>在 Pure 内部，消息传递有三种不同的策略，具体采用哪种方法取决于消息的大小以及发送方和接收方是否位于同一节点内。&lt;/p>
+&lt;p>对于整个生命周期，Pure 会分配一个持久存在的 Channel 对象，该对象存储在运行时系统中并会在整个程序中复用。内部 Channel Manager 会将消息参数映射到合适的数据结构，按需创建。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/strategy-2024-03-15.webp"
+alt="strategy-2024-03-15" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>Pure 消息传递策略&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>对于同一节点内的短消息（&amp;lt;8KB）
+&lt;ul>
+&lt;li>实现了一种带有 acquire-release 内存语义的无锁循环队列。发送线程在空间可用时将消息复制到 PureBufferQueue（PBQ）中，接收线程在消息可用时将其拷贝出来。
+&lt;ul>
+&lt;li>在短消息传递中，拷贝的开销相对较小，这样可以让发送方调用返回后立即执行执行其它有用的工作。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>两个线程均采用 SSW-Loop 进行等待，尽可能地实现计算与通信的自动重叠。&lt;/li>
+&lt;li>使用一个连续的缓冲区来存储所有消息的 slot ，并通过简单指针算术使其每个 slot 对齐缓存行边界，以避免写入的发送线程与读取的接收线程之间产生伪共享。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>对于同一节点内的大消息（&amp;gt;=8KB）
+&lt;ul>
+&lt;li>采取类似于 PBQ 的策略，但采用从发送方直接到接收方的单次内存拷贝，灵感来源于 MPI 的 rendezvous 模式。&lt;/li>
+&lt;li>无锁的固定大小循环缓冲区来存储接收方的接收调用参数，&lt;/li>
+&lt;li>发送方通过 SSW-Loop 等待元数据队列项，然后直接将消息有效负载复制到接收方期望的缓冲区中。发送方通过插入传输的字节数量到不同的无锁队列中，以此通知接收方完成传输。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>不同节点间的消息
+&lt;ul>
+&lt;li>透明地调用 MPI 接口&lt;/li>
+&lt;li>在 Pure 初始化期间使用分布式一致性算法创建一个 &lt;code>thread-rank-process-node&lt;/code> 映射数据结构，用于将 Pure rank 转换为给定通信器内的 MPI rank。&lt;/li>
+&lt;li>为了确保接收节点上的正确接收线程接收到对应消息，需要在 &lt;code>MPI_TAG&lt;/code> 中编码发送线程号和接收线程号以解决多线程路由问题。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="集合通信">集合通信&lt;/h3>
+&lt;p>Pure 中的集体通信操作语义与 MPI 等效，且在节点内采用自下而上构建的数据结构实现。尽管跨节点使用 MPI 集合操作，但在单节点和多节点基准测试中仍实现了显著的速度提升。&lt;/p>
+&lt;p>Pure 的方案是有一个领导者线程（leader）协调集体过程，利用其它线程协助计算并按需调用 MPI 集合函数。&lt;/p>
+&lt;ul>
+&lt;li>Pure 采用静态领导者选举方法，优于基于比较和交换的“首先进入”方法。&lt;/li>
+&lt;/ul>
+&lt;p>以下仅以 All-Reduce 为例子，其它集合通信操作思想类似。&lt;/p>
+&lt;p>对于小数据的 All-Reduce 操作，Pure 设计了名为 Sequenced Per-Thread Dropbox (SPTD) 的并发数据结构，提供了一种高效的无锁机制，用于在领导线程和其他非领导线程之间对偶同步和可选共享数据。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/SPTD-2024-03-15.webp"
+alt="SPTD-2024-03-15" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>Sequenced Per-Thread Dropbox (SPTD)&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>该方法借鉴了 flat-combinding 技术，将通信器中的线程 0 作为领导者线程。&lt;/p>
+&lt;ul>
+&lt;li>对于大小不超过 2KB 的数组
+&lt;ul>
+&lt;li>首先每个非领导者线程将其数据复制到 SPTD 中，然后与领导者线程一对一同步以表明其输入值已准备就绪（使用原子序列号，而不是共享原子计数器）。&lt;/li>
+&lt;li>领导者线程执行针对所有输入数组的逐元素 Reduce 计算。&lt;/li>
+&lt;li>每个节点上的领导者线程利用 &lt;code>MPI_Allreduce&lt;/code> 函数对该节点内的 Reduce 结果进一步进行全局 Reduce 。&lt;/li>
+&lt;li>领导者线程进行同步，各个非领导者线程将最终 Reduce 值分别拷贝到各自的私有结果缓冲区。&lt;/li>
+&lt;li>所有线程在等待时会进行 SSW-Loop 操作。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>对于大小超过 2KB 的数组，实际的 Reduce 计算开始成为性能瓶颈，因而需要尽可能利用所有线程并发执行 Reduce 计算，并通过共享内存直接从每个线程的输入输出缓冲区拉取数据或将 Reduce 结果写入缓冲区。
+&lt;ul>
+&lt;li>Reduce 工作被划分为大致相等的块，避免伪共享并实现向量化计算。&lt;/li>
+&lt;li>线程使用 SPTD 报告消息已准备就绪，并通过原子序列号指示计算完成。&lt;/li>
+&lt;li>领导者线程使用 &lt;code>MPI_Allreduce&lt;/code> 执行跨节点 All-Reduce 操作，并通过另一个原子序列号传播最终 Reduce 后的值。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="任务调度器">任务调度器&lt;/h3>
+&lt;p>Pure 运行时系统会在共享内存中维护一个名为 &lt;code>active_tasks&lt;/code> 的数组，其中包含指向正在执行任务的原子指针，每节点每个 rank 有一个条目，并初始化为 &lt;code>nullptr&lt;/code> 。当一个任务被执行时，运行时会初始化相应的状态并以原子方式更新拥有该任务的 rank 在 &lt;code>active_tasks&lt;/code> 中的条目。当 &lt;code>active_tasks&lt;/code> 包含非空指针时，它向其他线程表明这个任务是“可供窃取的”。&lt;/p>
+&lt;p>当任务被初始化后，拥有该任务的 rank 开始执行多个 chunk ，其他线程在其 SSL-Loop 期间探测 &lt;code>active_tasks&lt;/code> ，通过原子加载操作寻找非空条目。&lt;/p>
+&lt;p>任务的 chunk 始终由拥有者 rank 及其可能的窃取者 rank 执行。两个原子整数值 &lt;code>curr_chunk&lt;/code> 和 &lt;code>chunks_done&lt;/code> 驱动着整个并发执行过程。owner rank 和 thief ranks 运行相同的并发执行函数，尽管窃取者线程只执行一个 chunk 然后返回，而拥有者线程会一直执行直到所有 chunk 完成。线程使用 &lt;code>fetch_add&lt;/code> 确定要执行哪个 chunk ，但如果其值已大于总 chunk 数量，则它们会返回。&lt;/p>
+&lt;p>线程还会在成功完成任何 chunk 时原子性地增加 &lt;code>chunks_done&lt;/code> 的值；拥有者线程仅将其本地存储以避免缓存未命中。最后，拥有者 rank 等待直至所有 chunk 都执行完毕。&lt;/p>
+&lt;p>值得注意的是，任务的 chunk 与应用程序 rank 在同一硬件线程上执行；每一个硬件线程都分配给 Pure 应用的 rank 。目前 Pure 尚不利用硬件加速器硬件（例如 GPU）来加速任务执行，但作者相信 Pure 架构能够支持这一点。&lt;/p>
+&lt;p>Pure 任务调度器具有不同的 chunk 执行模式和窃取算法。例如，作者实现了单 chunk 模式和一种引导式自调度模式，这是一种工作划分算法，按照先分配（窃取）较大的工作块，随后分配（窃取）较小的工作块的方式进行。&lt;/p>
+&lt;p>任务调度器还具有 NUMA 感知窃取模式（优先从同一 NUMA 节点上的受害者线程窃取任务）以及一种“黏性”窃取模式，窃取者线程会返回它们最近窃取且仍处于活跃状态的任务。&lt;/p>
+&lt;h2 id="评估">评估&lt;/h2>
+&lt;p>评估实验采用的 HPC 集群是伯克利的 NERSC Cori，一共 2388 个节点，每个节点有 2 个插槽，16 核心 128GB 内存，节点互联使用了 Cray Aires。然后开启了超线程，采用了 256 位的向量宽度，实验在每个节点运行 2 个进程，32 个线程。工具链则使用的是 Intel 编译器，以及高度优化的 Cray MPICH 作为 baseline。&lt;/p>
+&lt;h3 id="nas-dt-基准测试">NAS DT 基准测试&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/nasdt-2024-03-15.webp"
+alt="nasdt-2024-03-15" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ul>
+&lt;li>只采用更快的消息传递，则有 11%至 25%的加速比&lt;/li>
+&lt;li>引入 PureTasks，则能达到 1.7 倍到 2.6 倍的加速比。&lt;/li>
+&lt;li>辅助线程能小幅提高性能，不过仅限于剩余未使用的 CPU 核心才能使用。在这里，除了 80 个 rank 的情况下空闲了 24 个核心，其它情况下都充分利用了 CPU 核心。&lt;/li>
+&lt;/ul>
+&lt;h3 id="comd-和-miniamr-基准测试">CoMD 和 miniAMR 基准测试&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-2024-03-15.webp"
+alt="benchmark-pure-2024-03-15" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;ul>
+&lt;li>在 CoMD 分子动力学应用上，如果没有负载不均衡的情况，可以看到 Pure 的性能在各个 rank 数下都优于 MPI 以及 MPI+OpenMP 的性能，分别达到 7%至 25%，以及 35%至 50%的加速比&lt;/li>
+&lt;li>在 miniAMR 自适应网格细化应用中，则实现了最少 20%，最多 50%的加速比。&lt;/li>
+&lt;/ul>
+&lt;h3 id="集合通信性能">集合通信性能&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-msg-2024-03-15.webp"
+alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="相关工作">相关工作&lt;/h2>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">类别&lt;/th>
+&lt;th style="text-align:left">相关工作&lt;/th>
+&lt;th style="text-align:left">Pure 的优势&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">MPI&lt;/td>
+&lt;td style="text-align:left">1. 利用多核节点内的共享内存提高性能；2. XPMEM 显著提升节点内性能； 3. ch4 网络库改进了 MPI 的共享内存性能；4. 优化 MPI 集合通信；5. MPI DMAPP 库优化集合通信，但仅支持部分集合和 8B 负载；6. 优化大规模全对全集合通信；7. MPI 单边消息 API 解耦；8. 数据移动和进程同步&lt;/td>
+&lt;td style="text-align:left">1. 为利用共享内存做了大量工作，但 Pure 在所有集合和负载大小上都很快；2. 单边消息 API 提供了通信计算重叠的机制，但 Pure 提供了更高层的机制&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">MPI 多线程&lt;/td>
+&lt;td style="text-align:left">1. 通过 MPI_THREAD_MULTIPLE 模式支持 rank 内多线程； 2. 大多数 MPI 实现使用全局锁来支持线程安全，导致线程序列化；3. MPI 4.0 标准通过 MPI+X 方法加强了对多线程的支持；4. MPI Fine-points 和 MPI Endpoints 引入了线程和 MPI+X 的概念&lt;/td>
+&lt;td style="text-align:left">1. 程序员认为在多线程代码中进行 MPI 调用很重要；2. MPI+X 方法的性能和可编程性尚不清楚；3. 与 MPI+OpenMP 相比，Pure 允许程序员使用统一的编程模型，在需要的地方引入任务&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">AMPI&lt;/td>
+&lt;td style="text-align:left">1. 基于 Charm++构建的 MPI 兼容库；2. 提供了更高层次的并行编程抽象；3. 通过最小的源代码更改提供性能提升&lt;/td>
+&lt;td style="text-align:left">1. Pure 在实验中优于 AMPI，可能是由于优化的消息传递和集合，以及更细粒度和低开销的负载均衡；2. AMPI SMP 也是基于线程的，但需要每个节点至少一个工作线程&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">PGAS 语言和并行框架&lt;/td>
+&lt;td style="text-align:left">1. PGAS 语言提供全局内存地址空间的抽象；2. Chapel 和 X10 扩展了 PGAS 方法，支持本地和远程异步任务创建；3. HPX 扩展了现代 C++标准以支持分布式操作；4. Legion 是一种数据中心并行编程系统；5. Kokkos, STAPL, BCL 等框架在应用程序和机器之间提供抽象层&lt;/td>
+&lt;td style="text-align:left">1. 与 Pure 类似，PGAS 模型采用 SPMD 编程风格，提供统一的编程模型，并通过引用局部性提高性能；2. 这些框架 通常利用现代 C++特性，但使用它们通常需要对现有应用程序进行重大重写&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>数十年来，由于其相对的简单性和性能优势，消息传递一直被视为并行编程的标准模型。然而，本文表明，消息传递与共享内存并非不可兼容。实际上，通过设计合适的库，可以在不牺牲大多数消息传递优点的前提下充分利用共享内存。&lt;/p></description></item><item><title>科研图表绘制</title><link>https://cuterwrite.top/p/science-plot/</link><pubDate>Tue, 27 Feb 2024 00:14:00 +0000</pubDate><guid>https://cuterwrite.top/p/science-plot/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_ee40c9cb9e33ffe888365e66e0a104dc195413-2024-02-28.webp" alt="Featured image of post 科研图表绘制" />&lt;h1 id="科研图表绘制">科研图表绘制&lt;/h1>
+&lt;h2 id="前置知识">前置知识&lt;/h2>
+&lt;h3 id="位图">位图&lt;/h3>
+&lt;p>又称为点阵图像、像素图或栅格图像，由像素点组成。这些点可以进行不同的排列和染色以构成图像。&lt;/p>
+&lt;p>&lt;strong>位图特点&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>位图图像善于重现颜色的细微层次，能够制作出色彩和亮度变化丰富的图像，颜色逼真，文件庞大，不能随意缩放；&lt;/li>
+&lt;li>图像尺寸越大，文件也就越大；图像色彩越丰富，文件也就越大。&lt;/li>
+&lt;li>打印和输出的精度是有限的；&lt;/li>
+&lt;li>&lt;strong>位图的文件格式&lt;/strong>：比如.tiff、.bmp、.gif、.jpg、.png、.psd 等。&lt;/li>
+&lt;li>&lt;strong>常用的位图编辑软件&lt;/strong>：Photoshop 等。&lt;/li>
+&lt;/ul>
+&lt;h3 id="矢量图">矢量图&lt;/h3>
+&lt;p>&lt;strong>矢量&lt;/strong>又称为“向量”，矢量图像中的图形元素（点和线段）称为对象，每个对象都是一个单独的个体，它具有大小、方向、轮廓、颜色和屏幕位置等属性。简单地说，矢量图形软件就是用数学的方法来绘制矩形等基本形状的。&lt;/p>
+&lt;p>&lt;strong>矢量图特点&lt;/strong>：&lt;/p>
+&lt;ul>
+&lt;li>可以无限放大，同时又不用担心失真；&lt;/li>
+&lt;li>矢量图可以轻松地转化为位图，而位图转化为矢量图就需要通过图像临摹之类的方式，但完美转成矢量图还是有些难度。&lt;/li>
+&lt;li>&lt;strong>矢量图的文件格式&lt;/strong> ：比如 Adobe Illustrator 的.AI、.EPS、.SVG，.PDF，AutoCAD 的.dwg 和.dxf，windows 标准图元文件*.wmf 和增强型图元文件*.emf 等。&lt;/li>
+&lt;li>&lt;strong>常用的矢量图编辑软件&lt;/strong>：Illustrator、CorelDraw、AutoCAD 等。&lt;/li>
+&lt;/ul>
+&lt;h3 id="像素dpi-与打印尺寸之间的关系">像素、DPI 与打印尺寸之间的关系&lt;/h3>
+&lt;p>图像分辨率，像素数和打印尺寸在数学上的关系为：像素=分辨率（DPI）× 打印尺寸（以英寸为单位）。&lt;/p>
+&lt;p>其中，DPI 为每平方英寸像素数目，也就是图像细节程度的度量。理解了上述概念我们就可以通过上述概念推测出图像的尺寸大小，比如说，我想打印一副 8 英寸 * 10 英寸，300DPI 的图片，那么怎样设置图像的像素长宽度呢？你只要简单地把这两者相乘就可以了，$8 \times 300=2400$ ，$10 \times 300=3000$ ，所以这幅图像的像素尺寸就是 $2400 \times 3000$ 。&lt;/p>
+&lt;h3 id="杂志要求">杂志要求&lt;/h3>
+&lt;p>这里以著名出版商&lt;a class="link" href="https://www.elsevier.com/authors/author-schemas/artwork-and-media-instructions/artwork-sizing" target="_blank" rel="noopener" >艾斯维尔（Elsevier）的要求
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+为例：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">TARGET SIZE&lt;/th>
+&lt;th style="text-align:center">Image Width&lt;/th>
+&lt;th style="text-align:center">Pixels at 300 dpi&lt;/th>
+&lt;th style="text-align:center">Pixels at 500 dpi&lt;/th>
+&lt;th style="text-align:center">Pixels at 1000 dpi&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">Minimal size&lt;/td>
+&lt;td style="text-align:center">30 mm (85 pt)&lt;/td>
+&lt;td style="text-align:center">354&lt;/td>
+&lt;td style="text-align:center">591&lt;/td>
+&lt;td style="text-align:center">1181&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Single column&lt;/td>
+&lt;td style="text-align:center">90 mm (255 pt)&lt;/td>
+&lt;td style="text-align:center">1063&lt;/td>
+&lt;td style="text-align:center">1772&lt;/td>
+&lt;td style="text-align:center">3543&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">1.5 column&lt;/td>
+&lt;td style="text-align:center">140 mm (397 pt)&lt;/td>
+&lt;td style="text-align:center">1654&lt;/td>
+&lt;td style="text-align:center">2756&lt;/td>
+&lt;td style="text-align:center">5512&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Double column (full width)&lt;/td>
+&lt;td style="text-align:center">190 mm (539 pt)&lt;/td>
+&lt;td style="text-align:center">2244&lt;/td>
+&lt;td style="text-align:center">3740&lt;/td>
+&lt;td style="text-align:center">7480&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>通过学习上面图像尺寸的内容我们可以知道打印尺寸与像素和 dpi 之间的关系。例如，表格中红色要求图像最小尺寸为 $30 \mathrm{mm}$ ，我们可以通过公式验证一下在 300dpi 分辨率下 354 像素宽打印出来的尺寸是不是 $30 \mathrm{mm}$ ：$354 \div 300 \times 2.54 \times 10 = 29.97 \mathrm{mm}$ ， 最后相乘的两个数据是把英寸换算成毫米，正好是 $30 \mathrm{mm}$ 。所以知道了上述关系我们就可以利用 Photoshop 来编辑我们的图片了；&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-4Fzft7fc5b5ace58ae9dd-2024-02-28.webp"
+alt="attachments-2018-07-4Fzft7fc5b5ace58ae9dd-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>例如一张图片，来自于 Mapman，用 Photoshop 打开，显示尺寸如下：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28.webp"
+alt="attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>由于图片尺寸太大，宽度 $124.99 \mathrm{cm}$ ，而且分辨率是 $72$ ，不符合杂志要求。这里利用上面学到的知识在不损失图片像素的情况下调整一下图片尺寸；&lt;/p>
+&lt;p>现在我们要把图片宽度调整到双栏的尺寸也就是 $19\mathrm{cm}$ ；通过公式：像素=分辨率（DPI）× 打印尺寸（以英寸为单位）&lt;/p>
+&lt;p>在像素不变的情况下，我们要提高分辨率，来缩小图片的打印尺寸，根据比例计算应该提高到多少 dpi： $124.99 \div 19 \times 72=473.6 \mathrm{dpi}$ ；&lt;/p>
+&lt;p>所以修改宽度和分辨率这两个数值就可以了，而且图片的像素数是不变的，达到了无损改变图片的大小；而且 473dpi 大于最小的 300dpi。&lt;/p>
+&lt;h2 id="matplotlib-python-库">Matplotlib Python 库&lt;/h2>
+&lt;p>作为 Python 生态中最基础且最广泛使用的数据可视化库，Matplotlib 提供了丰富的 2D 和 3D 图形绘制能力，尤其适合制作线图、柱状图、散点图等常见科研图表，并能高度定制化输出样式以符合各类学术期刊的标准。&lt;/p>
+&lt;p>它可以用来绘制各种静态，动态，交互式的图表。我们可以使用该工具将很多数据通过图表的形式更直观的呈现出来，包括绘制线图、散点图、等高线图、条形图、柱状图、3D 图形、甚至是图形动画等等。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/matplotlib-graphs-2048x1153-2024-02-28.webp"
+alt="matplotlib-graphs-2048x1153-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;hr>
+&lt;ul>
+&lt;li>Matplitlib Cheat Sheet&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cheatsheets-1-2024-02-28.webp"
+alt="cheatsheets-1-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="seaborn-python-库">Seaborn Python 库&lt;/h2>
+&lt;p>构建于 Matplotlib 之上，Seaborn 进一步强化了统计图表的功能，它内置了许多高级统计图表样式，如热力图、箱型图和时间序列分析图表，使复杂数据关系的展现更为直观易读。既然是基于 matplotlib，所以 seaborn 的很多图表接口和参数设置与其很是接近，使得作图更加方便快捷。即便是没有什么基础的人，也能通过极简的代码，做出具有分析价值而又十分美观的图形。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Seaborn-gallery-2024-02-28.webp"
+alt="Seaborn-gallery-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;hr>
+&lt;ul>
+&lt;li>Seaborn Cheat Sheet
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Python_Seaborn_Cheat_Sheet_q074wv-2024-02-28.webp"
+alt="Python_Seaborn_Cheat_Sheet_q074wv-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;/li>
+&lt;/ul>
+&lt;hr>
+&lt;ul>
+&lt;li>优秀教程：&lt;a class="link" href="https://zhuanlan.zhihu.com/p/81553421" target="_blank" rel="noopener" >数据可视化，Seaborn 画图原来这么好看
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="visio-矢量图软件框架流程绘制与算法结构">Visio 矢量图软件（框架流程绘制与算法结构）&lt;/h2>
+&lt;p>对于非数据密集型但逻辑严密的图表设计，如实验流程图、系统架构图或算法流程图，Microsoft Visio 凭借其强大的矢量编辑能力和海量预设模板，成为了构建清晰、规范流程图的理想选择。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/data-graphics-2024-02-28.webp"
+alt="data-graphics-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="origin-矢量图软件数学分析与函数绘制">Origin 矢量图软件（数学分析与函数绘制）&lt;/h2>
+&lt;p>Origin 是由 OriginLab 公司开发的一个科学绘图、数据分析软件，支持在 Microsoft Windows 下运行。Origin 支持各种各样的 2D/3D 图形。Origin 中的数据分析功能包括统计，信号处理，曲线拟合以及峰值分析。Origin 中的曲线拟合是采用基于 Levernberg-Marquardt 算法（LMA）的非线性最小二乘法拟合。Origin 强大的数据导入功能，支持多种格式的数据，包括 ASCII、Excel、NI TDM、DIADem、NetCDF、SPC 等等。图形输出格式多样，例如 JPEG，GIF，EPS，TIFF 等。内置的查询工具可通过 ADO 访问数据库数据。&lt;/p>
+&lt;p>在物理、化学、生物等领域享有盛誉，Origin 专为科研数据分析打造，以其强大的数学分析和函数绘制能力著称，特别适用于绘制精密的信号曲线、频谱分析图和其他复杂科研图形。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Picture1_revised%20text-2024-02-28.webp"
+alt="Picture1_revised text-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="aiadobe-illustrator矢量图软件">AI（Adobe Illustrator）矢量图软件&lt;/h2>
+&lt;p>作为行业标准级矢量图形处理软件，Illustrator 不仅适用于高精度的出版级图表设计，还能创建高质量的科学插图，确保在任何尺寸下都能保持清晰细腻的效果。它是一种应用于出版、多媒体和在线图像的工业标准矢量插画的软件。该软件主要应用于印刷出版、海报书籍排版、专业插画、多媒体图像处理和互联网页面的制作等，也可以为线稿提供较高的精度和控制，适合生产任何小型设计到大型的复杂项目。&lt;/p>
+&lt;p>在图表绘制中，主要应用在：直接绘图-计科和控制类的用的很少，有生化环材方向的同学利用 AI 实现细胞结构，心室高亮等操作；整合之前导出的单个矢量图；将非矢量图转化为矢量图&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28.webp"
+alt="attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28.webp"
+alt="attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;h2 id="inkscape-矢量图软件">Inkscape 矢量图软件&lt;/h2>
+&lt;p>AI 的平替版，优点在于&lt;strong>开源免费&lt;/strong>。 作为开源界的矢量图形编辑器翘楚，Inkscape 提供了一套完整的 SVG 编辑工具，科研人员可以免费使用它来创作复杂的矢量图表，并确保跨平台兼容性和无损缩放性。官方中文地址：&lt;a class="link" href="https://inkscape.org/zh-hans/" target="_blank" rel="noopener" >Inkscape
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/INKSCAPE-2024-02-28.webp"
+alt="INKSCAPE-2024-02-28" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;hr>
+&lt;ul>
+&lt;li>
+&lt;p>详细介绍：&lt;a class="link" href="https://zhuanlan.zhihu.com/p/642526806" target="_blank" rel="noopener" >Inkscape - 免费开源、跨平台的矢量图形设计软件，代替 Adobe Illustrator (AI) 和 CorelDRAW
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>推荐视频教程：&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;div class="video-wrapper">
+&lt;iframe src="https://player.bilibili.com/player.html?autoplay=0&amp;as_wide=1&amp;amp;high_quality=1&amp;amp;page=1&amp;bvid=BV1mA411e7FM"
+scrolling="no"
+frameborder="no"
+framespacing="0"
+allowfullscreen="true"
+>
+&lt;/iframe>
+&lt;/div></description></item></channel></rss>
