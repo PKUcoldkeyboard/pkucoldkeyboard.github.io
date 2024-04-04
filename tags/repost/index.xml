@@ -1,4 +1,70 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 25 Feb 2024 22:04:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 03 Apr 2024 16:17:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>知乎专栏：6. RDMA 之 Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们假设一种场景，同时也顺便温习一下 RDMA WRITE 操作的流程：&lt;/p>
+&lt;p>如下图所示，A 节点想要通过 IB 协议向 B 节点的内存中写入一段数据，上层应用给本节点的 RDMA 网卡下发了一个 WQE，WQE 中包含了源内存地址、目的内存地址、数据长度和秘钥等信息，然后硬件会从内存中取出数据，组包发送到对端网卡。B 节点的网卡收到数据后，解析到其中的目的内存地址，把数据写入到本节点的内存中。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_1-2024-04-04.webp"
+alt="6_1-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>那么问题来了，APP 提供的地址都是虚拟地址（Virtual Address，下文称 VA），经过 MMU 的转换才能得到真实的物理地址（Physical Address，下文称 PA），我们的&lt;strong>RDMA 网卡是如何得到 PA 从而去内存中拿到数据的呢&lt;/strong>？就算网卡知道上哪去取数据，&lt;strong>如果用户恶意指定了一个非法的 VA，那网卡岂不是有可能被“指使”去读写关键内存&lt;/strong>？&lt;/p>
+&lt;p>为了解决上面的问题，IB 协议提出了 MR 的概念。&lt;/p>
+&lt;h2 id="mr-是什么">MR 是什么&lt;/h2>
+&lt;p>MR 全称为 Memory Region，指的是由 RDMA 软件层在内存中规划出的一片区域，用于存放收发的数据。IB 协议中，用户在申请完用于存放数据的内存区域之后，都需要通过调用 IB 框架提供的 API 注册 MR，才能让 RDMA 网卡访问这片内存区域。由下图可以看到，MR 就是一片特殊的内存而已：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_2-2024-04-04.webp"
+alt="6_2-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>在对 IB 协议进行相关描述时，我们通常称 RDMA 硬件为&lt;strong>HCA（Host Channel Adapter， 宿主通道适配器）&lt;/strong>，IB 协议中对其的定义是“处理器和 I/O 单元中能够产生和消耗数据包的 IB 设备”，为了与协议保持一致，我们在包括本文及之后的文章中都称硬件部分为 HCA。&lt;/p>
+&lt;h2 id="为什么要注册-mr">为什么要注册 MR&lt;/h2>
+&lt;p>下面我们来看一下 MR 是如何解决本文开篇提出的两个问题的：&lt;/p>
+&lt;h3 id="1-注册-mr-以实现虚拟地址与物理地址转换">1. 注册 MR 以实现虚拟地址与物理地址转换&lt;/h3>
+&lt;p>我们都知道 APP 只能看到虚拟地址，而且会在 WQE 中直接把 VA 传递给 HCA（既包括本端的源 VA，也包括对端的目的 VA）。现在的 CPU 都有 MMU 和页表这一“利器”来进行 VA 和 PA 之间的转换，而 HCA 要么直接连接到总线上，要么通过 IOMMU/SMMU 做地址转换后连接到总线上，它是“看不懂”APP 提供的 VA 所对应的真实物理内存地址的。&lt;/p>
+&lt;p>所以注册 MR 的过程中，硬件会在内存中创建并填写一个 VA to PA 的映射表，这样需要的时候就能通过查表把 VA 转换成 PA 了。我们还是提供一个具体的例子来讲一下这个过程：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_3-2024-04-04.webp"
+alt="6_3-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>现在假设左边的节点向右边的节点发起了 RDMA WRITE 操作，即直接向右节点的内存区域中写入数据。假设图中两端都已经完成了注册 MR 的动作，MR 即对应图中的“数据 Buffer”，同时也创建好了 VA-&amp;gt;PA 的映射表。&lt;/p>
+&lt;ul>
+&lt;li>首先本端 APP 会下发一个 WQE 给 HCA，告知 HCA，用于存放待发送数据的本地 Buffer 的虚拟地址，以及即将写入的对端数据 Buffer 的虚拟地址。&lt;/li>
+&lt;li>本端 HCA 查询 VA-&amp;gt;PA 映射表，得知待发数据的物理地址，然后从内存中拿到数据，组装数据包并发送出去。&lt;/li>
+&lt;li>对端 HCA 收到了数据包，从中解析出了目的 VA。&lt;/li>
+&lt;li>对端 HCA 通过存储在本地内存中的 VA-&amp;gt;PA 映射表，查到真实的物理地址，核对权限无误后，将数据存放到内存中。&lt;/li>
+&lt;/ul>
+&lt;p>再次强调一下，对于右侧节点来说，&lt;strong>无论是地址转换还是写入内存，完全不用其 CPU 的参与&lt;/strong>。&lt;/p>
+&lt;h3 id="2-mr-可以控制-hca-访问内存的权限">2. MR 可以控制 HCA 访问内存的权限&lt;/h3>
+&lt;p>因为 HCA 访问的内存地址来自于用户，如果用户传入了一个非法的地址（比如系统内存或者其他进程使用的内存），HCA 对其进行读写可能造成信息泄露或者内存覆盖。所以我们需要一种机制来确保 HCA 只能访问已被授权的、安全的内存地址。IB 协议中，APP 在为数据交互做准备的阶段，需要执行注册 MR 的动作。&lt;/p>
+&lt;p>而用户注册 MR 的动作会产生两把钥匙——L_KEY（Local Key）和 R_KEY（Remote Key），说是钥匙，它们的实体其实就是一串序列而已。它们将分别用于保障对于本端和远端内存区域的访问权限。下面两张图分别是描述 L_Key 和 R_Key 的作用的示意图：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_4-2024-04-04.webp"
+alt="6_4-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>L_Key&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_5-2024-04-04.webp"
+alt="6_5-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>R_Key&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这里大家可能会有疑问，本端是如何知道对端节点的可用 VA 和对应的 R_Key 的？其实两端的节点在真正的 RDMA 通信之前，都会通过某些方式先建立一条链路（可能是 Socket 连接，也可能是 CM 连接）并通过这条链路交换一些 RDMA 通信所必须的信息（VA，Key，QPN 等），我们称这一过程叫做“建链”和“握手”。我将在后面的文章中详细介绍。&lt;/p>
+&lt;p>除了上面两个点之外，注册 MR 还有个重要的作用：&lt;/p>
+&lt;h3 id="3-mr-可以避免换页">3. MR 可以避免换页&lt;/h3>
+&lt;p>因为物理内存是有限的，所以操作系统通过换页机制来暂时把某个进程不用的内存内容保存到硬盘中。当该进程需要使用时，再通过缺页中断把硬盘中的内容搬移回内存，这一过程几乎必然导致 VA-PA 的映射关系发生改变。&lt;/p>
+&lt;p>由于 HCA 经常会绕过 CPU 对用户提供的 VA 所指向的物理内存区域进行读写，如果前后的 VA-PA 映射关系发生改变，那么我们在前文提到的 VA-&amp;gt;PA 映射表将失去意义，HCA 将无法找到正确的物理地址。&lt;/p>
+&lt;p>为了防止换页所导致的 VA-PA 映射关系发生改变，注册 MR 时会 &amp;ldquo;Pin&amp;rdquo; 住这块内存（亦称“锁页”），即锁定 VA-PA 的映射关系。也就是说，MR 这块内存区域会长期存在于物理内存中不被换页，直到完成通信之后，用户主动注销这片 MR。&lt;/p>
+&lt;p>好了，至此我们介绍完了 MR 的概念和作用，下一篇文章我将给大家介绍一下 PD（Protection Domain，保护域）的概念。&lt;/p>
+&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;p>下面是一个简单的 RDMA 程序，展示了如何注册 MR：&lt;/p>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
+int main() {
+// 省略初始化过程...
+struct ibv_mr *mr;
+mr = ibv_reg_mr(pd, buf, 1024, IBV_ACCESS_LOCAL_WRITE |
+IBV_ACCESS_REMOTE_WRITE);
+// 获取 L_Key 和 R_Key
+uint32_t lkey = mr-&amp;gt;lkey;
+uint32_t rkey = mr-&amp;gt;rkey;
+// 省略其它代码...
+}
+&lt;/code>&lt;/pre></description></item><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/144099636">&lt;cite>知乎专栏：5. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>

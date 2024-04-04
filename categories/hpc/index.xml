@@ -1,4 +1,70 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 25 Feb 2024 22:04:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 03 Apr 2024 16:17:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>知乎专栏：6. RDMA 之 Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们假设一种场景，同时也顺便温习一下 RDMA WRITE 操作的流程：&lt;/p>
+&lt;p>如下图所示，A 节点想要通过 IB 协议向 B 节点的内存中写入一段数据，上层应用给本节点的 RDMA 网卡下发了一个 WQE，WQE 中包含了源内存地址、目的内存地址、数据长度和秘钥等信息，然后硬件会从内存中取出数据，组包发送到对端网卡。B 节点的网卡收到数据后，解析到其中的目的内存地址，把数据写入到本节点的内存中。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_1-2024-04-04.webp"
+alt="6_1-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>那么问题来了，APP 提供的地址都是虚拟地址（Virtual Address，下文称 VA），经过 MMU 的转换才能得到真实的物理地址（Physical Address，下文称 PA），我们的&lt;strong>RDMA 网卡是如何得到 PA 从而去内存中拿到数据的呢&lt;/strong>？就算网卡知道上哪去取数据，&lt;strong>如果用户恶意指定了一个非法的 VA，那网卡岂不是有可能被“指使”去读写关键内存&lt;/strong>？&lt;/p>
+&lt;p>为了解决上面的问题，IB 协议提出了 MR 的概念。&lt;/p>
+&lt;h2 id="mr-是什么">MR 是什么&lt;/h2>
+&lt;p>MR 全称为 Memory Region，指的是由 RDMA 软件层在内存中规划出的一片区域，用于存放收发的数据。IB 协议中，用户在申请完用于存放数据的内存区域之后，都需要通过调用 IB 框架提供的 API 注册 MR，才能让 RDMA 网卡访问这片内存区域。由下图可以看到，MR 就是一片特殊的内存而已：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_2-2024-04-04.webp"
+alt="6_2-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>在对 IB 协议进行相关描述时，我们通常称 RDMA 硬件为&lt;strong>HCA（Host Channel Adapter， 宿主通道适配器）&lt;/strong>，IB 协议中对其的定义是“处理器和 I/O 单元中能够产生和消耗数据包的 IB 设备”，为了与协议保持一致，我们在包括本文及之后的文章中都称硬件部分为 HCA。&lt;/p>
+&lt;h2 id="为什么要注册-mr">为什么要注册 MR&lt;/h2>
+&lt;p>下面我们来看一下 MR 是如何解决本文开篇提出的两个问题的：&lt;/p>
+&lt;h3 id="1-注册-mr-以实现虚拟地址与物理地址转换">1. 注册 MR 以实现虚拟地址与物理地址转换&lt;/h3>
+&lt;p>我们都知道 APP 只能看到虚拟地址，而且会在 WQE 中直接把 VA 传递给 HCA（既包括本端的源 VA，也包括对端的目的 VA）。现在的 CPU 都有 MMU 和页表这一“利器”来进行 VA 和 PA 之间的转换，而 HCA 要么直接连接到总线上，要么通过 IOMMU/SMMU 做地址转换后连接到总线上，它是“看不懂”APP 提供的 VA 所对应的真实物理内存地址的。&lt;/p>
+&lt;p>所以注册 MR 的过程中，硬件会在内存中创建并填写一个 VA to PA 的映射表，这样需要的时候就能通过查表把 VA 转换成 PA 了。我们还是提供一个具体的例子来讲一下这个过程：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_3-2024-04-04.webp"
+alt="6_3-2024-04-04" width="auto" loading="lazy"/>
+&lt;/figure>
+&lt;p>现在假设左边的节点向右边的节点发起了 RDMA WRITE 操作，即直接向右节点的内存区域中写入数据。假设图中两端都已经完成了注册 MR 的动作，MR 即对应图中的“数据 Buffer”，同时也创建好了 VA-&amp;gt;PA 的映射表。&lt;/p>
+&lt;ul>
+&lt;li>首先本端 APP 会下发一个 WQE 给 HCA，告知 HCA，用于存放待发送数据的本地 Buffer 的虚拟地址，以及即将写入的对端数据 Buffer 的虚拟地址。&lt;/li>
+&lt;li>本端 HCA 查询 VA-&amp;gt;PA 映射表，得知待发数据的物理地址，然后从内存中拿到数据，组装数据包并发送出去。&lt;/li>
+&lt;li>对端 HCA 收到了数据包，从中解析出了目的 VA。&lt;/li>
+&lt;li>对端 HCA 通过存储在本地内存中的 VA-&amp;gt;PA 映射表，查到真实的物理地址，核对权限无误后，将数据存放到内存中。&lt;/li>
+&lt;/ul>
+&lt;p>再次强调一下，对于右侧节点来说，&lt;strong>无论是地址转换还是写入内存，完全不用其 CPU 的参与&lt;/strong>。&lt;/p>
+&lt;h3 id="2-mr-可以控制-hca-访问内存的权限">2. MR 可以控制 HCA 访问内存的权限&lt;/h3>
+&lt;p>因为 HCA 访问的内存地址来自于用户，如果用户传入了一个非法的地址（比如系统内存或者其他进程使用的内存），HCA 对其进行读写可能造成信息泄露或者内存覆盖。所以我们需要一种机制来确保 HCA 只能访问已被授权的、安全的内存地址。IB 协议中，APP 在为数据交互做准备的阶段，需要执行注册 MR 的动作。&lt;/p>
+&lt;p>而用户注册 MR 的动作会产生两把钥匙——L_KEY（Local Key）和 R_KEY（Remote Key），说是钥匙，它们的实体其实就是一串序列而已。它们将分别用于保障对于本端和远端内存区域的访问权限。下面两张图分别是描述 L_Key 和 R_Key 的作用的示意图：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_4-2024-04-04.webp"
+alt="6_4-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>L_Key&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_5-2024-04-04.webp"
+alt="6_5-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+&lt;h4>R_Key&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这里大家可能会有疑问，本端是如何知道对端节点的可用 VA 和对应的 R_Key 的？其实两端的节点在真正的 RDMA 通信之前，都会通过某些方式先建立一条链路（可能是 Socket 连接，也可能是 CM 连接）并通过这条链路交换一些 RDMA 通信所必须的信息（VA，Key，QPN 等），我们称这一过程叫做“建链”和“握手”。我将在后面的文章中详细介绍。&lt;/p>
+&lt;p>除了上面两个点之外，注册 MR 还有个重要的作用：&lt;/p>
+&lt;h3 id="3-mr-可以避免换页">3. MR 可以避免换页&lt;/h3>
+&lt;p>因为物理内存是有限的，所以操作系统通过换页机制来暂时把某个进程不用的内存内容保存到硬盘中。当该进程需要使用时，再通过缺页中断把硬盘中的内容搬移回内存，这一过程几乎必然导致 VA-PA 的映射关系发生改变。&lt;/p>
+&lt;p>由于 HCA 经常会绕过 CPU 对用户提供的 VA 所指向的物理内存区域进行读写，如果前后的 VA-PA 映射关系发生改变，那么我们在前文提到的 VA-&amp;gt;PA 映射表将失去意义，HCA 将无法找到正确的物理地址。&lt;/p>
+&lt;p>为了防止换页所导致的 VA-PA 映射关系发生改变，注册 MR 时会 &amp;ldquo;Pin&amp;rdquo; 住这块内存（亦称“锁页”），即锁定 VA-PA 的映射关系。也就是说，MR 这块内存区域会长期存在于物理内存中不被换页，直到完成通信之后，用户主动注销这片 MR。&lt;/p>
+&lt;p>好了，至此我们介绍完了 MR 的概念和作用，下一篇文章我将给大家介绍一下 PD（Protection Domain，保护域）的概念。&lt;/p>
+&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;p>下面是一个简单的 RDMA 程序，展示了如何注册 MR：&lt;/p>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
+int main() {
+// 省略初始化过程...
+struct ibv_mr *mr;
+mr = ibv_reg_mr(pd, buf, 1024, IBV_ACCESS_LOCAL_WRITE |
+IBV_ACCESS_REMOTE_WRITE);
+// 获取 L_Key 和 R_Key
+uint32_t lkey = mr-&amp;gt;lkey;
+uint32_t rkey = mr-&amp;gt;rkey;
+// 省略其它代码...
+}
+&lt;/code>&lt;/pre></description></item><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/144099636">&lt;cite>知乎专栏：5. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1609,147 +1675,4 @@ alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="
 &lt;/figure>
 &lt;p>这一过程中的数据流向大致如上图所示。通过和 Socket 的对比，我们可以明显看到，&lt;strong>数据收发绕过了内核并且数据交换过程并不需要 CPU 参与，报文的组装和解析是由硬件完成的&lt;/strong>。&lt;/p>
 &lt;p>通过上面的对比，我们可以明显的体会到 RDMA 的优势，既将 CPU 从数据包封装和解析中解放出来，又减少了 CPU 拷贝数据的功率和时间损耗。需要注意的是，本文只描述了 SEND-RECV 流程，而 RDMA 技术所独有的，效率更高的 WRITE/READ 语义将在后续文章中介绍。&lt;/p>
-&lt;p>下一篇我们将介绍一些 RDMA 技术中的重要且基本的概念。&lt;/p></description></item><item><title>编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南</title><link>https://cuterwrite.top/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post 编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南" />&lt;h1 id="编译安装-ucx-1150-与-openmpi-500详尽指南">编译安装 UCX 1.15.0 与 OpenMPI 5.0.0：详尽指南&lt;/h1>
-&lt;h2 id="一环境准备">一、环境准备&lt;/h2>
-&lt;p>首先，请确保您的系统满足以下基本要求：&lt;/p>
-&lt;ol>
-&lt;li>操作系统：支持 Linux（如 Ubuntu 20.04 LTS）或其他类 Unix 操作系统。&lt;/li>
-&lt;li>开发工具包：安装必要的构建工具和库，例如 &lt;code>build-essential&lt;/code> ，&lt;code>libnuma-dev&lt;/code> ，&lt;code>pkg-config&lt;/code> 等。&lt;/li>
-&lt;li>内核版本：对于最佳性能，建议使用最新稳定版内核。&lt;/li>
-&lt;li>需要支持 RDMA 的硬件环境或虚拟环境。&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">sudo apt-get update
-sudo apt-get install -y build-essential libnuma-dev pkg-config
-&lt;/code>&lt;/pre>
-&lt;h2 id="二编译安装-ucx-1150">二、编译安装 UCX 1.15.0&lt;/h2>
-&lt;ol>
-&lt;li>下载 UCX 源码包：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">wget https://github.com/openucx/ucx/releases/download/v1.15.0/ucx-1.15.0.tar.gz
-tar -xzvf ucx-1.15.0.tar.gz
-cd ucx-1.15.0
-&lt;/code>&lt;/pre>
-&lt;ol start="2">
-&lt;li>配置 UCX 编译选项：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
-../configure --prefix=/root/software/ucx/1.5.0
-&lt;/code>&lt;/pre>
-&lt;p>您可以根据实际需求添加更多配置选项，比如指定特定的网卡类型或者启用特定的功能。&lt;/p>
-&lt;ol start="3">
-&lt;li>编译并安装：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">make -j 8
-make install
-&lt;/code>&lt;/pre>
-&lt;ol start="4">
-&lt;li>UCX 架构说明&lt;/li>
-&lt;/ol>
-&lt;ul>
-&lt;li>UCX 1.15.0 的架构如下图所示：&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Architecture-2024-02-03.webp"
-alt="Architecture-2024-02-03" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>组件&lt;/th>
-&lt;th>角色&lt;/th>
-&lt;th>说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>UCP&lt;/td>
-&lt;td>Protocol&lt;/td>
-&lt;td>实现高级抽象，如标记匹配、流、连接协商和建立、多轨以及处理不同的内存类型。&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>UCT&lt;/td>
-&lt;td>Transport&lt;/td>
-&lt;td>实现低级通信原语，如活动消息、远程内存访问和原子操作。&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>UCM&lt;/td>
-&lt;td>Memory&lt;/td>
-&lt;td>通用的数据结构、算法和系统实用程序的集合。&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>UCP&lt;/td>
-&lt;td>Protocol&lt;/td>
-&lt;td>截获内存注册缓存使用的内存分配和释放事件。&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="三编译安装-openmpi-500">三、编译安装 OpenMPI 5.0.0&lt;/h2>
-&lt;ol>
-&lt;li>下载 OpenMPI 源码包：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0.tar.gz
-tar -xzvf openmpi-5.0.0.tar.gz
-cd openmpi-5.0.0
-&lt;/code>&lt;/pre>
-&lt;ol start="2">
-&lt;li>配置 OpenMPI 编译选项，指定使用 UCX 作为传输层：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
-../configure --without-hcoll \
---enable-python-bindings \
---enable-mpirun-prefix-by-default \
---prefix=/root/software/openmpi/5.0.0-ucx-1.15.0 \
---with-ucx=/root/software/ucx/1.15.0 \
---enable-mca-no-build=btl-uct
-&lt;/code>&lt;/pre>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;ul>
-&lt;li>对于 OpenMPI 4.0 及更高版本，&lt;code>btl_uct&lt;/code> 组件可能存在编译错误。该组件对于使用 UCX 来说并不重要；因此可以通过 &lt;code>--enable-mca-no-build=btl-uct&lt;/code> 禁用：&lt;/li>
-&lt;li>&lt;code>--enable-python-bindings&lt;/code> 选项用于启用 Python 绑定。&lt;/li>
-&lt;li>&lt;code>--enable-mpirun-prefix-by-default&lt;/code> 选项用于在使用 &lt;code>mpirun&lt;/code> 启动 MPI 程序时自动添加 &lt;code>--prefix&lt;/code> 选项。&lt;/li>
-&lt;li>&lt;code>--without-hcoll&lt;/code> 选项用于禁用 HCOLL 组件。不设置编译时会报错 &lt;code>cannot find -lnuma&lt;/code> 与 &lt;code>cannot find -ludev&lt;/code> 的错误。&lt;/li>
-&lt;/ul>&lt;/div>
-&lt;p>最后配置选项如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ompi-config-2024-02-03.webp"
-alt="ompi-config-2024-02-03" width="auto" loading="lazy"/>
-&lt;/figure>
-&lt;ol start="3">
-&lt;li>编译并安装：&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">make -j 8
-make install
-&lt;/code>&lt;/pre>
-&lt;h2 id="四验证安装与设置环境变量">四、验证安装与设置环境变量&lt;/h2>
-&lt;p>安装完成后，可以通过运行简单的 MPI 程序来验证 UCX 和 OpenMPI 是否成功集成：&lt;/p>
-&lt;pre>&lt;code class="language-bash">mpirun -np 2 --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
-&lt;/code>&lt;/pre>
-&lt;p>（如果在 root 上运行则需要加上 &lt;code>--allow-run-as-root&lt;/code> 选项，如果有 RDMA 设备可以设置 &lt;code>-x UCX_NET_DEVICES&lt;/code> ）&lt;/p>
-&lt;div class="notice notice-tip" >
-&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>如果需要结合 &lt;code>Slurm&lt;/code> 使用，可以参考 &lt;a class="link" href="https://github.com/open-mpi/ompi/blob/v5.0.x/docs/launching-apps/slurm.rst" target="_blank" rel="noopener" >Launching with Slurm
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-。&lt;/p>
-&lt;p>其中一种方式就是，先通过 &lt;code>salloc&lt;/code> 分配资源，然后在分配的资源上运行 &lt;code>mpirun&lt;/code> 命令。此时 &lt;code>--hostfile&lt;/code> 、 &lt;code>--host&lt;/code> 、 &lt;code>-n&lt;/code> 等是不需要设置的，例如：&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-bash">salloc -n 2
-mpirun --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
-&lt;/code>&lt;/pre>
-&lt;p>如果一切正常，您会看到两台主机名的输出。为了方便使用，可以将 OpenMPI 的 bin 目录等添加到系统 PATH 环境变量中：&lt;/p>
-&lt;pre>&lt;code class="language-bash">vim ~/.bashrc
-export PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/bin:$PATH
-export LD_LIBRARY_PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/lib:$LD_LIBRARY_PATH
-export CPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/include:$CPATH
-export MANPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/share/man:$MANPATH
-source ~/.bashrc
-&lt;/code>&lt;/pre>
-&lt;h2 id="五ucx-性能测试">五、UCX 性能测试&lt;/h2>
-&lt;p>发送方：&lt;/p>
-&lt;pre>&lt;code class="language-bash">ucx_perftest -c 0 -d mlx5_0:1
-&lt;/code>&lt;/pre>
-&lt;p>接收方：&lt;/p>
-&lt;pre>&lt;code class="language-bash">ucx_perftest -c 1 -d mlx5_0:1 &amp;lt;server_hostname&amp;gt; -t tag_lat
-&lt;/code>&lt;/pre>
-&lt;p>总之，通过以上步骤，我们已经成功地从源代码编译并安装了 UCX 1.15.0 和 OpenMPI 5.0.0，并将其整合为一个高效稳定的高性能计算环境。在实际应用中，可以根据具体需求进一步优化配置以获得更优性能。&lt;/p></description></item></channel></rss>
+&lt;p>下一篇我们将介绍一些 RDMA 技术中的重要且基本的概念。&lt;/p></description></item></channel></rss>
