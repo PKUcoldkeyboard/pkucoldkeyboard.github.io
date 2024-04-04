@@ -5,14 +5,14 @@
 &lt;p>我们假设一种场景，同时也顺便温习一下 RDMA WRITE 操作的流程：&lt;/p>
 &lt;p>如下图所示，A 节点想要通过 IB 协议向 B 节点的内存中写入一段数据，上层应用给本节点的 RDMA 网卡下发了一个 WQE，WQE 中包含了源内存地址、目的内存地址、数据长度和秘钥等信息，然后硬件会从内存中取出数据，组包发送到对端网卡。B 节点的网卡收到数据后，解析到其中的目的内存地址，把数据写入到本节点的内存中。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_1-2024-04-04.webp"
-alt="6_1-2024-04-04" width="auto" loading="lazy"/>
+alt="6_1-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>那么问题来了，APP 提供的地址都是虚拟地址（Virtual Address，下文称 VA），经过 MMU 的转换才能得到真实的物理地址（Physical Address，下文称 PA），我们的&lt;strong>RDMA 网卡是如何得到 PA 从而去内存中拿到数据的呢&lt;/strong>？就算网卡知道上哪去取数据，&lt;strong>如果用户恶意指定了一个非法的 VA，那网卡岂不是有可能被“指使”去读写关键内存&lt;/strong>？&lt;/p>
 &lt;p>为了解决上面的问题，IB 协议提出了 MR 的概念。&lt;/p>
 &lt;h2 id="mr-是什么">MR 是什么&lt;/h2>
 &lt;p>MR 全称为 Memory Region，指的是由 RDMA 软件层在内存中规划出的一片区域，用于存放收发的数据。IB 协议中，用户在申请完用于存放数据的内存区域之后，都需要通过调用 IB 框架提供的 API 注册 MR，才能让 RDMA 网卡访问这片内存区域。由下图可以看到，MR 就是一片特殊的内存而已：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_2-2024-04-04.webp"
-alt="6_2-2024-04-04" width="auto" loading="lazy"/>
+alt="6_2-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>在对 IB 协议进行相关描述时，我们通常称 RDMA 硬件为&lt;strong>HCA（Host Channel Adapter， 宿主通道适配器）&lt;/strong>，IB 协议中对其的定义是“处理器和 I/O 单元中能够产生和消耗数据包的 IB 设备”，为了与协议保持一致，我们在包括本文及之后的文章中都称硬件部分为 HCA。&lt;/p>
 &lt;h2 id="为什么要注册-mr">为什么要注册 MR&lt;/h2>
@@ -21,7 +21,7 @@ alt="6_2-2024-04-04" width="auto" loading="lazy"/>
 &lt;p>我们都知道 APP 只能看到虚拟地址，而且会在 WQE 中直接把 VA 传递给 HCA（既包括本端的源 VA，也包括对端的目的 VA）。现在的 CPU 都有 MMU 和页表这一“利器”来进行 VA 和 PA 之间的转换，而 HCA 要么直接连接到总线上，要么通过 IOMMU/SMMU 做地址转换后连接到总线上，它是“看不懂”APP 提供的 VA 所对应的真实物理内存地址的。&lt;/p>
 &lt;p>所以注册 MR 的过程中，硬件会在内存中创建并填写一个 VA to PA 的映射表，这样需要的时候就能通过查表把 VA 转换成 PA 了。我们还是提供一个具体的例子来讲一下这个过程：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_3-2024-04-04.webp"
-alt="6_3-2024-04-04" width="auto" loading="lazy"/>
+alt="6_3-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>现在假设左边的节点向右边的节点发起了 RDMA WRITE 操作，即直接向右节点的内存区域中写入数据。假设图中两端都已经完成了注册 MR 的动作，MR 即对应图中的“数据 Buffer”，同时也创建好了 VA-&amp;gt;PA 的映射表。&lt;/p>
 &lt;ul>
@@ -35,12 +35,12 @@ alt="6_3-2024-04-04" width="auto" loading="lazy"/>
 &lt;p>因为 HCA 访问的内存地址来自于用户，如果用户传入了一个非法的地址（比如系统内存或者其他进程使用的内存），HCA 对其进行读写可能造成信息泄露或者内存覆盖。所以我们需要一种机制来确保 HCA 只能访问已被授权的、安全的内存地址。IB 协议中，APP 在为数据交互做准备的阶段，需要执行注册 MR 的动作。&lt;/p>
 &lt;p>而用户注册 MR 的动作会产生两把钥匙——L_KEY（Local Key）和 R_KEY（Remote Key），说是钥匙，它们的实体其实就是一串序列而已。它们将分别用于保障对于本端和远端内存区域的访问权限。下面两张图分别是描述 L_Key 和 R_Key 的作用的示意图：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_4-2024-04-04.webp"
-alt="6_4-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+alt="6_4-2024-04-04" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>L_Key&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_5-2024-04-04.webp"
-alt="6_5-2024-04-04" width="auto" loading="lazy"/>&lt;figcaption>
+alt="6_5-2024-04-04" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>R_Key&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
@@ -81,17 +81,17 @@ uint32_t rkey = mr-&amp;gt;rkey;
 &lt;h2 id="应答机制">应答机制&lt;/h2>
 &lt;p>假设 A 给 B 发了一个数据包，A 怎样才能知道 B 收到了呢，自然是 B 回复一个“我收到了”消息给 A。在通信领域我们一般称这个回复为应答包或者 ACK（Acknowledge）。在 IB 协议的可靠服务类型中，使用了应答机制来保证数据包被对方收到。IB 的可靠服务类型中，接收方不是每一个包都必须回复，也可以一次回复多个包的 ACK，以后我们再展开讨论。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ib_ack-2024-02-26.webp"
-alt="ib_ack-2024-02-26" width="auto" loading="lazy"/>
+alt="ib_ack-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="数据校验机制">数据校验机制&lt;/h2>
 &lt;p>这个比较好理解，发端会对 Header 和 Payload（有效载荷，也就是真正要收发的数据）通过一定的算法得到一个校验值放到数据包的末尾。对端收到数据包后，也会用相同的算法计算出校验值，然后与数据包中的校验值比对，如果不一致，说明数据中包含错误（一般是链路问题导致的），那么接收端就会丢弃这个数据包。IB 协议使用的 CRC 校验，本文对 CRC 不做展开介绍。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crc-2024-02-26.png"
-alt="crc-2024-02-26" width="auto" loading="lazy"/>
+alt="crc-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="保序机制">保序机制&lt;/h2>
 &lt;p>保序指的是，保证先被发送到物理链路上的数据包一定要先于后发送的数据包被接收方收到。有一些业务对数据包的先后顺序是有严格要求的，比如语音或者视频。IB 协议中有 PSN（Packet Sequence Number，包序号）的概念，即每个包都有一个递增的编号。PSN 可以用来检测是否丢包，比如收端收到了 1，但是在没收到 2 的情况下就收到了 3，那么其就会认为传输过程中发生了错误，之后会回复一个 NAK 给发端，让其重发丢失的包。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/psn-2024-02-26.webp"
-alt="psn-2024-02-26" width="auto" loading="lazy"/>
+alt="psn-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>不可靠服务，没有上述这些机制来保证数据包被正确的接收，属于“发出去就行，我不关心有没有被收到”的服务类型。&lt;/p>
 &lt;h2 id="连接与数据报">连接与数据报&lt;/h2>
@@ -104,7 +104,7 @@ alt="psn-2024-02-26" width="auto" loading="lazy"/>
 &lt;p>上面这端描述中的 Context 一般被翻译成上下文，QP Context（简称 QPC）可以简单理解为是记录一个 QP 相关信息的表格。我们知道 QP 是两个队列，除了这两个队列之外，我们还需要把关于 QP 的信息记录到一张表里面，这些信息可能包括队列的深度，队列的编号等等，后面我们会展开讲。&lt;/p>
 &lt;p>可能还是有点抽象，我们用图说话：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/QPC-2024-02-26.webp"
-alt="QPC-2024-02-26" width="auto" loading="lazy"/>
+alt="QPC-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>A、B 和 A、C 节点的网卡在物理上是连接在一起的，A 上面的 QP2 和 B 上面的 QP7、A 上面的 QP4 和 B 上面的 QP2 建立了逻辑上的连接，或者说“绑定到了一起”。&lt;strong>在连接服务类型中的每个 QP，都和唯一的另一个 QP 建立了连接，也就是说 QP 下发的每个 WQE 的目的地都是唯一的&lt;/strong>。拿上图来说，对于 A 的 QP2 下发的每个 WQE，硬件都可以通过 QPC 得知其目的为 B 的 QP7，就会把组装好的数据包发送给 B，然后 B 会根据 QP7 下发的 RQ WQE 来存放数据；同理，对于 A 的 QP4 下发的每个 WQE，A 的硬件都知道应该把数据发给 Node C 的 QP2。&lt;/p>
 &lt;p>“连接”是如何维护的呢？其实就是在 QPC 里面的一个记录而已。如果 A 的 QP2 想断开与 B 的 QP7 的“连接”然后与其他 QP 相“连接”，只需要修改 QPC 就可以了。两个节点在建立连接的过程中，会交换稍后用于数据交互的 QP Number，然后分别记录在 QPC 中。&lt;/p>
@@ -115,7 +115,7 @@ alt="QPC-2024-02-26" width="auto" loading="lazy"/>
 &lt;/blockquote>
 &lt;p>我们举个例子：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Datagram-2024-02-26.webp"
-alt="Datagram-2024-02-26" width="auto" loading="lazy"/>
+alt="Datagram-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>在数据报类型的 QP 的 Context 中，不包含对端信息，即每个 QP 不跟另一个 QP 绑定。&lt;strong>QP 下发给硬件的每个 WQE 都可能指向不同的目的地&lt;/strong>。比如节点 A 的 QP2 下发的第一个 WQE，指示给节点 C 的 QP3 发数据；而下一个 WQE，可以指示硬件发给节点 B 的 QP7。&lt;/p>
 &lt;p>与连接服务类型一样，本端 QP 可以和哪个对端 QP 发送数据，是在准备阶段提前通过某些方式相互告知的。这也是上文“数据报服务对于每个目的节点都需要执行一次这个交换过程”的含义。&lt;/p>
@@ -145,11 +145,11 @@ alt="Datagram-2024-02-26" width="auto" loading="lazy"/>
 &lt;p>RC 和 UD 是应用最多也是最基础的两种服务类型，我们可以将他们分别类比成 TCP/IP 协议栈传输层的 TCP 和 UDP。&lt;/p>
 &lt;p>RC 用于对数据完整性和可靠性要求较高的场景，跟 TCP 一样，因为需要各种机制来保证可靠，所以开销自然会大一些。另外由于 RC 服务类型和每个节点间需要各自维护一个 QP，假设有 N 个节点要相互通信，那么至少需要 &lt;strong>N * (N - 1)&lt;/strong> 个 QP，而 QP 和 QPC 本身是需要占用网卡资源或者内存的，当节点数很多时，存储资源消耗将会非常大。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/RC_Connect-2024-02-26.webp"
-alt="RC_Connect-2024-02-26" width="auto" loading="lazy"/>
+alt="RC_Connect-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>UD 硬件开销小并且节省存储资源，比如 N 个节点需要相互通信，只需要创建 &lt;strong>N&lt;/strong> 个 QP 就可以了，但是可靠性跟 UDP 一样没法保证。用户如果想基于 UD 服务类型实现可靠性，那么需要自己基于 IB 传输层实现应用层的可靠传输机制。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/UD_Connect-2024-02-26.webp"
-alt="UD_Connect-2024-02-26" width="auto" loading="lazy"/>
+alt="UD_Connect-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>除此之外，还有 RD 和 UC 类型，以及 XRC（Extended Reliable Connection），SRD（Scalable Reliable Datagram）等更复杂的服务类型，我们将在协议解析部分对其进行详细的描述。&lt;/p>
 &lt;p>更多关于 QP 类型选择的信息可以参考 RDMAmojo 上的&lt;a class="link" href="https://www.rdmamojo.com/2013/06/01/which-queue-pair-type-to-use/" target="_blank" rel="noopener" >Which Queue Pair type to use?
@@ -188,12 +188,12 @@ struct ibv_qp *qp = ibv_create_qp(pd, &amp;amp;qp_init_attr);
 &lt;p>SEND 和 RECV 是两种不同的操作类型，但是因为如果一端进行 SEND 操作，对端必须进行 RECV 操作，所以通常都把他们放到一起描述。&lt;/p>
 &lt;p>为什么称之为“双端操作”？因为&lt;strong>完成一次通信过程需要两端 CPU 的参与&lt;/strong>，并且收端需要提前显式的下发 WQE。下图是一次 SEND-RECV 操作的过程示意图。原图来自于[1]，我做了一些修改。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-1-2024-02-25.webp"
-alt="rdma-op-1-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma-op-1-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>上一篇我们讲过，上层应用通过 WQE（WR）来给硬件下任务。在 SEND-RECV 操作中，不止发送端需要下发 WQE，接收端也需要下发 WQE 来告诉硬件收到的数据需要放到哪个地址。发送端并不知道发送的数据会放到哪里，每次发送数据，接收端都要提前准备好接收 Buffer，而接收端 CPU 自然会感知这一过程。&lt;/p>
 &lt;p>为了下文对比 SEND/RECV 与 WRITE/READ 的异同，我们将上一篇的 SEND-RECV 流程中补充内存读写这一环节，即下图中的步骤④——发送端硬件根据 WQE 从内存中取出数据封装成可在链路上传输数据包和步骤⑦——接收端硬件将数据包解析后根据 WQE 将数据放到指定内存区域，其他步骤不再赘述。另外再次强调一下，收发端的步骤未必是图中这个顺序，比如步骤⑧⑪⑫和步骤⑨⑩的先后顺序就是不一定的。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-2-2024-02-25.webp"
-alt="rdma-op-2-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma-op-2-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>下面将介绍 WRITE 操作，对比之后相信大家可以理解的更好。&lt;/p>
 &lt;h2 id="write">WRITE&lt;/h2>
@@ -201,12 +201,12 @@ alt="rdma-op-2-2024-02-25" width="auto" loading="lazy"/>
 &lt;p>通过下图我们对比一下 WRITE 和 SEND-RECV 操作的差异，本端在准备阶段通过数据交互，获取了对端某一片可用的内存的&lt;strong>地址&lt;/strong>和“&lt;strong>钥匙&lt;/strong>” ，相当于获得了这片远端内存的读写权限。拿到权限之后，本端就可以像访问自己的内存一样&lt;strong>直接对这一远端内存区域进行读写&lt;/strong>，这也是 RDMA——远程直接地址访问的内涵所在。&lt;/p>
 &lt;p>WRITE/READ 操作中的目的地址和钥匙是如何获取的呢？通常可以通过我们刚刚讲过的 SEND-RECV 操作来完成，因为拿到钥匙这个过程总归是要由远端内存的控制者——CPU 允许的。虽然准备工作还比较复杂， 但是一旦完成准备工作，RDMA 就可以发挥其优势，对大量数据进行读写。一旦远端的 CPU 把内存授权给本端使用，它便不再会参与数据收发的过程，这就解放了远端 CPU，也降低了通信的时延。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-3-2024-02-25.webp"
-alt="rdma-op-3-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma-op-3-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>需要注意的是，本端是通过&lt;strong>虚拟地址&lt;/strong>来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址—物理地址的转换是由 RDMA 网卡完成的。具体是如何转换的，将在后面的文章介绍。&lt;/p>
 &lt;p>忽略准备阶段 key 和 addr 的获取过程，下面我们描述一次 WRITE 操作的流程，此后我们不再将本端和对端称为“发送”和“接收”端，而是改为“请求”和“响应”端，这样对于描述 WRITE 和 READ 操作都更恰当一些，也不容易产生歧义。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-4-2024-02-25.webp"
-alt="rdma-op-4-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma-op-4-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol>
 &lt;li>请求端 APP 以 WQE（WR）的形式下发一次 WRITE 任务。&lt;/li>
@@ -227,7 +227,7 @@ alt="rdma-op-4-2024-02-25" width="auto" loading="lazy"/>
 &lt;p>获取 key 和虚拟地址的流程也跟 WRITE 没有区别，需要注意的是 &lt;strong>&amp;ldquo;读”这个动作所请求的数据&lt;/strong>，是在对端回复的报文中携带的。&lt;/p>
 &lt;p>下面描述一次 READ 操作的流程，注意跟 WRITE 只是方向和步骤顺序的差别。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma5-2024-02-25.webp"
-alt="rdma5-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma5-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol>
 &lt;li>请求端 APP 以 WQE 的形式下发一次 READ 任务。&lt;/li>
@@ -242,7 +242,7 @@ alt="rdma5-2024-02-25" width="auto" loading="lazy"/>
 &lt;h2 id="总结">总结&lt;/h2>
 &lt;p>我们忽略各种细节进行抽象，RDMA WRITE 和 READ 操作就是在利用网卡完成下面左图的内存拷贝操作而已，只不过复制的过程是由 RDMA 网卡通过网络链路完成的；而本地内存拷贝则如下面右图所示由 CPU 通过总线完成的：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-6-2024-02-25.webp"
-alt="rdma-op-6-2024-02-25" width="auto" loading="lazy"/>
+alt="rdma-op-6-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>RDMA 标准定义上述几种操作的时候使用的单词是非常贴切的，“收”和“发”是需要有对端主动参与的语义 ，而‘读“和”写“更像是本端对一个没有主动性的对端进行操作的语义。&lt;/p>
 &lt;p>通过对比 SEND/RECV 和 WRITE/READ 操作，我们可以发现传输数据时不需要响应端 CPU 参与的 WRITE/READ 有更大的优势，缺点就是请求端需要在准备阶段获得响应端的一段内存的读写权限。但是实际数据传输时，这个准备阶段的功率和时间损耗都是可以忽略不计的，所以 RDMA WRITE/READ 才是大量传输数据时所应用的操作类型，SEND/RECV 通常只是用来传输一些控制信息。&lt;/p>
@@ -293,7 +293,7 @@ return 0;
 &lt;p>RDMA 技术中经常使用缩略语，很容易让刚接触的人一头雾水，本篇的目的是讲解 RDMA 中最基本的元素及其含义。&lt;/p>
 &lt;p>我将常见的缩略语对照表写在前面，阅读的时候如果忘记了可以翻到前面查阅。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
-alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="wq">WQ&lt;/h2>
 &lt;p>Work Queue 简称 WQ，是 RDMA 技术中最重要的概念之一。WQ 是一个储存工作请求的队列，为了讲清楚 WQ 是什么，我们先介绍这个队列中的元素 WQE（Work Queue Element，工作队列元素）。&lt;/p>
@@ -301,7 +301,7 @@ alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="
 &lt;p>WQE 可以认为是一种“任务说明”，这个工作请求是软件下发给硬件的，这份说明中包含了软件所希望硬件去做的任务以及有关这个任务的详细信息。比如，某一份任务是这样的：“我想把位于地址 0x12345678 的长度为 10 字节的数据发送给对面的节点”，硬件接到任务之后，就会通过 DMA 去内存中取数据，组装数据包，然后发送。&lt;/p>
 &lt;p>WQE 的含义应该比较明确了，那么我们最开始提到的 WQ 是什么呢？它就是用来存放“任务书”的“文件夹”，WQ 里面可以容纳很多 WQE。有数据结构基础的读者应该都了解，队列是一种先进先出的数据结构，在计算机系统中非常常见，我们可以用下图表示上文中描述的 WQ 和 WQE 的关系：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
-alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>WQ 这个队列总是由软件向其中增加 WQE（入队），硬件从中取出 WQE，这就是软件给硬件“下发任务”的过程。为什么用队列而不是栈？因为进行“存”和“取“操作的分别是软件和硬件，并且需要保证用户的请求按照顺序被处理在 RDMA 技术中，所有的通信请求都要按照上图这种方式告知硬件，这种方式常被称为“Post”。&lt;/p>
 &lt;h3 id="qp">QP&lt;/h3>
@@ -309,29 +309,29 @@ alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="
 &lt;h3 id="sq-和-rq">SQ 和 RQ&lt;/h3>
 &lt;p>任何通信过程都要有收发两端，QP 就是一个发送工作队列和一个接受工作队列的组合，这两个队列分别称为 SQ（Send Queue）和 RQ（Receive Queue）。我们再把上面的图丰富一下，左边是发送端，右边是接收端：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
-alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>WQ 怎么不见了？SQ 和 RQ 都是 WQ，WQ 只是表示一种可以存储 WQE 的单元，SQ 和 RQ 才是实例。&lt;/p>
 &lt;p>SQ 专门用来存放发送任务，RQ 专门用来存放接收任务。在一次 SEND-RECV 流程中，发送端需要把表示一次发送任务的 WQE 放到 SQ 里面。同样的，接收端软件需要给硬件下发一个表示接收任务的 WQE，这样硬件才知道收到数据之后放到内存中的哪个位置。上文我们提到的 Post 操作，对于 SQ 来说称为 Post Send，对于 RQ 来说称为 Post Receive。&lt;/p>
 &lt;p>需要注意的是，在 RDMA 技术中&lt;strong>通信的基本单元是 QP&lt;/strong>，而不是节点。如下图所示，对于每个节点来说，每个进程都可以使用若干个 QP，而每个本地 QP 可以“关联”一个远端的 QP。我们用“节点 A 给节点 B 发送数据”并不足以完整的描述一次 RDMA 通信，而应该是类似于“节点 A 上的 QP3 给节点 C 上的 QP4 发送数据”。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03.webp"
-alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>每个节点的每个 QP 都有一个唯一的编号，称为 QPN（Queue Pair Number），通过 QPN 可以唯一确定一个节点上的 QP。&lt;/p>
 &lt;h3 id="srq">SRQ&lt;/h3>
 &lt;p>Shared Receive Queue 简称 SRQ，意为共享接收队列。概念很好理解，就是一种几个 QP 共享同一个 RQ 时，我们称其为 SRQ。以后我们会了解到，使用 RQ 的情况要远远小于使用 SQ，而每个队列都是要消耗内存资源的。当我们需要使用大量的 QP 时，可以通过 SRQ 来节省内存。如下图所示，QP2~QP4 一起使用同一个 RQ：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
-alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="cq">CQ&lt;/h2>
 &lt;p>Completion Queue 简称 CQ，意为完成队列。跟 WQ 一样，我们先介绍 CQ 这个队列当中的元素——CQE（Completion Queue Element）。可以认为 CQE 跟 WQE 是相反的概念，如果 WQE 是软件下发给硬件的“任务书”的话，那么 CQE 就是硬件完成任务之后返回给软件的“任务报告”。CQE 中描述了某个任务是被正确无误的执行，还是遇到了错误，如果遇到了错误，那么错误的原因是什么。&lt;/p>
 &lt;p>而 CQ 就是承载 CQE 的容器——一个先进先出的队列。我们把表示 WQ 和 WQE 关系的图倒过来画，就得到了 CQ 和 CQE 的关系：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
-alt="v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>每个 CQE 都包含某个 WQE 的完成信息，他们的关系如下图所示：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03.webp"
-alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>下面我们把 CQ 和 WQ（QP）放在一起，看一下一次 SEND-RECV 操作中，软硬件的互动（图中序号顺序不表示实际时序）：&lt;/p>
 &lt;blockquote>
@@ -339,7 +339,7 @@ alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="
 &lt;p>这里我犯了错误的点是 RQ 和 SQ 不同，是一个“被动接收”的过程，只有收到 Send 报文（或者带立即数的 Write 报文）时硬件才会消耗 RQ WQE。感谢 @连接改变世界 的指正。&lt;/p>
 &lt;/blockquote>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03.webp"
-alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol>
 &lt;li>接收端 APP 以 WQE 的形式下发一次 RECV 任务到 RQ。&lt;/li>
@@ -361,7 +361,7 @@ alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="
 &lt;p>WR 全称为 Work Request，意为工作请求；WC 全称 Work Completion，意为工作完成。这两者其实是 WQE 和 CQE 在用户层的“映射”。因为 APP 是通过调用协议栈接口来完成 RDMA 通信的，WQE 和 CQE 本身并不对用户可见，是驱动中的概念。用户真正通过 API 下发的是 WR，收到的是 WC。&lt;/p>
 &lt;p>WR/WC 和 WQE/CQE 是相同的概念在不同层次的实体，他们都是“任务书”和“任务报告”。于是我们把前文的两个图又加了点内容：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
-alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="代码示例">代码示例&lt;/h2>
 &lt;p>最后，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过这个 QP 来发送一次数据。这是一个非常简单的例子，只是为了让读者对上文中的概念有一个直观的认识。&lt;/p>
@@ -398,7 +398,7 @@ return 0;
 &lt;h2 id="总结">总结&lt;/h2>
 &lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
-alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
 &lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
@@ -413,7 +413,7 @@ alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="
 &lt;p>在描述通信过程时的软硬件关系时，我们通常将模型划分为用户层 Userspace，内核 Kernel 以及硬件 Hardware。Userspace 和 Kernel 实际上使用的是同一块物理内存，但是处于安全考虑，Linux 将内存划分为用户空间和内核空间。用户层没有权限访问和修改内核空间的内存内容，只能通过系统调用陷入内核态，Linux 的内存管理机制比较复杂，本文不展开讨论。&lt;/p>
 &lt;p>一次典型的基于传统以太网的通信过程的可以如下图所示进行分层：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03.webp"
-alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>一次收-发过程的步骤如下：&lt;/p>
 &lt;ol>
@@ -424,7 +424,7 @@ alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="
 &lt;li>接收端 APP 通过 Socket 接口陷入内核态，CPU 将数据从内核空间复制到用户空间。&lt;/li>
 &lt;/ol>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
-alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>这个模型的数据流向大致是像上图这个样子，数据首先需要从用户空间复制一份到内核空间，这一次复制由 CPU 完成，将数据块从用户空间复制到内核空间的 Socket Buffer 中。内核中软件 TCP/IP 协议栈给数据添加各层头部和校验信息。最后网卡会通过 DMA 从内存中复制数据，并通过物理链路发送给对端的网卡。&lt;/p>
 &lt;p>而对端是完全相反的过程：硬件将数据包 DMA 拷贝到内存中，然后 CPU 会对数据包进行逐层解析和校验，最后将数据复制到用户空间。&lt;/p>
@@ -433,7 +433,7 @@ alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="
 &lt;h2 id="rdma">RDMA&lt;/h2>
 &lt;p>同样是一端发送，一端接收的场景，我们将 RDMA 的分层模型分成两部分“控制通路”和“数据通路”，控制通路需要进入内核态准备通信所需的内存资源，而数据通路指的是实际数据交互过程中的流程。这一过程的分层关系如下图所示：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03.webp"
-alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>同 Socket 一样，我们简单描述下通信的过程：&lt;/p>
 &lt;ol>
@@ -444,7 +444,7 @@ alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="
 &lt;li>对端收到报文，对其进行解析并通过 DMA 将有效载荷写入内存。然后以某种方式通知上层 APP，告知其数据已接收并妥善存放到指定位置。&lt;/li>
 &lt;/ol>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03.webp"
-alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="lazy"/>
+alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>这一过程中的数据流向大致如上图所示。通过和 Socket 的对比，我们可以明显看到，&lt;strong>数据收发绕过了内核并且数据交换过程并不需要 CPU 参与，报文的组装和解析是由硬件完成的&lt;/strong>。&lt;/p>
 &lt;p>通过上面的对比，我们可以明显的体会到 RDMA 的优势，既将 CPU 从数据包封装和解析中解放出来，又减少了 CPU 拷贝数据的功率和时间损耗。需要注意的是，本文只描述了 SEND-RECV 流程，而 RDMA 技术所独有的，效率更高的 WRITE/READ 语义将在后续文章中介绍。&lt;/p>
@@ -456,14 +456,14 @@ alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="
 &lt;h2 id="什么是-dma">什么是 DMA&lt;/h2>
 &lt;p>DMA 全称为 Direct Memory Access，即直接内存访问。意思是外设对内存的读写过程可以不用 CPU 参与而直接进行。我们先来看一下没有 DMA 的时候：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203040-2024-01-14.png"
-alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
+alt="无 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>无 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>假设 I/O 设备为一个普通网卡，为了从内存拿到需要发送的数据，然后组装数据包发送到物理链路上，网卡需要通过总线告知 CPU 自己的数据请求。然后 CPU 将会把内存缓冲区中的数据复制到自己内部的寄存器中，再复制到 I/O 设备的存储空间中。如果数据量比较大，那么很长一段时间内 CPU 都会忙于搬移数据，而无法投入到其他工作中去。&lt;/p>
 &lt;p>CPU 的最主要工作是计算，而不是进行数据复制，这种工作属于白白浪费了它的计算能力。为了给 CPU“减负”，让它投入到更有意义的工作中去，后来人们设计了 DMA 机制：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240114203114-2024-01-14.png"
-alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy"/>&lt;figcaption>
+alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>有 DMA 控制器时 I/O 设备和内存间的数据路径&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
@@ -473,7 +473,7 @@ alt="有 DMA 控制器时 I/O 设备和内存间的数据路径" width="auto" lo
 &lt;p>RDMA（ Remote Direct Memory Access ）意为远程直接地址访问，通过 RDMA，本端节点可以“直接”访问远端节点的内存。所谓直接，指的是可以像访问本地内存一样，绕过传统以太网复杂的 TCP/IP 网络协议栈读写远端内存，而这个过程对端是不感知的，而且这个读写过程的大部分工作是由硬件而不是软件完成的。&lt;/p>
 &lt;p>为了能够直观的理解这一过程，请看下面两个图（图中箭头仅做示意，不表示实际逻辑或物理关系）：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235555-2024-01-15.png"
-alt="20240115235555-2024-01-15" width="90%" loading="lazy"/>
+alt="20240115235555-2024-01-15" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>传统网络中，“节点 A 给节点 B 发消息”实际上做的是“把节点 A 内存中的一段数据，通过网络链路搬移到节点 B 的内存中”，而这一过程无论是发端还是收段，都需要 CPU 的指挥和控制，包括网卡的控制，中断的处理，报文的封装和解析等等。&lt;/p>
 &lt;p>上图中左边的节点在内存用户空间中的数据，需要经过 CPU 拷贝到内核空间的缓冲区中，然后才可以被网卡访问，这期间数据会经过软件实现的 TCP/IP 协议栈，加上各层头部和校验码，比如 TCP 头，IP 头等。网卡通过 DMA 拷贝内核中的数据到网卡内部的缓冲区中，进行处理后通过物理链路发送给对端。&lt;/p>
@@ -481,7 +481,7 @@ alt="20240115235555-2024-01-15" width="90%" loading="lazy"/>
 &lt;p>可以看到，即使有了 DMA 技术，上述过程还是对 CPU 有较强的依赖。&lt;/p>
 &lt;p>而使用了 RDMA 技术之后，这一过程可以简单的表示成下面的示意图：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235612-2024-01-15.png"
-alt="20240115235612-2024-01-15" width="90%" loading="lazy"/>
+alt="20240115235612-2024-01-15" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>同样是把本端内存中的一段数据，复制到对端内存中，在使用了 RDMA 技术时，两端的 CPU 几乎不用参与数据传输过程（只参与控制面）。本端的网卡直接从内存的用户空间 DMA 拷贝数据到内部存储空间，然后硬件进行各层报文的组装后，通过物理链路发送到对端网卡。对端的 RDMA 网卡收到数据后，剥离各层报文头和校验码，通过 DMA 将数据直接拷贝到用户空间内存中。&lt;/p>
 &lt;h2 id="rdma-的优势">RDMA 的优势&lt;/h2>
@@ -491,7 +491,7 @@ alt="20240115235612-2024-01-15" width="90%" loading="lazy"/>
 &lt;li>0 拷贝：指的是不需要在用户空间和内核空间中来回复制数据。&lt;/li>
 &lt;/ul>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235643-2024-01-15.png"
-alt="20240115235643-2024-01-15" width="60%" loading="lazy"/>
+alt="20240115235643-2024-01-15" width="60%" loading="lazy">
 &lt;/figure>
 &lt;p>由于 Linux 等操作系统将内存划分为用户空间和内核空间，在传统的 Socket 通信流程中 CPU 需要多次把数据在内存中来回拷贝。而通过 RDMA 技术，我们可以直接访问远端已经注册的内存区域。&lt;/p>
 &lt;p>关于 0 拷贝可以参考这篇文章：&lt;a class="link" href="https://www.jianshu.com/p/e76e3580e356" target="_blank" rel="noopener" >浅谈 Linux 下的零拷贝机制
@@ -507,7 +507,7 @@ fill="currentColor">
 &lt;li>内核 Bypass：指的是 IO（数据）流程可以绕过内核，即在用户层就可以把数据准备好并通知硬件准备发送和接收。避免了系统调用和上下文切换的开销。&lt;/li>
 &lt;/ul>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235721-2024-01-15.png"
-alt="20240115235721-2024-01-15" width="90%" loading="lazy"/>
+alt="20240115235721-2024-01-15" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>上图（原图&lt;a class="link" href="https://pc.nanog.org/static/published/meetings/NANOG76/1999/20190612_Cardona_Towards_Hyperscale_High_v1.pdf" target="_blank" rel="noopener" >[1]
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -522,13 +522,13 @@ fill="currentColor">
 &lt;li>CPU 卸载：指的是可以在远端节点 CPU 不参与通信的情况下（当然要持有访问远端某段内存的“钥匙”才行）对内存进行读写，这实际上是 &lt;strong>把报文封装和解析放到硬件中做了&lt;/strong>。而传统的以太网通信，双方 CPU 都必须参与各层报文的解析，如果数据量大且交互频繁，对 CPU 来讲将是一笔不小的开销，而这些被占用的 CPU 计算资源本可以做一些更有价值的工作。&lt;/li>
 &lt;/ul>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240115235929-2024-01-15.png"
-alt="20240115235929-2024-01-15" width="60%" loading="lazy"/>
+alt="20240115235929-2024-01-15" width="60%" loading="lazy">
 &lt;/figure>
 &lt;p>通信领域两大出场率最高的性能指标就是“带宽”和“时延”。简单的说，所谓带宽指的是指单位时间内能够传输的数据量，而时延指的是数据从本端发出到被对端接收所耗费的时间。因为上述几个特点，相比于传统以太网，RDMA 技术同时做到了更高带宽和更低时延，所以其在带宽敏感的场景——比如海量数据的交互，时延敏感——比如多个计算节点间的数据同步的场景下得以发挥其作用。&lt;/p>
 &lt;h2 id="协议">协议&lt;/h2>
 &lt;p>RDMA 本身指的是一种技术，具体协议层面，包含 Infiniband（IB），RDMA over Converged Ethernet（RoCE）和 internet Wide Area RDMA Protocol（iWARP）。三种协议都符合 RDMA 标准，使用相同的上层接口，在不同层次上有一些差别。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000000-2024-01-16.png"
-alt="20240116000000-2024-01-16" width="90%" loading="lazy"/>
+alt="20240116000000-2024-01-16" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>上图&lt;a class="link" href="https://www.snia.org/sites/default/files/ESF/RoCE-vs.-iWARP-Final.pdf" target="_blank" rel="noopener" >[2]g
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -548,7 +548,7 @@ fill="currentColor">
 &lt;p>需要注意的是，虽然有软件实现的 RoCE 和 iWARP 协议，但是真正商用时上述几种协议都需要专门的硬件（网卡）支持。&lt;/p>
 &lt;p>iWARP 本身不是由 Infiniband 直接发展而来的，但是它继承了一些 Infiniband 技术的设计思想。这三种协议的关系如下图所示：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000125-2024-01-16.png"
-alt="20240116000125-2024-01-16" width="60%" loading="lazy"/>
+alt="20240116000125-2024-01-16" width="60%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="玩家">玩家&lt;/h2>
 &lt;h3 id="标准生态组织">标准/生态组织&lt;/h3>
@@ -628,7 +628,7 @@ fill="currentColor">
 &lt;/h2>
 &lt;p>UCX 是一个建立在 RDMA 等技术之上的用于数据处理和高性能计算的通信框架，RDMA 是其底层核心之一。我们可以将其理解为是位于应用和 RDMA API 之间的中间件，向上层用户又封装了一层更易开发的接口。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20240116000429-2024-01-16.png"
-alt="20240116000429-2024-01-16" width="90%" loading="lazy"/>
+alt="20240116000429-2024-01-16" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>笔者对其并不了解太多，只知道业界有一些企业在基于 UCX 开发应用。&lt;/p>
 &lt;p>代码仓：&lt;a class="link" href="https://github.com/openucx/ucx" target="_blank" rel="noopener" >https://github.com/openucx/ucx
@@ -767,12 +767,12 @@ IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都�
 &lt;li>Post WR 并且轮询 CQ&lt;/li>
 &lt;li>清理资源
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235009.webp"
-alt="20230724235009" width="90%" loading="lazy"/>
+alt="20230724235009" width="90%" loading="lazy">
 &lt;/figure>
 &lt;/li>
 &lt;/ol>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235116.webp"
-alt="20230724235116" width="90%" loading="lazy"/>
+alt="20230724235116" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="3-两个动态库">3. 两个动态库&lt;/h3>
 &lt;ul>
@@ -1125,7 +1125,7 @@ client_qp = cm_client_id-&amp;gt;qp;
 &lt;li>发布操作&lt;/li>
 &lt;/ol>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725224928.webp"
-alt="20230725224928" width="90%" loading="lazy"/>
+alt="20230725224928" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="五-rdmacm-程序解析主动方">五、 RDMACM 程序解析——主动方&lt;/h2>
 &lt;h3 id="1-创建事件-channel-1">1. 创建事件 channel&lt;/h3>
@@ -1182,11 +1182,11 @@ alt="20230725224928" width="90%" loading="lazy"/>
 &lt;li>发布操作&lt;/li>
 &lt;/ol>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225927.webp"
-alt="20230725225927" width="90%" loading="lazy"/>
+alt="20230725225927" width="90%" loading="lazy">
 &lt;/figure>
 &lt;hr>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225943.webp"
-alt="20230725225943" width="90%" loading="lazy"/>
+alt="20230725225943" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="六实战基于-rdma-的-client-server-程序">六、实战：基于 RDMA 的 client-server 程序&lt;/h2>
 &lt;h3 id="1-server-端">1. server 端&lt;/h3>
@@ -1230,9 +1230,667 @@ alt="20230725225943" width="90%" loading="lazy"/>
 &lt;/div>
 &lt;h3 id="4-补充rdma-应用程序标准流程">4. 补充：RDMA 应用程序标准流程&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230729185145.webp"
-alt="20230729185145" width="90%" loading="lazy"/>
+alt="20230729185145" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="参考文献">参考文献&lt;/h2>
 &lt;ul>
 &lt;li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li>
-&lt;/ul></description></item></channel></rss>
+&lt;/ul></description></item><item><title>RDMA 技术及其编程方法（一）：RDMA 简介与原理</title><link>https://cuterwrite.top/p/rdma-tutorial/1/</link><pubDate>Fri, 21 Jul 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-tutorial/1/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722162905.webp" alt="Featured image of post RDMA 技术及其编程方法（一）：RDMA 简介与原理" />&lt;h1 id="rdma-技术及其编程方法一rdma-技术">RDMA 技术及其编程方法（一）：RDMA 技术&lt;/h1>
+&lt;h2 id="一-rdma-技术简介">一、 RDMA 技术简介&lt;/h2>
+&lt;ul>
+&lt;li>RDMA: Remote Direct Memory Access
+&lt;ul>
+&lt;li>RDMA 就是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过 CPU 的参与，从而大大减少了 CPU 的开销，提高了数据传输的效率。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">术语&lt;/th>
+&lt;th style="text-align:center">含义&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">Remote&lt;/td>
+&lt;td style="text-align:center">数据在同一网络中的节点之间传输&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Direct&lt;/td>
+&lt;td style="text-align:center">（1）传输过程没有操作系统内核的参与 （2）所有关于传输的协议都负载在网卡上&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Memory&lt;/td>
+&lt;td style="text-align:center">（1）在用户态的应用程序的虚拟内存之间传输（2）没有额外的内存拷贝或缓存&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Access&lt;/td>
+&lt;td style="text-align:center">send、receive、read、write、原子操作&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>RDMA 的各种协议
+&lt;ul>
+&lt;li>InfiniBand - (41.8% of top 500 supercomputers)
+&lt;ul>
+&lt;li>InfiniBand 是一个工业标准的分组交换网络&lt;/li>
+&lt;li>在高性能计算机系统中越来越多地被采用&lt;/li>
+&lt;li>用户层网络，可绕过操作系统内核&lt;/li>
+&lt;li>SDR 4x - 8 Gbps&lt;/li>
+&lt;li>DDR 4x - 16 Gbps&lt;/li>
+&lt;li>QDR 4x - 32 Gbps&lt;/li>
+&lt;li>FDQ 4x - 54 Gbps&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>RoCE - RDMA over Converged Ethernet
+&lt;ul>
+&lt;li>允许在以太网络上执行 RDMA 的网络协议&lt;/li>
+&lt;li>RoCE v1 - 10 Gbps&lt;/li>
+&lt;li>RoCE v2 - 25 Gbps&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>iWarp - internet Wide Area RDMA Protocol
+&lt;ul>
+&lt;li>运行在 TCP/IP 协议栈上的 RDMA 协议&lt;/li>
+&lt;li>10 Gbps&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>RDMA 的支持嵌入在内核之中：Kernel 中的 drivers/infiniband&lt;/li>
+&lt;li>RDMA 协议优势
+&lt;ol>
+&lt;li>&lt;strong>Zero-copy&lt;/strong>：零拷贝，能够读写远程内存，能够直接访问远程缓冲区，无需在不同软件层之间复制数据&lt;/li>
+&lt;li>&lt;strong>Kernel bypass&lt;/strong>：跳过内核，可在相同的代码上下文（即用户空间或内核）中收发数据，节省了上下文切换时间&lt;/li>
+&lt;li>&lt;strong>No CPU involvement&lt;/strong>：无 CPU 参与，可使用专用硬件收发数据，而不需要 CPU 干预。可降低远程端的 CPU 使用率，因为不需要它执行任何主动操作&lt;/li>
+&lt;li>&lt;strong>Message based transactions&lt;/strong>：基于消息的事务，可在不同的连接上同时执行多个事务，而无需等待任何事务完成&lt;/li>
+&lt;li>&lt;strong>Scatter/gather entries support&lt;/strong>：支持分散/聚集条目，可在单个操作中传输多个缓冲区，而无需将它们合并到单个缓冲区中&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="二-rdma-工作原理">二、 RDMA 工作原理&lt;/h2>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722174248.webp"
+alt="20230722174248" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="1-infiband-与以太网的对比">1. Infiband 与以太网的对比&lt;/h3>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">Feature/Network Type&lt;/th>
+&lt;th style="text-align:center">InfiniBand&lt;/th>
+&lt;th style="text-align:center">Ethernet&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">Addressing&lt;/td>
+&lt;td style="text-align:center">lids, gid&lt;/td>
+&lt;td style="text-align:center">macs, IP addresses&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Path resolution&lt;/td>
+&lt;td style="text-align:center">Path queries&lt;/td>
+&lt;td style="text-align:center">ARP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Lossless network&lt;/td>
+&lt;td style="text-align:center">Credit-based flow control&lt;/td>
+&lt;td style="text-align:center">Pause frames/PFC&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">QoS&lt;/td>
+&lt;td style="text-align:center">SLs/VLs&lt;/td>
+&lt;td style="text-align:center">Priorities/TC&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Virtual networks&lt;/td>
+&lt;td style="text-align:center">Pkeys&lt;/td>
+&lt;td style="text-align:center">VLANs&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>可以看到，InfiniBand 与以太网的区别首先在于网络地址的表示方式不同，以太网使用 mac 地址和 IP 地址，而 InfiniBand 使用 lid 和 gid&lt;/li>
+&lt;li>其次，网络的路径解析方式不同，以太网使用 ARP 地址解析协议，而 InfiniBand 使用 path queries；&lt;/li>
+&lt;li>然后，在网络的可靠性方面，以太网使用 Pause frames/PFC（Priority-based Flow Control，基于优先级的流量控制），而 InfiniBand 使用的是 Credit-based flow control(基于信用的流量控制)&lt;/li>
+&lt;li>接着在网络的服务质量方面，以太网使用 Priorities/TC（Traffic Class，流量类别），而 InfiniBand 使用 SLs/VLs（Service Level，服务等级）&lt;/li>
+&lt;li>最后，在网络的虚拟化方面，以太网使用 VLANs（Virtual Local Area Network，虚拟局域网），而 InfiniBand 使用 Pkeys（Partition Keys，分区键）。&lt;/li>
+&lt;/ul>
+&lt;h3 id="2-rdma-中的重要概念">2. RDMA 中的重要概念&lt;/h3>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">缩写&lt;/th>
+&lt;th style="text-align:center">全称&lt;/th>
+&lt;th style="text-align:center">说明&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">PD&lt;/td>
+&lt;td style="text-align:center">Protection Domain&lt;/td>
+&lt;td style="text-align:center">保护域，是 RDMA 中的一种资源管理机制。PD 定义了一组内存区域和访问权限，用于控制 RDMA 操作的安全性。PD 与 QP、MR 均有关联。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">MR&lt;/td>
+&lt;td style="text-align:center">Memory Region&lt;/td>
+&lt;td style="text-align:center">内存区域，是 RDMA 中的一种抽象，用于描述应用程序中的内存区域。MR 定义了一块内存区域的起始地址、大小和访问权限，并与 PD 关联。包含 R_Key 和 L_Key。MR 的配套机制用来解决 RDMA 操作中的两个问题：（1）APP 提供的地址都是虚拟地址，经过 MMU 的转换才能得到真实的物理地址，RDMA 网卡是如何得到真实物理地址从而去内存中读取或写入数据的？（2）假设网卡有能力获取目的地址，但如果用户恶意指定了一个非法的虚拟地址，网卡就有可能被指使去读写系统关键内存，如何预防？因此，MR 的作用之一就是实现虚拟地址与物理地址的转换，APP 只能看到虚拟地址，而且会在发起 RDMA Write 时把本地和对端的内存的虚拟地址传递给 RDMA 网卡。网卡需要知道 APP 提供的虚拟地址所对应的物理地址才能访问系统内存。在注册 MR 的过程中，软件会在内存中创建并填写一个虚拟地址到物理地址的映射表供网卡查询。MR 的第二个作用是控制 HCA 访问内存的权限，程序在注册 MR 时会产生两把钥匙 L_KEY（Local）和 R_KEY（Remote）。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">QP&lt;/td>
+&lt;td style="text-align:center">Queue Pair&lt;/td>
+&lt;td style="text-align:center">队列对，是 RDMA 中的一种通信机制。QR 由发送队列（Send Queue, SQ）和接收队列（Receive Queue, RQ）组成，用于发送和接收 RDMA 操作的请求和数据。SQ 专门用来存放发送任务，RQ 专门用来存放接收任务。在一次 SEND-RECV 流程中，发送端需要把表示一次发送任务的 WR 放到 SQ 里面(这种操作称为 Post Send)，接收端需要把表示一次接收任务的 WR 放到 QP 里面（称为 Post Receive），这样硬件才知道收到数据之后放到内存中的哪个位置。在 RDMA 中，通信的基本对象是 QP，而不是节点。对于每个节点来说，每个进程都可以申请和使用若干个 QP，而每个本地 QP 可以连接到一个远端的 QP。每个节点中的 QP 都有一个唯一的编号，称为 QPN，通过 QPN 可以唯一确定一个节点上的 QP。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">CQ&lt;/td>
+&lt;td style="text-align:center">Completion Queue&lt;/td>
+&lt;td style="text-align:center">完成队列，用于存储 RDMA 操作的完成事件。当 RDMA 操作完成时，相关的完成事件会被放入 CQ 中，应用程序可以通过轮询或事件通知方式获取这些完成事件。CQ 与 QP 相关联。CQ 中有很多元素，称为 CQE。CQE 是硬件完成任务之后返回给软件的“完成报告”，与 WR 相反。每个 CQE 都包含某个 WR 的完成信息。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">WR&lt;/td>
+&lt;td style="text-align:center">Work Request&lt;/td>
+&lt;td style="text-align:center">工作请求，用于描述 RDMA 操作的请求。WR 包含了操作类型、源地址、目的地址等信息，应用程序通过将 WR 放入 QP 的发送队列来触发 RDMA 操作。&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">SGE&lt;/td>
+&lt;td style="text-align:center">Scatter/Gather Element&lt;/td>
+&lt;td style="text-align:center">即将读或写的内存地址。必须提供 L_Key 或 R_Key 来认证 MR 的连接&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">WC&lt;/td>
+&lt;td style="text-align:center">Work Completion&lt;/td>
+&lt;td style="text-align:center">工作完成，用于描述 RDMA 操作的完成事件。WC 包含了操作类型、状态、传输长度等信息，应用程序可以通过读取 CQ 中的 WC 来获取 RDMA 操作的结果。&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="3-qpswrs-执行模型">3. QPs/WRs 执行模型&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722225719.webp"
+alt="20230722225719" width="90%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>硬件提供
+&lt;ul>
+&lt;li>针对每个 QP 上下文&lt;/li>
+&lt;li>虚拟到物理内存的转换&lt;/li>
+&lt;li>安全的进程控制机制&lt;/li>
+&lt;li>可靠性(取决于传输服务)&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>操作系统管理资源创建
+&lt;ul>
+&lt;li>但不发布 WR 和轮询 CQ&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>结果
+&lt;ul>
+&lt;li>应用程序以安全的方式直接访问硬件&lt;/li>
+&lt;li>软件处理缓冲区而不是信息包&lt;/li>
+&lt;li>在快速路径中不需要操作系统干预。&lt;/li>
+&lt;li>完全异步的过程&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="4-通信语义">4. 通信语义&lt;/h3>
+&lt;ul>
+&lt;li>Channel（消息传递）
+&lt;ul>
+&lt;li>请求者提供源缓冲区&lt;/li>
+&lt;li>接收者提供目的缓冲区&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Remote Direct Memory Access（RDMA）
+&lt;ul>
+&lt;li>请求者同时提供源缓冲区和目标缓冲区&lt;/li>
+&lt;li>同时支持 RDMA 读取和写入&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="5-传输服务">5. 传输服务&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>分类：Connected（连接）与 Datagram（数据报）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>分类：Reliable（可靠）与 Unreliable（不可靠）&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>两两组合形成四种类型的传输：&lt;/p>
+&lt;ul>
+&lt;li>Reliable Connected（RC），例如 TCP&lt;/li>
+&lt;li>Unreliable Datagram（UD），例如 UDP&lt;/li>
+&lt;li>UC 也可以实现&lt;/li>
+&lt;li>RD 不支持，虽然它是由规范定义的，但在 API/DIVER/硬件中不支持&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>QP 的传输类型：&lt;/p>
+&lt;ul>
+&lt;li>可靠连接 RC
+&lt;ul>
+&lt;li>QP 仅与一个远程 QP 关联&lt;/li>
+&lt;li>由一个 QP 的发送队列发送的消息被可靠地递送到另一个 QP 的接收队列。&lt;/li>
+&lt;li>数据包按顺序发送&lt;/li>
+&lt;li>发送端，每条消息都被划分为长度为路径 MTU 的数据包，接收方将数据包重组为消息。支持发送、RDMA write/read&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>不可靠连接 RC
+&lt;ul>
+&lt;li>QP 仅与一个远程 QP 关联&lt;/li>
+&lt;li>连接是不可靠的，即发送的数据包可能会丢失&lt;/li>
+&lt;li>消息出错时不会重传，错误处理必须由更高级别的协议提供。&lt;/li>
+&lt;li>支持发送、RDMA write&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>不可靠数据报 UD
+&lt;ul>
+&lt;li>队列对可以向/从任何其他多个 QP 发送和接收单数据包消息。&lt;/li>
+&lt;li>不能保证有序和数据包到达，并且发送的数据包可能会被接收方丢弃。&lt;/li>
+&lt;li>支持广播消息(一对多)&lt;/li>
+&lt;li>只支持发送操作&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>RDMA 支持的传输操作&lt;/p>
+&lt;ul>
+&lt;li>Send（立即）
+&lt;ul>
+&lt;li>发送方需要加上时间戳&lt;/li>
+&lt;li>接收方也需要在某些地方加上该时间戳用来标识该消息&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>RDMA Write（立即）&lt;/li>
+&lt;li>RDMA Read（异步）&lt;/li>
+&lt;li>Atomic operations（原子操作）
+&lt;ul>
+&lt;li>发送方发送读/写请求，并指定其将访问读写的本地和远程地址&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Send 操作流程：&lt;/p>
+&lt;ul>
+&lt;li>接收方需要发送接收请求（Receive Request, RR）给发送方&lt;/li>
+&lt;li>发送方发送 Send 操作请求（Send Request, SR）给接收方&lt;/li>
+&lt;li>只在可靠连接中发送 ACK&lt;/li>
+&lt;li>接收方轮询 CQ，获取 SR 的完成事件&lt;/li>
+&lt;li>发送方轮询 CQ，获取 RR 的完成事件&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722232438.webp"
+alt="20230722232438" width="90%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>RDMA Write 操作流程：
+&lt;ul>
+&lt;li>请求方发送 Send 操作请求（Send Request, SR）加上远程地址与 key 给接收方&lt;/li>
+&lt;li>只在可靠连接中发送 ACK&lt;/li>
+&lt;li>请求方轮询 CQ，获取 SR 的完成事件&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>RDMA Write 操作是一端应用主动写入远端内存的行为，除了准备阶段，远端 CPU 不需要参与，也不感知何时有数据写入、数据在何时接收完毕，所以这是一种单端操作。&lt;/li>
+&lt;li>需要注意的是，操作发起端的应用程序是通过虚拟地址来读写远端内存的，上层应用可以非常方便的对其进行操作。实际的虚拟地址——物理地址的转换由 RDMA 网卡完成。&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722232556.webp"
+alt="20230722232556" width="90%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>RDMA Read 与 Atomic 操作流程：
+&lt;ul>
+&lt;li>请求方发送 Send 操作请求（Send Request, SR）加上远程地址与 key 给接收方&lt;/li>
+&lt;li>只在可靠连接中发送 ACK&lt;/li>
+&lt;li>请求方轮询 CQ，获取 SR 的完成事件&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722232758.webp"
+alt="20230722232758" width="90%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>小结：UD、UC、RC 三种 QP 传输方式对比，w/o-&amp;gt;with/without
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:center">操作原语&lt;/th>
+&lt;th style="text-align:center">UD&lt;/th>
+&lt;th style="text-align:center">UC&lt;/th>
+&lt;th style="text-align:center">RC&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:center">Send(w/o immediate)&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">RDMA Write(w/o immediate)&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">RDMA Read&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">Atomic operations&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">连接类型&lt;/td>
+&lt;td style="text-align:center">数据报（一对多）&lt;/td>
+&lt;td style="text-align:center">连接（一对一）&lt;/td>
+&lt;td style="text-align:center">连接（一对一）&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">最大消息大小&lt;/td>
+&lt;td style="text-align:center">最大路径 MTU&lt;/td>
+&lt;td style="text-align:center">2GB&lt;/td>
+&lt;td style="text-align:center">2GB&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:center">广播&lt;/td>
+&lt;td style="text-align:center">支持&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;td style="text-align:center">不支持&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="6-rdma-架构层级结构">6. RDMA 架构层级结构&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230722233900.webp"
+alt="20230722233900" width="90%" loading="lazy">
+&lt;/figure>
+&lt;hr>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230728235849.webp"
+alt="20230728235849" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h2 id="三verbs-与-ofa-verbs-api">三、Verbs 与 OFA Verbs API&lt;/h2>
+&lt;h3 id="1-verbs-简介">1. Verbs 简介&lt;/h3>
+&lt;ul>
+&lt;li>Verbs 是对为使用 RDMA 的应用程序提供的功能的抽象描述
+&lt;ul>
+&lt;li>Verbs 不是 API&lt;/li>
+&lt;li>Verbs 有多种实现&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Verbs 可以被分为两大类
+&lt;ul>
+&lt;li>控制：管理资源，通常需要切换上下文。
+&lt;ul>
+&lt;li>创建/销毁/修改/查询/处理事件&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>数据：使用资源发送/接收数据，不需要切换上下文。
+&lt;ul>
+&lt;li>发送 Send/发送 Receive/轮询 CQ/请求完成事件&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Verbs 是对 RDMA 编程的底层描述。&lt;/li>
+&lt;li>Verbs 旨在提供延迟、带宽、消息速率等方面的最佳性能。它可以被视作许多应用构建的基石。
+&lt;ul>
+&lt;li>Sockets&lt;/li>
+&lt;li>存储&lt;/li>
+&lt;li>并行计算&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>InfiniBand 规范以 Verbs 接口形式编写
+&lt;ul>
+&lt;li>所需行为的语义描述&lt;/li>
+&lt;li>没有语法或操作系统特定的详细信息&lt;/li>
+&lt;li>可以自由定义实现
+&lt;ul>
+&lt;li>函数、结构、类型等的语法。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>OpenFabrics Alliance (OFA) Verbs API
+&lt;ul>
+&lt;li>一种 Verbs 接口，由 OpenFabrics Alliance（OFA）组织定义和推广。OFA Verbs 是基于 RDMA Verbs 的扩展，提供了更加统一和标准化的 RDMA 编程接口。OFA Verbs 是 RDMA 领域的一个重要标准，被广泛应用于高性能计算、数据中心和云计算等领域。&lt;/li>
+&lt;li>旨在提供一个开放、跨平台的 RDMA 编程接口，使应用程序能够在不同的 RDMA 硬件和操作系统上进行移植和开发&lt;/li>
+&lt;li>OFA 统一 InfiniBand 市场的战略&lt;/li>
+&lt;li>OFA 面向 Linux、FreeBSD、Windows 等操作系统实现&lt;/li>
+&lt;li>应用程序的软件接口：支持 C/C++程序的数据结构、函数原型&lt;/li>
+&lt;li>用户态空间和内核态空间的变体：大多数应用程序和库都在用户态空间中&lt;/li>
+&lt;li>客户端-服务器编程模型
+&lt;ul>
+&lt;li>与 TCP/IP 套接字有一些明显的相似之处&lt;/li>
+&lt;li>而许多的其它不同之处，则是由于 RDMA 与 TCP/IP 的不同导致&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="2-ofa-verbs-api-支持应用">2. OFA Verbs API 支持应用&lt;/h3>
+&lt;ol>
+&lt;li>MPI： Message Passing Interface，支持多种版本
+&lt;ul>
+&lt;li>OpenMPI&lt;/li>
+&lt;li>MVAPICH&lt;/li>
+&lt;li>Intel MPI&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>文件系统：
+&lt;ul>
+&lt;li>Lustre&lt;/li>
+&lt;li>NFS_RDMA&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>DDN 和 NetApp 公司生产的存储设备
+&lt;ul>
+&lt;li>SRP：SCSI RDMA (Remote) Protocol – Linux kernel&lt;/li>
+&lt;li>iSER – iSCSI Extensions for RDMA – Linux kernel&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>伪 Socket 库
+&lt;ul>
+&lt;li>SDP – Sockets Direct Protocol – supported by Oracle&lt;/li>
+&lt;li>rsockets – RDMA Sockets – supported by Intel&lt;/li>
+&lt;li>mva – Mellanox Messaging Accelerator&lt;/li>
+&lt;li>SMC-R – proposed by IBM&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="四总结">四、总结&lt;/h2>
+&lt;ul>
+&lt;li>RDMA 技术是一种远程直接内存访问技术，它可以让远程主机直接访问本地内存，而不需要经过 CPU 的参与，从而大大减少了 CPU 的开销，提高了数据传输的效率。&lt;/li>
+&lt;li>RDMA 技术的各种协议：InfiniBand、RoCE、iWarp&lt;/li>
+&lt;li>RDMA 技术的优势：Zero-copy、Kernel bypass、No CPU involvement、Message based transactions、Scatter/gather entries support&lt;/li>
+&lt;li>RDMA 技术的传输服务：Connected（连接）与 Datagram（数据报）、Reliable（可靠）与 Unreliable（不可靠）&lt;/li>
+&lt;li>RDMA 技术的 QP 传输类型：RC、UC、UD&lt;/li>
+&lt;li>RDMA 技术的操作原语：Send、RDMA Write、RDMA Read、Atomic operations&lt;/li>
+&lt;li>RDMA 技术的 Verbs 与 OFA Verbs API&lt;/li>
+&lt;li>RDMA 技术的应用：MPI、文件系统、存储设备、伪 Socket 库&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;ul>
+&lt;li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li>
+&lt;/ul></description></item><item><title>RDMA：Soft-RoCE 环境搭建实验</title><link>https://cuterwrite.top/p/soft-roce/</link><pubDate>Sat, 11 Feb 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/soft-roce/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/86.webp" alt="Featured image of post RDMA：Soft-RoCE 环境搭建实验" />&lt;h1 id="rdma-soft-roce-环境搭建实验">RDMA: Soft-RoCE 环境搭建实验&lt;/h1>
+&lt;h2 id="1-roce-简介">1. RoCE 简介&lt;/h2>
+&lt;p>RoCE 是三大 RDMA 协议之一，全称为 RDMA Over Converged Ethernet，即基于融合以太网的 RDMA。它是一种基于传统以太网的部分下层协议，在其基础上实现 InfiniBand 的部分上层协议。&lt;/p>
+&lt;p>RoCE 的发展历史如下：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>1999 年，由 Compaq, Dell, HP, IBM, Intel, Microsoft 和 Sun 公司组成了 IBTA 组织。愿景是&lt;strong>设计一种更高速的新的互联协议规范标准，来应对传统以太网在面对未来计算机行业的发展时可能遇到的瓶颈&lt;/strong>。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>2000 年，IBTA 组织设计并发布了 Infiniband Architecture Specification 1.0（IB 规范）。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>2007 年，IETF 发布了 iWARP（Internet Wide Area RDMA Protocol）的一系列 RFC。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>2010 年，IBTA 发布了 RoCE v1 规范。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>2014 年，IBTA 发布了 RoCE v2 规范。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="2-roce-的协议层次">2. RoCE 的协议层次&lt;/h2>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-106078a152d4926ac8234022bd629c79_1440w.jpg" width="90%" loading="lazy">
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-17e04efb14c550ad0be456b7b71209b4_1440w.jpg" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>首先是二层的以太网链路帧，然后是 IP 报文头和 UDP 报文头，最后是各层级协议的校验。而 Infiniband 传输层报文实际上是 UDP 层的负载，也就是深蓝色背景的部分。UDP 报文头中有一个字段 Destination Port Number（目的端口号），对于 RoCE v2 来说固定是 4791，当对端网卡收到报文后，会根据该字段识别是普通的以太网数据包，还是 RoCE 数据包，或者是其他协议的数据包，然后再进行解析。深蓝色背景的 IB 传输层部分又分成了 IB 报头，实际的用户数据（Payload）以及校验部分。&lt;/p>
+&lt;h2 id="3-roce-的优势">3. RoCE 的优势&lt;/h2>
+&lt;p>为什么我们有了 Infiniband 协议之后，还要设计 RoCE 协议呢？最主要的原因还是成本问题：由于 Infiniband 协议本身定义了一套全新的层次架构，从链路层到传输层，都无法与现有的以太网设备兼容。也就是说，如果某个数据中心因为性能瓶颈，想要把数据交换方式从以太网切换到 Infiniband 技术，那么需要购买全套的 Infiniband 设备，包括网卡、线缆、交换机和路由器等等。商用级设备由于对可靠性有比较高的要求，所以这一套下来是非常昂贵的。&lt;/p>
+&lt;p>而 RoCE 协议的出现解决了这一问题，如果用户想要从以太网切换到 RoCE，那么只需要购买支持 RoCE 的网卡就可以了，线缆、交换机和路由器（RoCE v1 不支持以太网路由器）等网络设备都是兼容的——因为我们只是在以太网传输层基础上又定义了一套协议而已。&lt;/p>
+&lt;p>所以 RoCE 相比于 Infiniband，主要还是省钱，当然性能上相比 Infiniband 还是有一些损失，毕竟人家是全套重新设计的。&lt;/p>
+&lt;p>至于 iWARP，相比于 RoCE 协议栈更复杂，并且由于 TCP 的限制，只能支持可靠传输，即无法支持 UD 等传输类型。所以目前 iWARP 的发展并不如 RoCE 和 Infiniband。&lt;/p>
+&lt;h2 id="4-soft-roce">4. Soft-RoCE&lt;/h2>
+&lt;p>虽然 RoCE 相比 Infiniband 具有兼容性优势，价格也便宜，但是&lt;strong>实际应用&lt;/strong>的时候&lt;strong>依然需要专用的网卡支持&lt;/strong>。&lt;/p>
+&lt;p>RoCE 本身确实可以由软件实现，也就是本节即将介绍的 Soft-RoCE，但是商用的时候，几乎不会有人用软件实现的 RoCE。RDMA 技术本身的一大特点就是“硬件卸载”，即把本来软件（CPU）做的事情放到硬件中实现以达到加速的目的。CPU 主要是用来计算的，让它去处理协议封包和解析以及搬运数据，这是对计算资源的浪费。所以 RoCE 网卡会把 TCP/IP 协议栈放到硬件中实现以解放 CPU，让它去做更重要的事。&lt;/p>
+&lt;p>我们说回 Soft-RoCE，它由 IBM 和 Mellanox 牵头的 IBTA RoCE 工作组实现。本身的设计初衷有几点：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>降低 RoCE 部署成本：Soft-RoCE 可以使不具备 RoCE 能力的硬件和支持 RoCE 的硬件间进行基于 IB 语义的交流，这样可以免于替换网络中的一些非关键节点的旧型号网卡。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>相比 TCP 提升性能：虽然软件实现 IB 传输层带来了一定的开销，但是相比基于 Socket-TCP/IP 的传统通信方式，Soft-RoCE 因为减少了系统调用（只在软件通知硬件下发了新 SQ WQE 时才会使用系统调用），发送端的零拷贝以及接收端的只需要单次拷贝等原因，仍然带来了性能上的提升。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>便于开发和测试 RDMA 程序：有了 Soft-RoCE，我们基于 Verbs API 编写的程序，就可以不依赖于硬件执行起来，可以很方便地运行程序。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>实现原理&lt;/strong>&lt;/p>
+&lt;p>Soft-RoCE 就是把本来应该卸载到硬件的封包和解析工作，又拿到软件来做。其本身是基于 Linux 内核的 TCP/IP 协议栈实现的，网卡本身并不感知收发的数据包是 RoCE 报文，其驱动程序按照 IB 规范中的报文格式将用户数据封装成 IB 传输层报文，然后把报文整体当做数据填入 Socket Buffer 当中，由网卡进行下一步收发包处理。&lt;/p>
+&lt;h2 id="5-部署实验">5. 部署实验&lt;/h2>
+&lt;h3 id="51-实验环境">5.1. 实验环境&lt;/h3>
+&lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 2 台 2 核 4GB 云服务器作为 Soft-RoCE 的部署环境。&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th style="text-align:left">节点&lt;/th>
+&lt;th style="text-align:left">IP 地址&lt;/th>
+&lt;th style="text-align:left">RDMA 设备名&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td style="text-align:left">node1&lt;/td>
+&lt;td style="text-align:left">172.16.16.10&lt;/td>
+&lt;td style="text-align:left">node1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td style="text-align:left">node2&lt;/td>
+&lt;td style="text-align:left">172.16.16.6&lt;/td>
+&lt;td style="text-align:left">node2&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="52-部署-rdma-软件栈">5.2. 部署 RDMA 软件栈&lt;/h3>
+&lt;h4 id="521-确认当前内核是否支持-rxe">5.2.1. 确认当前内核是否支持 RXE&lt;/h4>
+&lt;pre>&lt;code class="language-shell">cat /boot/config-$(uname -r) | grep RXE
+&lt;/code>&lt;/pre>
+&lt;p>如果 CONFIG_RDMA_RXE 的值为 y 或者 m，表示当前的操作系统可以使用 RXE。&lt;/p>
+&lt;h4 id="522-安装用户态动态链接库">5.2.2. 安装用户态动态链接库&lt;/h4>
+&lt;pre>&lt;code class="language-shell">sudo apt-get install libibverbs1 ibverbs-utils librdmacm1 libibumad3 ibverbs-providers rdma-core
+&lt;/code>&lt;/pre>
+&lt;p>这几个软件包的作用如下：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>软件包名&lt;/th>
+&lt;th>主要功能&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>libibverbs1&lt;/td>
+&lt;td>ibverbs 动态链接库&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>ibverbs-utils&lt;/td>
+&lt;td>ibverbs 示例程序&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>librdmacm1&lt;/td>
+&lt;td>rdmacm 动态链接库&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>libibumad3&lt;/td>
+&lt;td>ibumad 动态链接库&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>ibverbs-providers&lt;/td>
+&lt;td>ibverbs 各厂商用户态驱动（包括 RXE）&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>rdma-core&lt;/td>
+&lt;td>文档及用户态配置文件&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>安装完上述软件之后，可以执行 ibv_devices 看看有没有报错：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152257.webp"
+alt="20230725152257" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>这是个基于 verbs 接口编写的小程序，用来获取并打印出当前系统中的 RDMA 设备列表。&lt;/p>
+&lt;p>查看安装的版本：&lt;/p>
+&lt;pre>&lt;code class="language-shell">dpkg -L libibverbs1
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152107.webp"
+alt="20230725152107" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>可以看到安装的版本是 1.14.19.0&lt;/p>
+&lt;h4 id="523-安装-iproute2-和-perftest">5.2.3. 安装 iproute2 和 perftest&lt;/h4>
+&lt;p>iproute2 是用来替代 net-tools 软件包的，是一组开源的网络工具集合，比如用更强大 ip 命令替换了以前常用的 ifconfig。我们需要其中的 rdma 工具来对 RXE 进行配置。一般的操作系统都已经包含了，安装也很简单：&lt;/p>
+&lt;pre>&lt;code class="language-shell">sudo apt-get install iproute2
+&lt;/code>&lt;/pre>
+&lt;p>perftest 是一个基于 Verbs 接口开发的开源 RDMA 性能测试工具，可以对支持 RDMA 技术的节点进行带宽和时延测试。相比于 rdma-core 自带的示例程序 ，功能更加强大，当然也更复杂。使用如下命令安装：&lt;/p>
+&lt;pre>&lt;code class="language-shell">sudo apt-get install perftest
+&lt;/code>&lt;/pre>
+&lt;h3 id="53-配置-rxe-网卡">5.3. 配置 RXE 网卡&lt;/h3>
+&lt;p>首先我们需要加载内核驱动，modprobe 会自动加载依赖的其他驱动。&lt;/p>
+&lt;pre>&lt;code class="language-shell">sudo modprobe rdma_rxe
+&lt;/code>&lt;/pre>
+&lt;p>然后进行用户态配置：&lt;/p>
+&lt;pre>&lt;code class="language-shell">sudo rdma link add rxe_0 type rxe netdev eth0
+&lt;/code>&lt;/pre>
+&lt;p>其中 rxe_0 是你希望的 RDMA 的设备名，可任意取名。eth0 为 Soft-RoCE 设备所绑定的网络设备名，也就是 ifconfig 中看到的网卡名。&lt;/p>
+&lt;p>接着我们用 rdma 工具查看是否添加成功：&lt;/p>
+&lt;pre>&lt;code class="language-shell">rdma link
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152620.webp"
+alt="20230725152620" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>再次运行&lt;code>ibv_devices&lt;/code> 程序，可以看到 RXE 网卡已经出现在设备列表里。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152728.webp"
+alt="20230725152728" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>也可以运行&lt;code>ibv_devinfo -d node1&lt;/code> 命令查看虚拟 RDMA 设备的信息。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152801.webp"
+alt="20230725152801" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="54-执行-perftest-测试">5.4. 执行 perftest 测试&lt;/h3>
+&lt;p>分别在两端执行以下命令：&lt;/p>
+&lt;pre>&lt;code class="language-shell">ib_send_bw -d node2
+&lt;/code>&lt;/pre>
+&lt;p>以及：&lt;/p>
+&lt;pre>&lt;code class="language-shell">ib_send_bw -d node1 172.16.16.6
+&lt;/code>&lt;/pre>
+&lt;p>ib_send_bw 是用来测试 SEND 操作的带宽的程序（infiniband_send bandwidth），其中 &lt;strong>&amp;lt;server_ip&amp;gt;&lt;/strong> 表示对端的 IP&lt;/p>
+&lt;p>两端的结果如下，Server 端：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152955.webp"
+alt="20230725152955" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>Client 端：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725153015.webp"
+alt="20230725153015" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>可以看到两端都打印出了一些测试信息以及最后的测试结果，也就是带宽信息。&lt;/p></description></item></channel></rss>

@@ -22,7 +22,7 @@
 &lt;p>一旦事务提交，则其所做的修改将会永远保存到数据库中。即使系统发生崩溃，事务执行的结果也不能丢失。系统发生崩溃可以用重做日志（Redo Log）进行恢复，从而实现持久性。与回滚日志记录数据的逻辑修改不同，重做日志记录的是数据页的物理修改。&lt;/p>
 &lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207210437023.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207210437023.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;hr>
 &lt;p>原因：&lt;/p>
@@ -45,19 +45,19 @@
 &lt;h2 id="2-并发一致性问题">2 并发一致性问题&lt;/h2>
 &lt;h3 id="21-丢失修改">2.1 丢失修改&lt;/h3>
 &lt;p>丢失修改指一个事务的更新操作被另外一个事务的更新操作替换。一般在现实生活中常会遇到，例如：T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 和 T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 两个事务都对一个数据进行修改，T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 先修改并提交生效，T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 随后修改，T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 的修改覆盖了 T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 的修改。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207221744244.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207221744244.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="22-读脏数据">2.2 读脏数据&lt;/h3>
 &lt;p>读脏数据指在不同的事务下，当前事务可以读到另外事务未提交的数据。例如：T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 修改一个数据但未提交，T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 随后读取这个数据。如果 T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 撤销了这次修改，那么 T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 读取的数据是脏数据。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207221920368.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207221920368.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="23-不可重复读">2.3 不可重复读&lt;/h3>
 &lt;p>不可重复读指在一个事务内多次读取同一数据集合。在这一事务还未结束前，另一事务也访问了该同一数据集合并做了修改，由于第二个事务的修改，第一次事务的两次读取的数据可能不一致。例如：T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 读取一个数据，T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 对该数据做了修改。如果 T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 再次读取这个数据，此时读取的结果和第一次读取的结果不同。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207222102010.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207222102010.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="24-幻影读">2.4 幻影读&lt;/h3>
 &lt;p>幻读本质上也属于不可重复读的情况，T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 读取某个范围的数据，T&lt;!-- raw HTML omitted -->2&lt;!-- raw HTML omitted --> 在这个范围内插入新的数据，T&lt;!-- raw HTML omitted -->1&lt;!-- raw HTML omitted --> 再次读取这个范围的数据，此时读取的结果和和第一次读取的结果不同。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207222134306.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207222134306.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="3-封锁">3 封锁&lt;/h2>
 &lt;h3 id="31-封锁粒度">3.1 封锁粒度&lt;/h3>
@@ -77,7 +77,7 @@
 &lt;li>一个事务对数据对象 A 加了 S 锁，可以对 A 进行读取操作，但是不能进行更新操作。加锁期间其它事务能对 A 加 S 锁，但是不能加 X 锁。&lt;/li>
 &lt;/ul>
 &lt;p>锁的兼容关系如下：&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207213523777.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207213523777.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h4 id="322-意向锁">3.2.2 意向锁&lt;/h4>
 &lt;p>使用意向锁（Intention Locks）可以更容易地支持多粒度封锁。&lt;/p>
@@ -89,7 +89,7 @@
 &lt;/ul>
 &lt;p>通过引入意向锁，事务 T 想要对表 A 加 X 锁，只需要先检测是否有其它事务对表 A 加了 X/IX/S/IS 锁，如果加了就表示有其它事务正在使用这个表或者表中某一行的锁，因此事务 T 加 X 锁失败。&lt;/p>
 &lt;p>各种锁的兼容关系如下：&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207214442687.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207214442687.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>解释如下：&lt;/p>
 &lt;ul>
@@ -124,7 +124,7 @@ SELECT ... FOR UPDATE;
 &lt;p>强制事务串行执行，这样多个事务互不干扰，不会出现并发一致性问题。&lt;/p>
 &lt;p>该隔离级别需要加锁实现，因为要使用加锁机制保证同一时间只有一个事务执行，也就是保证事务串行执行。&lt;/p>
 &lt;hr>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207223400787.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191207223400787.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="5-多版本并发控制">5 多版本并发控制&lt;/h2>
 &lt;p>多版本并发控制（Multi-Version Concurrency Control, MVCC）是 MySQL 的 InnoDB 存储引擎实现隔离级别的一种具体方式，用于实现提交读和可重复读这两种隔离级别。而未提交读隔离级别总是读取最新的数据行，要求很低，无需使用 MVCC。可串行化隔离级别需要对所有读取的行都加锁，单纯使用 MVCC 无法实现。&lt;/p>
@@ -145,12 +145,12 @@ UPDATE t SET x=&amp;quot;b&amp;quot; WHERE id=1;
 UPDATE t SET x=&amp;quot;c&amp;quot; WHERE id=1;
 &lt;/code>&lt;/pre>
 &lt;p>因为没有使用 &lt;code>START TRANSACTION&lt;/code> 将上面的操作当成一个事务来执行，根据 MySQL 的 AUTOCOMMIT 机制，每个操作都会被当成一个事务来执行，所以上面的操作总共涉及到三个事务。快照中除了记录事务版本号 TRX_ID 和操作之外，还记录了一个 bit 的 DEL 字段，用于标记是否被删除。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208164808217.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208164808217.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>INSERT、UPDATE、DELETE 操作会创建一个日志，并将事务版本号 TRX_ID 写入。DELETE 可以看成是一个特殊的 UPDATE，还会额外将 DEL 字段设置为 1。&lt;/p>
 &lt;h3 id="54-readview">5.4 ReadView&lt;/h3>
 &lt;p>MVCC 维护了一个 ReadView 结构，主要包含了当前系统未提交的事务列表 TRX_IDs {TRX_ID_1, TRX_ID_2, &amp;hellip;}，还有该列表的最小值 TRX_ID_MIN 和 TRX_ID_MAX。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208171445674.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/image-20191208171445674.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>在进行 SELECT 操作时，根据数据行快照的 TRX_ID 与 TRX_ID_MIN 和 TRX_ID_MAX 之间的关系，从而判断数据行快照是否可以使用：&lt;/p>
 &lt;ul>
@@ -191,7 +191,7 @@ UPDATE t SET x=&amp;quot;c&amp;quot; WHERE id=1;
 &lt;p>B Tree 指的是 Balance Tree，也就是平衡树。平衡树是一颗查找树，并且所有叶子节点位于同一层。&lt;/p>
 &lt;p>B+ Tree 是基于 B Tree 和&lt;strong>叶子节点顺序访问指针&lt;/strong>进行实现，它具有 B Tree 的平衡性，并且通过顺序访问指针来提高&lt;strong>区间查询&lt;/strong>的性能。&lt;/p>
 &lt;p>在 B+ Tree 中，一个节点中的 key 从左到右非递减排列，如果某个指针的左右相邻 key 分别是 key&lt;!-- raw HTML omitted -->i&lt;!-- raw HTML omitted --> 和 key&lt;!-- raw HTML omitted -->i+1&lt;!-- raw HTML omitted -->，且不为 null，则该指针指向节点的所有 key 大于等于 key&lt;!-- raw HTML omitted -->i&lt;!-- raw HTML omitted --> 且小于等于 key&lt;!-- raw HTML omitted -->i+1&lt;!-- raw HTML omitted -->。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/33576849-9275-47bb-ada7-8ded5f5e7c73.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/33576849-9275-47bb-ada7-8ded5f5e7c73.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h4 id="112-操作">1.1.2. 操作&lt;/h4>
 &lt;p>进行查找操作时，首先在根节点进行&lt;strong>二分查找&lt;/strong>，找到一个 key 所在的指针，然后递归地在指针所指向的节点进行查找。直到查找到叶子节点，然后在叶子节点上进行二分查找，找出 key 所对应的 data。&lt;/p>
@@ -213,10 +213,10 @@ UPDATE t SET x=&amp;quot;c&amp;quot; WHERE id=1;
 &lt;p>可以指定多个列作为索引列，多个索引列共同组成键。&lt;/p>
 &lt;p>适用于全键值、键值范围和键前缀查找，其中键前缀查找只适用于最左前缀查找。如果不是按照索引列的顺序进行查找，则无法使用索引。&lt;/p>
 &lt;p>InnoDB 的 B+Tree 索引分为主索引和辅助索引。主索引的叶子节点 data 域记录着完整的数据记录，这种索引方式被称为聚簇索引。因为无法把数据行存放在两个不同的地方，所以一个表只能有一个聚簇索引。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/45016e98-6879-4709-8569-262b2d6d60b9.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/45016e98-6879-4709-8569-262b2d6d60b9.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>辅助索引的叶子节点的 data 域记录着主键的值，因此在使用辅助索引进行查找时，需要先查找到主键值，然后再到主索引中进行查找。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/7c349b91-050b-4d72-a7f8-ec86320307ea.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/7c349b91-050b-4d72-a7f8-ec86320307ea.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h4 id="122-哈希索引">1.2.2 哈希索引&lt;/h4>
 &lt;p>哈希索引能以 O(1) 时间进行查找，但是失去了有序性：&lt;/p>
@@ -395,12 +395,12 @@ COUNT(*): 16049
 &lt;h3 id="51-水平切分">5.1 水平切分&lt;/h3>
 &lt;p>水平切分又称为 Sharding，它是将同一个表中的记录拆分到多个结构相同的表中。&lt;/p>
 &lt;p>当一个表的数据不断增多时，Sharding 是必然的选择，它可以将数据分布到集群的不同节点上，从而缓存单个数据库的压力。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/63c2909f-0c5f-496f-9fe5-ee9176b31aba.jpg" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/63c2909f-0c5f-496f-9fe5-ee9176b31aba.jpg" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="52-垂直切分">5.2 垂直切分&lt;/h3>
 &lt;p>垂直切分是将一张表按列切分成多个表，通常是按照列的关系密集程度进行切分，也可以利用垂直切分将经常被使用的列和不经常被使用的列切分到不同的表中。&lt;/p>
 &lt;p>在数据库的层面使用垂直切分将按数据库中表的密集程度部署到不同的库中，例如将原来的电商数据库垂直切分成商品数据库、用户数据库等。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/e130e5b8-b19a-4f1e-b860-223040525cf6.jpg" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/e130e5b8-b19a-4f1e-b860-223040525cf6.jpg" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="53-sharding-策略">5.3 Sharding 策略&lt;/h3>
 &lt;ul>
@@ -427,7 +427,7 @@ COUNT(*): 16049
 &lt;li>&lt;strong>I/O 线程&lt;/strong> ：负责从主服务器上读取二进制日志，并写入从服务器的中继日志（Relay log）。&lt;/li>
 &lt;li>&lt;strong>SQL 线程&lt;/strong> ：负责读取中继日志，解析出主服务器已经执行的数据更改并在从服务器中重放（Replay）。&lt;/li>
 &lt;/ul>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/master-slave.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/master-slave.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="62-读写分离">6.2 读写分离&lt;/h3>
 &lt;p>主服务器处理写操作以及实时性要求比较高的读操作，而从服务器处理读操作。&lt;/p>
@@ -487,10 +487,10 @@ COUNT(*): 16049
 &lt;h3 id="32-跳跃表">3.2 跳跃表&lt;/h3>
 &lt;p>是有序集合的底层实现之一。&lt;/p>
 &lt;p>跳跃表是基于多指针有序链表实现的，可以看成多个有序链表。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/beba612e-dc5b-4fc2-869d-0b23408ac90a.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/beba612e-dc5b-4fc2-869d-0b23408ac90a.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>在查找时，从上层指针开始查找，找到对应的区间之后再到下一层去查找。下图演示了查找 22 的过程。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/0ea37ee2-c224-4c79-b895-e131c6805c40.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/0ea37ee2-c224-4c79-b895-e131c6805c40.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>与红黑树等平衡树相比，跳跃表具有以下优点：&lt;/p>
 &lt;ul>
@@ -609,7 +609,7 @@ COUNT(*): 16049
 &lt;h3 id="91-文件事件">9.1 文件事件&lt;/h3>
 &lt;p>服务器通过套接字与客户端或者其它服务器进行通信，文件事件就是对套接字操作的抽象。&lt;/p>
 &lt;p>Redis 基于 Reactor 模式开发了自己的网络事件处理器，使用 I/O 多路复用程序来同时监听多个套接字，并将到达的事件传送给文件事件分派器，分派器会根据套接字产生的事件类型调用相应的事件处理器。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/9ea86eb5-000a-4281-b948-7b567bd6f1d8.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/9ea86eb5-000a-4281-b948-7b567bd6f1d8.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h3 id="92-时间事件">9.2 时间事件&lt;/h3>
 &lt;p>服务器有一些操作需要在给定的时间点执行，时间事件是对这类定时操作的抽象。&lt;/p>
@@ -622,7 +622,7 @@ COUNT(*): 16049
 &lt;h3 id="93-事件的调度与执行">9.3 事件的调度与执行&lt;/h3>
 &lt;p>服务器需要不断监听文件事件的套接字才能得到待处理的文件事件，但是不能一直监听，否则时间事件无法在规定的时间内执行，因此监听时间应该根据距离现在最近的时间事件来决定。&lt;/p>
 &lt;p>从事件处理的角度来看，服务器运行流程如下：&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/c0a9fa91-da2e-4892-8c9f-80206a6f7047.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/c0a9fa91-da2e-4892-8c9f-80206a6f7047.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="10-复制">10 复制&lt;/h2>
 &lt;p>通过使用 slaveof host port 命令来让一个服务器成为另一个服务器的从服务器。&lt;/p>
@@ -641,7 +641,7 @@ COUNT(*): 16049
 &lt;/ol>
 &lt;h3 id="102-主从链">10.2 主从链&lt;/h3>
 &lt;p>随着负载不断上升，主服务器可能无法很快地更新所有从服务器，或者重新连接和重新同步从服务器将导致系统超载。为了解决这个问题，可以创建一个中间层来分担主服务器的复制工作。中间层的服务器是最上层服务器的从服务器，又是最下层服务器的主服务器。&lt;/p>
-&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/395a9e83-b1a1-4a1d-b170-d081e7bb5bab.png" width="90%" loading="lazy"/>
+&lt;figure>&lt;img src="https://cs-notes-1256109796.cos.ap-guangzhou.myqcloud.com/395a9e83-b1a1-4a1d-b170-d081e7bb5bab.png" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="11-哨兵">11 哨兵&lt;/h2>
 &lt;p>Sentinel（哨兵）可以监听集群中的服务器，并在主服务器进入下线状态时，自动从从服务器中选举出新的主服务器。&lt;/p>
