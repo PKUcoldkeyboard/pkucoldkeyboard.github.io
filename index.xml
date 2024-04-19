@@ -1,4 +1,47 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cuterwrite's Blog</title><link>https://cuterwrite.top/</link><description>Recent content on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 03 Apr 2024 16:17:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cuterwrite's Blog</title><link>https://cuterwrite.top/</link><description>Recent content on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 18 Apr 2024 21:42:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>知乎专栏：7. RDMA 之 Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>前文我们简单介绍了 RDMA 中最常见的一些资源，包括各种 Queue，以及 MR 的概念等等。MR 用于控制和管理 HCA 对于本端和远端内存的访问权限，确保 HCA 只有拿到正确 Key 之后才能读写用户已经注册了的内存区域。为了更好的保障安全性，IB 协议又提出了 Protection Domain（PD）的概念，用于保证 RDMA 资源间的相互隔离，本文就介绍一下 PD 的概念。&lt;/p>
+&lt;h2 id="pd-是什么">PD 是什么&lt;/h2>
+&lt;p>PD 全称是 Protection Domain，意为&amp;quot;保护域&amp;quot;。域的概念我们经常见到，从数学上的“实数域”、“复数域”，到地理上的“空域”、“海域”等等，表示一个空间/范围。在 RDMA 中，PD 像是一个容纳了各种资源（QP、MR 等）的“容器”，将这些资源纳入自己的保护范围内，避免他们被未经授权的访问。一个节点中可以定义多个保护域，各个 PD 所容纳的资源彼此隔离，无法一起使用。&lt;/p>
+&lt;p>概念还是有些抽象，下面我们来看一下 PD 有什么作用，具体解决了什么问题。&lt;/p>
+&lt;h2 id="pd-的作用">PD 的作用&lt;/h2>
+&lt;p>一个用户可能创建多个 QP 和多个 MR，每个 QP 可能和不同的远端 QP 建立了连接，比如下图这样（灰色箭头表示 QP 间的连接关系）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_1-2024-04-19.webp"
+alt="7_1-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>图 1：没有 PD 概念时的 RDMA 资源&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>由于 MR 和 QP 之间并没有绑定关系，这就意味着一旦某个远端的 QP 与本端的一个 QP 建立了连接，具备了通信的条件，那么理论上远端节点只要知道 VA 和 R_key（甚至可以靠不断的猜测直到得到一对有效的值），就可以访问本端节点某个 MR 的内容。&lt;/p>
+&lt;p>其实一般情况下，MR 的虚拟地址 VA 和秘钥 R_Key 是很难猜到的，已经可以保证一定的安全性了。但是为了更好的保护内存中的数据，把各种资源的权限做进一步的隔离和划分，我们在又在每个节点中定义了 PD，如下图所示&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_2-2024-04-19.webp"
+alt="7_2-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>图 2：加入 PD 概念时的 RDMA 资源&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>图中 Node 0 上有两个 PD，将 3 个 QP 和 2 个 MR 分为了两组，此外 Node 1 和 Node 2 中各有一个 PD 包含了所有 QP 和 MR。Node 0 上的两个 PD 中的资源不可以一起使用，也就是说 QP3 和 QP9 不能访问 MR1 的数据，QP6 也不可以访问 MR0 的数据。如果我们在数据收发时，指定硬件使用 QP3 和 MR1，那么硬件校验他们不属于同一个 PD 后，会返回错误。&lt;/p>
+&lt;p>对于远端节点来说，Node1 只能通过 QP8 相连的 QP3 来访问 Node0 的内存，但是因为 Node 0 的 QP3 被“圈”到了 PD0 这个保护域中，所以 Node 1 的 QP8 也只能访问 MR0 对应的内存，&lt;strong>无论如何都无法访问 MR1 中的数据&lt;/strong>，这是从两个方面限制的：&lt;/p>
+&lt;ol>
+&lt;li>Node 1 的 QP8 只跟 Node 0 的 QP3 有连接关系，无法通过 Node 0 的 QP6 进行内存访问。&lt;/li>
+&lt;li>Node 0 的 MR1 和 QP3 属于不同的 PD，就算 Node 1 的 QP8 拿到了 MR1 的 VA 和 R_key，硬件也会因为 PD 不同而拒绝提供服务。&lt;/li>
+&lt;/ol>
+&lt;p>所以就如本文一开始所说的，PD 就像是一个容器，将一些 RDMA 资源保护起来，彼此隔离，以提高安全性。其实 RDMA 中不止有 QP、MR 这些资源，后文即将介绍的 Address Handle，Memory Window 等也是由 PD 进行隔离保护的。&lt;/p>
+&lt;h2 id="如何使用-pd">如何使用 PD&lt;/h2>
+&lt;p>还是看上面的图，我们注意到 Node 0 为了隔离资源，存在两个 PD；而 Node 1 和 Node 2 只有一个 PD 包含了所有资源。&lt;/p>
+&lt;p>我之所以这样画，是为了说明一个节点上划分多少个 PD 完全是由用户决定的，&lt;strong>如果想提高安全性，那么对每个连接到远端节点的 QP 和供远端访问的 MR 都应该尽量通过划分 PD 做到隔离；如果不追求更高的安全性，那么创建一个 PD，囊括所有的资源也是可以的&lt;/strong>。&lt;/p>
+&lt;p>IB 协议中规定：&lt;strong>每个节点都至少要有一个 PD，每个 QP 都必须属于一个 PD，每个 MR 也必须属于一个 PD&lt;/strong>。&lt;/p>
+&lt;p>那么 PD 的包含关系在软件上是如何体现的呢？它本身是有一个软件实体的（结构体），记录了这个保护域的一些信息。用户在创建 QP 和 MR 等资源之前，必须先通过 IB 框架的接口创建一个 PD，拿到它的指针/句柄。接下来在创建 QP 和 MR 的时候，需要传入这个 PD 的指针/句柄，PD 信息就会包含在 QP 和 MR 中。硬件收发包时，会对 QP 和 MR 的 PD 进行校验。更多的软件协议栈的内容，我会在后面的文章中介绍。&lt;/p>
+&lt;p>另外需要强调的是，&lt;strong>PD 是本地概念，仅存在于节点内部&lt;/strong>，对其他节点是不可见的；而 MR 是对本端和对端都可见的。&lt;/p>
+&lt;p>为了方便大家查阅和学习，以后我会列出文章涉及的协议章节，前面的内容有时间的时候我也会补充一下。&lt;/p>
+&lt;h2 id="pd-相关协议章节">PD 相关协议章节&lt;/h2>
+&lt;ul>
+&lt;li>3.5.5 PD 的基本概念和作用&lt;/li>
+&lt;li>10.2.3 介绍了 PD 和其他一些 RDMA 资源的关系，以及 PD 相关的软件接口。&lt;/li>
+&lt;li>10.6.3.5 再次强调 PD 和 MR 及 QP 的关系。&lt;/li>
+&lt;li>11.2.1.5 详细介绍 PD 的 Verbs 接口，包括作用、入参、出参和返回值等。&lt;/li>
+&lt;/ul>
+&lt;p>好了，关于 PD 的介绍就到这里。下文我会介绍用于 UD 服务类型的 Address Handle 的概念。&lt;/p></description></item><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>知乎专栏：6. RDMA 之 Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -2353,49 +2396,4 @@ alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="
 &lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
 &lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
 &lt;h2 id="参考文献">参考文献&lt;/h2>
-&lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item><item><title>比较基于传统以太网与 RDMA 技术的通信</title><link>https://cuterwrite.top/p/ethernet-vs-rdma/</link><pubDate>Thu, 01 Feb 2024 02:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/ethernet-vs-rdma/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010202-2024-02-03.webp" alt="Featured image of post 比较基于传统以太网与 RDMA 技术的通信" />&lt;h1 id="比较基于传统以太网与-rdma-技术的通信">比较基于传统以太网与 RDMA 技术的通信&lt;/h1>
-&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
-&lt;blockquote>
-&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/139548242">&lt;cite>知乎专栏：2. 比较基于传统以太网与 RDMA 技术的通信&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
-&lt;p>本篇的目的是通过对比一次典型的基于 TCP/IP 协议栈的以太网和 RDMA 通信的过程，直观的展示 RDMA 技术相比传统以太网的优势，尽量不涉及协议和软件实现细节。&lt;/p>
-&lt;p>假设本端的某个应用想把自己内存中的数据复制到对端某个应用可以访问的内存中（或者通俗的讲，本端要给对端发送数据），我们来看一下以太网和 RDMA 的 SEND-RECV 语义都做了哪些操作。&lt;/p>
-&lt;h2 id="传统以太网">传统以太网&lt;/h2>
-&lt;p>在描述通信过程时的软硬件关系时，我们通常将模型划分为用户层 Userspace，内核 Kernel 以及硬件 Hardware。Userspace 和 Kernel 实际上使用的是同一块物理内存，但是处于安全考虑，Linux 将内存划分为用户空间和内核空间。用户层没有权限访问和修改内核空间的内存内容，只能通过系统调用陷入内核态，Linux 的内存管理机制比较复杂，本文不展开讨论。&lt;/p>
-&lt;p>一次典型的基于传统以太网的通信过程的可以如下图所示进行分层：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03.webp"
-alt="v2-0931cab010cbf296edeaa368c45a503b_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>一次收-发过程的步骤如下：&lt;/p>
-&lt;ol>
-&lt;li>发送端和接收端通过 Socket 库提供的接口建立链接（就是在两个节点间建立了一条逻辑上的道路，数据可以沿这条道路从一端发送到另一端）并分别在内存中申请好发送和接收 Buffer。&lt;/li>
-&lt;li>发送端 APP 通过 Socket 接口陷入内核态，待发送数据经过 TCP/IP 协议栈的一层层封装，最后被 CPU 复制到 Socket Buffer 中。&lt;/li>
-&lt;li>发送端通过网卡驱动，告知网卡可以发送数据了，网卡将通过 DMA 从 Buffer 中复制封装好的数据包到内部缓存中，然后将其发送到物理链路。&lt;/li>
-&lt;li>接收端网卡收到数据包后，将数据包放到接收 Buffer 中，然后 CPU 将通过内核中的 TCP/IP 协议栈对报文进行层层解析，取出有效的数据。&lt;/li>
-&lt;li>接收端 APP 通过 Socket 接口陷入内核态，CPU 将数据从内核空间复制到用户空间。&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
-alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>这个模型的数据流向大致是像上图这个样子，数据首先需要从用户空间复制一份到内核空间，这一次复制由 CPU 完成，将数据块从用户空间复制到内核空间的 Socket Buffer 中。内核中软件 TCP/IP 协议栈给数据添加各层头部和校验信息。最后网卡会通过 DMA 从内存中复制数据，并通过物理链路发送给对端的网卡。&lt;/p>
-&lt;p>而对端是完全相反的过程：硬件将数据包 DMA 拷贝到内存中，然后 CPU 会对数据包进行逐层解析和校验，最后将数据复制到用户空间。&lt;/p>
-&lt;p>上述过程中的关键点是需要 CPU 参与的把数据从用户空间拷贝到内核空间，以及同样需要 CPU 全程参与的数据包组装和解析，数据量大的情况下，这将对 CPU 将造成很大的负担。&lt;/p>
-&lt;p>下面我们看一下 RDMA 是如何将 CPU“解放”出来的。&lt;/p>
-&lt;h2 id="rdma">RDMA&lt;/h2>
-&lt;p>同样是一端发送，一端接收的场景，我们将 RDMA 的分层模型分成两部分“控制通路”和“数据通路”，控制通路需要进入内核态准备通信所需的内存资源，而数据通路指的是实际数据交互过程中的流程。这一过程的分层关系如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03.webp"
-alt="v2-8ef2b015ba9d111fc2d42983cd5fe152_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>同 Socket 一样，我们简单描述下通信的过程：&lt;/p>
-&lt;ol>
-&lt;li>发送端和接收端分别通过控制通路陷入内核态创建好通信所需要的内存资源。&lt;/li>
-&lt;li>在数据通路上，接收端 APP 通知硬件准备接收数据，告诉硬件将接收到的数据放在哪片内存中。&lt;/li>
-&lt;li>在数据通路上，发送端 APP 通知硬件发送数据，告诉硬件待发送数据位于哪片内存中。&lt;/li>
-&lt;li>发送端 RDMA 网卡从内存中搬移数据，组装报文发送给对端。&lt;/li>
-&lt;li>对端收到报文，对其进行解析并通过 DMA 将有效载荷写入内存。然后以某种方式通知上层 APP，告知其数据已接收并妥善存放到指定位置。&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03.webp"
-alt="v2-cb1492c24773e725dd5f112bb67f9deb_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>这一过程中的数据流向大致如上图所示。通过和 Socket 的对比，我们可以明显看到，&lt;strong>数据收发绕过了内核并且数据交换过程并不需要 CPU 参与，报文的组装和解析是由硬件完成的&lt;/strong>。&lt;/p>
-&lt;p>通过上面的对比，我们可以明显的体会到 RDMA 的优势，既将 CPU 从数据包封装和解析中解放出来，又减少了 CPU 拷贝数据的功率和时间损耗。需要注意的是，本文只描述了 SEND-RECV 流程，而 RDMA 技术所独有的，效率更高的 WRITE/READ 语义将在后续文章中介绍。&lt;/p>
-&lt;p>下一篇我们将介绍一些 RDMA 技术中的重要且基本的概念。&lt;/p></description></item></channel></rss>
+&lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item></channel></rss>

@@ -1,4 +1,47 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 03 Apr 2024 16:17:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 18 Apr 2024 21:42:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>知乎专栏：7. RDMA 之 Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>前文我们简单介绍了 RDMA 中最常见的一些资源，包括各种 Queue，以及 MR 的概念等等。MR 用于控制和管理 HCA 对于本端和远端内存的访问权限，确保 HCA 只有拿到正确 Key 之后才能读写用户已经注册了的内存区域。为了更好的保障安全性，IB 协议又提出了 Protection Domain（PD）的概念，用于保证 RDMA 资源间的相互隔离，本文就介绍一下 PD 的概念。&lt;/p>
+&lt;h2 id="pd-是什么">PD 是什么&lt;/h2>
+&lt;p>PD 全称是 Protection Domain，意为&amp;quot;保护域&amp;quot;。域的概念我们经常见到，从数学上的“实数域”、“复数域”，到地理上的“空域”、“海域”等等，表示一个空间/范围。在 RDMA 中，PD 像是一个容纳了各种资源（QP、MR 等）的“容器”，将这些资源纳入自己的保护范围内，避免他们被未经授权的访问。一个节点中可以定义多个保护域，各个 PD 所容纳的资源彼此隔离，无法一起使用。&lt;/p>
+&lt;p>概念还是有些抽象，下面我们来看一下 PD 有什么作用，具体解决了什么问题。&lt;/p>
+&lt;h2 id="pd-的作用">PD 的作用&lt;/h2>
+&lt;p>一个用户可能创建多个 QP 和多个 MR，每个 QP 可能和不同的远端 QP 建立了连接，比如下图这样（灰色箭头表示 QP 间的连接关系）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_1-2024-04-19.webp"
+alt="7_1-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>图 1：没有 PD 概念时的 RDMA 资源&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>由于 MR 和 QP 之间并没有绑定关系，这就意味着一旦某个远端的 QP 与本端的一个 QP 建立了连接，具备了通信的条件，那么理论上远端节点只要知道 VA 和 R_key（甚至可以靠不断的猜测直到得到一对有效的值），就可以访问本端节点某个 MR 的内容。&lt;/p>
+&lt;p>其实一般情况下，MR 的虚拟地址 VA 和秘钥 R_Key 是很难猜到的，已经可以保证一定的安全性了。但是为了更好的保护内存中的数据，把各种资源的权限做进一步的隔离和划分，我们在又在每个节点中定义了 PD，如下图所示&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_2-2024-04-19.webp"
+alt="7_2-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>图 2：加入 PD 概念时的 RDMA 资源&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>图中 Node 0 上有两个 PD，将 3 个 QP 和 2 个 MR 分为了两组，此外 Node 1 和 Node 2 中各有一个 PD 包含了所有 QP 和 MR。Node 0 上的两个 PD 中的资源不可以一起使用，也就是说 QP3 和 QP9 不能访问 MR1 的数据，QP6 也不可以访问 MR0 的数据。如果我们在数据收发时，指定硬件使用 QP3 和 MR1，那么硬件校验他们不属于同一个 PD 后，会返回错误。&lt;/p>
+&lt;p>对于远端节点来说，Node1 只能通过 QP8 相连的 QP3 来访问 Node0 的内存，但是因为 Node 0 的 QP3 被“圈”到了 PD0 这个保护域中，所以 Node 1 的 QP8 也只能访问 MR0 对应的内存，&lt;strong>无论如何都无法访问 MR1 中的数据&lt;/strong>，这是从两个方面限制的：&lt;/p>
+&lt;ol>
+&lt;li>Node 1 的 QP8 只跟 Node 0 的 QP3 有连接关系，无法通过 Node 0 的 QP6 进行内存访问。&lt;/li>
+&lt;li>Node 0 的 MR1 和 QP3 属于不同的 PD，就算 Node 1 的 QP8 拿到了 MR1 的 VA 和 R_key，硬件也会因为 PD 不同而拒绝提供服务。&lt;/li>
+&lt;/ol>
+&lt;p>所以就如本文一开始所说的，PD 就像是一个容器，将一些 RDMA 资源保护起来，彼此隔离，以提高安全性。其实 RDMA 中不止有 QP、MR 这些资源，后文即将介绍的 Address Handle，Memory Window 等也是由 PD 进行隔离保护的。&lt;/p>
+&lt;h2 id="如何使用-pd">如何使用 PD&lt;/h2>
+&lt;p>还是看上面的图，我们注意到 Node 0 为了隔离资源，存在两个 PD；而 Node 1 和 Node 2 只有一个 PD 包含了所有资源。&lt;/p>
+&lt;p>我之所以这样画，是为了说明一个节点上划分多少个 PD 完全是由用户决定的，&lt;strong>如果想提高安全性，那么对每个连接到远端节点的 QP 和供远端访问的 MR 都应该尽量通过划分 PD 做到隔离；如果不追求更高的安全性，那么创建一个 PD，囊括所有的资源也是可以的&lt;/strong>。&lt;/p>
+&lt;p>IB 协议中规定：&lt;strong>每个节点都至少要有一个 PD，每个 QP 都必须属于一个 PD，每个 MR 也必须属于一个 PD&lt;/strong>。&lt;/p>
+&lt;p>那么 PD 的包含关系在软件上是如何体现的呢？它本身是有一个软件实体的（结构体），记录了这个保护域的一些信息。用户在创建 QP 和 MR 等资源之前，必须先通过 IB 框架的接口创建一个 PD，拿到它的指针/句柄。接下来在创建 QP 和 MR 的时候，需要传入这个 PD 的指针/句柄，PD 信息就会包含在 QP 和 MR 中。硬件收发包时，会对 QP 和 MR 的 PD 进行校验。更多的软件协议栈的内容，我会在后面的文章中介绍。&lt;/p>
+&lt;p>另外需要强调的是，&lt;strong>PD 是本地概念，仅存在于节点内部&lt;/strong>，对其他节点是不可见的；而 MR 是对本端和对端都可见的。&lt;/p>
+&lt;p>为了方便大家查阅和学习，以后我会列出文章涉及的协议章节，前面的内容有时间的时候我也会补充一下。&lt;/p>
+&lt;h2 id="pd-相关协议章节">PD 相关协议章节&lt;/h2>
+&lt;ul>
+&lt;li>3.5.5 PD 的基本概念和作用&lt;/li>
+&lt;li>10.2.3 介绍了 PD 和其他一些 RDMA 资源的关系，以及 PD 相关的软件接口。&lt;/li>
+&lt;li>10.6.3.5 再次强调 PD 和 MR 及 QP 的关系。&lt;/li>
+&lt;li>11.2.1.5 详细介绍 PD 的 Verbs 接口，包括作用、入参、出参和返回值等。&lt;/li>
+&lt;/ul>
+&lt;p>好了，关于 PD 的介绍就到这里。下文我会介绍用于 UD 服务类型的 Address Handle 的概念。&lt;/p></description></item><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>知乎专栏：6. RDMA 之 Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -2024,232 +2067,4 @@ IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都�
 &lt;/ul>
 &lt;h2 id="用户">用户&lt;/h2>
 &lt;p>微软、IBM 和国内的阿里、京东都正在使用 RDMA，另外还有很多大型 IT 公司在做初步的开发和测试。在数据中心和高性能计算场景下，RDMA 代替传统网络是大势所趋。笔者对于市场接触不多，所以并不能提供更详细的应用情况。&lt;/p>
-&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item><item><title>在 HPC 上运行 Apache Spark</title><link>https://cuterwrite.top/p/run-spark-on-hpc/</link><pubDate>Sat, 30 Dec 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/run-spark-on-hpc/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp" alt="Featured image of post 在 HPC 上运行 Apache Spark" />&lt;h1 id="在-hpc-上运行-apache-spark">在 HPC 上运行 Apache Spark&lt;/h1>
-&lt;h2 id="一概述">一、概述&lt;/h2>
-&lt;p>&lt;a class="link" href="https://spark.apache.org/" target="_blank" rel="noopener" >Apache Spark
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-是一个多语言引擎，用于在单节点机器或集群上执行数据工程、数据科学和机器学习任务。本文将为您提供在高性能计算（HPC）集群系统上运行多节点 Spark 集群的指南，并展示一个使用 PySpark 的作业示例。&lt;/p>
-&lt;h2 id="二开始">二、开始&lt;/h2>
-&lt;h3 id="1-下载-openjdk-1102">1. 下载 OpenJDK-11.0.2&lt;/h3>
-&lt;p>从 &lt;a class="link" href="https://jdk.java.net/archive/" target="_blank" rel="noopener" >OpenJDK 官方网站
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-下载 OpenJDK-11.0.2。选择 Linux 的对应版本并下载。解压下载的文件并将其放置在 &lt;code>${HOME}/software/openjdk&lt;/code> 中并重命名为 &lt;code>11.0.2&lt;/code> 。&lt;/p>
-&lt;h3 id="2-下载-spark-342">2. 下载 Spark-3.4.2&lt;/h3>
-&lt;p>从 &lt;a class="link" href="https://spark.apache.org/downloads.html" target="_blank" rel="noopener" >Apache Spark 下载页面
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-下载 Spark 。本文使用的是 Spark-3.4.2，但本指南应该也适用于更新的版本。解压下载的文件并将目录重命名为 3.4.2，放置在 ${HOME}/software/spark 文件夹中。&lt;/p>
-&lt;h3 id="3-配置-modulefile">3. 配置 modulefile&lt;/h3>
-&lt;p>在自定义目录中安装软件后，需要将软件的可执行文件路径等添加到相应的环境变量中才能使用。&lt;code>module&lt;/code> 是一款环境变量管理工具，通过 &lt;code>module&lt;/code> 实现软件环境变量的管理，快速加载和切换软件环境。集群中安装了一些常用的软件和库，可以通过 &lt;code>module&lt;/code> 进行加载使用。&lt;/p>
-&lt;p>在这里，我们需要编写 &lt;code>modulefile&lt;/code> 来管理自己的 JDK 和 Spark 软件环境，以便快速加载 Java 和 Spark 环境。&lt;/p>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/modulefiles/openjdk&lt;/code> 中创建名为 &lt;code>11.0.2&lt;/code> 的文本文件，内容为：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#%Module1.0
-##
-## openjdk modulefile
-##
-proc ModulesHelp { } {
-puts stderr &amp;quot;This module sets up the environment for OpenJdk 11.0.2 \n&amp;quot;
-}
-module-whatis &amp;quot;For more information, \$ module help openjdk/11.0.2\n&amp;quot;
-conflict openjdk
-# 注意！这里需要进行修改
-set root &amp;lt;PATH/WHERE/OPENJDK/DIRECTORY/IS&amp;gt;
-prepend-path PATH ${root}/bin
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/modulefiles/spark&lt;/code> 中创建名为 &lt;code>3.4.2&lt;/code> 的文本文件， 内容为：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#%Module1.0
-##
-## spark modulefile
-##
-proc ModulesHelp { } {
-global version
-puts stderr &amp;quot;This module loads Apache Spark environment variables and updates the PATH.&amp;quot;
-puts stderr &amp;quot; &amp;quot;
-puts stderr &amp;quot;Version: $version&amp;quot;
-}
-module-whatis &amp;quot;Loads Apache Spark environment variables and updates the PATH. \n For more information, \$ module help spark/3.4.2 .\n&amp;quot;
-conflict spark
-# Set the version and installation path
-set version 3.4.2
-# 注意！这里需要进行修改
-set root &amp;lt;PATH/WHERE/SPARK/DIRECTORY/IS&amp;gt;
-# Set the environment variables
-setenv SPARK_HOME ${root}
-setenv SPARK_CONF_DIR ${root}/conf
-setenv PYSPARK_PYTHON python3
-# Update the PATH
-prepend-path PATH ${root}/bin
-prepend-path PATH ${root}/sbin
-# Update the CLASSPATH
-prepend-path CLASSPATH ${root}/jars/*
-&lt;/code>&lt;/pre>
-&lt;h3 id="4-使用-pip-安装-pyspark-库">4. 使用 pip 安装 pyspark 库&lt;/h3>
-&lt;ul>
-&lt;li>创建虚拟 Conda 环境 pyspark&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">conda create -n pyspark python=3.10
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>安装 pyspark&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">conda activate pyspark
-pip install pyspark
-&lt;/code>&lt;/pre>
-&lt;h3 id="5-编写环境加载脚本-set-spark-envsh">5. 编写环境加载脚本 set-spark-env.sh&lt;/h3>
-&lt;ul>
-&lt;li>在 &lt;code>${HOME}/scripts&lt;/code> 目录下编写 &lt;code>set-spark-env.sh&lt;/code> 脚本文件：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
-source /etc/profile
-# 注意！这里需要修改为你的 Conda 的安装路径
-export CONDA_PATH=&amp;lt;PATH/WHERE/CONDA/DIRECTORY/IS&amp;gt;
-export PATH=$CONDA_PATH/bin:$PATH
-export MODULEPATH=${HOME}/modulefiles:$MODULEPATH
-source activate
-conda activate pyspark
-module load openjdk
-module load spark
-&lt;/code>&lt;/pre>
-&lt;h3 id="6-编写-sbatch-脚本">6. 编写 sbatch 脚本&lt;/h3>
-&lt;ul>
-&lt;li>为了启动 Spark 集群，我们使用以下 Slurm 脚本来请求计算节点。Slurm 脚本请求四个节点，并生成一个 master 节点和三个 worker 节点的 Spark 集群。可以通过更改 Slurm 脚本中的 &lt;code>-N&lt;/code> 选项的值来增加或减少工作节点的数量。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
-#SBATCH --export=ALL
-#SBATCH --mem=0
-#SBATCH -p C28M250G
-#SBATCH -t 1:00:00
-#SBATCH -N 4
-#SBATCH -J spark_test
-#SBATCH -o o.spark_test
-#SBATCH -e e.spark_test
-source ~/scripts/set-spark-env.sh
-workdir=`pwd`
-nodes=($(scontrol show hostnames ${SLURM_JOB_NODELIST} | sort | uniq ))
-numnodes=${#nodes[@]}
-last=$(( $numnodes - 1 ))
-export SCRATCH=${workdir}/scratch
-master=${nodes[0]}
-masterurl=&amp;quot;spark://${master}:7077&amp;quot;
-ssh ${nodes[0]} &amp;quot;source ~/scripts/set-spark-env.sh; start-master.sh&amp;quot;
-for i in $( seq 1 $last )
-do
-ssh ${nodes[$i]} &amp;quot;source ~/scripts/set-spark-env.sh; start-worker.sh ${masterurl}&amp;quot;
-done
-ssh ${nodes[0]} &amp;quot;cd ${workdir}; source ~/scripts/set-spark-env.sh; /usr/bin/time -v spark-submit --deploy-mode client --executor-cores 28 --executor-memory 240G --conf spark.standalone.submit.waitAppCompletion=true --master $masterurl spark_test.py&amp;quot;
-wait
-echo 'end'
-exit
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>该 Slurm 脚本会提交一个用于测试的 python 脚本（ &lt;code>spark_test.py&lt;/code> ），内容如下。此脚本运行 PySpark 代码来测试 Spark 集群。复制下面的内容，并将其保存在 sbatch 脚本所在目录中的 &lt;code>spark_test.py&lt;/code> 文件。你也可以更改 &lt;code>spark_test.py&lt;/code> 文件的路径，但必须适当地更新 Slurm 脚本。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-py">#spark_test.py
-import random
-from pyspark.sql import SparkSession
-import pyspark.sql.functions as F
-spark = SparkSession.builder.appName('Test-app').getOrCreate()
-#Generate sample dataset
-cola_list = ['2022-01-01', '2022-01-02', '2022-01-03' ]
-colb_list = ['CSC', 'PHY', 'MAT', 'ENG', 'CHE', 'ENV', 'BIO', 'PHRM']
-colc_list = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-# declaring a random.seed value to generate same data in every run
-random.seed(1)
-sample_data = []
-for idx in range(1000):
-sample_data.append([random.choice(cola_list), random.choice(colb_list), random.choice(colc_list)])
-columns= [&amp;quot;date&amp;quot;, &amp;quot;org&amp;quot;, &amp;quot;value&amp;quot;]
-#creating a Spark dataframe
-df = spark.createDataFrame(data = sample_data, schema = columns)
-res = (df.groupBy('date','org')
-.agg(F.count('value').alias('count_value')))
-res.show()
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>如果启动了 Spark 集群并且 &lt;code>spark-test.py&lt;/code> 成功执行，那么日志文件 &lt;code>o.spark_test&lt;/code> 中的输出应该如下：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-log">starting org.apache.spark.deploy.master.Master, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-starting org.apache.spark.deploy.worker.Worker, logging to ...
-+----------+----+-----------+
-| date| org|count_value|
-+----------+----+-----------+
-|2022-01-03| BIO| 37|
-|2022-01-02| ENV| 53|
-|2022-01-03| CHE| 39|
-|2022-01-03| PHY| 46|
-|2022-01-01| CSC| 45|
-|2022-01-03| CSC| 48|
-|2022-01-01| BIO| 39|
-|2022-01-01| MAT| 42|
-|2022-01-02| CHE| 44|
-|2022-01-03| ENV| 33|
-|2022-01-01| ENG| 33|
-|2022-01-02| ENG| 28|
-|2022-01-01| ENV| 33|
-|2022-01-02| CSC| 45|
-|2022-01-02| MAT| 51|
-|2022-01-01| PHY| 38|
-|2022-01-01|PHRM| 40|
-|2022-01-03|PHRM| 42|
-|2022-01-02|PHRM| 43|
-|2022-01-03| ENG| 56|
-+----------+----+-----------+
-only showing top 20 rows
-end
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>Spark 还提供了一个 web UI 来监控集群，您可以通过将 master 节点端口转发到本地机器来在本地机器上访问它。
-&lt;ul>
-&lt;li>例如，如果 master 节点在 &lt;code>cpu1&lt;/code> 上运行，则可以在本地计算机终端上运行以下代码。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-cmd"> ssh -t -t &amp;lt;USERNAME&amp;gt;@&amp;lt;LOGIN_NODE_IP&amp;gt; -L 8080:localhost:8080 \
--i &amp;lt;PRIVATE_KEY_LOCATION&amp;gt; ssh cpu1 -L 8080:127.0.0.1:8080
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>然后就可以在本地机器上的 Web 浏览器上使用地址 &lt;a class="link" href="http://localhost:8080/" target="_blank" rel="noopener" >http://localhost:8080/
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-访问 Spark Web UI。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="三总结">三、总结&lt;/h2>
-&lt;p>在本文中，我们介绍了如何在 HPC 集群上部署和运行 Apache Spark 集群。通过遵循本指南中的步骤，你应该能够成功地在 HPC 环境中运行 Spark 作业。请注意，根据你的具体 HPC 环境和配置，可能需要进行一些调整。&lt;/p>
-&lt;div class="notice notice-note" >
-&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>&lt;a class="link" href="https://spark.apache.org/docs/latest/" target="_blank" rel="noopener" >Spark 官方文档
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-是一个非常有用的工具，通过它可以帮助你找到 Spark 的具体说明并解决问题。所以实际遇到问题时要多使用它。&lt;/p>&lt;/div></description></item></channel></rss>
+&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item></channel></rss>
