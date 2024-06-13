@@ -1,652 +1,726 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Algorithm on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/algorithm/</link><description>Recent content in Algorithm on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 11 Jul 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/algorithm/index.xml" rel="self" type="application/rss+xml"/><item><title>SVD 与 NMF：矩阵分解的两种方法</title><link>https://cuterwrite.top/p/matrix-factorization/</link><pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/matrix-factorization/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp" alt="Featured image of post SVD 与 NMF：矩阵分解的两种方法" />&lt;h1 id="svd-与-nmf矩阵分解的两种方法">SVD 与 NMF：矩阵分解的两种方法&lt;/h1>
-&lt;p>在数据科学中，矩阵分解技术是一种强大的工具，可以用于各种应用，如推荐系统、图像处理和自然语言处理。在这篇文章中，我们将深入探讨两种流行的矩阵分解技术：奇异值分解（SVD）和非负矩阵分解（NMF）。我们将详细解析它们的理论基础，以及如何在实际问题中应用它们。&lt;/p>
-&lt;h2 id="一奇异值分解svd">一、奇异值分解（SVD）&lt;/h2>
-&lt;p>奇异值分解是一种在线性代数中常用的矩阵分解方法。对于给定的 $m\times n$ 矩阵 A，我们可以将其分解为三个矩阵的乘积：&lt;/p>
-&lt;p>$$
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Algorithm on Cuterwrite&#39;s Blog</title>
+        <link>http://localhost:1313/tags/algorithm/</link>
+        <description>Recent content in Algorithm on Cuterwrite&#39;s Blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Tue, 11 Jul 2023 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/algorithm/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>SVD 与 NMF：矩阵分解的两种方法</title>
+        <link>http://localhost:1313/p/matrix-factorization/</link>
+        <pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/matrix-factorization/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp" alt="Featured image of post SVD 与 NMF：矩阵分解的两种方法" /&gt;&lt;h1 id=&#34;svd-与-nmf矩阵分解的两种方法&#34;&gt;SVD 与 NMF：矩阵分解的两种方法&lt;/h1&gt;
+&lt;p&gt;在数据科学中，矩阵分解技术是一种强大的工具，可以用于各种应用，如推荐系统、图像处理和自然语言处理。在这篇文章中，我们将深入探讨两种流行的矩阵分解技术：奇异值分解（SVD）和非负矩阵分解（NMF）。我们将详细解析它们的理论基础，以及如何在实际问题中应用它们。&lt;/p&gt;
+&lt;h2 id=&#34;一奇异值分解svd&#34;&gt;一、奇异值分解（SVD）&lt;/h2&gt;
+&lt;p&gt;奇异值分解是一种在线性代数中常用的矩阵分解方法。对于给定的 $m\times n$ 矩阵 A，我们可以将其分解为三个矩阵的乘积：&lt;/p&gt;
+&lt;p&gt;$$
 A = U\Sigma V^T
-$$&lt;/p>
-&lt;p>这里，$U$ 是一个 $m\times m$ 的正交矩阵，$V$ 是一个 $n\times n$ 的正交矩阵，$\Sigma$ 是一个 $m\times n$ 的对角矩阵。对角线上的元素称为奇异值，它们是 $A^T A$ 的特征值的平方根。它们是按降序排列的，代表了原始矩阵中的“能量”或信息量。。我们可以将奇异值分解看作是一种特征值分解，其中 $U$ 和 $V$ 是特征向量，$\Sigma$ 是特征值的对角矩阵。&lt;/p>
-&lt;p>计算 SVD 的基本步骤如下：&lt;/p>
-&lt;ol>
-&lt;li>&lt;!-- raw HTML omitted -->构造矩阵 A 的 Gram 矩阵&lt;!-- raw HTML omitted -->：对于给定的 $m\times n$ 矩阵 A，我们可以构造一个 $n\times n$ 的矩阵 $A^T A$，称为 A 的 Gram 矩阵。Gram 矩阵是一个对称半正定矩阵，因此它的特征值都是非负的。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->计算 Gram 矩阵的特征值和特征向量&lt;!-- raw HTML omitted -->：我们可以使用任何标准的特征值分解算法来计算 Gram 矩阵的特征值和特征向量。这些特征值就是 A 的奇异值的平方，特征向量则构成了右奇异向量和左奇异向量。我们将特征值按降序排列，将特征向量按相同的顺序排列。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->构造奇异值矩阵 $\Sigma$ &lt;!-- raw HTML omitted -->：我将特征值的平方根按照从大到小的顺序排列在对角线上，构成 $m\times n $ 的对角矩阵 $\Sigma$ 。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->构造左奇异向量矩阵 $U$ 和右奇异向量矩阵 $V$ &lt;!-- raw HTML omitted -->：将对应于特征值的特征向量按照特征值的顺序排列，构成 $n\times n$ 的矩阵 $V$ 和 $m\times m$ 的矩阵 $U$ 。这些特征向量是标准化的，即它们的长度为 1，并且互相正交。&lt;/li>
-&lt;/ol>
-&lt;p>这样，我们就得到了 A 的奇异值分解。在 Python 中，我们可以使用 NumPy 的&lt;code>np.linalg.svd&lt;/code> 函数来计算 SVD，这个函数会自动执行上述步骤，并返回 $ U, \Sigma, V^T $ 。如下所示：&lt;/p>
-&lt;pre>&lt;code class="language-python">import numpy as np
+$$&lt;/p&gt;
+&lt;p&gt;这里，$U$ 是一个 $m\times m$ 的正交矩阵，$V$ 是一个 $n\times n$ 的正交矩阵，$\Sigma$ 是一个 $m\times n$ 的对角矩阵。对角线上的元素称为奇异值，它们是 $A^T A$ 的特征值的平方根。它们是按降序排列的，代表了原始矩阵中的“能量”或信息量。。我们可以将奇异值分解看作是一种特征值分解，其中 $U$ 和 $V$ 是特征向量，$\Sigma$ 是特征值的对角矩阵。&lt;/p&gt;
+&lt;p&gt;计算 SVD 的基本步骤如下：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造矩阵 A 的 Gram 矩阵&lt;!-- raw HTML omitted --&gt;：对于给定的 $m\times n$ 矩阵 A，我们可以构造一个 $n\times n$ 的矩阵 $A^T A$，称为 A 的 Gram 矩阵。Gram 矩阵是一个对称半正定矩阵，因此它的特征值都是非负的。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;计算 Gram 矩阵的特征值和特征向量&lt;!-- raw HTML omitted --&gt;：我们可以使用任何标准的特征值分解算法来计算 Gram 矩阵的特征值和特征向量。这些特征值就是 A 的奇异值的平方，特征向量则构成了右奇异向量和左奇异向量。我们将特征值按降序排列，将特征向量按相同的顺序排列。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造奇异值矩阵 $\Sigma$ &lt;!-- raw HTML omitted --&gt;：我将特征值的平方根按照从大到小的顺序排列在对角线上，构成 $m\times n $ 的对角矩阵 $\Sigma$ 。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;构造左奇异向量矩阵 $U$ 和右奇异向量矩阵 $V$ &lt;!-- raw HTML omitted --&gt;：将对应于特征值的特征向量按照特征值的顺序排列，构成 $n\times n$ 的矩阵 $V$ 和 $m\times m$ 的矩阵 $U$ 。这些特征向量是标准化的，即它们的长度为 1，并且互相正交。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;这样，我们就得到了 A 的奇异值分解。在 Python 中，我们可以使用 NumPy 的&lt;code&gt;np.linalg.svd&lt;/code&gt; 函数来计算 SVD，这个函数会自动执行上述步骤，并返回 $ U, \Sigma, V^T $ 。如下所示：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import numpy as np
 U, S, Vt = np.linalg.svd(A)
-&lt;/code>&lt;/pre>
-&lt;p>需要注意的是，虽然理论上 SVD 总是存在的，但在实际计算中可能会遇到数值稳定性的问题。此外，对于非常大的矩阵，计算 SVD 可能会非常耗时。在这些情况下，我们可能需要使用一些更高效的算法或者近似方法，如随机 SVD。&lt;/p>
-&lt;p>SVD 的一个重要应用是在推荐系统中进行矩阵补全。在推荐系统中，我们通常有一个用户-商品评分矩阵，但这个矩阵通常是非常稀疏的，因为大多数用户只评价了少数商品。SVD 可以用于预测用户对未评价商品的评分，从而提供个性化的推荐。&lt;/p>
-&lt;h2 id="二非负矩阵分解nmf">二、非负矩阵分解（NMF）&lt;/h2>
-&lt;p>由于维度的复杂性和维度诅咒，直接处理高维数据需要大量的计算资源。非负矩阵分解（NMF）作为一种降维技术被提出，在图像处理中得到了重要的应用。通过采用 NMF，非负的高维矩阵可以被分解成两个非负的低维矩阵，其中一个包括列向量，可以被视为数据空间中的基向量，另一个则包含缩放这些基向量的系数行。此外，NMF 也可用于文本数据处理。我们可以检查系数矩阵中的每一列，并确定具有最大系数的行号，其中行号表示原始矩阵中各列的聚类 ID。这种聚类特性意味着 NMF 可以用于数据聚类。&lt;/p>
-&lt;p>NMF 对矩阵的元素有一个额外的非负约束。对于给定的 $K\times N$ 非负矩阵 $M\in R^{K\times N}$ ，我们可以找到两个非负矩阵 $W$ 和 $H$ ，使得 $M\approx WH$ 。其中 $W\in R^{K\times r}$ 和 $H\in R^{r\times N}$ 是两个非负矩阵，即 $W\geq 0$ 和 $H\geq 0$ 。矩阵 $W$ 代表捕捉数据特征的基向量，而矩阵 $H$ 是表示每个基向量对重建原始数据的贡献的权重。NMF 中的非负约束允许学习整体数据的部分表征，而这种约束在 SVD 中是不允许的。为了找到 $M\approx WH$的近似解，定义基于欧氏距离的成本函数来量化近似的质量，即:&lt;/p>
-&lt;p>$$
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;需要注意的是，虽然理论上 SVD 总是存在的，但在实际计算中可能会遇到数值稳定性的问题。此外，对于非常大的矩阵，计算 SVD 可能会非常耗时。在这些情况下，我们可能需要使用一些更高效的算法或者近似方法，如随机 SVD。&lt;/p&gt;
+&lt;p&gt;SVD 的一个重要应用是在推荐系统中进行矩阵补全。在推荐系统中，我们通常有一个用户-商品评分矩阵，但这个矩阵通常是非常稀疏的，因为大多数用户只评价了少数商品。SVD 可以用于预测用户对未评价商品的评分，从而提供个性化的推荐。&lt;/p&gt;
+&lt;h2 id=&#34;二非负矩阵分解nmf&#34;&gt;二、非负矩阵分解（NMF）&lt;/h2&gt;
+&lt;p&gt;由于维度的复杂性和维度诅咒，直接处理高维数据需要大量的计算资源。非负矩阵分解（NMF）作为一种降维技术被提出，在图像处理中得到了重要的应用。通过采用 NMF，非负的高维矩阵可以被分解成两个非负的低维矩阵，其中一个包括列向量，可以被视为数据空间中的基向量，另一个则包含缩放这些基向量的系数行。此外，NMF 也可用于文本数据处理。我们可以检查系数矩阵中的每一列，并确定具有最大系数的行号，其中行号表示原始矩阵中各列的聚类 ID。这种聚类特性意味着 NMF 可以用于数据聚类。&lt;/p&gt;
+&lt;p&gt;NMF 对矩阵的元素有一个额外的非负约束。对于给定的 $K\times N$ 非负矩阵 $M\in R^{K\times N}$ ，我们可以找到两个非负矩阵 $W$ 和 $H$ ，使得 $M\approx WH$ 。其中 $W\in R^{K\times r}$ 和 $H\in R^{r\times N}$ 是两个非负矩阵，即 $W\geq 0$ 和 $H\geq 0$ 。矩阵 $W$ 代表捕捉数据特征的基向量，而矩阵 $H$ 是表示每个基向量对重建原始数据的贡献的权重。NMF 中的非负约束允许学习整体数据的部分表征，而这种约束在 SVD 中是不允许的。为了找到 $M\approx WH$的近似解，定义基于欧氏距离的成本函数来量化近似的质量，即:&lt;/p&gt;
+&lt;p&gt;$$
 Q=\Vert M-WH\Vert^2_F=\sum_{i,j}(M_{ij}-(WH)_{ij})^2
-$$&lt;/p>
-&lt;p>由于成本函数 $Q$ 在 $W$ 和 $H$ 中都是非凸的，所以在求解 $Q$ 的最小值过程中找到全局最小值是不现实的。一些数值优化技术，如梯度下降和共轭梯度，可以被用来寻找局部最小值。然而，梯度下降的收敛速度很慢，共轭梯度的实现很复杂。此外，基于梯度的方法对步长的参数设置很敏感，这对现实应用来说并不方便。为此，可以利用 $W$ 和 $H$ 的 multiplicative update rules，作为收敛速度和实现复杂性之间的折中方案，具体如下:&lt;/p>
-&lt;p>$$
+$$&lt;/p&gt;
+&lt;p&gt;由于成本函数 $Q$ 在 $W$ 和 $H$ 中都是非凸的，所以在求解 $Q$ 的最小值过程中找到全局最小值是不现实的。一些数值优化技术，如梯度下降和共轭梯度，可以被用来寻找局部最小值。然而，梯度下降的收敛速度很慢，共轭梯度的实现很复杂。此外，基于梯度的方法对步长的参数设置很敏感，这对现实应用来说并不方便。为此，可以利用 $W$ 和 $H$ 的 multiplicative update rules，作为收敛速度和实现复杂性之间的折中方案，具体如下:&lt;/p&gt;
+&lt;p&gt;$$
 H_{aj} \leftarrow H_{aj} \frac{W^T M_{aj}}{W^T W H_{aj}}, W_{ia} \leftarrow W_{ia} \frac{M H^T_{ia}}{W H H^T_{ia}}
-$$&lt;/p>
-&lt;p>其中，矩阵 $W$ 和 $H$ 可以被随机初始化，然后通过迭代更新来优化 $Q$ 。这些更新规则可以保证 $Q$ 在每次迭代中都会减少，因此可以保证收敛到局部最小值。&lt;/p>
-&lt;p>在 Python 中，我们可以使用&lt;code>sklearn.decomposition.NMF&lt;/code> 类来计算 NMF。如下所示：&lt;/p>
-&lt;pre>&lt;code class="language-python">from sklearn.decomposition import NMF
-model = NMF(n_components=2, init='random', random_state=0)
+$$&lt;/p&gt;
+&lt;p&gt;其中，矩阵 $W$ 和 $H$ 可以被随机初始化，然后通过迭代更新来优化 $Q$ 。这些更新规则可以保证 $Q$ 在每次迭代中都会减少，因此可以保证收敛到局部最小值。&lt;/p&gt;
+&lt;p&gt;在 Python 中，我们可以使用&lt;code&gt;sklearn.decomposition.NMF&lt;/code&gt; 类来计算 NMF。如下所示：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;from sklearn.decomposition import NMF
+model = NMF(n_components=2, init=&#39;random&#39;, random_state=0)
 W = model.fit_transform(X)
 H = model.components_
-&lt;/code>&lt;/pre>
-&lt;h2 id="三svd-与-nmf-的比较">三、SVD 与 NMF 的比较&lt;/h2>
-&lt;p>虽然 SVD 和 NMF 都是矩阵分解技术，但它们有一些重要的区别。&lt;/p>
-&lt;ol>
-&lt;li>&lt;!-- raw HTML omitted -->数据类型和约束&lt;!-- raw HTML omitted -->：SVD 可以应用于任何矩阵，而 NMF 只能应用于非负矩阵。其次，SVD 提供了一种最优的低秩近似，而 NMF 则没有这种保证。然而，NMF 的非负约束使得它的分解更具解释性，这在许多应用中是非常有用的。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->分解的解释性&lt;!-- raw HTML omitted -->：虽然 SVD 和 NMF 都可以将原始矩阵分解为一些基本的“构成元素”，但 NMF 的分解通常更具解释性。这是因为 NMF 的非负约束使得分解的结果更容易解释和理解。在许多应用中，如主题模型或社区发现，NMF 的分解可以直接解释为数据的一些基本模式或特征。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->优化和稳定性&lt;!-- raw HTML omitted -->：SVD 的优化问题有闭式解，这意味着我们可以直接计算出最优解。而 NMF 的优化问题通常需要使用迭代方法来求解，如梯度下降或坐标下降。这使得 NMF 的计算过程可能更复杂，而且可能需要更多的时间。而且 SVD 的结果是唯一的（除了奇异向量的符号），而 NMF 的结果可能依赖于初始化和优化算法。这意味着对同一个数据集，NMF 可能会给出不同的结果。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->近似质量&lt;!-- raw HTML omitted -->：SVD 提供了一种最优的低秩近似，即它可以找到最接近原始矩阵的低秩矩阵。而 NMF 则没有这种保证，它的近似质量可能会比 SVD 差。然而，NMF 的非负约束使得它的近似可能更符合实际的需求，尤其是在那些原始数据是非负的情况下。&lt;/li>
-&lt;li>&lt;!-- raw HTML omitted -->计算复杂性&lt;!-- raw HTML omitted -->：SVD 和 NMF 的计算复杂性也有所不同。对于一个 $m\times n$ 的矩阵，SVD 的计算复杂性大约为 $\mathbf{O}(\min {m^2n, mn^2})$ ，而 NMF 的计算复杂性则取决于迭代次数和所选的优化算法。在实践中，NMF 通常比 SVD 更慢，但也有一些高效的 NMF 算法可以缩短计算时间。&lt;/li>
-&lt;/ol>
-&lt;p>总的来说，SVD 和 NMF 各有优势，选择使用哪一种技术取决于具体的应用和需求。&lt;/p>
-&lt;h2 id="四实战图像压缩">四、实战：图像压缩&lt;/h2>
-&lt;p>让我们通过一个实战演示来看看如何使用 SVD 和 NMF 进行图像压缩。我们将使用 Python 的 NumPy 和 scikit-learn 库来执行这些任务。&lt;/p>
-&lt;p>首先，我们需要导入必要的库，并加载一张图像：&lt;/p>
-&lt;pre>&lt;code class="language-python">import numpy as np
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;三svd-与-nmf-的比较&#34;&gt;三、SVD 与 NMF 的比较&lt;/h2&gt;
+&lt;p&gt;虽然 SVD 和 NMF 都是矩阵分解技术，但它们有一些重要的区别。&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;数据类型和约束&lt;!-- raw HTML omitted --&gt;：SVD 可以应用于任何矩阵，而 NMF 只能应用于非负矩阵。其次，SVD 提供了一种最优的低秩近似，而 NMF 则没有这种保证。然而，NMF 的非负约束使得它的分解更具解释性，这在许多应用中是非常有用的。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;分解的解释性&lt;!-- raw HTML omitted --&gt;：虽然 SVD 和 NMF 都可以将原始矩阵分解为一些基本的“构成元素”，但 NMF 的分解通常更具解释性。这是因为 NMF 的非负约束使得分解的结果更容易解释和理解。在许多应用中，如主题模型或社区发现，NMF 的分解可以直接解释为数据的一些基本模式或特征。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;优化和稳定性&lt;!-- raw HTML omitted --&gt;：SVD 的优化问题有闭式解，这意味着我们可以直接计算出最优解。而 NMF 的优化问题通常需要使用迭代方法来求解，如梯度下降或坐标下降。这使得 NMF 的计算过程可能更复杂，而且可能需要更多的时间。而且 SVD 的结果是唯一的（除了奇异向量的符号），而 NMF 的结果可能依赖于初始化和优化算法。这意味着对同一个数据集，NMF 可能会给出不同的结果。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;近似质量&lt;!-- raw HTML omitted --&gt;：SVD 提供了一种最优的低秩近似，即它可以找到最接近原始矩阵的低秩矩阵。而 NMF 则没有这种保证，它的近似质量可能会比 SVD 差。然而，NMF 的非负约束使得它的近似可能更符合实际的需求，尤其是在那些原始数据是非负的情况下。&lt;/li&gt;
+&lt;li&gt;&lt;!-- raw HTML omitted --&gt;计算复杂性&lt;!-- raw HTML omitted --&gt;：SVD 和 NMF 的计算复杂性也有所不同。对于一个 $m\times n$ 的矩阵，SVD 的计算复杂性大约为 $\mathbf{O}(\min {m^2n, mn^2})$ ，而 NMF 的计算复杂性则取决于迭代次数和所选的优化算法。在实践中，NMF 通常比 SVD 更慢，但也有一些高效的 NMF 算法可以缩短计算时间。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;总的来说，SVD 和 NMF 各有优势，选择使用哪一种技术取决于具体的应用和需求。&lt;/p&gt;
+&lt;h2 id=&#34;四实战图像压缩&#34;&gt;四、实战：图像压缩&lt;/h2&gt;
+&lt;p&gt;让我们通过一个实战演示来看看如何使用 SVD 和 NMF 进行图像压缩。我们将使用 Python 的 NumPy 和 scikit-learn 库来执行这些任务。&lt;/p&gt;
+&lt;p&gt;首先，我们需要导入必要的库，并加载一张图像：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;import numpy as np
 from sklearn.decomposition import NMF
 from PIL import Image
+
 # 加载图像
-img = Image.open('image.jpg')
+img = Image.open(&#39;image.jpg&#39;)
 width, height = img.size
 img = np.array(img)
 r, g, b = img[:, :, 0], img[:, :, 1], img[:, :, 2]
 img_matrix = []
 img_matrix.extend([r.flatten(), g.flatten(), b.flatten()])
+
 M = np.array(img_matrix).T
-&lt;/code>&lt;/pre>
-&lt;p>然后，我们可以使用 NumPy 的&lt;code>np.linalg.svd&lt;/code> 函数来进行 SVD，得到 $U, S, V^T$ ：&lt;/p>
-&lt;pre>&lt;code class="language-python"># 执行 SVD
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后，我们可以使用 NumPy 的&lt;code&gt;np.linalg.svd&lt;/code&gt; 函数来进行 SVD，得到 $U, S, V^T$ ：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;# 执行 SVD
 U, s, Vt = np.linalg.svd(M, full_matrices=False)
-&lt;/code>&lt;/pre>
-&lt;p>我们可以选择前 $r$ 个奇异值和对应的 $U$ 和 $V^T$ 的列来进行低秩近似：&lt;/p>
-&lt;pre>&lt;code class="language-python">d = 16
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;我们可以选择前 $r$ 个奇异值和对应的 $U$ 和 $V^T$ 的列来进行低秩近似：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;d = 16
 U_d = U[:, :d]
 s_d = s[:d]
 Vt_d = Vt[:d, :]
 M_d = U_d @ np.diag(s_d) @ Vt_d
+
 r, g, b = M_d[:, 0], M_d[:, 1], M_d[:, 2]
 img = np.dstack((r, g, b)).reshape(height, width, 3)
 img[img &amp;lt; 0] = 0
 img[img &amp;gt; 255] = 255
-img = Image.fromarray(np.uint8(img), mode='RGB')
+img = Image.fromarray(np.uint8(img), mode=&#39;RGB&#39;)
 img.show()
-&lt;/code>&lt;/pre>
-&lt;p>同样，我们也可以使用 scikit-learn 的 NMF 类来进行 NMF：&lt;/p>
-&lt;pre>&lt;code class="language-python"># 执行 NMF
-model = NMF(n_components=16, init='random', random_state=0)
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;同样，我们也可以使用 scikit-learn 的 NMF 类来进行 NMF：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;# 执行 NMF
+model = NMF(n_components=16, init=&#39;random&#39;, random_state=0)
 W = model.fit_transform(M)
 H = model.components_
+
 M_d = W @ H
 r, g, b = M_d[:, 0], M_d[:, 1], M_d[:, 2]
 img = np.dstack((r, g, b)).reshape(height, width, 3)
 img[img &amp;lt; 0] = 0
 img[img &amp;gt; 255] = 255
-img = Image.fromarray(np.uint8(img), mode='RGB')
+img = Image.fromarray(np.uint8(img), mode=&#39;RGB&#39;)
 img.show()
-&lt;/code>&lt;/pre>
-&lt;p>最后，我们可以比较原始图像和重构图像的差异，以及 SVD 和 NMF 的压缩效果。这种压缩方法的优点是可以大大减少存储和传输图像所需的数据量，而且如果选择的秩 r 足够大，压缩后的图像的质量也可以接受。&lt;/p>
-&lt;h2 id="五结论">五、结论&lt;/h2>
-&lt;p>总的来说，SVD 和 NMF 都是强大的矩阵分解技术，它们在许多数据科学应用中都有广泛的用途。虽然 SVD 提供了一种最优的低秩近似，但 NMF 的非负约束使得它的分解更具解释性。在选择使用哪一种技术时，我们需要考虑我们的具体需求，以及我们的数据是否满足这些技术的要求。&lt;/p>
-&lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Unsupervised learning by convex and conic coding. &amp;quot; Advances in neural information processing systems 9 (1996).&lt;/p>
-&lt;p>[2] Lee, Daniel D., and H. Sebastian Seung. &amp;ldquo;Learning the parts of objects by non-negative matrix factorization.&amp;rdquo; Nature 401.6755 (1999): 788-791.&lt;/p>
-&lt;p>[3] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Algorithms for non-negative matrix factorization. &amp;quot; Advances in neural information processing systems 13 (2000).&lt;/p></description></item><item><title>最小反馈弧集合问题</title><link>https://cuterwrite.top/p/fas/</link><pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/fas/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp" alt="Featured image of post 最小反馈弧集合问题" />&lt;h1 id="最小反馈弧集合问题">最小反馈弧集合问题&lt;/h1>
-&lt;h2 id="一引言">一、引言&lt;/h2>
-&lt;p>在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称 MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。&lt;/p>
-&lt;h2 id="二问题定义">二、问题定义&lt;/h2>
-&lt;p>首先，我们来详细定义一下最小反馈弧集问题。给定一个有向图 G=(V, E)，其中 V 是顶点集，E 是边集。给定有向图 G(V,E)，集合 F 是 E 的一个子集，若 G 的生成子图 G′(V,E−F)中不包含环，则称 F 是 G 的一个反馈弧集合。容易推出：若有向图 G 包含环，则其每个环至少有一条边在 F 中。我们将基数最小的反馈弧集合称为最小反馈弧集合。最小反馈弧集合问题就是在给定有向图 G 的情况下，求解最小反馈弧集合 F。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173938.webp"
-alt="20230711173938" width="auto" loading="lazy">
-&lt;/figure>
-&lt;ul>
-&lt;li>例如：$ F={(1, 2), (4, 5)} $&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711174006.webp"
-alt="20230711174006" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>在这个问题中，我们的目标是找到最小的反馈弧集，也就是说，我们希望找到尽可能少的边，使得去掉这些边后图中不再有环。这个问题在许多实际应用中都有重要的意义。例如，在社会网络分析中，我们可以通过这个问题来找出社区内的关键人物；在生物信息学中，我们可以通过这个问题来找出基因调控网络中的关键基因。&lt;/p>
-&lt;p>最小反馈弧集问题已经被证明是一个 NP 难问题。这意味着，我们无法在多项式时间内找到这个问题的精确解（除非 P=NP）。然而，尽管这个问题很难，但是我们仍然可以通过一些方法来找到它的近似解。在理论计算机科学中，有一类算法被称为近似算法，它们可以在多项式时间内找到问题的近似解。对于最小反馈弧集问题，我们也可以使用这类算法来求解。在接下来的部分中，我们将介绍一些常见的近似算法。&lt;/p>
-&lt;h2 id="三解决方案">三、解决方案&lt;/h2>
-&lt;p>对于最小反馈弧集问题，我们有多种解决方案，其中包括贪心算法（GreedyFAS）、排序算法（SortFAS）和基于 PageRank 的算法（PageRankFAS）。&lt;/p>
-&lt;h3 id="1-greedyfas">1. GreedyFAS&lt;/h3>
-&lt;p>GreedyFAS 算法的核心思想在于用贪心法生成一个线性排列，将该线性排列中的后向边集作为结果返回。该算法的伪代码如下图所示：
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711172920.webp"
-alt="20230711172920" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>对任一有向图 G，GreedyFAS 算法使用的贪心策略为：&lt;/p>
-&lt;ul>
-&lt;li>查找源头点（入度为 0 的点）。若查到源头点则排在序列 $s_1$ 末尾并移除该点，重复直到 $G$ 无源头点。&lt;/li>
-&lt;li>查找汇集点（出度为 0 的点）。若查到汇集点则排在序列 $s_2$ 首部并移除该点，重复直到 $G$ 无汇集点。&lt;/li>
-&lt;li>计算剩余点的 $\delta$ 值（出度与入度的差值），将 $\delta$ 值最大的点排在 $s_1$ 末尾并移除该点。&lt;/li>
-&lt;li>重复上述过程直到 $G$ 不存在任何点。&lt;/li>
-&lt;li>返回序列 $s_1 s_2$ 。&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-sortfas">2. SortFAS&lt;/h3>
-&lt;p>SortFAS 算法的基本思想是该算法根据序号的自然顺序生成初始最小线性排列问题（LA），不断调整 LA 使后向边的数量尽可能少。该算法的伪代码如下图所示：
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/SortFAS.webp"
-alt="SortFAS" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>对任一有向图 G，SortFAS 算法的步骤如下：&lt;/p>
-&lt;ul>
-&lt;li>生成初始最小线性排列问题（LA）。&lt;/li>
-&lt;li>对于 LA 中的每个序号 v，记录全局变量 val，初始化为 0，表示调整后新增的后向边数。记录 v 的位置 loc。记录最小值 min=0
-&lt;ul>
-&lt;li>从序号 loc-1 开始，向前遍历 LA 得到序号 w，若 v-&amp;gt;w 存在则 val&amp;ndash;，否则 val++。&lt;/li>
-&lt;li>如果 val 小于等于 min，则赋值 min=val，记录位置 loc=w&lt;/li>
-&lt;li>在位置 loc 插入序号 v&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="3-pagerankfas">3. PageRankFAS&lt;/h3>
-&lt;p>PageRankFAS 算法的核心思想在于将原始图的强连通分量转换为线图，然后用 PageRank 算法评估线图中节点的重要性，然后依次删除线图中 PageRank 值最高的节点对应的边。该算法的伪代码如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/PageRankFAS.webp"
-alt="PageRankFAS" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>对任一有向图 G，PageRankFAS 的算法步骤如下：&lt;/p>
-&lt;p>检测图是否有环，如果存在环，执行以下循环：&lt;/p>
-&lt;ol>
-&lt;li>识别有向图中的强连接分量 $s_i, i=0,1,\cdots$&lt;/li>
-&lt;li>遍历强连通分量 $s_i$ ，对于每个强连通分量 $s_i$ ，执行：
-&lt;ul>
-&lt;li>如果 $s-i$ 的大小小于等于 1，跳过该强连通分量的处理。&lt;/li>
-&lt;li>选择 $s_i$ 中的一个随机节点 $v$ ，从 $v$ 开始遍历创建 $s_i$ 的线图 $L(s_i)$&lt;/li>
-&lt;li>计算 $L(s_i)$ 的 PageRank 值。&lt;/li>
-&lt;li>选择 $L(s_i)$ 中 PageRank 值最大的节点，找到 $s_i$ 中对应的边 $e$ ，添加到最小反馈弧集。&lt;/li>
-&lt;li>在 $G$ 中删除边 $e$ 。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>如果仍有环，重复执行 1 和 2，直到图不存在环为止。&lt;/li>
-&lt;/ol>
-&lt;h2 id="四实际应用">四、实际应用&lt;/h2>
-&lt;p>最小反馈弧集问题在许多领域都有广泛的应用。例如，在生物信息学中，我们可以通过求解最小反馈弧集问题，来找出基因调控网络中的关键基因。在这种情况下，我们通常将基因调控网络表示为一个有向图，其中的顶点代表基因，边代表基因之间的调控关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个网络有重要影响的基因。&lt;/p>
-&lt;p>在社会网络分析中，我们可以通过求解最小反馈弧集问题，来检测社区内的关键人物。在这种情况下，我们通常将社区表示为一个有向图，其中的顶点代表人，边代表人之间的关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个社区有重要影响的人。&lt;/p></description></item><item><title>路径规划算法之 A* 与 D* Lite 原理详解</title><link>https://cuterwrite.top/p/route-planning-alogrithm/</link><pubDate>Tue, 31 Aug 2021 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/route-planning-alogrithm/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp" alt="Featured image of post 路径规划算法之 A* 与 D* Lite 原理详解" />&lt;h1 id="路径规划算法之-a-与-d-lite-原理详解">路径规划算法之 A* 与 D* Lite 原理详解&lt;/h1>
-&lt;h2 id="问题描述">问题描述&lt;/h2>
-&lt;p>如何在一个网格地图中找到两点之间的最短路径&lt;/p>
-&lt;h2 id="基础算法介绍">基础算法介绍&lt;/h2>
-&lt;p>如果要在一个网格地图中找到两点之间的最短路径，很容易想到的广度优先算法（Breadth First）、最佳优先算法和 Dijkstra 算法。&lt;/p>
-&lt;h2 id="广度优先搜索">广度优先搜索&lt;/h2>
-&lt;p>广度优先搜索算法如其名称所示以广度做为优先级进行搜索。&lt;/p>
-&lt;p>从起点开始，首先遍历起点周围邻近的点，然后再遍历已经遍历过的点邻近的点，逐步的向外扩散，直到找到终点。&lt;/p>
-&lt;p>这种算法就像洪水（Flood fill）一样向外扩张，算法的过程如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/breadth_first.726kkh6umi80.gif"
-alt="breadth_first" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>广度优先算法的优点是一定可以找到两点间的最优路径，但是代价就是需要搜索的点非常多，速度会比较慢。&lt;/p>
-&lt;h2 id="最佳优先算法">最佳优先算法&lt;/h2>
-&lt;p>在一些情况下，如果我们可以预先计算出每个节点到终点的距离，则我们可以利用这个信息更快的到达终点。&lt;/p>
-&lt;p>最佳优先算法和广度优先算法不同，它需要使用一个优先队列，用每个节点到终点的距离作为优先级每次始终选取到终点移动代价最小（离终点最近）的节点作为下一个遍历的节点，直到到达终点。这种算法称之为最佳优先（Best First）算法。和广度优先相比，最佳优先所需要搜索的点要少很多，可以大大加快路径的搜索速度，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/2.2hgkrensw5u0.gif"
-alt="2" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>但最佳优先算法的缺点就是，当起点和终点有障碍物时，可能最佳优先算法找到的路径并不是最佳的路径，下图描述了这种情况：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/3.7e87g1vzlu40.gif"
-alt="3" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h2 id="dijkstra-算法">Dijkstra 算法&lt;/h2>
-&lt;p>Dijkstra 算法是由计算机科学家&lt;a class="link" href="https://en.wikipedia.org/wiki/Edsger_W._Dijkstra" target="_blank" rel="noopener" >Edsger W. Dijkstra
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-在 1956 年提出的&lt;/p>
-&lt;p>Dijkstra 算法用来寻找图形中节点之间的最短路径。&lt;/p>
-&lt;p>考虑这样一种场景，在一些情况下，图形中相邻节点之间的移动代价并不相等。例如，游戏中的一幅图，既有平地也有山脉，那么游戏中的角色在平地和山脉中移动的速度通常是不相等的。&lt;/p>
-&lt;p>在 Dijkstra 算法中，需要计算每一个节点距离起点的总移动代价。同时，还需要一个优先队列结构。对于所有待遍历的节点，放入优先队列中会按照代价进行排序。&lt;/p>
-&lt;p>在算法运行的过程中，每次都从优先队列中选出代价最小的作为下一个遍历的节点。直到到达终点为止。&lt;/p>
-&lt;p>下面对比了不考虑节点移动代价差异的广度优先搜索与考虑移动代价的 Dijkstra 算法的运算结果：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/dijkstra.2dvhnjsz7zr4.gif"
-alt="dijkstra" width="90%" loading="lazy">
-&lt;/figure>
-&lt;blockquote>
-&lt;p>当图形为网格图，并且每个节点之间的移动代价是相等的，那么 Dijkstra 算法将和广度优先算法变得一样。&lt;/p>
-&lt;/blockquote>
-&lt;h2 id="a-算法">A* 算法&lt;/h2>
-&lt;p>A* 算法最初发表于 1968 年，由 Stanford 研究院的 Peter Hart, Nils Nilsson 以及 Bertram Raphael 发表。它可以被认为是 Dijkstra 算法的扩展。&lt;/p>
-&lt;p>由于借助启发函数的引导，A*算法通常拥有更好的性能。&lt;/p>
-&lt;p>A* 算法通过下面这个函数来计算每个节点的优先级。
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;最后，我们可以比较原始图像和重构图像的差异，以及 SVD 和 NMF 的压缩效果。这种压缩方法的优点是可以大大减少存储和传输图像所需的数据量，而且如果选择的秩 r 足够大，压缩后的图像的质量也可以接受。&lt;/p&gt;
+&lt;h2 id=&#34;五结论&#34;&gt;五、结论&lt;/h2&gt;
+&lt;p&gt;总的来说，SVD 和 NMF 都是强大的矩阵分解技术，它们在许多数据科学应用中都有广泛的用途。虽然 SVD 提供了一种最优的低秩近似，但 NMF 的非负约束使得它的分解更具解释性。在选择使用哪一种技术时，我们需要考虑我们的具体需求，以及我们的数据是否满足这些技术的要求。&lt;/p&gt;
+&lt;h2 id=&#34;参考资料&#34;&gt;参考资料&lt;/h2&gt;
+&lt;p&gt;[1] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Unsupervised learning by convex and conic coding. &amp;quot; Advances in neural information processing systems 9 (1996).&lt;/p&gt;
+&lt;p&gt;[2] Lee, Daniel D., and H. Sebastian Seung. &amp;ldquo;Learning the parts of objects by non-negative matrix factorization.&amp;rdquo; Nature 401.6755 (1999): 788-791.&lt;/p&gt;
+&lt;p&gt;[3] Lee, Daniel, and H. Sebastian Seung. &amp;ldquo;Algorithms for non-negative matrix factorization. &amp;quot; Advances in neural information processing systems 13 (2000).&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>最小反馈弧集合问题</title>
+        <link>http://localhost:1313/p/fas/</link>
+        <pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/fas/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173143.webp" alt="Featured image of post 最小反馈弧集合问题" /&gt;&lt;h1 id=&#34;最小反馈弧集合问题&#34;&gt;最小反馈弧集合问题&lt;/h1&gt;
+&lt;h2 id=&#34;一引言&#34;&gt;一、引言&lt;/h2&gt;
+&lt;p&gt;在复杂网络分析、社会学、生物信息学等领域，我们经常需要处理的一个问题是如何从一个有向图中移除最少的边，使得图中不再存在环。这个问题被称为最小反馈弧集问题（Minimum Feedback Arc Set，简称 MinFAS）。在本文中，我们将详细介绍这个问题的定义、性质，以及一些常见的解决算法。我们还将讨论这个问题在实际应用中的一些例子。&lt;/p&gt;
+&lt;h2 id=&#34;二问题定义&#34;&gt;二、问题定义&lt;/h2&gt;
+&lt;p&gt;首先，我们来详细定义一下最小反馈弧集问题。给定一个有向图 G=(V, E)，其中 V 是顶点集，E 是边集。给定有向图 G(V,E)，集合 F 是 E 的一个子集，若 G 的生成子图 G′(V,E−F)中不包含环，则称 F 是 G 的一个反馈弧集合。容易推出：若有向图 G 包含环，则其每个环至少有一条边在 F 中。我们将基数最小的反馈弧集合称为最小反馈弧集合。最小反馈弧集合问题就是在给定有向图 G 的情况下，求解最小反馈弧集合 F。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711173938.webp&#34;
+    alt=&#34;20230711173938&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;例如：$ F={(1, 2), (4, 5)} $&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711174006.webp&#34;
+    alt=&#34;20230711174006&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;在这个问题中，我们的目标是找到最小的反馈弧集，也就是说，我们希望找到尽可能少的边，使得去掉这些边后图中不再有环。这个问题在许多实际应用中都有重要的意义。例如，在社会网络分析中，我们可以通过这个问题来找出社区内的关键人物；在生物信息学中，我们可以通过这个问题来找出基因调控网络中的关键基因。&lt;/p&gt;
+&lt;p&gt;最小反馈弧集问题已经被证明是一个 NP 难问题。这意味着，我们无法在多项式时间内找到这个问题的精确解（除非 P=NP）。然而，尽管这个问题很难，但是我们仍然可以通过一些方法来找到它的近似解。在理论计算机科学中，有一类算法被称为近似算法，它们可以在多项式时间内找到问题的近似解。对于最小反馈弧集问题，我们也可以使用这类算法来求解。在接下来的部分中，我们将介绍一些常见的近似算法。&lt;/p&gt;
+&lt;h2 id=&#34;三解决方案&#34;&gt;三、解决方案&lt;/h2&gt;
+&lt;p&gt;对于最小反馈弧集问题，我们有多种解决方案，其中包括贪心算法（GreedyFAS）、排序算法（SortFAS）和基于 PageRank 的算法（PageRankFAS）。&lt;/p&gt;
+&lt;h3 id=&#34;1-greedyfas&#34;&gt;1. GreedyFAS&lt;/h3&gt;
+&lt;p&gt;GreedyFAS 算法的核心思想在于用贪心法生成一个线性排列，将该线性排列中的后向边集作为结果返回。该算法的伪代码如下图所示：
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/20230711172920.webp&#34;
+    alt=&#34;20230711172920&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+&lt;/p&gt;
+&lt;p&gt;对任一有向图 G，GreedyFAS 算法使用的贪心策略为：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;查找源头点（入度为 0 的点）。若查到源头点则排在序列 $s_1$ 末尾并移除该点，重复直到 $G$ 无源头点。&lt;/li&gt;
+&lt;li&gt;查找汇集点（出度为 0 的点）。若查到汇集点则排在序列 $s_2$ 首部并移除该点，重复直到 $G$ 无汇集点。&lt;/li&gt;
+&lt;li&gt;计算剩余点的 $\delta$ 值（出度与入度的差值），将 $\delta$ 值最大的点排在 $s_1$ 末尾并移除该点。&lt;/li&gt;
+&lt;li&gt;重复上述过程直到 $G$ 不存在任何点。&lt;/li&gt;
+&lt;li&gt;返回序列 $s_1 s_2$ 。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;2-sortfas&#34;&gt;2. SortFAS&lt;/h3&gt;
+&lt;p&gt;SortFAS 算法的基本思想是该算法根据序号的自然顺序生成初始最小线性排列问题（LA），不断调整 LA 使后向边的数量尽可能少。该算法的伪代码如下图所示：
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/SortFAS.webp&#34;
+    alt=&#34;SortFAS&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+&lt;/p&gt;
+&lt;p&gt;对任一有向图 G，SortFAS 算法的步骤如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;生成初始最小线性排列问题（LA）。&lt;/li&gt;
+&lt;li&gt;对于 LA 中的每个序号 v，记录全局变量 val，初始化为 0，表示调整后新增的后向边数。记录 v 的位置 loc。记录最小值 min=0
+&lt;ul&gt;
+&lt;li&gt;从序号 loc-1 开始，向前遍历 LA 得到序号 w，若 v-&amp;gt;w 存在则 val&amp;ndash;，否则 val++。&lt;/li&gt;
+&lt;li&gt;如果 val 小于等于 min，则赋值 min=val，记录位置 loc=w&lt;/li&gt;
+&lt;li&gt;在位置 loc 插入序号 v&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;3-pagerankfas&#34;&gt;3. PageRankFAS&lt;/h3&gt;
+&lt;p&gt;PageRankFAS 算法的核心思想在于将原始图的强连通分量转换为线图，然后用 PageRank 算法评估线图中节点的重要性，然后依次删除线图中 PageRank 值最高的节点对应的边。该算法的伪代码如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/PageRankFAS.webp&#34;
+    alt=&#34;PageRankFAS&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;对任一有向图 G，PageRankFAS 的算法步骤如下：&lt;/p&gt;
+&lt;p&gt;检测图是否有环，如果存在环，执行以下循环：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;识别有向图中的强连接分量 $s_i, i=0,1,\cdots$&lt;/li&gt;
+&lt;li&gt;遍历强连通分量 $s_i$ ，对于每个强连通分量 $s_i$ ，执行：
+&lt;ul&gt;
+&lt;li&gt;如果 $s-i$ 的大小小于等于 1，跳过该强连通分量的处理。&lt;/li&gt;
+&lt;li&gt;选择 $s_i$ 中的一个随机节点 $v$ ，从 $v$ 开始遍历创建 $s_i$ 的线图 $L(s_i)$&lt;/li&gt;
+&lt;li&gt;计算 $L(s_i)$ 的 PageRank 值。&lt;/li&gt;
+&lt;li&gt;选择 $L(s_i)$ 中 PageRank 值最大的节点，找到 $s_i$ 中对应的边 $e$ ，添加到最小反馈弧集。&lt;/li&gt;
+&lt;li&gt;在 $G$ 中删除边 $e$ 。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;如果仍有环，重复执行 1 和 2，直到图不存在环为止。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&#34;四实际应用&#34;&gt;四、实际应用&lt;/h2&gt;
+&lt;p&gt;最小反馈弧集问题在许多领域都有广泛的应用。例如，在生物信息学中，我们可以通过求解最小反馈弧集问题，来找出基因调控网络中的关键基因。在这种情况下，我们通常将基因调控网络表示为一个有向图，其中的顶点代表基因，边代表基因之间的调控关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个网络有重要影响的基因。&lt;/p&gt;
+&lt;p&gt;在社会网络分析中，我们可以通过求解最小反馈弧集问题，来检测社区内的关键人物。在这种情况下，我们通常将社区表示为一个有向图，其中的顶点代表人，边代表人之间的关系。然后，我们可以通过求解最小反馈弧集问题，来找出那些对整个社区有重要影响的人。&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>路径规划算法之 A* 与 D* Lite 原理详解</title>
+        <link>http://localhost:1313/p/route-planning-alogrithm/</link>
+        <pubDate>Tue, 31 Aug 2021 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/route-planning-alogrithm/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/photo-1563207153-f403bf289096.4ciiq7uwjl40.webp" alt="Featured image of post 路径规划算法之 A* 与 D* Lite 原理详解" /&gt;&lt;h1 id=&#34;路径规划算法之-a-与-d-lite-原理详解&#34;&gt;路径规划算法之 A* 与 D* Lite 原理详解&lt;/h1&gt;
+&lt;h2 id=&#34;问题描述&#34;&gt;问题描述&lt;/h2&gt;
+&lt;p&gt;如何在一个网格地图中找到两点之间的最短路径&lt;/p&gt;
+&lt;h2 id=&#34;基础算法介绍&#34;&gt;基础算法介绍&lt;/h2&gt;
+&lt;p&gt;如果要在一个网格地图中找到两点之间的最短路径，很容易想到的广度优先算法（Breadth First）、最佳优先算法和 Dijkstra 算法。&lt;/p&gt;
+&lt;h2 id=&#34;广度优先搜索&#34;&gt;广度优先搜索&lt;/h2&gt;
+&lt;p&gt;广度优先搜索算法如其名称所示以广度做为优先级进行搜索。&lt;/p&gt;
+&lt;p&gt;从起点开始，首先遍历起点周围邻近的点，然后再遍历已经遍历过的点邻近的点，逐步的向外扩散，直到找到终点。&lt;/p&gt;
+&lt;p&gt;这种算法就像洪水（Flood fill）一样向外扩张，算法的过程如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/breadth_first.726kkh6umi80.gif&#34;
+    alt=&#34;breadth_first&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;广度优先算法的优点是一定可以找到两点间的最优路径，但是代价就是需要搜索的点非常多，速度会比较慢。&lt;/p&gt;
+&lt;h2 id=&#34;最佳优先算法&#34;&gt;最佳优先算法&lt;/h2&gt;
+&lt;p&gt;在一些情况下，如果我们可以预先计算出每个节点到终点的距离，则我们可以利用这个信息更快的到达终点。&lt;/p&gt;
+&lt;p&gt;最佳优先算法和广度优先算法不同，它需要使用一个优先队列，用每个节点到终点的距离作为优先级每次始终选取到终点移动代价最小（离终点最近）的节点作为下一个遍历的节点，直到到达终点。这种算法称之为最佳优先（Best First）算法。和广度优先相比，最佳优先所需要搜索的点要少很多，可以大大加快路径的搜索速度，如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/2.2hgkrensw5u0.gif&#34;
+    alt=&#34;2&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;但最佳优先算法的缺点就是，当起点和终点有障碍物时，可能最佳优先算法找到的路径并不是最佳的路径，下图描述了这种情况：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/3.7e87g1vzlu40.gif&#34;
+    alt=&#34;3&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;dijkstra-算法&#34;&gt;Dijkstra 算法&lt;/h2&gt;
+&lt;p&gt;Dijkstra 算法是由计算机科学家&lt;a class=&#34;link&#34; href=&#34;https://en.wikipedia.org/wiki/Edsger_W._Dijkstra&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Edsger W. Dijkstra
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+在 1956 年提出的&lt;/p&gt;
+&lt;p&gt;Dijkstra 算法用来寻找图形中节点之间的最短路径。&lt;/p&gt;
+&lt;p&gt;考虑这样一种场景，在一些情况下，图形中相邻节点之间的移动代价并不相等。例如，游戏中的一幅图，既有平地也有山脉，那么游戏中的角色在平地和山脉中移动的速度通常是不相等的。&lt;/p&gt;
+&lt;p&gt;在 Dijkstra 算法中，需要计算每一个节点距离起点的总移动代价。同时，还需要一个优先队列结构。对于所有待遍历的节点，放入优先队列中会按照代价进行排序。&lt;/p&gt;
+&lt;p&gt;在算法运行的过程中，每次都从优先队列中选出代价最小的作为下一个遍历的节点。直到到达终点为止。&lt;/p&gt;
+&lt;p&gt;下面对比了不考虑节点移动代价差异的广度优先搜索与考虑移动代价的 Dijkstra 算法的运算结果：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.cos.ap-beijing.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/dijkstra.2dvhnjsz7zr4.gif&#34;
+    alt=&#34;dijkstra&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;当图形为网格图，并且每个节点之间的移动代价是相等的，那么 Dijkstra 算法将和广度优先算法变得一样。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id=&#34;a-算法&#34;&gt;A* 算法&lt;/h2&gt;
+&lt;p&gt;A* 算法最初发表于 1968 年，由 Stanford 研究院的 Peter Hart, Nils Nilsson 以及 Bertram Raphael 发表。它可以被认为是 Dijkstra 算法的扩展。&lt;/p&gt;
+&lt;p&gt;由于借助启发函数的引导，A*算法通常拥有更好的性能。&lt;/p&gt;
+&lt;p&gt;A* 算法通过下面这个函数来计算每个节点的优先级。
 $$
 f(n) = g(n) + h(n)
 $$
-其中：&lt;/p>
-&lt;ul>
-&lt;li>f(n) 是节点 n 的综合优先级。当我们选择下一个要遍历的节点时，我们总会选取综合优先级最高（值最小）的节点。&lt;/li>
-&lt;li>g(n) 是节点 n 距离起点的实际代价。&lt;/li>
-&lt;li>h(n) 是启发函数，是节点 n 到终点的估计值
-&lt;ul>
-&lt;li>在极端情况下，启发函数始终为 0，则将由 g(n)g(n)决定节点的优先级，此时算法就退化成了 Dijkstra 算法。&lt;/li>
-&lt;li>如果 h(n)始终小于等于节点 n 到终点的代价，则 A*算法保证一定能够找到最短路径。但是当 h(n)的值越小，算法将遍历越多的节点，也就导致算法越慢。&lt;/li>
-&lt;li>如果 h(n)完全等于节点 n 到终点的代价，则 A*算法将找到最佳路径，并且速度很快。可惜的是，并非所有场景下都能做到这一点。因为在没有达到终点之前，我们很难确切算出距离终点还有多远。&lt;/li>
-&lt;li>如果 h(n)的值比节点 n 到终点的代价要大，则 A*算法不能保证找到最短路径，不过此时会很快。&lt;/li>
-&lt;li>在另外一个极端情况下，如果 h(n)相较于 g(n)大很多，则此时只有 h(n)产生效果，这也就变成了最佳优先搜索。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>由上面这些信息我们可以知道，通过调节启发函数我们可以控制算法的速度和精确度。因为在一些情况，我们可能未必需要最短路径，而是希望能够尽快找到一个路径即可。这也是 A*算法比较灵活的地方。&lt;/p>
-&lt;p>对于网格形式的图，有以下这些启发函数可以使用：&lt;/p>
-&lt;ul>
-&lt;li>如果图形中只允许朝上下左右四个方向移动，则可以使用曼哈顿距离（Manhattan distance）。&lt;/li>
-&lt;li>如果图形中允许朝八个方向移动，则可以使用对角距离。&lt;/li>
-&lt;li>如果图形中允许朝任何方向移动，则可以使用欧几里得距离（Euclidean distance）。&lt;/li>
-&lt;/ul>
-&lt;p>A* 算法还需要使用两个集合来表示待遍历的节点，与已经遍历过的节点。&lt;/p>
-&lt;ul>
-&lt;li>OpenList：可到达的节点&lt;/li>
-&lt;li>CloseList：已到达的节点&lt;/li>
-&lt;/ul>
-&lt;p>A* 算法具体的运行过程为：每次从优先队列中选取 f(n)值最小（优先级最高）的节点作为下一个待遍历的节点，如果该节点是目标节点，则直接返回，算法结束。如果不是，则遍历其邻居节点，对所有不在 CloseList 中的、在网格范围内的、非障碍物的节点，计算其中 F 值、G 值和 H 值，添加到优先队列（OpenList）中和 CloseList 中。&lt;/p>
-&lt;p>A* 算法 Java 实现如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/carbon.23rnz055yuzk.webp"
-alt="carbon" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h2 id="a-算法变种">A* 算法变种&lt;/h2>
-&lt;p>A* 算法有不少的变种，主要有如下算法：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>ARA * ：&lt;a class="link" href="https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2019-02-05-a-star-algorithm/ARA*-%20Anytime%20A*%20with%20Provable%20Bounds%20on%20Sub-Optimality.pdf" target="_blank" rel="noopener" >ARA* - Anytime A* with Provable Bounds on Sub-Optimality
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>D* ：D* 是 Dynamic A* 的简写，其算法和 A*类似，不同的是，其代价的计算在算法运行过程中可能会发生变化。&lt;/p>
-&lt;ul>
-&lt;li>&lt;a class="link" href="http://idm-lab.org/project-a.html" target="_blank" rel="noopener" >Project “Fast Replanning （Incremental Heuristic Search）”
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/li>
-&lt;li>&lt;a class="link" href="http://www.frc.ri.cmu.edu/~axs/dynamic_plan.html" target="_blank" rel="noopener" >Real-Time Replanning in Dynamic and Unknown Environments
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>Field D* ： Field D* 扩展了 D* 和 D* Lite，是一种基于插值（ interpolation-based ）的规划算法，它使用线性插值来有效地生成低成本路径，从而消除不必要的转向。&lt;/p>
-&lt;p>在给定线性插值假设的情况下，路径是最优的，并且在实践中非常有效。该算法目前被各种现场机器人系统使用。&lt;/p>
-&lt;p>关于 Field D* 的详细内容可以看下面这篇论文：&lt;/p>
-&lt;ul>
-&lt;li>&lt;a class="link" href="https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2019-02-05-a-star-algorithm/Field%20D*-%20An%20Interpolation-based%20Path%20Planner%20and%20Replanner.pdf" target="_blank" rel="noopener" >Field D*: An Interpolation-based Path Planner and Replanner
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="d-lite-算法">D* Lite 算法&lt;/h2>
-&lt;p>D* Lite 算法是一种增量启发式搜素算法，由 Sven Koeing 和 Maxim Likhachev 于 2004 年提出，是基于 LPA* 和 Dynamic SWSF-FP 的一种算法。D* Lite 算法可以适用于地图未知、环境随时会发生变化的情况，在遇到新增加的障碍物时，可以利用先前搜索所获得的信息，而不需要完全重新规划路径。&lt;/p>
-&lt;p>D* Lite 的启发函数与 A* 类似，同样有一个启发函数，不过因为 D* Lite 是从终点向起点搜索，所以对应的启发函数 h(n) 也变成了节点 n 到起点的估计值。&lt;/p>
-&lt;p>D* Lite 中几个概念的定义：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>g(n)：当前节点到终点的实际代价&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>h(n)：当前节点到起点的估计值&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>rhs（right-hand side)：公式如下&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/image.6ton688ml8o0.webp"
-alt="image" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>一个点的 rhs 值是它的父代节点中 g 值加上这两点之间的代价中的最小值，相当于一个点从父代节点到达这个点的最小代价。其实在算法的大部分过程中，g 值和 rhs 值是相等的。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>两个 key 值：在 A* 算法中，通过 f(n) 的大小来判断一个点的优先级，而在 D* Lite 中，需要通过两个 key 值来判断一个点的优先级，key 值越小优先级越高，先判断第一个 key 值，如果第一个 key 值相等再判断第二个 key 值。公式如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/image.qncmp3shatc.webp"
-alt="image" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>其中 km 的定义为，算法初始化时会先将 km 设置为 0，之后当机器人有检测到地图的变化时，km 需要加上上一个起点与当前位置的启发距离，并且把当前所在的点设置为新的起点，即更新起点的位置。&lt;/p>
-&lt;p>如果在机器人还没有移动的时候 km 就等于 0，这时算法其实就相当于一个反向从终点往起点方向搜索的 A* 算法了。&lt;/p>
-&lt;p>当机器人检测到障碍的变化时会再一次规划路径，这时候的实际起点应该是机器人当前的位置，起点发生了变化，每个点的 h 值也会相应变化，key 值也发生了变化。如果不引入这个参数的话，就需要把优先队列中的全部节点都重新计算一遍 key 值，增加了计算量。引入之后就可以一定程度上保证 key 值的一致性，减少计算量。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>第二 key 值就是 g 值和 rhs 值中的最小值，它的意义在于当两个点的第一个 key 值相等的时候，算法会优先选择距离终点近的点。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>局部一致性：D* Lite 算法中还有一个很重要的概念就是局部一致性，通过一个点的局部一致性来判断当前点是否需要计算。其定义如下：当一个点的 &lt;code>g 值等于 rhs 值&lt;/code>时称这个点为局部一致的点，否则称这个点为局部不一致。其中局部不一致的情况还可细分成为局部过一致和局部欠一致：当一个点的 &lt;code>g 值大于 rhs 值&lt;/code>时，这个点为局部过一致，通常是有障碍物删除时或者算法第一次搜索路径时；当一个点的 &lt;code>g 值小于 rhs 值&lt;/code>时，这个点为局部欠一致，通常是检测到了新增的障碍物。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>D* Lite 算法的步骤：&lt;/p>
-&lt;ul>
-&lt;li>将当前点设置为起点&lt;/li>
-&lt;li>将优先队列设置为空队列，将所有节点的 g 值和 rhs 值设置为无穷，将终点的 rhs 值设为 0，并且计算它的 key 值加入到优先队列中。&lt;/li>
-&lt;li>调用 ComputeShortestPath()开始计算它的最短路径&lt;/li>
-&lt;li>移动到子代中 g 值加上这两个点之间代价中最小的点。&lt;/li>
-&lt;li>如果检测到了障碍的变化，根据上一个起点和当前点的启发值，修改 k_m 的值，并将当前节点设置为新的起点。&lt;/li>
-&lt;li>对所有两个点之间的代价发生变化的，更新这两个点之间的代价，如果两个点之间的代价变小，说明有障碍物删除，更新它的 rhs 值，如果代价变大了，说明新增了一个障碍物，需要通过它的子代来更新 rhs 值。&lt;/li>
-&lt;li>更新受影响的节点。&lt;/li>
-&lt;li>计算最短路径。&lt;/li>
-&lt;/ul>
-&lt;p>D* Lite 算法 Java 代码实现还未完成&lt;/p>
-&lt;p>python 版代码参考：&lt;a class="link" href="https://github.com/avgaydashenko/d_star" target="_blank" rel="noopener" >https://github.com/avgaydashenko/d_star
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p>
-&lt;h2 id="参考文献">参考文献&lt;/h2>
-&lt;p>[1]&lt;a class="link" href="https://paul.pub/a-star-Algorithm/" target="_blank" rel="noopener" >路径规划之 A*算法
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p>
-&lt;p>[2]&lt;a class="link" href="https://yutouwd.github.io/posts/346220552/" target="_blank" rel="noopener" >路径规划之 D* Lite 算法详解及实现
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p></description></item><item><title>聊聊前缀树 Trie</title><link>https://cuterwrite.top/p/trie/</link><pubDate>Mon, 16 Aug 2021 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/trie/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp" alt="Featured image of post 聊聊前缀树 Trie" />&lt;h1 id="聊聊前缀树-trie">聊聊前缀树 Trie&lt;/h1>
-&lt;h2 id="trie-树简介">Trie 树简介&lt;/h2>
-&lt;p>Trie 树，也叫“字典树”。顾名思义，它是一个&lt;strong>树形结构&lt;/strong>。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。&lt;/p>
-&lt;p>此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如 pan 是 panda 的前缀）。&lt;/p>
-&lt;p>它的 key 都为字符串，能做到高效查询和插入，时间复杂度为 O(k)，k 为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。&lt;/p>
-&lt;p>&lt;strong>它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。&lt;/strong>&lt;/p>
-&lt;h2 id="trie-树特点">Trie 树特点&lt;/h2>
-&lt;p>假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。常见的方案有：①如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，时间复杂度为 O(n)。②将字符串存入 HashSet 中，查找的时候时间复杂度为 O(1)，但是缺点是空间复杂度高，假如有大量的字符串（比如 10 亿条）则会浪费大量的空间。&lt;/p>
-&lt;p>Trie 树则通过空间换时间的方式，将字符串组织成下图的结构：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-d82b7d102ad949dce0bfb92af3d41a11_720w.3xojsp6h3ig0.webp"
-alt="v2-d82b7d102ad949dce0bfb92af3d41a11_720w" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>通过上图，可以发现 Trie 树 的三个特点：&lt;/p>
-&lt;ul>
-&lt;li>根节点不包含字符，除根节点外每一个节点都只包含一个字符&lt;/li>
-&lt;li>从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串&lt;/li>
-&lt;li>每个节点的所有子节点包含的字符都不相同&lt;/li>
-&lt;/ul>
-&lt;h3 id="trie-树的插入操作">Trie 树的插入操作&lt;/h3>
-&lt;p>Trie 树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie 树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词&lt;code>cook&lt;/code>，就有下面几步：&lt;/p>
-&lt;ul>
-&lt;li>插入第一个字母 &lt;code>c&lt;/code>，发现 &lt;code>root&lt;/code> 节点下方存在子节点 &lt;code>c&lt;/code>，则共享节点 &lt;code>c&lt;/code>&lt;/li>
-&lt;li>插入第二个字母 &lt;code>o&lt;/code>，发现 &lt;code>c&lt;/code> 节点下方存在子节点 &lt;code>o&lt;/code>，则共享节点 &lt;code>o&lt;/code>&lt;/li>
-&lt;li>插入第三个字母 &lt;code>o&lt;/code>，发现 &lt;code>o&lt;/code> 节点下方不存在子节点 &lt;code>o&lt;/code>，则创建子节点 &lt;code>o&lt;/code>&lt;/li>
-&lt;li>插入第三个字母 &lt;code>k&lt;/code>，发现 &lt;code>o&lt;/code> 节点下方不存在子节点 &lt;code>k&lt;/code>，则创建子节点 &lt;code>k&lt;/code>&lt;/li>
-&lt;li>至此，单词 &lt;code>cook&lt;/code> 中所有字母已被插入 Trie 树 中，然后设置节点 &lt;code>k&lt;/code> 中的标志位，标记路径 &lt;code>root-&amp;gt;c-&amp;gt;o-&amp;gt;o-&amp;gt;k&lt;/code> 这条路径上所有节点的字符可以组成一个单词&lt;code>cook&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;h3 id="trie-树的查询操作">Trie 树的查询操作&lt;/h3>
-&lt;p>在 Trie 树中查找一个字符串的时候，比如查找字符串 &lt;code>code&lt;/code>，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/1.4i55q8qg8gi0.webp"
-alt="1" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h3 id="trie-树的删除操作">Trie 树的删除操作&lt;/h3>
-&lt;p>Trie 树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：
-&lt;strong>删除整个单词（比如&lt;code>hi&lt;/code>）&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>从根节点开始查找第一个字符&lt;code>h&lt;/code>&lt;/li>
-&lt;li>找到&lt;code>h&lt;/code> 子节点后，继续查找&lt;code>h&lt;/code> 的下一个子节点&lt;code>i&lt;/code>&lt;/li>
-&lt;li>&lt;code>i&lt;/code> 是单词&lt;code>hi&lt;/code> 的标志位，将该标志位去掉&lt;/li>
-&lt;li>&lt;code>i&lt;/code> 节点是&lt;code>hi&lt;/code> 的叶子节点，将其删除&lt;/li>
-&lt;li>删除后发现&lt;code>h&lt;/code> 节点为叶子节点，并且不是单词标志位，也将其删除&lt;/li>
-&lt;li>这样就完成了&lt;code>hi&lt;/code> 单词的删除操作&lt;/li>
-&lt;/ul>
-&lt;p>&lt;strong>删除前缀单词（比如&lt;code>cod&lt;/code>）&lt;/strong>&lt;/p>
-&lt;p>这种方式删除比较简单。 只需要将&lt;code>cod&lt;/code> 单词整个字符串查找完后，&lt;code>d&lt;/code> 节点因为不是叶子节点，只需将其单词标志去掉即可。&lt;/p>
-&lt;p>&lt;strong>删除分支单词（比如&lt;code>cook&lt;/code>）&lt;/strong>&lt;/p>
-&lt;p>与 &lt;strong>删除整个单词&lt;/strong> 情况类似，区别点在于删除到 &lt;code>cook&lt;/code> 的第一个 &lt;code>o&lt;/code> 时，该节点为非叶子节点，停止删除，这样就完成&lt;code>cook&lt;/code> 字符串的删除操作。&lt;/p>
-&lt;h2 id="trie-树应用与实现">Trie 树应用与实现&lt;/h2>
-&lt;p>事实上 Trie 树 在日常生活中的使用随处可见，比如这个：
-具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。&lt;/p>
-&lt;p>&lt;strong>实现：最简单的字典树&lt;/strong>&lt;/p>
-&lt;pre>&lt;code class="language-java">class TrieNode {
-String word;
-boolean isEnd;
-TrieNode[] children;
-public TrieNode() {
-children = new TrieNode[26];
+其中：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;f(n) 是节点 n 的综合优先级。当我们选择下一个要遍历的节点时，我们总会选取综合优先级最高（值最小）的节点。&lt;/li&gt;
+&lt;li&gt;g(n) 是节点 n 距离起点的实际代价。&lt;/li&gt;
+&lt;li&gt;h(n) 是启发函数，是节点 n 到终点的估计值
+&lt;ul&gt;
+&lt;li&gt;在极端情况下，启发函数始终为 0，则将由 g(n)g(n)决定节点的优先级，此时算法就退化成了 Dijkstra 算法。&lt;/li&gt;
+&lt;li&gt;如果 h(n)始终小于等于节点 n 到终点的代价，则 A*算法保证一定能够找到最短路径。但是当 h(n)的值越小，算法将遍历越多的节点，也就导致算法越慢。&lt;/li&gt;
+&lt;li&gt;如果 h(n)完全等于节点 n 到终点的代价，则 A*算法将找到最佳路径，并且速度很快。可惜的是，并非所有场景下都能做到这一点。因为在没有达到终点之前，我们很难确切算出距离终点还有多远。&lt;/li&gt;
+&lt;li&gt;如果 h(n)的值比节点 n 到终点的代价要大，则 A*算法不能保证找到最短路径，不过此时会很快。&lt;/li&gt;
+&lt;li&gt;在另外一个极端情况下，如果 h(n)相较于 g(n)大很多，则此时只有 h(n)产生效果，这也就变成了最佳优先搜索。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;由上面这些信息我们可以知道，通过调节启发函数我们可以控制算法的速度和精确度。因为在一些情况，我们可能未必需要最短路径，而是希望能够尽快找到一个路径即可。这也是 A*算法比较灵活的地方。&lt;/p&gt;
+&lt;p&gt;对于网格形式的图，有以下这些启发函数可以使用：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;如果图形中只允许朝上下左右四个方向移动，则可以使用曼哈顿距离（Manhattan distance）。&lt;/li&gt;
+&lt;li&gt;如果图形中允许朝八个方向移动，则可以使用对角距离。&lt;/li&gt;
+&lt;li&gt;如果图形中允许朝任何方向移动，则可以使用欧几里得距离（Euclidean distance）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A* 算法还需要使用两个集合来表示待遍历的节点，与已经遍历过的节点。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;OpenList：可到达的节点&lt;/li&gt;
+&lt;li&gt;CloseList：已到达的节点&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;A* 算法具体的运行过程为：每次从优先队列中选取 f(n)值最小（优先级最高）的节点作为下一个待遍历的节点，如果该节点是目标节点，则直接返回，算法结束。如果不是，则遍历其邻居节点，对所有不在 CloseList 中的、在网格范围内的、非障碍物的节点，计算其中 F 值、G 值和 H 值，添加到优先队列（OpenList）中和 CloseList 中。&lt;/p&gt;
+&lt;p&gt;A* 算法 Java 实现如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/carbon.23rnz055yuzk.webp&#34;
+    alt=&#34;carbon&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;h2 id=&#34;a-算法变种&#34;&gt;A* 算法变种&lt;/h2&gt;
+&lt;p&gt;A* 算法有不少的变种，主要有如下算法：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;ARA * ：&lt;a class=&#34;link&#34; href=&#34;https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2019-02-05-a-star-algorithm/ARA*-%20Anytime%20A*%20with%20Provable%20Bounds%20on%20Sub-Optimality.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;ARA* - Anytime A* with Provable Bounds on Sub-Optimality
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;D* ：D* 是 Dynamic A* 的简写，其算法和 A*类似，不同的是，其代价的计算在算法运行过程中可能会发生变化。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;http://idm-lab.org/project-a.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Project “Fast Replanning （Incremental Heuristic Search）”
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;http://www.frc.ri.cmu.edu/~axs/dynamic_plan.html&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Real-Time Replanning in Dynamic and Unknown Environments
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Field D* ： Field D* 扩展了 D* 和 D*  Lite，是一种基于插值（ interpolation-based ）的规划算法，它使用线性插值来有效地生成低成本路径，从而消除不必要的转向。&lt;/p&gt;
+&lt;p&gt;在给定线性插值假设的情况下，路径是最优的，并且在实践中非常有效。该算法目前被各种现场机器人系统使用。&lt;/p&gt;
+&lt;p&gt;关于 Field D* 的详细内容可以看下面这篇论文：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://qiangbo-workspace.oss-cn-shanghai.aliyuncs.com/2019-02-05-a-star-algorithm/Field%20D*-%20An%20Interpolation-based%20Path%20Planner%20and%20Replanner.pdf&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Field D*: An Interpolation-based Path Planner and Replanner
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;d-lite-算法&#34;&gt;D* Lite 算法&lt;/h2&gt;
+&lt;p&gt;D* Lite 算法是一种增量启发式搜素算法，由 Sven Koeing 和 Maxim Likhachev 于 2004 年提出，是基于 LPA* 和 Dynamic SWSF-FP 的一种算法。D* Lite 算法可以适用于地图未知、环境随时会发生变化的情况，在遇到新增加的障碍物时，可以利用先前搜索所获得的信息，而不需要完全重新规划路径。&lt;/p&gt;
+&lt;p&gt;D* Lite 的启发函数与 A* 类似，同样有一个启发函数，不过因为 D* Lite 是从终点向起点搜索，所以对应的启发函数 h(n) 也变成了节点 n 到起点的估计值。&lt;/p&gt;
+&lt;p&gt;D* Lite 中几个概念的定义：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;g(n)：当前节点到终点的实际代价&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;h(n)：当前节点到起点的估计值&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;rhs（right-hand side)：公式如下&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/image.6ton688ml8o0.webp&#34;
+      alt=&#34;image&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;一个点的 rhs 值是它的父代节点中 g 值加上这两点之间的代价中的最小值，相当于一个点从父代节点到达这个点的最小代价。其实在算法的大部分过程中，g 值和 rhs 值是相等的。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;两个 key 值：在 A* 算法中，通过 f(n) 的大小来判断一个点的优先级，而在 D* Lite 中，需要通过两个 key 值来判断一个点的优先级，key 值越小优先级越高，先判断第一个 key 值，如果第一个 key 值相等再判断第二个 key 值。公式如下：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/image.qncmp3shatc.webp&#34;
+      alt=&#34;image&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;其中 km 的定义为，算法初始化时会先将 km 设置为 0，之后当机器人有检测到地图的变化时，km 需要加上上一个起点与当前位置的启发距离，并且把当前所在的点设置为新的起点，即更新起点的位置。&lt;/p&gt;
+&lt;p&gt;如果在机器人还没有移动的时候 km 就等于 0，这时算法其实就相当于一个反向从终点往起点方向搜索的 A* 算法了。&lt;/p&gt;
+&lt;p&gt;当机器人检测到障碍的变化时会再一次规划路径，这时候的实际起点应该是机器人当前的位置，起点发生了变化，每个点的 h 值也会相应变化，key 值也发生了变化。如果不引入这个参数的话，就需要把优先队列中的全部节点都重新计算一遍 key 值，增加了计算量。引入之后就可以一定程度上保证 key 值的一致性，减少计算量。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;第二 key 值就是 g 值和 rhs 值中的最小值，它的意义在于当两个点的第一个 key 值相等的时候，算法会优先选择距离终点近的点。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;局部一致性：D* Lite 算法中还有一个很重要的概念就是局部一致性，通过一个点的局部一致性来判断当前点是否需要计算。其定义如下：当一个点的 &lt;code&gt;g 值等于 rhs 值&lt;/code&gt;时称这个点为局部一致的点，否则称这个点为局部不一致。其中局部不一致的情况还可细分成为局部过一致和局部欠一致：当一个点的 &lt;code&gt;g 值大于 rhs 值&lt;/code&gt;时，这个点为局部过一致，通常是有障碍物删除时或者算法第一次搜索路径时；当一个点的 &lt;code&gt;g 值小于 rhs 值&lt;/code&gt;时，这个点为局部欠一致，通常是检测到了新增的障碍物。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;D* Lite 算法的步骤：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;将当前点设置为起点&lt;/li&gt;
+&lt;li&gt;将优先队列设置为空队列，将所有节点的 g 值和 rhs 值设置为无穷，将终点的 rhs 值设为 0，并且计算它的 key 值加入到优先队列中。&lt;/li&gt;
+&lt;li&gt;调用 ComputeShortestPath()开始计算它的最短路径&lt;/li&gt;
+&lt;li&gt;移动到子代中 g 值加上这两个点之间代价中最小的点。&lt;/li&gt;
+&lt;li&gt;如果检测到了障碍的变化，根据上一个起点和当前点的启发值，修改 k_m 的值，并将当前节点设置为新的起点。&lt;/li&gt;
+&lt;li&gt;对所有两个点之间的代价发生变化的，更新这两个点之间的代价，如果两个点之间的代价变小，说明有障碍物删除，更新它的 rhs 值，如果代价变大了，说明新增了一个障碍物，需要通过它的子代来更新 rhs 值。&lt;/li&gt;
+&lt;li&gt;更新受影响的节点。&lt;/li&gt;
+&lt;li&gt;计算最短路径。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;D* Lite 算法 Java 代码实现还未完成&lt;/p&gt;
+&lt;p&gt;python 版代码参考：&lt;a class=&#34;link&#34; href=&#34;https://github.com/avgaydashenko/d_star&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;https://github.com/avgaydashenko/d_star
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/p&gt;
+&lt;h2 id=&#34;参考文献&#34;&gt;参考文献&lt;/h2&gt;
+&lt;p&gt;[1]&lt;a class=&#34;link&#34; href=&#34;https://paul.pub/a-star-Algorithm/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;路径规划之 A*算法
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/p&gt;
+&lt;p&gt;[2]&lt;a class=&#34;link&#34; href=&#34;https://yutouwd.github.io/posts/346220552/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;路径规划之 D* Lite 算法详解及实现
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>聊聊前缀树 Trie</title>
+        <link>http://localhost:1313/p/trie/</link>
+        <pubDate>Mon, 16 Aug 2021 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/trie/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/image-hosting-master/image-hosting-master/store/mountains-6522018__340.3begmxsrjam0.webp" alt="Featured image of post 聊聊前缀树 Trie" /&gt;&lt;h1 id=&#34;聊聊前缀树-trie&#34;&gt;聊聊前缀树 Trie&lt;/h1&gt;
+&lt;h2 id=&#34;trie-树简介&#34;&gt;Trie 树简介&lt;/h2&gt;
+&lt;p&gt;Trie 树，也叫“字典树”。顾名思义，它是一个&lt;strong&gt;树形结构&lt;/strong&gt;。它是一种专门处理字符串匹配的数据结构，用来解决在一组字符串集合中快速查找某个字符串的问题。&lt;/p&gt;
+&lt;p&gt;此外 Trie 树也称前缀树（因为某节点的后代存在共同的前缀，比如 pan 是 panda 的前缀）。&lt;/p&gt;
+&lt;p&gt;它的 key 都为字符串，能做到高效查询和插入，时间复杂度为 O(k)，k 为字符串长度，缺点是如果大量字符串没有共同前缀时很耗内存。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;它的核心思想就是通过最大限度地减少无谓的字符串比较，使得查询高效率，即「用空间换时间」，再利用共同前缀来提高查询效率。&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id=&#34;trie-树特点&#34;&gt;Trie 树特点&lt;/h2&gt;
+&lt;p&gt;假设有 5 个字符串，它们分别是：code，cook，five，file，fat。现在需要在里面多次查找某个字符串是否存在。常见的方案有：①如果每次查找，都是拿要查找的字符串跟这 5 个字符串依次进行字符串匹配，时间复杂度为 O(n)。②将字符串存入 HashSet 中，查找的时候时间复杂度为 O(1)，但是缺点是空间复杂度高，假如有大量的字符串（比如 10 亿条）则会浪费大量的空间。&lt;/p&gt;
+&lt;p&gt;Trie 树则通过空间换时间的方式，将字符串组织成下图的结构：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/v2-d82b7d102ad949dce0bfb92af3d41a11_720w.3xojsp6h3ig0.webp&#34;
+    alt=&#34;v2-d82b7d102ad949dce0bfb92af3d41a11_720w&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;通过上图，可以发现 Trie 树 的三个特点：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;根节点不包含字符，除根节点外每一个节点都只包含一个字符&lt;/li&gt;
+&lt;li&gt;从根节点到某一节点，路径上经过的字符连接起来，为该节点对应的字符串&lt;/li&gt;
+&lt;li&gt;每个节点的所有子节点包含的字符都不相同&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;trie-树的插入操作&#34;&gt;Trie 树的插入操作&lt;/h3&gt;
+&lt;p&gt;Trie 树的插入操作很简单，其实就是将单词的每个字母逐一插入 Trie 树。插入前先看字母对应的节点是否存在，存在则共享该节点，不存在则创建对应的节点。比如要插入新单词&lt;code&gt;cook&lt;/code&gt;，就有下面几步：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;插入第一个字母 &lt;code&gt;c&lt;/code&gt;，发现 &lt;code&gt;root&lt;/code&gt; 节点下方存在子节点 &lt;code&gt;c&lt;/code&gt;，则共享节点 &lt;code&gt;c&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第二个字母 &lt;code&gt;o&lt;/code&gt;，发现 &lt;code&gt;c&lt;/code&gt; 节点下方存在子节点 &lt;code&gt;o&lt;/code&gt;，则共享节点 &lt;code&gt;o&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第三个字母 &lt;code&gt;o&lt;/code&gt;，发现 &lt;code&gt;o&lt;/code&gt; 节点下方不存在子节点 &lt;code&gt;o&lt;/code&gt;，则创建子节点 &lt;code&gt;o&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;插入第三个字母 &lt;code&gt;k&lt;/code&gt;，发现 &lt;code&gt;o&lt;/code&gt; 节点下方不存在子节点 &lt;code&gt;k&lt;/code&gt;，则创建子节点 &lt;code&gt;k&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;至此，单词 &lt;code&gt;cook&lt;/code&gt; 中所有字母已被插入 Trie 树 中，然后设置节点 &lt;code&gt;k&lt;/code&gt; 中的标志位，标记路径 &lt;code&gt;root-&amp;gt;c-&amp;gt;o-&amp;gt;o-&amp;gt;k&lt;/code&gt; 这条路径上所有节点的字符可以组成一个单词&lt;code&gt;cook&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;trie-树的查询操作&#34;&gt;Trie 树的查询操作&lt;/h3&gt;
+&lt;p&gt;在 Trie 树中查找一个字符串的时候，比如查找字符串 &lt;code&gt;code&lt;/code&gt;，可以将要查找的字符串分割成单个的字符 c，o，d，e，然后从 Trie 树的根节点开始匹配。如图所示，绿色的路径就是在 Trie 树中匹配的路径&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/blog/1.4i55q8qg8gi0.webp&#34;
+    alt=&#34;1&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;trie-树的删除操作&#34;&gt;Trie 树的删除操作&lt;/h3&gt;
+&lt;p&gt;Trie 树的删除操作与二叉树的删除操作有类似的地方，需要考虑删除的节点所处的位置，这里分三种情况进行分析：
+&lt;strong&gt;删除整个单词（比如&lt;code&gt;hi&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;从根节点开始查找第一个字符&lt;code&gt;h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;找到&lt;code&gt;h&lt;/code&gt; 子节点后，继续查找&lt;code&gt;h&lt;/code&gt; 的下一个子节点&lt;code&gt;i&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;i&lt;/code&gt; 是单词&lt;code&gt;hi&lt;/code&gt; 的标志位，将该标志位去掉&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;i&lt;/code&gt; 节点是&lt;code&gt;hi&lt;/code&gt; 的叶子节点，将其删除&lt;/li&gt;
+&lt;li&gt;删除后发现&lt;code&gt;h&lt;/code&gt; 节点为叶子节点，并且不是单词标志位，也将其删除&lt;/li&gt;
+&lt;li&gt;这样就完成了&lt;code&gt;hi&lt;/code&gt; 单词的删除操作&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;删除前缀单词（比如&lt;code&gt;cod&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;这种方式删除比较简单。 只需要将&lt;code&gt;cod&lt;/code&gt; 单词整个字符串查找完后，&lt;code&gt;d&lt;/code&gt; 节点因为不是叶子节点，只需将其单词标志去掉即可。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;删除分支单词（比如&lt;code&gt;cook&lt;/code&gt;）&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;与 &lt;strong&gt;删除整个单词&lt;/strong&gt; 情况类似，区别点在于删除到 &lt;code&gt;cook&lt;/code&gt; 的第一个 &lt;code&gt;o&lt;/code&gt; 时，该节点为非叶子节点，停止删除，这样就完成&lt;code&gt;cook&lt;/code&gt; 字符串的删除操作。&lt;/p&gt;
+&lt;h2 id=&#34;trie-树应用与实现&#34;&gt;Trie 树应用与实现&lt;/h2&gt;
+&lt;p&gt;事实上 Trie 树 在日常生活中的使用随处可见，比如这个：
+具体来说就是经常用于统计和排序大量的字符串（但不仅限于字符串），所以经常被搜索引擎系统用于文本词频统计。它的优点是：最大限度地减少无谓的字符串比较，查询效率比哈希表高。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;实现：最简单的字典树&lt;/strong&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;class TrieNode {
+    String word;
+    boolean isEnd;
+    TrieNode[] children;
+    public TrieNode() {
+        children = new TrieNode[26];
+    }
 }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;前缀匹配自动补全&#34;&gt;前缀匹配/自动补全&lt;/h3&gt;
+&lt;p&gt;例如：找出一个字符串集合中所有以 &lt;code&gt;五分钟&lt;/code&gt; 开头的字符串。我们只需要用所有字符串构造一个 trie 树，然后输出以 五−&amp;gt;分−&amp;gt;钟 开头的路径上的关键字即可。
+trie 树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;实现：自动补全功能&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;（1）先找出匹配词语的节点（可能是中间的路径，不一定是最终节点）&lt;/p&gt;
+&lt;p&gt;（2）递归的查询该节点下的所有单词&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Trie {
+    private class TrieNode {
+        String word;
+        boolean isEnd;
+        Map&amp;lt;Character, TrieNode&amp;gt; children;
+        public TrieNode() {
+            children = new HashMap&amp;lt;&amp;gt;();
+        }
+    }
+    TrieNode root;
+    public Trie() {
+        root = new TrieNode();
+    }
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            if (!node.children.containsKey(c)) {
+                node.children.put(c, new TrieNode());
+            }
+            node = node.children.get(c);
+        }
+        node.isEnd = true;
+        node.word = word;
+    }
+    public List&amp;lt;String&amp;gt; autoComplete(TrieNode node, String word) {
+        List&amp;lt;String&amp;gt; res = new ArrayList&amp;lt;&amp;gt;();
+        for (char c : word.toCharArray()) {
+            if (!node.children.containsKey(c)) {
+                node = node.children.get(c);
+            }
+        }
+        helper(node, res);
+        return res;
+    }
+    private void helper(TrieNode node, List&amp;lt;String&amp;gt; words) {
+        if (node.isEnd) {
+            words.add(node.word);
+        }
+        for (Map.Entry&amp;lt;Character, TrieNode&amp;gt; entry : node.children.entrySet()) {
+            helper(entry.getValue(), words);
+        }
+    }
 }
-&lt;/code>&lt;/pre>
-&lt;h3 id="前缀匹配自动补全">前缀匹配/自动补全&lt;/h3>
-&lt;p>例如：找出一个字符串集合中所有以 &lt;code>五分钟&lt;/code> 开头的字符串。我们只需要用所有字符串构造一个 trie 树，然后输出以 五−&amp;gt;分−&amp;gt;钟 开头的路径上的关键字即可。
-trie 树前缀匹配常用于搜索提示。如当输入一个网址，可以自动搜索出可能的选择。当没有完全匹配的搜索结果，可以返回前缀最相似的可能&lt;/p>
-&lt;p>&lt;strong>实现：自动补全功能&lt;/strong>&lt;/p>
-&lt;p>（1）先找出匹配词语的节点（可能是中间的路径，不一定是最终节点）&lt;/p>
-&lt;p>（2）递归的查询该节点下的所有单词&lt;/p>
-&lt;pre>&lt;code class="language-java">public class Trie {
-private class TrieNode {
-String word;
-boolean isEnd;
-Map&amp;lt;Character, TrieNode&amp;gt; children;
-public TrieNode() {
-children = new HashMap&amp;lt;&amp;gt;();
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;字符串检索&#34;&gt;字符串检索&lt;/h3&gt;
+&lt;p&gt;给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。
+检索/查询功能是 Trie 树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。&lt;/li&gt;
+&lt;li&gt;如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Trie {
+    private class TrieNode {
+        String word;
+        boolean isEnd;
+        Map&amp;lt;Character, TrieNode&amp;gt; children;
+        public TrieNode() {
+            children = new HashMap&amp;lt;&amp;gt;();
+        }
+    }
+    TrieNode root;
+    public Trie() {
+        root = new TrieNode();
+    }
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            if (!node.children.containsKey(c)) {
+                node.children.put(c, new TrieNode());
+            }
+            node = node.children.get(c);
+        }
+        node.isEnd = true;
+        node.word = word;
+    }
+    public boolean search(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            if (!node.children.containsKey(c)) {
+                return false;
+            }
+            node = node.children.get(c);
+        }
+        return node.isEnd;
+    }
 }
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;动态路由&#34;&gt;动态路由&lt;/h3&gt;
+&lt;p&gt;实现动态路由最常用的数据结构，被称为前缀树(Trie 树)。看到名字你大概也能知道前缀树长啥样了：每一个节点的所有的子节点都拥有相同的前缀。这种结构非常适用于路由匹配，比如我们定义了如下路由规则：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;/:lang/doc&lt;/li&gt;
+&lt;li&gt;/:lang/tutorial&lt;/li&gt;
+&lt;li&gt;/:lang/intro&lt;/li&gt;
+&lt;li&gt;/about&lt;/li&gt;
+&lt;li&gt;/p/blog&lt;/li&gt;
+&lt;li&gt;/p/related&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;HTTP 请求的路径恰好是由&lt;code&gt;/&lt;/code&gt;分隔的多段构成的，因此，每一段可以作为前缀树的一个节点。我们通过树结构查询，如果中间某一层的节点都不满足条件，那么就说明没有匹配到的路由，查询结束。&lt;/p&gt;
+&lt;p&gt;接下来我们实现的动态路由具备以下两个功能。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;参数匹配&lt;code&gt;:&lt;/code&gt;。例如 &lt;code&gt;/p/:lang/doc&lt;/code&gt;，可以匹配 &lt;code&gt;/p/c/doc&lt;/code&gt; 和 &lt;code&gt;/p/go/doc&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;通配&lt;code&gt;*&lt;/code&gt;。例如 &lt;code&gt;/static/*filepath&lt;/code&gt;，可以匹配&lt;code&gt;/static/fav.ico&lt;/code&gt;，也可以匹配&lt;code&gt;/static/js/jQuery.js&lt;/code&gt;，这种模式常用于静态服务器，能够递归地匹配子路径。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;实现：动态路由&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;（1）由于路由规则允许模糊匹配，匹配子节点时可能还包括了含有模糊字符串的结构，比如插入&lt;code&gt;/:lang/tutorial&lt;/code&gt; 这个路由 pattern 后再插入&lt;code&gt;/golang/intro&lt;/code&gt; 时，虽然 golang 与:lang 并不匹配，但还是需要将 intro 插入在:lang 节点下，而不是再创建一个 golang 节点，所以仅使用哈希表查找子节点并不合适，需要改用为 ArrayList 来存 TrieNode，使用一个单独的字符串 part 来保存节点的信息，isWild 来判断节点是否是模糊节点。&lt;/p&gt;
+&lt;p&gt;（2）插入与查询的逻辑与字符串检索区别不大，关键修改在于：插入时还需要插入 part 和 isWild 信息，搜搜时如果碰到了*号开头的节点，需要终止查询，返回该节点。&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;public class Trie {
+    private class TrieNode {
+        String part;
+        String pattern;
+        boolean isWild;
+        boolean isEnd;
+        List&amp;lt;TrieNode&amp;gt; children;
+        public TrieNode() {
+            children = new ArrayList&amp;lt;&amp;gt;();
+        }
+        public TrieNode(boolean isWild, String part) {
+            this.isWild = isWild;
+            this.part = part;
+            children = new ArrayList&amp;lt;&amp;gt;();
+        }
+    }
+    private TrieNode root;
+    public Trie() {
+        root = new TrieNode();
+    }
+    public List&amp;lt;String&amp;gt; parsePattern(String pattern) {
+        String[] parts = pattern.split(&amp;quot;/&amp;quot;);
+        List&amp;lt;String&amp;gt; res = new ArrayList&amp;lt;&amp;gt;();
+        for (String part : parts) {
+            if (part.isEmpty()) {
+                continue;
+            }
+            res.add(part);
+            if (part.charAt(0) == &#39;*&#39;) {
+                break;
+            }
+        }
+        return res;
+    }
+    public TrieNode matchChild(TrieNode node, String part) {
+        for (TrieNode child : node.children) {
+            if ((child.part != null &amp;amp;&amp;amp; child.part.equals(part)) || child.isWild) {
+                return child;
+            }
+        }
+        return null;
+    }
+    public List&amp;lt;TrieNode&amp;gt; matchChildren(TrieNode node, String part) {
+        List&amp;lt;TrieNode&amp;gt; children = new ArrayList&amp;lt;&amp;gt;();
+        for (TrieNode child : node.children) {
+            if ((child.part != null &amp;amp;&amp;amp; child.part.equals(part)) || child.isWild) {
+                children.add(child);
+            }
+        }
+        return children;
+    }
+    public void insert(String pattern) {
+        List&amp;lt;String&amp;gt; parts = parsePattern(pattern);
+        insert(root, pattern, parts, 0);
+    }
+    private void insert(TrieNode node, String pattern, List&amp;lt;String&amp;gt; parts, int depth) {
+        if (parts.size() == depth) {
+            node.pattern = pattern;
+            node.isEnd = true;
+            return;
+        }
+        String part = parts.get(depth);
+        TrieNode child = matchChild(node, part);
+        if (child == null) {
+            boolean isWild = part.charAt(0) == &#39;:&#39; || part.charAt(0) == &#39;*&#39;;
+            child = new TrieNode(isWild, part);
+            node.children.add(child);
+        }
+        insert(child, pattern, parts, depth + 1);
+    }
+    public TrieNode search(TrieNode node, int depth, List&amp;lt;String&amp;gt; parts) {
+        if ((parts.size() == depth) || (node.part != null &amp;amp;&amp;amp; node.part.startsWith(&amp;quot;*&amp;quot;))) {
+            if (node.isEnd) {
+                return node;
+            }
+            return null;
+        }
+        String part = parts.get(depth);
+        List&amp;lt;TrieNode&amp;gt; children = matchChildren(node, part);
+        for (TrieNode child : children) {
+            TrieNode result = search(child, depth + 1, parts);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+    public String getPattern(String path) {
+        List&amp;lt;String&amp;gt; searchParts = parsePattern(path);
+        TrieNode node = search(root, 0, searchParts);
+
+        if (node != null) {
+            return node.pattern;
+        }
+        return null;
+    }
 }
-TrieNode root;
-public Trie() {
-root = new TrieNode();
-}
-public void insert(String word) {
-TrieNode node = root;
-for (char c : word.toCharArray()) {
-if (!node.children.containsKey(c)) {
-node.children.put(c, new TrieNode());
-}
-node = node.children.get(c);
-}
-node.isEnd = true;
-node.word = word;
-}
-public List&amp;lt;String&amp;gt; autoComplete(TrieNode node, String word) {
-List&amp;lt;String&amp;gt; res = new ArrayList&amp;lt;&amp;gt;();
-for (char c : word.toCharArray()) {
-if (!node.children.containsKey(c)) {
-node = node.children.get(c);
-}
-}
-helper(node, res);
-return res;
-}
-private void helper(TrieNode node, List&amp;lt;String&amp;gt; words) {
-if (node.isEnd) {
-words.add(node.word);
-}
-for (Map.Entry&amp;lt;Character, TrieNode&amp;gt; entry : node.children.entrySet()) {
-helper(entry.getValue(), words);
-}
-}
-}
-&lt;/code>&lt;/pre>
-&lt;h3 id="字符串检索">字符串检索&lt;/h3>
-&lt;p>给出 N 个单词组成的熟词表，以及一篇全用小写英文书写的文章，按最早出现的顺序写出所有不在熟词表中的生词。
-检索/查询功能是 Trie 树最原始的功能。给定一组字符串，查找某个字符串是否出现过，思路就是从根节点开始一个一个字符进行比较：&lt;/p>
-&lt;ul>
-&lt;li>如果沿路比较，发现不同的字符，则表示该字符串在集合中不存在。&lt;/li>
-&lt;li>如果所有的字符全部比较完并且全部相同，还需判断最后一个节点的标志位（标记该节点是否代表一个关键字）。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-java">public class Trie {
-private class TrieNode {
-String word;
-boolean isEnd;
-Map&amp;lt;Character, TrieNode&amp;gt; children;
-public TrieNode() {
-children = new HashMap&amp;lt;&amp;gt;();
-}
-}
-TrieNode root;
-public Trie() {
-root = new TrieNode();
-}
-public void insert(String word) {
-TrieNode node = root;
-for (char c : word.toCharArray()) {
-if (!node.children.containsKey(c)) {
-node.children.put(c, new TrieNode());
-}
-node = node.children.get(c);
-}
-node.isEnd = true;
-node.word = word;
-}
-public boolean search(String word) {
-TrieNode node = root;
-for (char c : word.toCharArray()) {
-if (!node.children.containsKey(c)) {
-return false;
-}
-node = node.children.get(c);
-}
-return node.isEnd;
-}
-}
-&lt;/code>&lt;/pre>
-&lt;h3 id="动态路由">动态路由&lt;/h3>
-&lt;p>实现动态路由最常用的数据结构，被称为前缀树(Trie 树)。看到名字你大概也能知道前缀树长啥样了：每一个节点的所有的子节点都拥有相同的前缀。这种结构非常适用于路由匹配，比如我们定义了如下路由规则：&lt;/p>
-&lt;ul>
-&lt;li>/:lang/doc&lt;/li>
-&lt;li>/:lang/tutorial&lt;/li>
-&lt;li>/:lang/intro&lt;/li>
-&lt;li>/about&lt;/li>
-&lt;li>/p/blog&lt;/li>
-&lt;li>/p/related&lt;/li>
-&lt;/ul>
-&lt;p>HTTP 请求的路径恰好是由&lt;code>/&lt;/code>分隔的多段构成的，因此，每一段可以作为前缀树的一个节点。我们通过树结构查询，如果中间某一层的节点都不满足条件，那么就说明没有匹配到的路由，查询结束。&lt;/p>
-&lt;p>接下来我们实现的动态路由具备以下两个功能。&lt;/p>
-&lt;ul>
-&lt;li>参数匹配&lt;code>:&lt;/code>。例如 &lt;code>/p/:lang/doc&lt;/code>，可以匹配 &lt;code>/p/c/doc&lt;/code> 和 &lt;code>/p/go/doc&lt;/code>。&lt;/li>
-&lt;li>通配&lt;code>*&lt;/code>。例如 &lt;code>/static/*filepath&lt;/code>，可以匹配&lt;code>/static/fav.ico&lt;/code>，也可以匹配&lt;code>/static/js/jQuery.js&lt;/code>，这种模式常用于静态服务器，能够递归地匹配子路径。&lt;/li>
-&lt;/ul>
-&lt;p>&lt;strong>实现：动态路由&lt;/strong>&lt;/p>
-&lt;p>（1）由于路由规则允许模糊匹配，匹配子节点时可能还包括了含有模糊字符串的结构，比如插入&lt;code>/:lang/tutorial&lt;/code> 这个路由 pattern 后再插入&lt;code>/golang/intro&lt;/code> 时，虽然 golang 与:lang 并不匹配，但还是需要将 intro 插入在:lang 节点下，而不是再创建一个 golang 节点，所以仅使用哈希表查找子节点并不合适，需要改用为 ArrayList 来存 TrieNode，使用一个单独的字符串 part 来保存节点的信息，isWild 来判断节点是否是模糊节点。&lt;/p>
-&lt;p>（2）插入与查询的逻辑与字符串检索区别不大，关键修改在于：插入时还需要插入 part 和 isWild 信息，搜搜时如果碰到了*号开头的节点，需要终止查询，返回该节点。&lt;/p>
-&lt;pre>&lt;code class="language-java">public class Trie {
-private class TrieNode {
-String part;
-String pattern;
-boolean isWild;
-boolean isEnd;
-List&amp;lt;TrieNode&amp;gt; children;
-public TrieNode() {
-children = new ArrayList&amp;lt;&amp;gt;();
-}
-public TrieNode(boolean isWild, String part) {
-this.isWild = isWild;
-this.part = part;
-children = new ArrayList&amp;lt;&amp;gt;();
-}
-}
-private TrieNode root;
-public Trie() {
-root = new TrieNode();
-}
-public List&amp;lt;String&amp;gt; parsePattern(String pattern) {
-String[] parts = pattern.split(&amp;quot;/&amp;quot;);
-List&amp;lt;String&amp;gt; res = new ArrayList&amp;lt;&amp;gt;();
-for (String part : parts) {
-if (part.isEmpty()) {
-continue;
-}
-res.add(part);
-if (part.charAt(0) == '*') {
-break;
-}
-}
-return res;
-}
-public TrieNode matchChild(TrieNode node, String part) {
-for (TrieNode child : node.children) {
-if ((child.part != null &amp;amp;&amp;amp; child.part.equals(part)) || child.isWild) {
-return child;
-}
-}
-return null;
-}
-public List&amp;lt;TrieNode&amp;gt; matchChildren(TrieNode node, String part) {
-List&amp;lt;TrieNode&amp;gt; children = new ArrayList&amp;lt;&amp;gt;();
-for (TrieNode child : node.children) {
-if ((child.part != null &amp;amp;&amp;amp; child.part.equals(part)) || child.isWild) {
-children.add(child);
-}
-}
-return children;
-}
-public void insert(String pattern) {
-List&amp;lt;String&amp;gt; parts = parsePattern(pattern);
-insert(root, pattern, parts, 0);
-}
-private void insert(TrieNode node, String pattern, List&amp;lt;String&amp;gt; parts, int depth) {
-if (parts.size() == depth) {
-node.pattern = pattern;
-node.isEnd = true;
-return;
-}
-String part = parts.get(depth);
-TrieNode child = matchChild(node, part);
-if (child == null) {
-boolean isWild = part.charAt(0) == ':' || part.charAt(0) == '*';
-child = new TrieNode(isWild, part);
-node.children.add(child);
-}
-insert(child, pattern, parts, depth + 1);
-}
-public TrieNode search(TrieNode node, int depth, List&amp;lt;String&amp;gt; parts) {
-if ((parts.size() == depth) || (node.part != null &amp;amp;&amp;amp; node.part.startsWith(&amp;quot;*&amp;quot;))) {
-if (node.isEnd) {
-return node;
-}
-return null;
-}
-String part = parts.get(depth);
-List&amp;lt;TrieNode&amp;gt; children = matchChildren(node, part);
-for (TrieNode child : children) {
-TrieNode result = search(child, depth + 1, parts);
-if (result != null) {
-return result;
-}
-}
-return null;
-}
-public String getPattern(String path) {
-List&amp;lt;String&amp;gt; searchParts = parsePattern(path);
-TrieNode node = search(root, 0, searchParts);
-if (node != null) {
-return node.pattern;
-}
-return null;
-}
-}
-&lt;/code>&lt;/pre>
-&lt;h2 id="trie-树的局限性">Trie 树的局限性&lt;/h2>
-&lt;p>如前文所讲，Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
-假设字符的种数有&lt;code>m&lt;/code> 个，有若干个长度为 n 的字符串构成了一个 Trie 树 ，则每个节点的出度为 &lt;code>m&lt;/code>（即每个节点的可能子节点数量为&lt;code>m&lt;/code>），Trie 树 的高度为&lt;code>n&lt;/code>。很明显我们浪费了大量的空间来存储字符，此时 Trie 树的最坏空间复杂度为&lt;code>O(m^n)&lt;/code>。也正由于每个节点的出度为&lt;code>m&lt;/code>，所以我们能够沿着树的一个个分支高效的向下逐个字符的查询，而不是遍历所有的字符串来查询，此时 Trie 树的最坏时间复杂度为&lt;code>O(n)&lt;/code>。
-这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。&lt;/p></description></item></channel></rss>
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;trie-树的局限性&#34;&gt;Trie 树的局限性&lt;/h2&gt;
+&lt;p&gt;如前文所讲，Trie 的核心思想是空间换时间，利用字符串的公共前缀来降低查询时间的开销以达到提高效率的目的。
+假设字符的种数有&lt;code&gt;m&lt;/code&gt; 个，有若干个长度为 n 的字符串构成了一个 Trie 树 ，则每个节点的出度为 &lt;code&gt;m&lt;/code&gt;（即每个节点的可能子节点数量为&lt;code&gt;m&lt;/code&gt;），Trie 树 的高度为&lt;code&gt;n&lt;/code&gt;。很明显我们浪费了大量的空间来存储字符，此时 Trie 树的最坏空间复杂度为&lt;code&gt;O(m^n)&lt;/code&gt;。也正由于每个节点的出度为&lt;code&gt;m&lt;/code&gt;，所以我们能够沿着树的一个个分支高效的向下逐个字符的查询，而不是遍历所有的字符串来查询，此时 Trie 树的最坏时间复杂度为&lt;code&gt;O(n)&lt;/code&gt;。
+这正是空间换时间的体现，也是利用公共前缀降低查询时间开销的体现。&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

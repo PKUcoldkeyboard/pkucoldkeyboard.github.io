@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Docker on Cuterwrite&#39;s Blog</title>
+        <link>http://localhost:1313/tags/docker/</link>
+        <description>Recent content in Docker on Cuterwrite&#39;s Blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Wed, 12 Jun 2024 19:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/docker/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Docker Hub 镜像下架解决方案</title>
+        <link>http://localhost:1313/p/dockerhub-takedown/</link>
+        <pubDate>Wed, 12 Jun 2024 19:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/dockerhub-takedown/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-05-28_crop_68935d3d33a3abc75c797b67ad25160f195413.webp" alt="Featured image of post Docker Hub 镜像下架解决方案" /&gt;&lt;h1 id=&#34;docker-hub-镜像下架解决方案&#34;&gt;Docker Hub 镜像下架解决方案&lt;/h1&gt;
+&lt;p&gt;Docker Hub 作为 Docker 官方的镜像仓库，拥有着丰富的镜像资源， 极大地方便了开发者获取和使用各种软件和服务。然而，从 2024 年 6 月 6 日开始，国内各大镜像站点陆续出现了 Docker Hub 镜像下架的情况，包括阿里云、科大、南大、上交等全部挂掉，导致很多开发者无法正常拉取镜像。在执行 &lt;code&gt;docker pull&lt;/code&gt; 命令拉取镜像 docker 镜像时无反应，会一直循环尝试。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_takedown-dockerhub.webp&#34;
+    alt=&#34;2024-06-13_takedown-dockerhub&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Docker Hub 镜像下架的可能原因主要为一些镜像包含违规内容，导致上面信息监管部门出了最新要求，要求各大镜像站点下架相关镜像。&lt;/p&gt;
+&lt;h2 id=&#34;解决方案&#34;&gt;解决方案&lt;/h2&gt;
+&lt;p&gt;面对 Docker Hub 镜像下架问题，目前我们可以通过以下几种方式解决：&lt;/p&gt;
+&lt;h3 id=&#34;1-使用-atomhub-镜像站点&#34;&gt;1. 使用 AtomHub 镜像站点&lt;/h3&gt;
+&lt;p&gt;AtomHub 是由开放原子开源基金会发起，遵循 OCI 标准，旨在为开发者提供开放中立、安全可信、高效便捷的新一代开源容器镜像中心。其具有官方背书，是当前唯一正常的 Docker Hub 镜像站点。&lt;/p&gt;
+&lt;p&gt;不过，AtomHub 的问题是镜像数量较少，目前只有几百个镜像文件；以及，部分软件的版本较旧。&lt;/p&gt;
+&lt;h4 id=&#34;配置-atomhub-镜像站点&#34;&gt;配置 AtomHub 镜像站点&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;修改 /etc/docker/daemon.json 文件，添加以下内容：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;registry-mirrors&amp;quot;: [&amp;quot;https://atomhub.openatom.cn&amp;quot;]
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;重启-docker-服务&#34;&gt;重启 Docker 服务：&lt;/h4&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo systemctl daemon-reload
+sudo systemctl restart docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后就可以正常拉取一些常用镜像了。但是，如果你需要的镜像不在 AtomHub 上，这个方法就不适用了。&lt;/p&gt;
+&lt;h3 id=&#34;2-配置-vpn-代理&#34;&gt;2. 配置 VPN 代理&lt;/h3&gt;
+&lt;p&gt;通过配置 VPN 代理，可以访问被屏蔽的 Docker Hub 源站点，从而拉取镜像。但是，这种方法需要自备 VPN 服务，且速度可能较慢且不稳定。&lt;/p&gt;
+&lt;h4 id=&#34;配置方法&#34;&gt;配置方法&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;创建 &lt;code&gt;/etc/systemd/system/docker.service.d/http-proxy.conf&lt;/code&gt; 文件，并添加以下内容：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;[Service]
+Environment=&amp;quot;HTTP_PROXY=http://your_proxy_server:port&amp;quot;
+Environment=&amp;quot;HTTPS_PROXY=http://your_proxy_server:port&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;重启 Docker 服务：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo systemctl daemon-reload
+sudo systemctl restart docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;3-使用-skopeo-拷贝镜像到私有镜像仓库&#34;&gt;3. 使用 Skopeo 拷贝镜像到私有镜像仓库&lt;/h3&gt;
+&lt;p&gt;Skopeo 是一个命令行工具，可以用于在不同的镜像仓库之间复制、检查和签名镜像。该方法需要一台海外云主机，且需要没有被墙。&lt;/p&gt;
+&lt;h4 id=&#34;具体步骤&#34;&gt;具体步骤&lt;/h4&gt;
+&lt;p&gt;这里以阿里云私有镜像仓库为例，将 Docker Hub 上的镜像复制到阿里云私有镜像仓库。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;首先，你需要启用&lt;a class=&#34;link&#34; href=&#34;https://cr.console.aliyun.com/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;阿里云容器镜像服务
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+，创建一个个人实例：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_aliyun-container.webp&#34;
+    alt=&#34;2024-06-13_aliyun-container&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;进入个人实例，创建一个命名空间：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_create-namespace.webp&#34;
+    alt=&#34;2024-06-13_create-namespace&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;创建一个镜像仓库（对应你想要复制的镜像）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_create-repository.webp&#34;
+    alt=&#34;2024-06-13_create-repository&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;设置访问凭证：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_set-pass.webp&#34;
+    alt=&#34;2024-06-13_set-pass&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;然后，登录到你的海外云主机，先安装 Skopeo：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo apt-get update &amp;amp;&amp;amp; sudo apt-get install -y skopeo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;使用 Skopeo 拷贝镜像：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker login --username=yourusername registry.cn-hangzhou.aliyuncs.com
+skopeo copy docker://docker.io/library/image:tag docker://registry.cn-hangzhou.aliyuncs.com/yournamespace/yourimage:tag
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;4-部署私有镜像仓库&#34;&gt;4. 部署私有镜像仓库&lt;/h3&gt;
+&lt;p&gt;除了以上方法，还可以通过最近一大佬开源的 &lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Docker-Proxy
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+ 项目搭建自己的私有镜像仓库。&lt;/p&gt;
+
+
+
+
+
+&lt;a href=&#34;https://github.com/dqzboy/Docker-Proxy&#34; target=&#34;_blank&#34; class=&#34;card-github fetch-waiting no-styling&#34; repo=&#34;dqzboy/Docker-Proxy&#34; id=&#34;0.8619417662418877-card&#34;&gt;
+    &lt;div class=&#34;gc-titlebar&#34;&gt;
+        
+        
+        
+        &lt;div class=&#34;gc-titlebar-left&#34;&gt;
+            &lt;div class=&#34;gc-owner&#34;&gt;
+                &lt;div id=&#34;0.8619417662418877-avatar&#34; class=&#34;gc-avatar&#34;&gt;&lt;/div&gt;
+                &lt;div class=&#34;gc-user&#34;&gt;dqzboy&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class=&#34;gc-divider&#34;&gt;/&lt;/div&gt;
+            &lt;div class=&#34;gc-repo&#34;&gt;Docker-Proxy&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&#34;github-logo&#34;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div id=&#34;0.8619417662418877-description&#34; class=&#34;gc-description&#34;&gt;Waiting for api.github.com...&lt;/div&gt;
+    &lt;div class=&#34;gc-infobar&#34;&gt;
+        &lt;div id=&#34;0.8619417662418877-stars&#34; class=&#34;gc-stars&#34;&gt;0&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-forks&#34; class=&#34;gc-forks&#34;&gt;0&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-license&#34; class=&#34;gc-license&#34;&gt;unkown&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-language&#34; class=&#34;gc-language&#34;&gt;Waiting...&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/a&gt;
+&lt;script id=&#34;0.8619417662418877-script&#34; type=&#34;text/javascript&#34; defer&gt;
+    fetch(&#39;https://api.github.com/repos/dqzboy\/Docker-Proxy&#39;, {
+            referrerPolicy: &#34;no-referrer&#34;
+        })
+        .then(response =&gt; response.json())
+        .then(data =&gt; {
+            
+            document.getElementById(&#39;0.8619417662418877-description&#39;).innerText = data.description.replace(
+                /:[a-zA-Z0-9_]+:/g, &#39;&#39;);
+            document.getElementById(&#39;0.8619417662418877-language&#39;).innerText = data.language;
+            document.getElementById(&#39;0.8619417662418877-forks&#39;).innerText = Intl.NumberFormat(&#39;en-us&#39;, {
+                notation: &#34;compact&#34;,
+                maximumFractionDigits: 1
+            }).format(data.forks).replaceAll(&#34;\u202f&#34;, &#39;&#39;);
+            document.getElementById(&#39;0.8619417662418877-stars&#39;).innerText = Intl.NumberFormat(&#39;en-us&#39;, {
+                notation: &#34;compact&#34;,
+                maximumFractionDigits: 1
+            }).format(data.stargazers_count).replaceAll(&#34;\u202f&#34;, &#39;&#39;);
+            const avatarEl = document.getElementById(&#39;0.8619417662418877-avatar&#39;);
+            avatarEl.style.backgroundImage = &#39;url(&#39; + data.owner.avatar_url + &#39;)&#39;;
+            avatarEl.style.backgroundColor = &#39;transparent&#39;;
+            if (data.license?.spdx_id) {
+                document.getElementById(&#39;0.8619417662418877-license&#39;).innerText = data.license.spdx_id
+            } else {
+                document.getElementById(&#39;0.8619417662418877-license&#39;).classList.add = &#34;no-license&#34;
+            };
+            document.getElementById(&#39;0.8619417662418877-card&#39;).classList.remove(&#34;fetch-waiting&#34;);
+            console.log(&#34;[GITHUB-CARD] Loaded card for dqzboy\/Docker-Proxy | 0.8619417662418877.&#34;)
+        }).catch(err =&gt; {
+            const c = document.getElementById(&#39;0.8619417662418877-card&#39;);
+            c.classList.add(&#34;fetch-error&#34;);
+            console.warn(&#34;[GITHUB-CARD] (Error) Loading card for dqzboy\/Docker-Proxy | 0.8619417662418877.&#34;)
+        })
+&lt;/script&gt;
+
+
+&lt;p&gt;该方法也需要一台海外云主机，且需要没有被墙；以及一个域名（不需要备案）。&lt;/p&gt;
+&lt;h4 id=&#34;部署&#34;&gt;部署&lt;/h4&gt;
+&lt;p&gt;目前项目提供了三种部署方式，我采用的是第一种方式，使用项目脚本一键部署。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;使用项目脚本一键部署：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;# CentOS
+yum -y install wget curl
+# ubuntu
+apt -y install wget curl
+
+bash -c &amp;quot;$(curl -fsSL https://raw.githubusercontent.com/dqzboy/Docker-Proxy/main/install/DockerProxy_Install.sh)&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;部署到 Render&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy/blob/main/Render/README.md&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;使用 Render 快速部署
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Docker Compose 部署&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;下载 config 目录下对应的 yml 文件到你本地机器上&lt;/li&gt;
+&lt;li&gt;下载 &lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy/blob/main/docker-compose.yaml&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;docker-compose.yaml
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+ 文件到你本地机器上，并且与配置文件同级目录下&lt;/li&gt;
+&lt;li&gt;执行 &lt;code&gt;docker compose&lt;/code&gt; 命令启动容器服务&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker compose up -d
+
+# 查看容器日志
+docker logs -f [容器 ID 或名称]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;最后，需要登录域名解析方，将 &lt;code&gt;hub&lt;/code&gt;、&lt;code&gt;gcr&lt;/code&gt;、&lt;code&gt;ghcr&lt;/code&gt;、&lt;code&gt;k8s-gcr&lt;/code&gt;、&lt;code&gt;ui&lt;/code&gt;、&lt;code&gt;quay&lt;/code&gt; 等 A 记录解析到你的海外云主机 IPv4 地址，然后就可以将 &lt;code&gt;/etc/docker/daemon.json&lt;/code&gt; 中的 &lt;strong&gt;registry-mirrors&lt;/strong&gt; 设置为 &lt;code&gt;https://hub.yourdomain&lt;/code&gt; 进行镜像加速了。&lt;/p&gt;
+</description>
+        </item>
+        
+    </channel>
+</rss>

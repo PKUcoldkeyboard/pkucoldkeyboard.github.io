@@ -1,300 +1,555 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>容器技术 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/container/</link><description>Recent content in 容器技术 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/container/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Flink Native Kubernetes 的词频统计实验</title><link>https://cuterwrite.top/p/flink-native-k8s/</link><pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/flink-native-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" />&lt;h1 id="基于-flink-native-kubernetes-的词频统计实验">基于 Flink Native Kubernetes 的词频统计实验&lt;/h1>
-&lt;h2 id="1-简介">1 简介&lt;/h2>
-&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
-&lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>名称&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuboard spary&lt;/td>
-&lt;td>v1.2.3-amd64&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>kubernetes&lt;/td>
-&lt;td>v1.25.4&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>calico&lt;/td>
-&lt;td>v3.23.3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>etcd&lt;/td>
-&lt;td>v3.5.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>crictl&lt;/td>
-&lt;td>v1.25.0&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>crun&lt;/td>
-&lt;td>1.4.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>krew&lt;/td>
-&lt;td>v0.4.3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>runc&lt;/td>
-&lt;td>v1.1.4&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>cni&lt;/td>
-&lt;td>v1.1.1&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>nerdctl&lt;/td>
-&lt;td>1.0.0&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>coredns&lt;/td>
-&lt;td>v1.8.6&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>dnsautoscaler&lt;/td>
-&lt;td>1.8.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>pod_infra&lt;/td>
-&lt;td>3.7&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>flink&lt;/td>
-&lt;td>1.16.0&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>hadoop&lt;/td>
-&lt;td>3.2.3&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
-&lt;ul>
-&lt;li>Kuborad Spary&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuborad&lt;/td>
-&lt;td>192.168.0.15&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>NFS Server&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>NFS-server&lt;/td>
-&lt;td>192.168.0.15&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>Kubernetes 集群规划&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;th>控制节点&lt;/th>
-&lt;th>etcd 节点&lt;/th>
-&lt;th>工作节点&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>node1&lt;/td>
-&lt;td>192.168.0.6&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node2&lt;/td>
-&lt;td>192.168.0.7&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node3&lt;/td>
-&lt;td>192.168.0.14&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="2-kubernetes-集群部署">2 Kubernetes 集群部署&lt;/h2>
-&lt;ul>
-&lt;li>这部分内容已经在&lt;a class="link" href="https://cuterwrite.top/p/spark-on-k8s/" target="_blank" rel="noopener" >Spark on K8s
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-实验中给出详细步骤，这里不再重复。&lt;/li>
-&lt;/ul>
-&lt;h2 id="3-flink-native-kubernetes-部署">3 Flink Native Kubernetes 部署&lt;/h2>
-&lt;h3 id="31-配置-flink-用户权限">3.1 配置 flink 用户权限&lt;/h3>
-&lt;ul>
-&lt;li>创建用户&lt;code>flink&lt;/code> 并配置权限&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">kubectl create serviceaccount flink -n bigdata
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>容器技术 on Cuterwrite&#39;s Blog</title>
+        <link>http://localhost:1313/categories/container/</link>
+        <description>Recent content in 容器技术 on Cuterwrite&#39;s Blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Wed, 12 Jun 2024 19:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/categories/container/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Docker Hub 镜像下架解决方案</title>
+        <link>http://localhost:1313/p/dockerhub-takedown/</link>
+        <pubDate>Wed, 12 Jun 2024 19:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/dockerhub-takedown/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-05-28_crop_68935d3d33a3abc75c797b67ad25160f195413.webp" alt="Featured image of post Docker Hub 镜像下架解决方案" /&gt;&lt;h1 id=&#34;docker-hub-镜像下架解决方案&#34;&gt;Docker Hub 镜像下架解决方案&lt;/h1&gt;
+&lt;p&gt;Docker Hub 作为 Docker 官方的镜像仓库，拥有着丰富的镜像资源， 极大地方便了开发者获取和使用各种软件和服务。然而，从 2024 年 6 月 6 日开始，国内各大镜像站点陆续出现了 Docker Hub 镜像下架的情况，包括阿里云、科大、南大、上交等全部挂掉，导致很多开发者无法正常拉取镜像。在执行 &lt;code&gt;docker pull&lt;/code&gt; 命令拉取镜像 docker 镜像时无反应，会一直循环尝试。&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_takedown-dockerhub.webp&#34;
+    alt=&#34;2024-06-13_takedown-dockerhub&#34; width=&#34;auto&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Docker Hub 镜像下架的可能原因主要为一些镜像包含违规内容，导致上面信息监管部门出了最新要求，要求各大镜像站点下架相关镜像。&lt;/p&gt;
+&lt;h2 id=&#34;解决方案&#34;&gt;解决方案&lt;/h2&gt;
+&lt;p&gt;面对 Docker Hub 镜像下架问题，目前我们可以通过以下几种方式解决：&lt;/p&gt;
+&lt;h3 id=&#34;1-使用-atomhub-镜像站点&#34;&gt;1. 使用 AtomHub 镜像站点&lt;/h3&gt;
+&lt;p&gt;AtomHub 是由开放原子开源基金会发起，遵循 OCI 标准，旨在为开发者提供开放中立、安全可信、高效便捷的新一代开源容器镜像中心。其具有官方背书，是当前唯一正常的 Docker Hub 镜像站点。&lt;/p&gt;
+&lt;p&gt;不过，AtomHub 的问题是镜像数量较少，目前只有几百个镜像文件；以及，部分软件的版本较旧。&lt;/p&gt;
+&lt;h4 id=&#34;配置-atomhub-镜像站点&#34;&gt;配置 AtomHub 镜像站点&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;修改 /etc/docker/daemon.json 文件，添加以下内容：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-json&#34;&gt;{
+  &amp;quot;registry-mirrors&amp;quot;: [&amp;quot;https://atomhub.openatom.cn&amp;quot;]
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h4 id=&#34;重启-docker-服务&#34;&gt;重启 Docker 服务：&lt;/h4&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo systemctl daemon-reload
+sudo systemctl restart docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;然后就可以正常拉取一些常用镜像了。但是，如果你需要的镜像不在 AtomHub 上，这个方法就不适用了。&lt;/p&gt;
+&lt;h3 id=&#34;2-配置-vpn-代理&#34;&gt;2. 配置 VPN 代理&lt;/h3&gt;
+&lt;p&gt;通过配置 VPN 代理，可以访问被屏蔽的 Docker Hub 源站点，从而拉取镜像。但是，这种方法需要自备 VPN 服务，且速度可能较慢且不稳定。&lt;/p&gt;
+&lt;h4 id=&#34;配置方法&#34;&gt;配置方法&lt;/h4&gt;
+&lt;ul&gt;
+&lt;li&gt;创建 &lt;code&gt;/etc/systemd/system/docker.service.d/http-proxy.conf&lt;/code&gt; 文件，并添加以下内容：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;[Service]
+Environment=&amp;quot;HTTP_PROXY=http://your_proxy_server:port&amp;quot;
+Environment=&amp;quot;HTTPS_PROXY=http://your_proxy_server:port&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;重启 Docker 服务：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo systemctl daemon-reload
+sudo systemctl restart docker
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;3-使用-skopeo-拷贝镜像到私有镜像仓库&#34;&gt;3. 使用 Skopeo 拷贝镜像到私有镜像仓库&lt;/h3&gt;
+&lt;p&gt;Skopeo 是一个命令行工具，可以用于在不同的镜像仓库之间复制、检查和签名镜像。该方法需要一台海外云主机，且需要没有被墙。&lt;/p&gt;
+&lt;h4 id=&#34;具体步骤&#34;&gt;具体步骤&lt;/h4&gt;
+&lt;p&gt;这里以阿里云私有镜像仓库为例，将 Docker Hub 上的镜像复制到阿里云私有镜像仓库。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;首先，你需要启用&lt;a class=&#34;link&#34; href=&#34;https://cr.console.aliyun.com/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;阿里云容器镜像服务
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+，创建一个个人实例：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_aliyun-container.webp&#34;
+    alt=&#34;2024-06-13_aliyun-container&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;进入个人实例，创建一个命名空间：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_create-namespace.webp&#34;
+    alt=&#34;2024-06-13_create-namespace&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;创建一个镜像仓库（对应你想要复制的镜像）：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_create-repository.webp&#34;
+    alt=&#34;2024-06-13_create-repository&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;设置访问凭证：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-13_set-pass.webp&#34;
+    alt=&#34;2024-06-13_set-pass&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;ul&gt;
+&lt;li&gt;然后，登录到你的海外云主机，先安装 Skopeo：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;sudo apt-get update &amp;amp;&amp;amp; sudo apt-get install -y skopeo
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;使用 Skopeo 拷贝镜像：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker login --username=yourusername registry.cn-hangzhou.aliyuncs.com
+skopeo copy docker://docker.io/library/image:tag docker://registry.cn-hangzhou.aliyuncs.com/yournamespace/yourimage:tag
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;4-部署私有镜像仓库&#34;&gt;4. 部署私有镜像仓库&lt;/h3&gt;
+&lt;p&gt;除了以上方法，还可以通过最近一大佬开源的 &lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Docker-Proxy
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+ 项目搭建自己的私有镜像仓库。&lt;/p&gt;
+
+
+
+
+
+&lt;a href=&#34;https://github.com/dqzboy/Docker-Proxy&#34; target=&#34;_blank&#34; class=&#34;card-github fetch-waiting no-styling&#34; repo=&#34;dqzboy/Docker-Proxy&#34; id=&#34;0.8619417662418877-card&#34;&gt;
+    &lt;div class=&#34;gc-titlebar&#34;&gt;
+        
+        
+        
+        &lt;div class=&#34;gc-titlebar-left&#34;&gt;
+            &lt;div class=&#34;gc-owner&#34;&gt;
+                &lt;div id=&#34;0.8619417662418877-avatar&#34; class=&#34;gc-avatar&#34;&gt;&lt;/div&gt;
+                &lt;div class=&#34;gc-user&#34;&gt;dqzboy&lt;/div&gt;
+            &lt;/div&gt;
+            &lt;div class=&#34;gc-divider&#34;&gt;/&lt;/div&gt;
+            &lt;div class=&#34;gc-repo&#34;&gt;Docker-Proxy&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&#34;github-logo&#34;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div id=&#34;0.8619417662418877-description&#34; class=&#34;gc-description&#34;&gt;Waiting for api.github.com...&lt;/div&gt;
+    &lt;div class=&#34;gc-infobar&#34;&gt;
+        &lt;div id=&#34;0.8619417662418877-stars&#34; class=&#34;gc-stars&#34;&gt;0&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-forks&#34; class=&#34;gc-forks&#34;&gt;0&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-license&#34; class=&#34;gc-license&#34;&gt;unkown&lt;/div&gt;
+        &lt;div id=&#34;0.8619417662418877-language&#34; class=&#34;gc-language&#34;&gt;Waiting...&lt;/div&gt;
+    &lt;/div&gt;
+&lt;/a&gt;
+&lt;script id=&#34;0.8619417662418877-script&#34; type=&#34;text/javascript&#34; defer&gt;
+    fetch(&#39;https://api.github.com/repos/dqzboy\/Docker-Proxy&#39;, {
+            referrerPolicy: &#34;no-referrer&#34;
+        })
+        .then(response =&gt; response.json())
+        .then(data =&gt; {
+            
+            document.getElementById(&#39;0.8619417662418877-description&#39;).innerText = data.description.replace(
+                /:[a-zA-Z0-9_]+:/g, &#39;&#39;);
+            document.getElementById(&#39;0.8619417662418877-language&#39;).innerText = data.language;
+            document.getElementById(&#39;0.8619417662418877-forks&#39;).innerText = Intl.NumberFormat(&#39;en-us&#39;, {
+                notation: &#34;compact&#34;,
+                maximumFractionDigits: 1
+            }).format(data.forks).replaceAll(&#34;\u202f&#34;, &#39;&#39;);
+            document.getElementById(&#39;0.8619417662418877-stars&#39;).innerText = Intl.NumberFormat(&#39;en-us&#39;, {
+                notation: &#34;compact&#34;,
+                maximumFractionDigits: 1
+            }).format(data.stargazers_count).replaceAll(&#34;\u202f&#34;, &#39;&#39;);
+            const avatarEl = document.getElementById(&#39;0.8619417662418877-avatar&#39;);
+            avatarEl.style.backgroundImage = &#39;url(&#39; + data.owner.avatar_url + &#39;)&#39;;
+            avatarEl.style.backgroundColor = &#39;transparent&#39;;
+            if (data.license?.spdx_id) {
+                document.getElementById(&#39;0.8619417662418877-license&#39;).innerText = data.license.spdx_id
+            } else {
+                document.getElementById(&#39;0.8619417662418877-license&#39;).classList.add = &#34;no-license&#34;
+            };
+            document.getElementById(&#39;0.8619417662418877-card&#39;).classList.remove(&#34;fetch-waiting&#34;);
+            console.log(&#34;[GITHUB-CARD] Loaded card for dqzboy\/Docker-Proxy | 0.8619417662418877.&#34;)
+        }).catch(err =&gt; {
+            const c = document.getElementById(&#39;0.8619417662418877-card&#39;);
+            c.classList.add(&#34;fetch-error&#34;);
+            console.warn(&#34;[GITHUB-CARD] (Error) Loading card for dqzboy\/Docker-Proxy | 0.8619417662418877.&#34;)
+        })
+&lt;/script&gt;
+
+
+&lt;p&gt;该方法也需要一台海外云主机，且需要没有被墙；以及一个域名（不需要备案）。&lt;/p&gt;
+&lt;h4 id=&#34;部署&#34;&gt;部署&lt;/h4&gt;
+&lt;p&gt;目前项目提供了三种部署方式，我采用的是第一种方式，使用项目脚本一键部署。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;使用项目脚本一键部署：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;# CentOS
+yum -y install wget curl
+# ubuntu
+apt -y install wget curl
+
+bash -c &amp;quot;$(curl -fsSL https://raw.githubusercontent.com/dqzboy/Docker-Proxy/main/install/DockerProxy_Install.sh)&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;部署到 Render&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy/blob/main/Render/README.md&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;使用 Render 快速部署
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;Docker Compose 部署&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;下载 config 目录下对应的 yml 文件到你本地机器上&lt;/li&gt;
+&lt;li&gt;下载 &lt;a class=&#34;link&#34; href=&#34;https://github.com/dqzboy/Docker-Proxy/blob/main/docker-compose.yaml&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;docker-compose.yaml
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+ 文件到你本地机器上，并且与配置文件同级目录下&lt;/li&gt;
+&lt;li&gt;执行 &lt;code&gt;docker compose&lt;/code&gt; 命令启动容器服务&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre&gt;&lt;code class=&#34;language-bash&#34;&gt;docker compose up -d
+
+# 查看容器日志
+docker logs -f [容器 ID 或名称]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;最后，需要登录域名解析方，将 &lt;code&gt;hub&lt;/code&gt;、&lt;code&gt;gcr&lt;/code&gt;、&lt;code&gt;ghcr&lt;/code&gt;、&lt;code&gt;k8s-gcr&lt;/code&gt;、&lt;code&gt;ui&lt;/code&gt;、&lt;code&gt;quay&lt;/code&gt; 等 A 记录解析到你的海外云主机 IPv4 地址，然后就可以将 &lt;code&gt;/etc/docker/daemon.json&lt;/code&gt; 中的 &lt;strong&gt;registry-mirrors&lt;/strong&gt; 设置为 &lt;code&gt;https://hub.yourdomain&lt;/code&gt; 进行镜像加速了。&lt;/p&gt;
+</description>
+        </item>
+        <item>
+        <title>基于 Flink Native Kubernetes 的词频统计实验</title>
+        <link>http://localhost:1313/p/flink-native-k8s/</link>
+        <pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/flink-native-k8s/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" /&gt;&lt;h1 id=&#34;基于-flink-native-kubernetes-的词频统计实验&#34;&gt;基于 Flink Native Kubernetes 的词频统计实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-简介&#34;&gt;1 简介&lt;/h2&gt;
+&lt;h3 id=&#34;11-实验环境&#34;&gt;1.1 实验环境&lt;/h3&gt;
+&lt;p&gt;本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;名称&lt;/th&gt;
+&lt;th&gt;版本&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuboard spary&lt;/td&gt;
+&lt;td&gt;v1.2.3-amd64&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;kubernetes&lt;/td&gt;
+&lt;td&gt;v1.25.4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;calico&lt;/td&gt;
+&lt;td&gt;v3.23.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;etcd&lt;/td&gt;
+&lt;td&gt;v3.5.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;crictl&lt;/td&gt;
+&lt;td&gt;v1.25.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;crun&lt;/td&gt;
+&lt;td&gt;1.4.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;krew&lt;/td&gt;
+&lt;td&gt;v0.4.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;runc&lt;/td&gt;
+&lt;td&gt;v1.1.4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;cni&lt;/td&gt;
+&lt;td&gt;v1.1.1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;nerdctl&lt;/td&gt;
+&lt;td&gt;1.0.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;coredns&lt;/td&gt;
+&lt;td&gt;v1.8.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;dnsautoscaler&lt;/td&gt;
+&lt;td&gt;1.8.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;pod_infra&lt;/td&gt;
+&lt;td&gt;3.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;flink&lt;/td&gt;
+&lt;td&gt;1.16.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;hadoop&lt;/td&gt;
+&lt;td&gt;3.2.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;12-集群规划&#34;&gt;1.2 集群规划&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Kuborad Spary&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuborad&lt;/td&gt;
+&lt;td&gt;192.168.0.15&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;NFS Server&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;NFS-server&lt;/td&gt;
+&lt;td&gt;192.168.0.15&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;Kubernetes 集群规划&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;th&gt;控制节点&lt;/th&gt;
+&lt;th&gt;etcd 节点&lt;/th&gt;
+&lt;th&gt;工作节点&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;node1&lt;/td&gt;
+&lt;td&gt;192.168.0.6&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node2&lt;/td&gt;
+&lt;td&gt;192.168.0.7&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node3&lt;/td&gt;
+&lt;td&gt;192.168.0.14&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;2-kubernetes-集群部署&#34;&gt;2 Kubernetes 集群部署&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;这部分内容已经在&lt;a class=&#34;link&#34; href=&#34;https://cuterwrite.top/p/spark-on-k8s/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Spark on K8s
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+实验中给出详细步骤，这里不再重复。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;3-flink-native-kubernetes-部署&#34;&gt;3 Flink Native Kubernetes 部署&lt;/h2&gt;
+&lt;h3 id=&#34;31-配置-flink-用户权限&#34;&gt;3.1 配置 flink 用户权限&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;创建用户&lt;code&gt;flink&lt;/code&gt; 并配置权限&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;kubectl create serviceaccount flink -n bigdata
+
 kubectl create clusterrolebinding flink-role-binding-flink \
---clusterrole=edit \
---serviceaccount=bigdata:flink
-&lt;/code>&lt;/pre>
-&lt;h3 id="32-创建-session-cluster">3.2 创建 session cluster&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：&lt;/p>
-&lt;pre>&lt;code class="language-shell">./bin/kubernetes-session.sh \
--Dkubernetes.namespace=bigdata \
--Dkubernetes.jobmanager.service-account=flink \
--Dkubernetes.rest-service.exposed.type=NodePort \
--Dkubernetes.cluster-id=flink-session-cluster \
--Dtaskmanager.memory.process.size=2048m \
--Dkubernetes.taskmanager.cpu=1 \
--Dkubernetes.jobmanager.replicas=1 \
--Dtaskmanager.numberOfTaskSlots=3 \
--Dresourcemanager.taskmanager-timeout=3600000
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：&lt;a class="link" href="http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web" target="_blank" rel="noopener" >http://192.168.0.6:32077，可以看到 Web
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-UI 界面如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;li>
-&lt;p>继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：&lt;/p>
-&lt;pre>&lt;code class="language-shell">./bin/flink run -d \
---target kubernetes-session \
--Dkubernetes.namespace=bigdata \
--Dkubernetes.cluster-id=flink-session-cluster \
--Dkubernetes.service-account=flink \
--Dkubernetes.namespace=bigdata \
--Dkubernetes.taskmanager.cpu=1 \
-examples/streaming/WindowJoin.jar
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>可以看到&lt;code>WindowJoin.jar&lt;/code> 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="4-编写-wordcount-程序">4 编写 WordCount 程序&lt;/h2>
-&lt;ul>
-&lt;li>配置 POM 文件：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-xml">&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
+  --clusterrole=edit \
+  --serviceaccount=bigdata:flink
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3 id=&#34;32-创建-session-cluster&#34;&gt;3.2 创建 session cluster&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/kubernetes-session.sh \
+    -Dkubernetes.namespace=bigdata \
+    -Dkubernetes.jobmanager.service-account=flink \
+    -Dkubernetes.rest-service.exposed.type=NodePort \
+    -Dkubernetes.cluster-id=flink-session-cluster \
+    -Dtaskmanager.memory.process.size=2048m \
+    -Dkubernetes.taskmanager.cpu=1 \
+    -Dkubernetes.jobmanager.replicas=1 \
+    -Dtaskmanager.numberOfTaskSlots=3 \
+    -Dresourcemanager.taskmanager-timeout=3600000
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：&lt;a class=&#34;link&#34; href=&#34;http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;http://192.168.0.6:32077，可以看到 Web
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+ UI 界面如下：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/flink run -d \
+  --target kubernetes-session \
+  -Dkubernetes.namespace=bigdata \
+  -Dkubernetes.cluster-id=flink-session-cluster \
+  -Dkubernetes.service-account=flink \
+  -Dkubernetes.namespace=bigdata \
+  -Dkubernetes.taskmanager.cpu=1 \
+
+  examples/streaming/WindowJoin.jar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;可以看到&lt;code&gt;WindowJoin.jar&lt;/code&gt; 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;4-编写-wordcount-程序&#34;&gt;4 编写 WordCount 程序&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;配置 POM 文件：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
 &amp;lt;project xmlns=&amp;quot;http://maven.apache.org/POM/4.0.0&amp;quot;
-xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
-xsi:schemaLocation=&amp;quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&amp;quot;&amp;gt;
-&amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt;
-&amp;lt;groupId&amp;gt;com.cuterwrite&amp;lt;/groupId&amp;gt;
-&amp;lt;artifactId&amp;gt;FlinkApp&amp;lt;/artifactId&amp;gt;
-&amp;lt;version&amp;gt;1.0-SNAPSHOT&amp;lt;/version&amp;gt;
-&amp;lt;properties&amp;gt;
-&amp;lt;flink.version&amp;gt;1.16.0&amp;lt;/flink.version&amp;gt;
-&amp;lt;maven.compiler.source&amp;gt;11&amp;lt;/maven.compiler.source&amp;gt;
-&amp;lt;maven.compiler.target&amp;gt;11&amp;lt;/maven.compiler.target&amp;gt;
-&amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt;
-&amp;lt;/properties&amp;gt;
-&amp;lt;dependencies&amp;gt;
-&amp;lt;!-- Flink dependencies --&amp;gt;
-&amp;lt;dependency&amp;gt;
-&amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
-&amp;lt;artifactId&amp;gt;flink-java&amp;lt;/artifactId&amp;gt;
-&amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
-&amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
-&amp;lt;/dependency&amp;gt;
-&amp;lt;dependency&amp;gt;
-&amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
-&amp;lt;artifactId&amp;gt;flink-streaming-java&amp;lt;/artifactId&amp;gt;
-&amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
-&amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
-&amp;lt;/dependency&amp;gt;
-&amp;lt;/dependencies&amp;gt;
-&amp;lt;build&amp;gt;
-&amp;lt;plugins&amp;gt;
-&amp;lt;plugin&amp;gt;
-&amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt;
-&amp;lt;artifactId&amp;gt;maven-shade-plugin&amp;lt;/artifactId&amp;gt;
-&amp;lt;version&amp;gt;3.1.1&amp;lt;/version&amp;gt;
-&amp;lt;executions&amp;gt;
-&amp;lt;execution&amp;gt;
-&amp;lt;phase&amp;gt;package&amp;lt;/phase&amp;gt;
-&amp;lt;goals&amp;gt;
-&amp;lt;goal&amp;gt;shade&amp;lt;/goal&amp;gt;
-&amp;lt;/goals&amp;gt;
-&amp;lt;configuration&amp;gt;
-&amp;lt;artifactSet&amp;gt;
-&amp;lt;excludes&amp;gt;
-&amp;lt;exclude&amp;gt;com.google.code.findbugs:jsr305&amp;lt;/exclude&amp;gt;
-&amp;lt;/excludes&amp;gt;
-&amp;lt;/artifactSet&amp;gt;
-&amp;lt;filters&amp;gt;
-&amp;lt;filter&amp;gt;
-&amp;lt;!-- Do not copy the signatures in the META-INF folder.
-Otherwise, this might cause SecurityExceptions when using the JAR. --&amp;gt;
-&amp;lt;artifact&amp;gt;*:*&amp;lt;/artifact&amp;gt;
-&amp;lt;excludes&amp;gt;
-&amp;lt;exclude&amp;gt;META-INF/*.SF&amp;lt;/exclude&amp;gt;
-&amp;lt;exclude&amp;gt;META-INF/*.DSA&amp;lt;/exclude&amp;gt;
-&amp;lt;exclude&amp;gt;META-INF/*.RSA&amp;lt;/exclude&amp;gt;
-&amp;lt;/excludes&amp;gt;
-&amp;lt;/filter&amp;gt;
-&amp;lt;/filters&amp;gt;
-&amp;lt;transformers&amp;gt;
-&amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&amp;quot;&amp;gt;
-&amp;lt;!-- Replace this with the main class of your job --&amp;gt;
-&amp;lt;mainClass&amp;gt;com.cuterwrite.WordCount&amp;lt;/mainClass&amp;gt;
-&amp;lt;/transformer&amp;gt;
-&amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&amp;quot;/&amp;gt;
-&amp;lt;/transformers&amp;gt;
-&amp;lt;/configuration&amp;gt;
-&amp;lt;/execution&amp;gt;
-&amp;lt;/executions&amp;gt;
-&amp;lt;/plugin&amp;gt;
-&amp;lt;/plugins&amp;gt;
-&amp;lt;/build&amp;gt;
+         xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
+         xsi:schemaLocation=&amp;quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&amp;quot;&amp;gt;
+    &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt;
+
+    &amp;lt;groupId&amp;gt;com.cuterwrite&amp;lt;/groupId&amp;gt;
+    &amp;lt;artifactId&amp;gt;FlinkApp&amp;lt;/artifactId&amp;gt;
+    &amp;lt;version&amp;gt;1.0-SNAPSHOT&amp;lt;/version&amp;gt;
+
+    &amp;lt;properties&amp;gt;
+        &amp;lt;flink.version&amp;gt;1.16.0&amp;lt;/flink.version&amp;gt;
+        &amp;lt;maven.compiler.source&amp;gt;11&amp;lt;/maven.compiler.source&amp;gt;
+        &amp;lt;maven.compiler.target&amp;gt;11&amp;lt;/maven.compiler.target&amp;gt;
+        &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt;
+    &amp;lt;/properties&amp;gt;
+    &amp;lt;dependencies&amp;gt;
+        &amp;lt;!-- Flink dependencies --&amp;gt;
+        &amp;lt;dependency&amp;gt;
+            &amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
+            &amp;lt;artifactId&amp;gt;flink-java&amp;lt;/artifactId&amp;gt;
+            &amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
+            &amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
+        &amp;lt;/dependency&amp;gt;
+        &amp;lt;dependency&amp;gt;
+            &amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
+            &amp;lt;artifactId&amp;gt;flink-streaming-java&amp;lt;/artifactId&amp;gt;
+            &amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
+            &amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
+        &amp;lt;/dependency&amp;gt;
+    &amp;lt;/dependencies&amp;gt;
+    &amp;lt;build&amp;gt;
+        &amp;lt;plugins&amp;gt;
+            &amp;lt;plugin&amp;gt;
+                &amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt;
+                &amp;lt;artifactId&amp;gt;maven-shade-plugin&amp;lt;/artifactId&amp;gt;
+                &amp;lt;version&amp;gt;3.1.1&amp;lt;/version&amp;gt;
+                &amp;lt;executions&amp;gt;
+                    &amp;lt;execution&amp;gt;
+                        &amp;lt;phase&amp;gt;package&amp;lt;/phase&amp;gt;
+                        &amp;lt;goals&amp;gt;
+                            &amp;lt;goal&amp;gt;shade&amp;lt;/goal&amp;gt;
+                        &amp;lt;/goals&amp;gt;
+                        &amp;lt;configuration&amp;gt;
+                            &amp;lt;artifactSet&amp;gt;
+                                &amp;lt;excludes&amp;gt;
+                                    &amp;lt;exclude&amp;gt;com.google.code.findbugs:jsr305&amp;lt;/exclude&amp;gt;
+                                &amp;lt;/excludes&amp;gt;
+                            &amp;lt;/artifactSet&amp;gt;
+                            &amp;lt;filters&amp;gt;
+                                &amp;lt;filter&amp;gt;
+                                    &amp;lt;!-- Do not copy the signatures in the META-INF folder.
+                                    Otherwise, this might cause SecurityExceptions when using the JAR. --&amp;gt;
+                                    &amp;lt;artifact&amp;gt;*:*&amp;lt;/artifact&amp;gt;
+                                    &amp;lt;excludes&amp;gt;
+                                        &amp;lt;exclude&amp;gt;META-INF/*.SF&amp;lt;/exclude&amp;gt;
+                                        &amp;lt;exclude&amp;gt;META-INF/*.DSA&amp;lt;/exclude&amp;gt;
+                                        &amp;lt;exclude&amp;gt;META-INF/*.RSA&amp;lt;/exclude&amp;gt;
+                                    &amp;lt;/excludes&amp;gt;
+                                &amp;lt;/filter&amp;gt;
+                            &amp;lt;/filters&amp;gt;
+                            &amp;lt;transformers&amp;gt;
+                                &amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&amp;quot;&amp;gt;
+                                    &amp;lt;!-- Replace this with the main class of your job --&amp;gt;
+                                    &amp;lt;mainClass&amp;gt;com.cuterwrite.WordCount&amp;lt;/mainClass&amp;gt;
+                                &amp;lt;/transformer&amp;gt;
+                                &amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&amp;quot;/&amp;gt;
+                            &amp;lt;/transformers&amp;gt;
+                        &amp;lt;/configuration&amp;gt;
+                    &amp;lt;/execution&amp;gt;
+                &amp;lt;/executions&amp;gt;
+            &amp;lt;/plugin&amp;gt;
+        &amp;lt;/plugins&amp;gt;
+    &amp;lt;/build&amp;gt;
 &amp;lt;/project&amp;gt;
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>编写&lt;code>WordCount.java&lt;/code>：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-java">package com.cuterwrite;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;编写&lt;code&gt;WordCount.java&lt;/code&gt;：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package com.cuterwrite;
+
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -305,819 +560,869 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+
 public class WordCount {
-private static final Logger log = LoggerFactory.getLogger(WordCount.class);
-public WordCount() {}
-public static void main(String[] args) throws Exception {
-StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-env.setParallelism(3);
-// 监听 9999 端口的 socket 输入
-DataStreamSource&amp;lt;String&amp;gt; text = env.socketTextStream(&amp;quot;192.168.0.6&amp;quot;, 9999);
-text.flatMap(new FlatMapFunction&amp;lt;String, Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
-@Override
-public void flatMap(String value, Collector&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt; collector) throws Exception {
-String[] tokens = value.toLowerCase().split(&amp;quot; &amp;quot;);
-for (String token : tokens) {
-collector.collect(new Tuple2&amp;lt;&amp;gt;(token, 1));
+    private static final Logger log = LoggerFactory.getLogger(WordCount.class);
+    public WordCount() {}
+
+    public static void main(String[] args) throws Exception {
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(3);
+        // 监听 9999 端口的 socket 输入
+        DataStreamSource&amp;lt;String&amp;gt; text = env.socketTextStream(&amp;quot;192.168.0.6&amp;quot;, 9999);
+
+        text.flatMap(new FlatMapFunction&amp;lt;String, Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
+            @Override
+            public void flatMap(String value, Collector&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt; collector) throws Exception {
+                String[] tokens = value.toLowerCase().split(&amp;quot; &amp;quot;);
+                for (String token : tokens) {
+                    collector.collect(new Tuple2&amp;lt;&amp;gt;(token, 1));
+                }
+            }
+            // 合并相同单词的频数
+        })
+        .keyBy(item -&amp;gt; item.f0)
+        .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+        .sum(1)
+        .addSink(new SinkFunction&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
+            @Override
+            public void invoke(Tuple2&amp;lt;String, Integer&amp;gt; value, Context context) throws Exception {
+                log.info(&amp;quot;单词：&amp;quot; + value.f0 + &amp;quot;,频率：&amp;quot; + value.f1);
+            }
+        });
+
+        env.execute(&amp;quot;Word Count&amp;quot;);
+    }
 }
-}
-// 合并相同单词的频数
-})
-.keyBy(item -&amp;gt; item.f0)
-.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
-.sum(1)
-.addSink(new SinkFunction&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
-@Override
-public void invoke(Tuple2&amp;lt;String, Integer&amp;gt; value, Context context) throws Exception {
-log.info(&amp;quot;单词：&amp;quot; + value.f0 + &amp;quot;,频率：&amp;quot; + value.f1);
-}
-});
-env.execute(&amp;quot;Word Count&amp;quot;);
-}
-}
-&lt;/code>&lt;/pre>
-&lt;h2 id="5-实验结果">5 实验结果&lt;/h2>
-&lt;ul>
-&lt;li>
-&lt;p>提交 WordCount 程序 jar 包&lt;/p>
-&lt;pre>&lt;code class="language-shell">./bin/flink run -d \
---target kubernetes-session \
--Dkubernetes.namespace=bigdata \
--Dkubernetes.cluster-id=flink-session-cluster \
--Dkubernetes.service-account=flink \
--Dkubernetes.namespace=bigdata \
-/root/FlinkApp-1.0-SNAPSHOT.jar
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>查看 Flink Web UI：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;li>
-&lt;p>使用 socket 传输字符进行测试：&lt;/p>
-&lt;pre>&lt;code class="language-shell">nc 192.168.0.6 9999
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>实验结果：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/log.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;/ul></description></item><item><title>基于 Spark on k8s 的词频统计实验</title><link>https://cuterwrite.top/p/spark-on-k8s/</link><pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/spark-on-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp" alt="Featured image of post 基于 Spark on k8s 的词频统计实验" />&lt;h1 id="基于-spark-on-k8s-的词频统计实验">基于 Spark on k8s 的词频统计实验&lt;/h1>
-&lt;h2 id="1-简介">1 简介&lt;/h2>
-&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
-&lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 6 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 2 核 4GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，1 台 2 核 4GB 云服务器作为 NFS Server（使用 Centos 7.6 系统）部署机器。&lt;/p>
-&lt;p>使用的软件如下：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>名称&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuboard spary&lt;/td>
-&lt;td>v1.2.3-amd64&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>kubernetes&lt;/td>
-&lt;td>v1.25.4&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>calico&lt;/td>
-&lt;td>v3.23.3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>etcd&lt;/td>
-&lt;td>v3.5.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>crictl&lt;/td>
-&lt;td>v1.25.0&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>crun&lt;/td>
-&lt;td>1.4.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>krew&lt;/td>
-&lt;td>v0.4.3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>runc&lt;/td>
-&lt;td>v1.1.4&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>cni&lt;/td>
-&lt;td>v1.1.1&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>nerdctl&lt;/td>
-&lt;td>1.0.0&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>coredns&lt;/td>
-&lt;td>v1.8.6&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>dnsautoscaler&lt;/td>
-&lt;td>1.8.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>pod_infra&lt;/td>
-&lt;td>3.7&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>spark&lt;/td>
-&lt;td>3.3.1&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>hadoop&lt;/td>
-&lt;td>3.2.3&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
-&lt;ul>
-&lt;li>Kuborad Spary&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuborad&lt;/td>
-&lt;td>192.168.0.115&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>NFS Server&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>NFS-server&lt;/td>
-&lt;td>192.168.0.132&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>Kubernetes 集群规划&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;th>控制节点&lt;/th>
-&lt;th>etcd 节点&lt;/th>
-&lt;th>工作节点&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>node1&lt;/td>
-&lt;td>192.168.0.76&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node2&lt;/td>
-&lt;td>192.168.0.213&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node3&lt;/td>
-&lt;td>192.168.0.2&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node4&lt;/td>
-&lt;td>192.168.0.41&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node5&lt;/td>
-&lt;td>192.168.0.73&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node6&lt;/td>
-&lt;td>192.168.0.12&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>否&lt;/td>
-&lt;td>是&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="2-部署-kubernetes-集群">2 部署 Kubernetes 集群&lt;/h2>
-&lt;h3 id="21-安装-kuboard-spray">2.1 安装 Kuboard-Spray&lt;/h3>
-&lt;p>Kuboard-Spray 是一款可以在图形界面引导下完成 Kubernetes 高可用集群离线安装的工具，开源仓库的地址为 &lt;a class="link" href="https://github.com/eip-work/kuboard-spray" target="_blank" rel="noopener" >Kuboard-Spray
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>在 kuborad 节点上安装 docker-ce&lt;/p>
-&lt;pre>&lt;code class="language-shell"># 1. 安装必备的系统工具
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;5-实验结果&#34;&gt;5 实验结果&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;提交 WordCount 程序 jar 包&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/flink run -d \
+  --target kubernetes-session \
+  -Dkubernetes.namespace=bigdata \
+  -Dkubernetes.cluster-id=flink-session-cluster \
+  -Dkubernetes.service-account=flink \
+  -Dkubernetes.namespace=bigdata \
+  /root/FlinkApp-1.0-SNAPSHOT.jar
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;查看 Flink Web UI：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;使用 socket 传输字符进行测试：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;nc 192.168.0.6 9999
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;实验结果：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/log.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        </item>
+        <item>
+        <title>基于 Spark on k8s 的词频统计实验</title>
+        <link>http://localhost:1313/p/spark-on-k8s/</link>
+        <pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/spark-on-k8s/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp" alt="Featured image of post 基于 Spark on k8s 的词频统计实验" /&gt;&lt;h1 id=&#34;基于-spark-on-k8s-的词频统计实验&#34;&gt;基于 Spark on k8s 的词频统计实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-简介&#34;&gt;1 简介&lt;/h2&gt;
+&lt;h3 id=&#34;11-实验环境&#34;&gt;1.1 实验环境&lt;/h3&gt;
+&lt;p&gt;本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 6 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 2 核 4GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，1 台 2 核 4GB 云服务器作为 NFS Server（使用 Centos 7.6 系统）部署机器。&lt;/p&gt;
+&lt;p&gt;使用的软件如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;名称&lt;/th&gt;
+&lt;th&gt;版本&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuboard spary&lt;/td&gt;
+&lt;td&gt;v1.2.3-amd64&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;kubernetes&lt;/td&gt;
+&lt;td&gt;v1.25.4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;calico&lt;/td&gt;
+&lt;td&gt;v3.23.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;etcd&lt;/td&gt;
+&lt;td&gt;v3.5.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;crictl&lt;/td&gt;
+&lt;td&gt;v1.25.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;crun&lt;/td&gt;
+&lt;td&gt;1.4.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;krew&lt;/td&gt;
+&lt;td&gt;v0.4.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;runc&lt;/td&gt;
+&lt;td&gt;v1.1.4&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;cni&lt;/td&gt;
+&lt;td&gt;v1.1.1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;nerdctl&lt;/td&gt;
+&lt;td&gt;1.0.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;coredns&lt;/td&gt;
+&lt;td&gt;v1.8.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;dnsautoscaler&lt;/td&gt;
+&lt;td&gt;1.8.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;pod_infra&lt;/td&gt;
+&lt;td&gt;3.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;spark&lt;/td&gt;
+&lt;td&gt;3.3.1&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;hadoop&lt;/td&gt;
+&lt;td&gt;3.2.3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;12-集群规划&#34;&gt;1.2 集群规划&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Kuborad Spary&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuborad&lt;/td&gt;
+&lt;td&gt;192.168.0.115&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;NFS Server&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;NFS-server&lt;/td&gt;
+&lt;td&gt;192.168.0.132&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;ul&gt;
+&lt;li&gt;Kubernetes 集群规划&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;th&gt;控制节点&lt;/th&gt;
+&lt;th&gt;etcd 节点&lt;/th&gt;
+&lt;th&gt;工作节点&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;node1&lt;/td&gt;
+&lt;td&gt;192.168.0.76&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node2&lt;/td&gt;
+&lt;td&gt;192.168.0.213&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node3&lt;/td&gt;
+&lt;td&gt;192.168.0.2&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node4&lt;/td&gt;
+&lt;td&gt;192.168.0.41&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node5&lt;/td&gt;
+&lt;td&gt;192.168.0.73&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node6&lt;/td&gt;
+&lt;td&gt;192.168.0.12&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;否&lt;/td&gt;
+&lt;td&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;2-部署-kubernetes-集群&#34;&gt;2 部署 Kubernetes 集群&lt;/h2&gt;
+&lt;h3 id=&#34;21-安装-kuboard-spray&#34;&gt;2.1 安装 Kuboard-Spray&lt;/h3&gt;
+&lt;p&gt;Kuboard-Spray 是一款可以在图形界面引导下完成 Kubernetes 高可用集群离线安装的工具，开源仓库的地址为 &lt;a class=&#34;link&#34; href=&#34;https://github.com/eip-work/kuboard-spray&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Kuboard-Spray
+    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
+            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
+            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
+            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
+                fill=&#34;currentColor&#34;&gt;
+        &lt;/svg&gt;&lt;/span&gt;
+    
+&lt;/a&gt;
+&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;在 kuborad 节点上安装 docker-ce&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;# 1. 安装必备的系统工具
 sudo apt-get remove docker docker-engine docker.io containerd runc;
 sudo apt-get install apt-transport-https ca-certificates curl gnupg2 software-properties-common;
+
 # 2. 安装 GPG 证书
 curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/docker.gpg;
 # 3. 写入软件源信息
 echo \
-&amp;quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/docker.gpg] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu \
-$(lsb_release -cs) stable&amp;quot; | sudo tee /etc/apt/sources.list.d/docker.list &amp;gt; /dev/null
+  &amp;quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/docker.gpg] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/ubuntu \
+  $(lsb_release -cs) stable&amp;quot; | sudo tee /etc/apt/sources.list.d/docker.list &amp;gt; /dev/null
+
 # 4. 更新并安装 Docker-CE
+
 sudo apt-get update;
 sudo apt-get install docker-ce;
+
 # 5. 配置 docker 镜像加速器(可以在阿里云获取地址)
+
 sudo mkdir -p /etc/docker;
-sudo tee /etc/docker/daemon.json &amp;lt;&amp;lt;-'EOF'
+sudo tee /etc/docker/daemon.json &amp;lt;&amp;lt;-&#39;EOF&#39;
 {
-&amp;quot;registry-mirrors&amp;quot;: [
-&amp;quot;https://docker.mirrors.ustc.edu.cn&amp;quot;,
-&amp;quot;https://cr.console.aliyun.com/&amp;quot; ]
+ &amp;quot;registry-mirrors&amp;quot;: [
+    &amp;quot;https://docker.mirrors.ustc.edu.cn&amp;quot;,
+    &amp;quot;https://cr.console.aliyun.com/&amp;quot; ]
 }
 EOF
 sudo systemctl daemon-reload;
 sudo systemctl restart docker;
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>在 kuboard 节点上执行以下命令：&lt;/p>
-&lt;pre>&lt;code class="language-shell">docker run -d \
---privileged \
---restart=unless-stopped \
---name=kuboard-spray \
--e TZ=Asia/Shanghai \
--p 80:80/tcp \
--v /var/run/docker.sock:/var/run/docker.sock \
--v ~/kuboard-spray-data:/data \
-eipwork/kuboard-spray:v1.2.3-amd64
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>在浏览器打开地址 &lt;code>http://这台机器的 IP&lt;/code>，输入用户名 &lt;code>admin&lt;/code>，默认密码 &lt;code>Kuboard123&lt;/code>，即可登录 Kuboard-Spray 界面。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="22-加载离线资源包">2.2 加载离线资源包&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>在 Kuboard-Spray 界面中，导航到 &lt;code>系统设置&lt;/code> &amp;ndash;&amp;gt; &lt;code>资源包管理&lt;/code> 界面，可以看到已经等候您多时的 &lt;code>Kuboard-Spray 离线资源包&lt;/code>，如下图所示&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-16-02-14-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;li>
-&lt;p>点击 &lt;code>导入&lt;/code> 按钮，在界面的引导下完成资源包的加载。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="23-安装-kubernetes-集群">2.3 安装 Kubernetes 集群&lt;/h3>
-&lt;p>在 Kuboard-Spray 界面中，导航到 &lt;code>集群管理&lt;/code> 界面，点击界面中的 &lt;code>添加集群安装计划&lt;/code> 按钮，填写表单如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>集群名称： 自定义名称，本文中填写为 &lt;code>kuboard&lt;/code>，此名称不可以修改；&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>资源包：选择前面步骤中导入的离线资源包。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>点击 &lt;code>确定&lt;/code> 按钮后，将进入集群规划页面，在该界面中添加每个集群节点的连接参数并设置节点的角色，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-20-13-12-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>&lt;strong>重要&lt;/strong>： kuboard-spray 所在机器不能当做 K8S 集群的一个节点，因为安装过程中会重启集群节点的容器引擎，这会导致 kuboard-spray 被重启掉。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>注意：&lt;/p>
-&lt;ul>
-&lt;li>最少的节点数量是 1 个；&lt;/li>
-&lt;li>ETCD 节点、控制节点的总数量必须为奇数；&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>点击上图的 &lt;code>保存&lt;/code> 按钮，再点击 &lt;code>执行&lt;/code> 按钮，可以启动集群的离线安装过程，安装结果如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-22-22-52-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="3-部署-spark-on-k8s">3 部署 Spark on k8s&lt;/h2>
-&lt;h3 id="31-制作-spark-容器镜像">3.1 制作 spark 容器镜像&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>下载 spark-3.3.1-bin-hadoop3&lt;/p>
-&lt;pre>&lt;code class="language-shell">wget https://mirrors.pku.edu.cn/apache/spark/spark-3.3.1/spark-3.3.1-bin-hadoop3.tgz;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;在 kuboard 节点上执行以下命令：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;docker run -d \
+  --privileged \
+  --restart=unless-stopped \
+  --name=kuboard-spray \
+  -e TZ=Asia/Shanghai \
+  -p 80:80/tcp \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v ~/kuboard-spray-data:/data \
+  eipwork/kuboard-spray:v1.2.3-amd64
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;在浏览器打开地址 &lt;code&gt;http://这台机器的 IP&lt;/code&gt;，输入用户名 &lt;code&gt;admin&lt;/code&gt;，默认密码 &lt;code&gt;Kuboard123&lt;/code&gt;，即可登录 Kuboard-Spray 界面。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;22-加载离线资源包&#34;&gt;2.2 加载离线资源包&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;在 Kuboard-Spray 界面中，导航到 &lt;code&gt;系统设置&lt;/code&gt; &amp;ndash;&amp;gt; &lt;code&gt;资源包管理&lt;/code&gt; 界面，可以看到已经等候您多时的 &lt;code&gt;Kuboard-Spray 离线资源包&lt;/code&gt;，如下图所示&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-16-02-14-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;点击 &lt;code&gt;导入&lt;/code&gt; 按钮，在界面的引导下完成资源包的加载。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;23-安装-kubernetes-集群&#34;&gt;2.3 安装 Kubernetes 集群&lt;/h3&gt;
+&lt;p&gt;在 Kuboard-Spray 界面中，导航到 &lt;code&gt;集群管理&lt;/code&gt; 界面，点击界面中的 &lt;code&gt;添加集群安装计划&lt;/code&gt; 按钮，填写表单如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;集群名称： 自定义名称，本文中填写为 &lt;code&gt;kuboard&lt;/code&gt;，此名称不可以修改；&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;资源包：选择前面步骤中导入的离线资源包。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;点击 &lt;code&gt;确定&lt;/code&gt; 按钮后，将进入集群规划页面，在该界面中添加每个集群节点的连接参数并设置节点的角色，如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-20-13-12-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;&lt;strong&gt;重要&lt;/strong&gt;： kuboard-spray 所在机器不能当做 K8S 集群的一个节点，因为安装过程中会重启集群节点的容器引擎，这会导致 kuboard-spray 被重启掉。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;注意：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;最少的节点数量是 1 个；&lt;/li&gt;
+&lt;li&gt;ETCD 节点、控制节点的总数量必须为奇数；&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;点击上图的 &lt;code&gt;保存&lt;/code&gt; 按钮，再点击 &lt;code&gt;执行&lt;/code&gt; 按钮，可以启动集群的离线安装过程，安装结果如下：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-08-22-22-52-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;3-部署-spark-on-k8s&#34;&gt;3 部署 Spark on k8s&lt;/h2&gt;
+&lt;h3 id=&#34;31-制作-spark-容器镜像&#34;&gt;3.1 制作 spark 容器镜像&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;下载 spark-3.3.1-bin-hadoop3&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;wget https://mirrors.pku.edu.cn/apache/spark/spark-3.3.1/spark-3.3.1-bin-hadoop3.tgz;
 tar -xzf spark-3.3.1-bin-hadoop.tgz;
 mv spark-3.3.1-bin-hadoop spark;
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>修改 Dockerfile 默认 apt 源加速&lt;/p>
-&lt;pre>&lt;code class="language-shell">cd spark/kubernetes/dockerfiles/spark;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;修改 Dockerfile 默认 apt 源加速&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;cd spark/kubernetes/dockerfiles/spark;
 // 修改 Dockerfile 内容
 // 修改前：
-sed -i 's/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g' /etc/apt/sources.list
+sed -i &#39;s/http:\/\/deb.\(.*\)/https:\/\/deb.\1/g&#39; /etc/apt/sources.list
 // 修改后：
-sed -i 's#http://deb.debian.org#https://mirrors.ustc.edu.cn#g' /etc/apt/source.list
-sed -i 's|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/source.list
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>构建 docker 镜像&lt;/p>
-&lt;pre>&lt;code class="language-shell">cd spark/bin;
+sed -i &#39;s#http://deb.debian.org#https://mirrors.ustc.edu.cn#g&#39; /etc/apt/source.list
+sed -i &#39;s|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g&#39; /etc/apt/source.list
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;构建 docker 镜像&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;cd spark/bin;
 // -r &amp;lt;repo&amp;gt; -t &amp;lt;tag&amp;gt;
 ./docker-image-tool.sh -r cuterwrite -t 0.1 build;
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;li>
-&lt;p>推送镜像到阿里云仓库（参考容器镜像服务-&amp;gt;实例列表-&amp;gt;镜像仓库）&lt;/p>
-&lt;pre>&lt;code class="language-shell">docker login --username=[阿里云账号] registry.cn-hangzhou.aliyuncs.com;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;推送镜像到阿里云仓库（参考容器镜像服务-&amp;gt;实例列表-&amp;gt;镜像仓库）&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;docker login --username=[阿里云账号] registry.cn-hangzhou.aliyuncs.com;
 docker tag [ImageId] registry.cn-hangzhou.aliyuncs.com/[repository]:[镜像版本号];
 docker push registry.cn-hangzhou.aliyuncs.com/[repository]:[镜像版本号];
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="32-创建命名空间">3.2 创建命名空间&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>访问 Kuboard，通常默认用户名为 &lt;code>admin&lt;/code>，默认密码为 &lt;code>Kuboard123&lt;/code>，访问地址为第一个控制节点的 80 端口（取决于安装时的参数），如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-41-32-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;li>
-&lt;p>点击进入 default 集群，在下图所示的页面点击创建&lt;code>spark&lt;/code> 命名空间：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-43-13-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="33-配置-spark-用户权限">3.3 配置 spark 用户权限&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>创建用户&lt;code>spark&lt;/code> 并配置权限&lt;/p>
-&lt;pre>&lt;code class="language-shell">kubectl create serviceaccount spark
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;32-创建命名空间&#34;&gt;3.2 创建命名空间&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;访问 Kuboard，通常默认用户名为 &lt;code&gt;admin&lt;/code&gt;，默认密码为 &lt;code&gt;Kuboard123&lt;/code&gt;，访问地址为第一个控制节点的 80 端口（取决于安装时的参数），如下图所示：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-41-32-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;点击进入 default 集群，在下图所示的页面点击创建&lt;code&gt;spark&lt;/code&gt; 命名空间：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-09-00-43-13-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;33-配置-spark-用户权限&#34;&gt;3.3 配置 spark 用户权限&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;创建用户&lt;code&gt;spark&lt;/code&gt; 并配置权限&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;kubectl create serviceaccount spark
 kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=spark:spark --namesparce=spark
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="34-配置-spark-历史服务器">3.4 配置 spark 历史服务器&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>创建一个名为&lt;code>spark-history-server&lt;/code> 的 deployment，配置如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>容器信息：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>名称：spark-history-server&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器镜像：registry.cn-hangzhou.aliyuncs.com/[用户名]/spark:0.1（需配置仓库仓库名和密码）&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>环境变量：SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=hdfs://192.168.0.238:8020/sparkhistory（需提前部署 HDFS)&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器端口：18080，端口名称 http&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>参数：[&amp;quot;/opt/spark/bin/spark-class&amp;quot;, &amp;ldquo;org.apache.spark.deploy.history.HistoryServer&amp;rdquo;]&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>服务信息：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>端口：18080&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>协议：TCP&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>目标端口：18080&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>NodePort：30080&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>类型：NodePort&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>测试配置是否成功：&lt;/p>
-&lt;pre>&lt;code class="language-shell">./spark-submit \
---master k8s://https://127.0.0.1:6443 \
---deploy-mode cluster \
---name spark-pi \
---class org.apache.spark.examples.SparkPi \
---conf spark.kubernetes.executor.request.cores=1 \
---conf spark.kubernetes.executor.limit.cores=1 \
---conf spark.kubernetes.driver.limit.cores=1 \
---conf spark.kubernetes.driver.request.cores=1 \
---conf spark.eventLog.enabled=true \
---conf spark.eventLog.dir=hdfs://192.168.0.238:8020/sparkhistory \
---conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
---conf spark.kubernetes.namespace=bigdata \
---conf spark.executor.instances=2 \
---conf spark.kubernetes.file.upload.path=/tmp \
---conf spark.kubernetes.container.pullSecrets=aliyun-repository \
---conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 \
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;34-配置-spark-历史服务器&#34;&gt;3.4 配置 spark 历史服务器&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;创建一个名为&lt;code&gt;spark-history-server&lt;/code&gt; 的 deployment，配置如下：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;容器信息：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;名称：spark-history-server&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器镜像：registry.cn-hangzhou.aliyuncs.com/[用户名]/spark:0.1（需配置仓库仓库名和密码）&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;环境变量：SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=hdfs://192.168.0.238:8020/sparkhistory（需提前部署 HDFS)&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器端口：18080，端口名称 http&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;参数：[&amp;quot;/opt/spark/bin/spark-class&amp;quot;, &amp;ldquo;org.apache.spark.deploy.history.HistoryServer&amp;rdquo;]&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;服务信息：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;端口：18080&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;协议：TCP&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;目标端口：18080&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;NodePort：30080&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;类型：NodePort&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;测试配置是否成功：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./spark-submit \
+    --master k8s://https://127.0.0.1:6443 \
+    --deploy-mode cluster \
+    --name spark-pi \
+    --class org.apache.spark.examples.SparkPi \
+    --conf spark.kubernetes.executor.request.cores=1 \
+    --conf spark.kubernetes.executor.limit.cores=1 \
+    --conf spark.kubernetes.driver.limit.cores=1 \
+    --conf spark.kubernetes.driver.request.cores=1 \
+    --conf spark.eventLog.enabled=true \
+    --conf spark.eventLog.dir=hdfs://192.168.0.238:8020/sparkhistory \
+    --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+    --conf spark.kubernetes.namespace=bigdata \
+    --conf spark.executor.instances=2 \
+    --conf spark.kubernetes.file.upload.path=/tmp \
+    --conf spark.kubernetes.container.pullSecrets=aliyun-repository \
+    --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 \
 hdfs://192.168.0.238:8020/user/root/jars/spark-examples_2.12-3.3.1.jar
-&lt;/code>&lt;/pre>
-&lt;p>提交任务成功后可以在 Kuboard 管理界面看到一个新启动的容器组：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-16-35-20-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>访问 spark 历史服务器，可以看到以下记录：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-18-50-59-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="4-编写-wordcount-程序">4 编写 WordCount 程序&lt;/h2>
-&lt;p>&lt;code>WordCount.java&lt;/code>&lt;/p>
-&lt;pre>&lt;code class="language-python">package com.cuterwrite;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;提交任务成功后可以在 Kuboard 管理界面看到一个新启动的容器组：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-16-35-20-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;p&gt;访问 spark 历史服务器，可以看到以下记录：&lt;/p&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/2022-12-19-18-50-59-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+  &lt;/figure&gt;
+
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;4-编写-wordcount-程序&#34;&gt;4 编写 WordCount 程序&lt;/h2&gt;
+&lt;p&gt;&lt;code&gt;WordCount.java&lt;/code&gt;&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-python&#34;&gt;package com.cuterwrite;
+
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Encoders;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
+
 import java.util.Arrays;
 import java.util.Iterator;
+
 public class WordCount {
-public static void main(String[] args) throws Exception {
-SparkSession spark = SparkSession.builder().appName(&amp;quot;WordCount&amp;quot;).getOrCreate();
-Dataset&amp;lt;String&amp;gt; lines = spark.read().textFile(&amp;quot;hdfs://192.168.0.238:8020/input/news.txt&amp;quot;);
-Dataset&amp;lt;String&amp;gt; words = lines.flatMap(new FlatMapFunction&amp;lt;String, String&amp;gt;() {
-@Override
-public Iterator&amp;lt;String&amp;gt; call(String line) throws Exception {
-return Arrays.asList(line.split(&amp;quot; &amp;quot;)).iterator();
+    public static void main(String[] args) throws Exception {
+        SparkSession spark = SparkSession.builder().appName(&amp;quot;WordCount&amp;quot;).getOrCreate();
+        Dataset&amp;lt;String&amp;gt; lines = spark.read().textFile(&amp;quot;hdfs://192.168.0.238:8020/input/news.txt&amp;quot;);
+        Dataset&amp;lt;String&amp;gt; words = lines.flatMap(new FlatMapFunction&amp;lt;String, String&amp;gt;() {
+            @Override
+            public Iterator&amp;lt;String&amp;gt; call(String line) throws Exception {
+                return Arrays.asList(line.split(&amp;quot; &amp;quot;)).iterator();
+            }
+        }, Encoders.STRING());
+        Dataset&amp;lt;Row&amp;gt; wordCounts = words.groupBy(&amp;quot;value&amp;quot;).count();
+        wordCounts.write().format(&amp;quot;csv&amp;quot;).save(&amp;quot;hdfs://192.168.0.238:8020/output/word_count_result&amp;quot;);
+    }
 }
-}, Encoders.STRING());
-Dataset&amp;lt;Row&amp;gt; wordCounts = words.groupBy(&amp;quot;value&amp;quot;).count();
-wordCounts.write().format(&amp;quot;csv&amp;quot;).save(&amp;quot;hdfs://192.168.0.238:8020/output/word_count_result&amp;quot;);
-}
-}
-&lt;/code>&lt;/pre>
-&lt;h2 id="5-实验结果">5 实验结果&lt;/h2>
-&lt;ul>
-&lt;li>提交词频统计任务到&lt;code>Kubernetes&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">./spark-submit \
---master k8s://https://127.0.0.1:6443 \
---deploy-mode cluster \
---name wordcount \
---class com.cuterwrite.WordCount \
---conf spark.kubernetes.executor.request.cores=2 \
---conf spark.kubernetes.executor.limit.cores=2 \
---conf spark.kubernetes.driver.limit.cores=1 \
---conf spark.kubernetes.driver.request.cores=1 \
---conf spark.eventLog.enabled=true \
---conf spark.eventLog.dir=hdfs://192.168.0.238:8020/sparkhistory \
---conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
---conf spark.kubernetes.namespace=bigdata \
---conf spark.executor.instances=3 \
---conf spark.kubernetes.file.upload.path=/tmp \
---conf spark.kubernetes.container.pullSecrets=aliyun-repository \
---conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 \
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h2 id=&#34;5-实验结果&#34;&gt;5 实验结果&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;提交词频统计任务到&lt;code&gt;Kubernetes&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./spark-submit \
+    --master k8s://https://127.0.0.1:6443 \
+    --deploy-mode cluster \
+    --name wordcount \
+    --class com.cuterwrite.WordCount \
+    --conf spark.kubernetes.executor.request.cores=2 \
+    --conf spark.kubernetes.executor.limit.cores=2 \
+    --conf spark.kubernetes.driver.limit.cores=1 \
+    --conf spark.kubernetes.driver.request.cores=1 \
+    --conf spark.eventLog.enabled=true \
+    --conf spark.eventLog.dir=hdfs://192.168.0.238:8020/sparkhistory \
+    --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+    --conf spark.kubernetes.namespace=bigdata \
+    --conf spark.executor.instances=3 \
+    --conf spark.kubernetes.file.upload.path=/tmp \
+    --conf spark.kubernetes.container.pullSecrets=aliyun-repository \
+    --conf spark.kubernetes.container.image=registry.cn-hangzhou.aliyuncs.com/cuterwrite/spark:0.1 \
 hdfs://192.168.0.238:8020/user/root/jars/SparkApp-1.0.jar
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>执行结果：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-shell">hdfs dfs -cat output/wordCount/_temporary/0/task_202212221534101760903765384745539_0002_m_000000/*
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1671723913622.jpg" width="90%" loading="lazy">
-&lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1671723670687.jpg" width="90%" loading="lazy">
-&lt;/figure></description></item><item><title>Zookeeper on k8s 部署实验</title><link>https://cuterwrite.top/p/zookeeper-on-k8s/</link><pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/zookeeper-on-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp" alt="Featured image of post Zookeeper on k8s 部署实验" />&lt;h1 id="zookeeper-on-k8s-部署实验">Zookeeper on k8s 部署实验&lt;/h1>
-&lt;h2 id="1-简介">1 简介&lt;/h2>
-&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
-&lt;p>已经使用 Kuboard Spary 搭建好 Kubernetes 集群和 Kuboard，使用的软件如下：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>名称&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuboard spary&lt;/td>
-&lt;td>v1.2.3-amd64&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>kubernetes&lt;/td>
-&lt;td>v1.25.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>zookeeper&lt;/td>
-&lt;td>3.8.0&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
-&lt;ul>
-&lt;li>Zookeeper（三台 4 核 8G 的 Ubuntu20.04 服务器）&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>node1&lt;/td>
-&lt;td>192.168.0.6&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node2&lt;/td>
-&lt;td>192.168.0.7&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node3&lt;/td>
-&lt;td>192.168.0.14&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="2-创建-configmap">2 创建 ConfigMap&lt;/h2>
-&lt;h3 id="21-创建-zookeeper-environment">2.1 创建 zookeeper-environment&lt;/h3>
-&lt;ul>
-&lt;li>创建一个名为&lt;code>zookeeper-environment&lt;/code> 的配置字典，包含变量对如下：
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Key&lt;/th>
-&lt;th>Value&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>ALLOW_ANONYMOUS_LOGIN&lt;/td>
-&lt;td>yes&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>BITNAMI_DEBUG&lt;/td>
-&lt;td>false&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_4LW_COMMANDS_WHITELIST&lt;/td>
-&lt;td>srvr, mntr, ruok&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_DATA_LOG_DIR&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_ENABLE_AUTH&lt;/td>
-&lt;td>no&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_INIT_LIMIT&lt;/td>
-&lt;td>10&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_LOG_LEVEL&lt;/td>
-&lt;td>ERROR&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_MAX_CLIENT_CNXNS&lt;/td>
-&lt;td>60&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_PORT_NUMBER&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_SERVERS&lt;/td>
-&lt;td>zookeeper-statefulset-0.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::1 zookeeper-statefulset-1.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::2 zookeeper-statefulset-2.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_SYNC_LIMIT&lt;/td>
-&lt;td>5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_TICK_TIME&lt;/td>
-&lt;td>2000&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="22-创建-zookeeper-setup">2.2 创建 zookeeper-setup&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>创建一个名为&lt;code>zookeeper-setup&lt;/code> 的配置字典，Key 为&lt;code>setup.sh&lt;/code>，value 如下：&lt;/p>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
+&lt;/code&gt;&lt;/pre&gt;
+&lt;ul&gt;
+&lt;li&gt;执行结果：&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;hdfs dfs -cat output/wordCount/_temporary/0/task_202212221534101760903765384745539_0002_m_000000/*
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/1671723913622.jpg&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/1671723670687.jpg&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+</description>
+        </item>
+        <item>
+        <title>Zookeeper on k8s 部署实验</title>
+        <link>http://localhost:1313/p/zookeeper-on-k8s/</link>
+        <pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/zookeeper-on-k8s/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp" alt="Featured image of post Zookeeper on k8s 部署实验" /&gt;&lt;h1 id=&#34;zookeeper-on-k8s-部署实验&#34;&gt;Zookeeper on k8s 部署实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-简介&#34;&gt;1 简介&lt;/h2&gt;
+&lt;h3 id=&#34;11-实验环境&#34;&gt;1.1 实验环境&lt;/h3&gt;
+&lt;p&gt;已经使用 Kuboard Spary 搭建好 Kubernetes 集群和 Kuboard，使用的软件如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;名称&lt;/th&gt;
+&lt;th&gt;版本&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuboard spary&lt;/td&gt;
+&lt;td&gt;v1.2.3-amd64&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;kubernetes&lt;/td&gt;
+&lt;td&gt;v1.25.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;zookeeper&lt;/td&gt;
+&lt;td&gt;3.8.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;12-集群规划&#34;&gt;1.2 集群规划&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Zookeeper（三台 4 核 8G 的 Ubuntu20.04 服务器）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;node1&lt;/td&gt;
+&lt;td&gt;192.168.0.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node2&lt;/td&gt;
+&lt;td&gt;192.168.0.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node3&lt;/td&gt;
+&lt;td&gt;192.168.0.14&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;2-创建-configmap&#34;&gt;2 创建 ConfigMap&lt;/h2&gt;
+&lt;h3 id=&#34;21-创建-zookeeper-environment&#34;&gt;2.1 创建 zookeeper-environment&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;创建一个名为&lt;code&gt;zookeeper-environment&lt;/code&gt; 的配置字典，包含变量对如下：
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Key&lt;/th&gt;
+&lt;th&gt;Value&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ALLOW_ANONYMOUS_LOGIN&lt;/td&gt;
+&lt;td&gt;yes&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;BITNAMI_DEBUG&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_4LW_COMMANDS_WHITELIST&lt;/td&gt;
+&lt;td&gt;srvr, mntr, ruok&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_DATA_LOG_DIR&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_ENABLE_AUTH&lt;/td&gt;
+&lt;td&gt;no&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_INIT_LIMIT&lt;/td&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_LOG_LEVEL&lt;/td&gt;
+&lt;td&gt;ERROR&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_MAX_CLIENT_CNXNS&lt;/td&gt;
+&lt;td&gt;60&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_PORT_NUMBER&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_SERVERS&lt;/td&gt;
+&lt;td&gt;zookeeper-statefulset-0.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::1 zookeeper-statefulset-1.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::2 zookeeper-statefulset-2.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_SYNC_LIMIT&lt;/td&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_TICK_TIME&lt;/td&gt;
+&lt;td&gt;2000&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;22-创建-zookeeper-setup&#34;&gt;2.2 创建 zookeeper-setup&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;创建一个名为&lt;code&gt;zookeeper-setup&lt;/code&gt; 的配置字典，Key 为&lt;code&gt;setup.sh&lt;/code&gt;，value 如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;#!/bin/bash
 if [[ -f &amp;quot;/bitnami/zookeeper/data/myid&amp;quot; ]]; then
-export ZOO_SERVER_ID=&amp;quot;$(cat /bitnami/zookeeper//data/myid)&amp;quot;
+    export ZOO_SERVER_ID=&amp;quot;$(cat /bitnami/zookeeper//data/myid)&amp;quot;
 else
-HOSTNAME=&amp;quot;$(hostname -s)&amp;quot;
-if [[ $HOSTNAME =~ (.*)-([0-9]+)$ ]]; then
-ORD=${BASH_REMATCH[2]}
-export ZOO_SERVER_ID=&amp;quot;$((ORD + 1 ))&amp;quot;
-else
-echo &amp;quot;Failed to get index from hostname $HOST&amp;quot;
-exit 1
-fi
+    HOSTNAME=&amp;quot;$(hostname -s)&amp;quot;
+    if [[ $HOSTNAME =~ (.*)-([0-9]+)$ ]]; then
+        ORD=${BASH_REMATCH[2]}
+        export ZOO_SERVER_ID=&amp;quot;$((ORD + 1 ))&amp;quot;
+    else
+        echo &amp;quot;Failed to get index from hostname $HOST&amp;quot;
+        exit 1
+    fi
 fi
 exec /entrypoint.sh /run.sh
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="3-创建-statefulset">3 创建 StatefulSet&lt;/h2>
-&lt;ul>
-&lt;li>创建一个名为&lt;code>zookeeper-statefulset&lt;/code> 的有状态副本集，设置 replica 为&lt;strong>3&lt;/strong>&lt;/li>
-&lt;/ul>
-&lt;h3 id="31-创建工作容器">3.1 创建工作容器&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>容器名称：zookeeper&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器镜像：bitnami/zookeeper:3.8.0&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>命令：&lt;code>/opt/scripts/setup.sh&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>环境变量：引用之前创建的配置字典&lt;code>zookeeper-environment&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器端口：2181&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>资源请求限制：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>CPU 资源请求：500m&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>内存资源请求：500Mi&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>CPU 资源限制：500m&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>内存资源限制：500Mi&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>健康检查：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>容器存活探针：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>执行命令：&lt;code>/bin/bash -c 'echo &amp;quot;ruok&amp;quot; | timeout 2 nc -w 2 localhost 2181 | grep imok'&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>初始延迟：30 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>执行探测频率：10 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>超时时间：5 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>健康阈值：1 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>不健康阈值：6 秒&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>容器就绪探针：与容器存活探针相同&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器安全上下文：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>runAsNonRoot：&lt;code>true&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>用户：1001&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="32-创建存储挂载">3.2 创建存储挂载&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>数据卷：配置字典&lt;code>zookeeper-setup&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>挂载路径：/opt/scripts/setup.sh&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>子路径：setup.sh&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="33-创建-svc">3.3 创建 SVC&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>服务类型：NodePort&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>端口：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>端口名称&lt;/th>
-&lt;th>port&lt;/th>
-&lt;th>targetPort&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>client&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>server&lt;/td>
-&lt;td>2888&lt;/td>
-&lt;td>2888&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>leader-election&lt;/td>
-&lt;td>3888&lt;/td>
-&lt;td>3888&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="34-设置亲和性">3.4 设置亲和性&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>设置 Node 亲和性（硬策略）&lt;/p>
-&lt;ul>
-&lt;li>必须满足标签表达式：app.kubernetes.io/component=zookeeper&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>设置 Pod 反亲和性（软策略）&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>尽量满足标签表达式&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>权重：49&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>togologykey：app.kubernetes.io/name&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>表达式：app.kubernetes.io/component=zookeeper&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="4-部署结果">4 部署结果&lt;/h2>
-&lt;h3 id="41-集群信息">4.1 集群信息&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-40-07-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h3 id="42-节点状态测试">4.2 节点状态测试&lt;/h3>
-&lt;pre>&lt;code class="language-shell">zkServer.sh status
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-41-38-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-42-22-image.png" width="90%" loading="lazy">
-&lt;/figure></description></item></channel></rss>
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;3-创建-statefulset&#34;&gt;3 创建 StatefulSet&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;创建一个名为&lt;code&gt;zookeeper-statefulset&lt;/code&gt; 的有状态副本集，设置 replica 为&lt;strong&gt;3&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;31-创建工作容器&#34;&gt;3.1 创建工作容器&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;容器名称：zookeeper&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器镜像：bitnami/zookeeper:3.8.0&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;命令：&lt;code&gt;/opt/scripts/setup.sh&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;环境变量：引用之前创建的配置字典&lt;code&gt;zookeeper-environment&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器端口：2181&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;资源请求限制：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;CPU 资源请求：500m&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;内存资源请求：500Mi&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;CPU 资源限制：500m&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;内存资源限制：500Mi&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;健康检查：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;容器存活探针：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;执行命令：&lt;code&gt;/bin/bash -c &#39;echo &amp;quot;ruok&amp;quot; | timeout 2 nc -w 2 localhost 2181 | grep imok&#39;&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;初始延迟：30 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;执行探测频率：10 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;超时时间：5 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;健康阈值：1 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;不健康阈值：6 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器就绪探针：与容器存活探针相同&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器安全上下文：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;runAsNonRoot：&lt;code&gt;true&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用户：1001&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;32-创建存储挂载&#34;&gt;3.2 创建存储挂载&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;数据卷：配置字典&lt;code&gt;zookeeper-setup&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;挂载路径：/opt/scripts/setup.sh&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;子路径：setup.sh&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;33-创建-svc&#34;&gt;3.3 创建 SVC&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;服务类型：NodePort&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;端口：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;端口名称&lt;/th&gt;
+&lt;th&gt;port&lt;/th&gt;
+&lt;th&gt;targetPort&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;client&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;server&lt;/td&gt;
+&lt;td&gt;2888&lt;/td&gt;
+&lt;td&gt;2888&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;leader-election&lt;/td&gt;
+&lt;td&gt;3888&lt;/td&gt;
+&lt;td&gt;3888&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;34-设置亲和性&#34;&gt;3.4 设置亲和性&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;设置 Node 亲和性（硬策略）&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;必须满足标签表达式：app.kubernetes.io/component=zookeeper&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;设置 Pod 反亲和性（软策略）&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;尽量满足标签表达式&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;权重：49&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;togologykey：app.kubernetes.io/name&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;表达式：app.kubernetes.io/component=zookeeper&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;4-部署结果&#34;&gt;4 部署结果&lt;/h2&gt;
+&lt;h3 id=&#34;41-集群信息&#34;&gt;4.1 集群信息&lt;/h3&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-40-07-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;42-节点状态测试&#34;&gt;4.2 节点状态测试&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;zkServer.sh status
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-41-38-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-42-22-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+</description>
+        </item>
+        
+    </channel>
+</rss>

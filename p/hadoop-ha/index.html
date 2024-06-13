@@ -1,67 +1,698 @@
-<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="hadoop ha 集群"><title>Hadoop3 HA 模式三节点高可用集群搭建实验</title>
-<link rel=canonical href=https://cuterwrite.top/p/hadoop-ha/><link rel=stylesheet href=/scss/style.min.25452a749fc182d17c52bbe26f2be1285ced8ee97190a8430e178d564f8a9c41.css><meta property='og:title' content="Hadoop3 HA 模式三节点高可用集群搭建实验"><meta property='og:description' content="hadoop ha 集群"><meta property='og:url' content='https://cuterwrite.top/p/hadoop-ha/'><meta property='og:site_name' content="Cuterwrite's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Hadoop'><meta property='article:published_time' content='2022-09-22T00:00:00+00:00'><meta property='article:modified_time' content='2022-09-22T00:00:00+00:00'><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp'><meta name=twitter:title content="Hadoop3 HA 模式三节点高可用集群搭建实验"><meta name=twitter:description content="hadoop ha 集群"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp'><link rel="shortcut icon" href=/favicon.ico><script async src=https://analytics.cuterwrite.top/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276 data-domains=cuterwrite.top></script></head><body class="article-page
-line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
-<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
-</a><span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>Cuterwrite's Blog</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=menu-social><li><a href=https://analytics.cuterwrite.top/share/WcwRpn3giAassmyW/cuterwrite target=_blank title=Analytics rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5H7A2 2 0 005 7v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 17v-5"/><path d="M12 17v-1"/><path d="M15 17v-3"/></svg></a></li><li><a href=https://status.cuterwrite.top target=_blank title=Upptime rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19h16"/><path d="M4 15l4-6 4 2 4-5 4 4"/></svg></a></li><li><a href=/index.xml target=_blank title=RSS rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
-<span>主页 | Home</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-<span>关于 | About</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-<span>归档 | Archives</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
-<span>搜索 | Search</span></a></li><li><a href=https://cuterwrite.top/image-hosting target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-album"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M12 4v7l2-2 2 2V4"/></svg>
-<span>图册 | Gallery</span></a></li><li><a href=https://draw.cuterwrite.top target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-artboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8m0 1a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H9a1 1 0 01-1-1z"/><path d="M3 8h1"/><path d="M3 16h1"/><path d="M8 3v1"/><path d="M16 3v1"/><path d="M20 8h1"/><path d="M20 16h1"/><path d="M8 20v1"/><path d="M16 20v1"/></svg>
-<span>画板 | Canvas</span></a></li><li><a href=https://it-tools.tech target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tools"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21h4L20 8a1.5 1.5.0 00-4-4L3 17v4"/><path d="M14.5 5.5l4 4"/><path d="M12 8 7 3 3 7l5 5"/><path d="M7 8 5.5 9.5"/><path d="M16 12l5 5-4 4-5-5"/><path d="M16 17l-1.5 1.5"/></svg>
-<span>工具 | Tools</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
-<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
-<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><ul><li><a href=#单点故障spof>单点故障（SPOF）</a></li><li><a href=#zookeeper>Zookeeper</a></li></ul></li><li><a href=#实验过程和结果>实验过程和结果</a><ul><li><a href=#环境>环境</a></li><li><a href=#集群规划>集群规划</a></li><li><a href=#创建-hadoop-用户>创建 hadoop 用户</a></li><li><a href=#主机名和网络映射配置>主机名和网络映射配置</a></li><li><a href=#安装-ssh-并配置-ssh-免密登录>安装 SSH 并配置 SSH 免密登录</a></li><li><a href=#安装-java-环境>安装 Java 环境</a></li><li><a href=#安装-hadoop3>安装 hadoop3</a></li><li><a href=#安装-zookeeper>安装 Zookeeper</a></li><li><a href=#配置环境变量>配置环境变量</a></li><li><a href=#配置-ha-模式集群分布式环境>配置 HA 模式集群分布式环境</a><ul><li><a href=#修改文件-workers>修改文件 workers</a></li><li><a href=#修改文件-core-sitexml>修改文件 core-site.xml</a></li><li><a href=#修改文件-hdfs-sitexml>修改文件 hdfs-site.xml</a></li><li><a href=#修改文件-hadoop-envsh>修改文件 hadoop-env.sh</a></li><li><a href=#在所有节点上创建数据文件夹和日志文件夹>在所有节点上创建数据文件夹和日志文件夹</a></li><li><a href=#在所有节点上分别启动-journalnode>在所有节点上分别启动 journalnode</a></li><li><a href=#格式化-namenode-节点>格式化 namenode 节点</a></li><li><a href=#分别在-namenode-节点上启动-zkfc>分别在 namenode 节点上启动 zkfc</a></li><li><a href=#在主节点上启动所有-datanode-节点>在主节点上启动所有 datanode 节点</a></li></ul></li><li><a href=#实验结果>实验结果</a></li><li><a href=#实例运行>实例运行</a></li></ul></li><li><a href=#补充可选配置>补充：可选配置</a><ul><li><a href=#hdfs-web-ui-配置认证>HDFS Web UI 配置认证</a></li></ul></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/hadoop-ha/><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp loading=lazy alt="Featured image of post Hadoop3 HA 模式三节点高可用集群搭建实验"></a></div><div class=article-details><header class=article-category><a href=/categories/bigdata/ style=background-color:#afb0b2;color:#fff>大数据技术</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/hadoop-ha/>Hadoop3 HA 模式三节点高可用集群搭建实验</a></h2><h3 class=article-subtitle>hadoop ha 集群</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
-<time class=article-time--published>2022-09-22</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-<time class=article-time--reading>阅读时长: 8 分钟</time></div><div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M6 10v.01"/><path d="M10 10v.01"/><path d="M14 10v.01"/><path d="M18 10v.01"/><path d="M6 14v.01"/><path d="M18 14v.01"/><path d="M10 14l4 .01"/></svg>
-<time class=article-time--wordcount>字数统计: 3753 字</time></div></footer></div></header><section class=article-content><hr><h1 id=hadoop3-ha-模式三节点高可用集群搭建实验>Hadoop3 HA 模式三节点高可用集群搭建实验</h1><h1 id=关于-hadoop3-ha-模式>关于 Hadoop3 HA 模式</h1><h3 id=单点故障spof>单点故障（SPOF）</h3><p>简单来说，单点故障指的是分布式系统过度依赖于某一个节点，以至于只要该节点宕掉，就算整个集群的其它节点是完好的，集群也无法正常工作。而单点故障问题一般出现在集群的元数据存储节点上，这种节点一般一个集群就一个，一旦坏了整个系统就不能正常使用。Hadoop 的单点故障出现在 namenode 上，影响集群不可用主要有以下两种情况：一是 namenode 节点宕机，将导致集群不可用，重启 namenode 之后才可使用；二是计划内的 namenode 节点软件或硬件升级，导致集群短时间内不可用。</p><p>为了避免出现单点故障，Hadoop 官方给出了高可用 HA 方案：可以采取同时启动两个 namenode：其中一个工作（active），另一个总是处于后备机（standby）的状态，让它只是单纯地同步活跃机的数据，当活跃机宕掉的时候就可以自动切换过去。这种模式称为<strong>HA 模式</strong>。HA 模式下不能用[namenode 主机:端口]的模式来访问 Hadoop 集群，因为 namenode 主机已经不再是一个固定的 IP 了，而是采用 serviceid 的方式来访问，这个 serviceid 存储在 ZooKeeper 上。</p><h3 id=zookeeper>Zookeeper</h3><p>Zookeeper 是一个轻量级的分布式架构集群，为分布式应用提供一致性服务，提供的功能包括：配置维护、域名服务、分布式同步和组服务等。在 HA 模式中，Zookeeper 最大的功能之一是知道某个节点是否宕机了。其原理是：每一个机器在 Zookeeper 中都有一个会话，如果某个机器宕机了，这个会话就会过期，Zookeeper 就能发现该节点已宕机。</p><h2 id=实验过程和结果>实验过程和结果</h2><h3 id=环境>环境</h3><p>本实验使用 Ubuntu 18.04 64 位作为系统环境，采用 3 台 2 核 16GB（ MA3.MEDIUM16 型号）的腾讯云服务器作为集群部署机器。</p><p>使用的软件如下：</p><div class=table-wrapper><table><thead><tr><th>名称</th><th>版本</th></tr></thead><tbody><tr><td>Hadoop</td><td>3.2.3</td></tr><tr><td>Zookeeper</td><td>3.6.3</td></tr><tr><td>JDK</td><td>11.0.2</td></tr></tbody></table></div><p>建议：在以下的部署过程中使用 root 用户可以避免很多权限问题。</p><h3 id=集群规划>集群规划</h3><div class=table-wrapper><table><thead><tr><th>主机名</th><th>IP</th><th>Namenode</th><th>Datanode</th><th>Zookeeper</th><th>JournalNode</th></tr></thead><tbody><tr><td>master</td><td>172.31.0.12</td><td>是</td><td>是</td><td>是</td><td>是</td></tr><tr><td>slave1</td><td>172.31.0.16</td><td>是</td><td>是</td><td>是</td><td>是</td></tr><tr><td>slave2</td><td>172.31.0.10</td><td>否</td><td>是</td><td>是</td><td>是</td></tr></tbody></table></div><h3 id=创建-hadoop-用户>创建 hadoop 用户</h3><p>在终端输出如下命令创建一个名为 hadoop 的用户。</p><pre><code class=language-shell>sudo useradd -m hadoop -s /bin/bash
-</code></pre><p>接着使用如下命令设置密码，按提示输入两次密码，这里简单设置为 hadoop</p><pre><code class=language-shell>sudo passwd hadoop
-</code></pre><p>此外，可以为 hadoop 用户添加管理员权限，方便后续的部署，避免一些权限问题的出现。</p><pre><code class=language-shell>sudo adduser hadoop sudo
-</code></pre><h3 id=主机名和网络映射配置>主机名和网络映射配置</h3><p>为了便于区分 master 节点和 slave 节点，可以修改各个节点的主机名。在 Ubuntu 系统中，我们可以执行以下命令来修改主机名。</p><pre><code class=language-shell>sudo vim /etc/hostname
-</code></pre><p>执行上面命令后，就打开了/etc/hostname 这个文件，这个文件记录了主机名。打开这个文件之后，里面只有当前的主机名这一行内容，可以直接删除，并修改为 master 或 slave1、slave2，然后保存退出 vim 编辑器，这样就完成了主机名的修改，需要重启系统后才能看到主机名的变化。</p><p>然后，在 master 节点中执行如下命令打开并修改 master 节点的/etc/hosts 文件</p><pre><code class=language-shell>sudo vim /etc/hosts
-</code></pre><p>在 hosts 文件中增加如下三条 IP（局域网 IP）和主机名映射关系。</p><pre><code class=language-bash>172.31.0.12 master
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="hadoop ha 集群">
+<title>Hadoop3 HA 模式三节点高可用集群搭建实验</title>
+
+<link rel='canonical' href='http://localhost:1313/p/hadoop-ha/'>
+
+<link rel="stylesheet" href="/scss/style.min.25452a749fc182d17c52bbe26f2be1285ced8ee97190a8430e178d564f8a9c41.css">
+<meta property='og:title' content="Hadoop3 HA 模式三节点高可用集群搭建实验">
+<meta property='og:description' content="hadoop ha 集群">
+<meta property='og:url' content='http://localhost:1313/p/hadoop-ha/'>
+<meta property='og:site_name' content='Cuterwrite&#39;s Blog'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Hadoop' /><meta property='article:published_time' content='2022-09-22T00:00:00&#43;00:00'/><meta property='article:modified_time' content='2022-09-22T00:00:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp' />
+<meta name="twitter:title" content="Hadoop3 HA 模式三节点高可用集群搭建实验">
+<meta name="twitter:description" content="hadoop ha 集群"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+<script async src="https://analytics.cuterwrite.top/uma"
+        data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276"
+        data-domains="cuterwrite.top"></script>
+</head>
+
+<body class="
+    article-page
+      line-numbers">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+            
+        
+
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Cuterwrite&#39;s Blog</a></h1>
+            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a
+                        href='https://analytics.cuterwrite.top/share/WcwRpn3giAassmyW/cuterwrite'
+                        target="_blank"
+                        title="Analytics"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>
+  <rect x="9" y="3" width="6" height="4" rx="2"/>
+  <path d="M9 17v-5"/>
+  <path d="M12 17v-1"/>
+  <path d="M15 17v-3"/>
+</svg>
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://status.cuterwrite.top'
+                        target="_blank"
+                        title="Upptime"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" /><path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='/index.xml'
+                        target="_blank"
+                        title="RSS"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="5" cy="19" r="1" />
+  <path d="M4 4a16 16 0 0 1 16 16" />
+  <path d="M4 11a9 9 0 0 1 9 9" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://github.com/PKUcoldkeyboard'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
+                        target="_blank"
+                        title="zhihu"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
+    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
+</svg>
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页 | Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于 | About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档 | Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索 | Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://cuterwrite.top/image-hosting' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-album"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M12 4v7l2 -2l2 2v-7" /></svg>
+
+                
+                <span>图册 | Gallery</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://draw.cuterwrite.top' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-artboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" /><path d="M3 8l1 0" /><path d="M3 16l1 0" /><path d="M8 3l0 1" /><path d="M16 3l0 1" /><path d="M20 8l1 0" /><path d="M20 16l1 0" /><path d="M8 20l0 1" /><path d="M16 20l0 1" /></svg>
+
+                
+                <span>画板 | Canvas</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://it-tools.tech' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-tools"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4" /><path d="M14.5 5.5l4 4" /><path d="M12 8l-5 -5l-4 4l5 5" /><path d="M7 8l-1.5 1.5" /><path d="M16 12l5 5l-4 4l-5 -5" /><path d="M16 17l-1.5 1.5" /></svg>
+
+                
+                <span>工具 | Tools</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ul>
+    <li>
+      <ul>
+        <li><a href="#单点故障spof">单点故障（SPOF）</a></li>
+        <li><a href="#zookeeper">Zookeeper</a></li>
+      </ul>
+    </li>
+    <li><a href="#实验过程和结果">实验过程和结果</a>
+      <ul>
+        <li><a href="#环境">环境</a></li>
+        <li><a href="#集群规划">集群规划</a></li>
+        <li><a href="#创建-hadoop-用户">创建 hadoop 用户</a></li>
+        <li><a href="#主机名和网络映射配置">主机名和网络映射配置</a></li>
+        <li><a href="#安装-ssh-并配置-ssh-免密登录">安装 SSH 并配置 SSH 免密登录</a></li>
+        <li><a href="#安装-java-环境">安装 Java 环境</a></li>
+        <li><a href="#安装-hadoop3">安装 hadoop3</a></li>
+        <li><a href="#安装-zookeeper">安装 Zookeeper</a></li>
+        <li><a href="#配置环境变量">配置环境变量</a></li>
+        <li><a href="#配置-ha-模式集群分布式环境">配置 HA 模式集群分布式环境</a>
+          <ul>
+            <li><a href="#修改文件-workers">修改文件 workers</a></li>
+            <li><a href="#修改文件-core-sitexml">修改文件 core-site.xml</a></li>
+            <li><a href="#修改文件-hdfs-sitexml">修改文件 hdfs-site.xml</a></li>
+            <li><a href="#修改文件-hadoop-envsh">修改文件 hadoop-env.sh</a></li>
+            <li><a href="#在所有节点上创建数据文件夹和日志文件夹">在所有节点上创建数据文件夹和日志文件夹</a></li>
+            <li><a href="#在所有节点上分别启动-journalnode">在所有节点上分别启动 journalnode</a></li>
+            <li><a href="#格式化-namenode-节点">格式化 namenode 节点</a></li>
+            <li><a href="#分别在-namenode-节点上启动-zkfc">分别在 namenode 节点上启动 zkfc</a></li>
+            <li><a href="#在主节点上启动所有-datanode-节点">在主节点上启动所有 datanode 节点</a></li>
+          </ul>
+        </li>
+        <li><a href="#实验结果">实验结果</a></li>
+        <li><a href="#实例运行">实例运行</a></li>
+      </ul>
+    </li>
+    <li><a href="#补充可选配置">补充：可选配置</a>
+      <ul>
+        <li><a href="#hdfs-web-ui-配置认证">HDFS Web UI 配置认证</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+        <main class="main full-width">
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/hadoop-ha/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp" loading="lazy" alt="Featured image of post Hadoop3 HA 模式三节点高可用集群搭建实验" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/bigdata/" style="background-color: #afb0b2; color: #fff;">
+                大数据技术
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/hadoop-ha/">Hadoop3 HA 模式三节点高可用集群搭建实验</a>
+        </h2>
+
+        
+        <h3 class="article-subtitle">
+            hadoop ha 集群
+        </h3>
+        
+    </div>
+
+    
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2022-09-22</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 8 分钟
+                </time>
+            </div>
+        
+
+        
+            <div>
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 0 1 2 -2h16a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2z" /><path d="M6 10l0 .01" /><path d="M10 10l0 .01" /><path d="M14 10l0 .01" /><path d="M18 10l0 .01" /><path d="M6 14l0 .01" /><path d="M18 14l0 .01" /><path d="M10 14l4 .01" /></svg>
+
+                <time class="article-time--wordcount">
+                    字数统计: 3753 字
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <hr>
+<h1 id="hadoop3-ha-模式三节点高可用集群搭建实验">Hadoop3 HA 模式三节点高可用集群搭建实验</h1>
+<h1 id="关于-hadoop3-ha-模式">关于 Hadoop3 HA 模式</h1>
+<h3 id="单点故障spof">单点故障（SPOF）</h3>
+<p>简单来说，单点故障指的是分布式系统过度依赖于某一个节点，以至于只要该节点宕掉，就算整个集群的其它节点是完好的，集群也无法正常工作。而单点故障问题一般出现在集群的元数据存储节点上，这种节点一般一个集群就一个，一旦坏了整个系统就不能正常使用。Hadoop 的单点故障出现在 namenode 上，影响集群不可用主要有以下两种情况：一是 namenode 节点宕机，将导致集群不可用，重启 namenode 之后才可使用；二是计划内的 namenode 节点软件或硬件升级，导致集群短时间内不可用。</p>
+<p>为了避免出现单点故障，Hadoop 官方给出了高可用 HA 方案：可以采取同时启动两个 namenode：其中一个工作（active），另一个总是处于后备机（standby）的状态，让它只是单纯地同步活跃机的数据，当活跃机宕掉的时候就可以自动切换过去。这种模式称为<strong>HA 模式</strong>。HA 模式下不能用[namenode 主机:端口]的模式来访问 Hadoop 集群，因为 namenode 主机已经不再是一个固定的 IP 了，而是采用 serviceid 的方式来访问，这个 serviceid 存储在 ZooKeeper 上。</p>
+<h3 id="zookeeper">Zookeeper</h3>
+<p>Zookeeper 是一个轻量级的分布式架构集群，为分布式应用提供一致性服务，提供的功能包括：配置维护、域名服务、分布式同步和组服务等。在 HA 模式中，Zookeeper 最大的功能之一是知道某个节点是否宕机了。其原理是：每一个机器在 Zookeeper 中都有一个会话，如果某个机器宕机了，这个会话就会过期，Zookeeper 就能发现该节点已宕机。</p>
+<h2 id="实验过程和结果">实验过程和结果</h2>
+<h3 id="环境">环境</h3>
+<p>本实验使用 Ubuntu 18.04 64 位作为系统环境，采用 3 台 2 核 16GB（ MA3.MEDIUM16 型号）的腾讯云服务器作为集群部署机器。</p>
+<p>使用的软件如下：</p>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>名称</th>
+<th>版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hadoop</td>
+<td>3.2.3</td>
+</tr>
+<tr>
+<td>Zookeeper</td>
+<td>3.6.3</td>
+</tr>
+<tr>
+<td>JDK</td>
+<td>11.0.2</td>
+</tr>
+</tbody>
+</table></div>
+<p><!-- raw HTML omitted -->建议：在以下的部署过程中使用 root 用户可以避免很多权限问题。<!-- raw HTML omitted --></p>
+<h3 id="集群规划">集群规划</h3>
+<div class="table-wrapper"><table>
+<thead>
+<tr>
+<th>主机名</th>
+<th>IP</th>
+<th>Namenode</th>
+<th>Datanode</th>
+<th>Zookeeper</th>
+<th>JournalNode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>master</td>
+<td>172.31.0.12</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>slave1</td>
+<td>172.31.0.16</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+<tr>
+<td>slave2</td>
+<td>172.31.0.10</td>
+<td>否</td>
+<td>是</td>
+<td>是</td>
+<td>是</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="创建-hadoop-用户">创建 hadoop 用户</h3>
+<p>在终端输出如下命令创建一个名为 hadoop 的用户。</p>
+<pre><code class="language-shell">sudo useradd -m hadoop -s /bin/bash
+</code></pre>
+<p>接着使用如下命令设置密码，按提示输入两次密码，这里简单设置为 hadoop</p>
+<pre><code class="language-shell">sudo passwd hadoop
+</code></pre>
+<p>此外，可以为 hadoop 用户添加管理员权限，方便后续的部署，避免一些权限问题的出现。</p>
+<pre><code class="language-shell">sudo adduser hadoop sudo
+</code></pre>
+<h3 id="主机名和网络映射配置">主机名和网络映射配置</h3>
+<p>为了便于区分 master 节点和 slave 节点，可以修改各个节点的主机名。在 Ubuntu 系统中，我们可以执行以下命令来修改主机名。</p>
+<pre><code class="language-shell">sudo vim /etc/hostname
+</code></pre>
+<p>执行上面命令后，就打开了/etc/hostname 这个文件，这个文件记录了主机名。打开这个文件之后，里面只有当前的主机名这一行内容，可以直接删除，并修改为 master 或 slave1、slave2，然后保存退出 vim 编辑器，这样就完成了主机名的修改，需要重启系统后才能看到主机名的变化。</p>
+<p>然后，在 master 节点中执行如下命令打开并修改 master 节点的/etc/hosts 文件</p>
+<pre><code class="language-shell">sudo vim /etc/hosts
+</code></pre>
+<p>在 hosts 文件中增加如下三条 IP（局域网 IP）和主机名映射关系。</p>
+<pre><code class="language-bash">172.31.0.12 master
 172.31.0.16 slave1
 172.31.0.10 slave2
-</code></pre><p>需要注意的是，一般 hosts 文件中只能有一个 127.0.0.1，其对应主机名为 localhost，如果有多余 127.0.0.1 映射，应删除，特别是不能存在“127.0.0.1 Master”这样的映射记录。修改后需要重启 Linux 系统。</p><p>上面完成了 master 节点的配置，接下来要继续完成对其他 slave 节点的配置修改。请参照上面的方法，把 slave1 节点上的“/etc/hostname”文件中的主机名修改为“slave1”，把 slave1 节点上的“/etc/hostname”文件中的主机名修改为“slave2”同时，修改“/etc/hosts”的内容，在 hosts 文件中增加如下三条 IP 和主机名映射关系：</p><pre><code class=language-bash>172.31.0.12 master
+</code></pre>
+<p>需要注意的是，一般 hosts 文件中只能有一个 127.0.0.1，其对应主机名为 localhost，如果有多余 127.0.0.1 映射，应删除，特别是不能存在“127.0.0.1 Master”这样的映射记录。修改后需要重启 Linux 系统。</p>
+<p>上面完成了 master 节点的配置，接下来要继续完成对其他 slave 节点的配置修改。请参照上面的方法，把 slave1 节点上的“/etc/hostname”文件中的主机名修改为“slave1”，把 slave1 节点上的“/etc/hostname”文件中的主机名修改为“slave2”同时，修改“/etc/hosts”的内容，在 hosts 文件中增加如下三条 IP 和主机名映射关系：</p>
+<pre><code class="language-bash">172.31.0.12 master
 172.31.0.16 slave1
 172.31.0.10 slave2
-</code></pre><p>修改完成以后，重新启动 slave 节点的 Linux 系统。</p><p>这样就完成了 master 节点和 slave 节点的配置，然后，需要在各个节点上都执行如下命令，测试是否相互 ping 得通，如果 ping 不通，后面就无法顺利配置成功：</p><pre><code class=language-shell>ping master -c 3
+</code></pre>
+<p>修改完成以后，重新启动 slave 节点的 Linux 系统。</p>
+<p>这样就完成了 master 节点和 slave 节点的配置，然后，需要在各个节点上都执行如下命令，测试是否相互 ping 得通，如果 ping 不通，后面就无法顺利配置成功：</p>
+<pre><code class="language-shell">ping master -c 3
 ping slave1 -c 3
 ping slave2 -c 3
-</code></pre><p>例如，在 master 节点上 ping slave1，如果 ping 通的话，会显示如下图所示的结果：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-51-51-image.png width=90% loading=lazy></figure><h3 id=安装-ssh-并配置-ssh-免密登录>安装 SSH 并配置 SSH 免密登录</h3><p>集群模式需要用到 SSH 登陆，Ubuntu 默认已经安装 SSH client，此外还需要安装 SSH server</p><pre><code class=language-shell>sudo apt-get install openssh-server
-</code></pre><p>安装后，可以使用如下命令登陆本机</p><pre><code class=language-shell>ssh localhost
-</code></pre><p>在集群模式中，必须要让 master 节点可以 SSH 免密登录到各个 slave 节点上。首先，生成 master 节点的公钥，如果之前已经生成过公钥，必须要删除原来生成的公钥，重新生成一次。具体命令如下：</p><pre><code class=language-shell>cd ~/.ssh #如果没有该目录，先执行一次 ssh localhost
+</code></pre>
+<p>例如，在 master 节点上 ping slave1，如果 ping 通的话，会显示如下图所示的结果：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-51-51-image.png" width="90%" loading="lazy">
+</figure>
+
+<h3 id="安装-ssh-并配置-ssh-免密登录">安装 SSH 并配置 SSH 免密登录</h3>
+<p>集群模式需要用到 SSH 登陆，Ubuntu 默认已经安装 SSH client，此外还需要安装 SSH server</p>
+<pre><code class="language-shell">sudo apt-get install openssh-server
+</code></pre>
+<p>安装后，可以使用如下命令登陆本机</p>
+<pre><code class="language-shell">ssh localhost
+</code></pre>
+<p>在集群模式中，必须要让 master 节点可以 SSH 免密登录到各个 slave 节点上。首先，生成 master 节点的公钥，如果之前已经生成过公钥，必须要删除原来生成的公钥，重新生成一次。具体命令如下：</p>
+<pre><code class="language-shell">cd ~/.ssh #如果没有该目录，先执行一次 ssh localhost
 rm ./id_rsa* #删除之前生成的公钥
 ssh-keygen -t rsa #执行该命令后一直按回车就可以
-</code></pre><p>为了让 master 节点能够 SSH 免密登录本机，需要在 master 节点上执行如下命令：</p><pre><code class=language-shell>cat ./id_rsa.pub &gt;&gt; ./authorized_keys
-</code></pre><p>完成后可以执行“ssh master”来验证一下，可能会遇到提示信息，输入 yes 即可，测试成功后执行 exit 命令返回原来的终端。</p><p>接下来，在 master 节点上将公钥传输到 slave1 和 slave2 节点</p><pre><code class=language-shell>scp ~/.ssh/id_rsa.pub hadoop@slave1:/home/hadoop/
+</code></pre>
+<p>为了让 master 节点能够 SSH 免密登录本机，需要在 master 节点上执行如下命令：</p>
+<pre><code class="language-shell">cat ./id_rsa.pub &gt;&gt; ./authorized_keys
+</code></pre>
+<p>完成后可以执行“ssh master”来验证一下，可能会遇到提示信息，输入 yes 即可，测试成功后执行 exit 命令返回原来的终端。</p>
+<p>接下来，在 master 节点上将公钥传输到 slave1 和 slave2 节点</p>
+<pre><code class="language-shell">scp ~/.ssh/id_rsa.pub hadoop@slave1:/home/hadoop/
 scp ~/.ssh/id_rsa.pub hadoop@slave2:/home/hadoop/
-</code></pre><p>接着在 slave1（slave2）节点上将 SSH 公钥加入授权</p><pre><code class=language-shell>mkdir ~/.ssh
+</code></pre>
+<p>接着在 slave1（slave2）节点上将 SSH 公钥加入授权</p>
+<pre><code class="language-shell">mkdir ~/.ssh
 cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
 rm ~/id_rsa.pub #用完之后可以删除掉
-</code></pre><p>这样，master 节点就可以免密登录到各个 slave 节点上了，例如执行如下命令：</p><pre><code class=language-shell>ssh slave1
-</code></pre><p>会显示如下结果，显示已经登录到 slave1 节点上。</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-30-image.png width=90% loading=lazy></figure><h3 id=安装-java-环境>安装 Java 环境</h3><p>Hadoop3 需要 JDK 版本在 1.8 以上，这里我选择 11 版本 JDK 作为 Java 环境，先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
+</code></pre>
+<p>这样，master 节点就可以免密登录到各个 slave 节点上了，例如执行如下命令：</p>
+<pre><code class="language-shell">ssh slave1
+</code></pre>
+<p>会显示如下结果，显示已经登录到 slave1 节点上。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-30-image.png" width="90%" loading="lazy">
+</figure>
+
+<h3 id="安装-java-环境">安装 Java 环境</h3>
+<p>Hadoop3 需要 JDK 版本在 1.8 以上，这里我选择 11 版本 JDK 作为 Java 环境，先执行以下命令下载压缩包。</p>
+<pre><code class="language-shell">cd /usr/local/softwares;
 sudo wget https://repo.huaweicloud.com/openjdk/11.0.2/openjdk-11.0.2_linux-x64_bin.tar.gz
-</code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf openjdk-11.0.2_linux-x64_bin.tar.gz;
+</code></pre>
+<p>然后，使用如下命令解压缩：</p>
+<pre><code class="language-shell">sudo tar -xzf openjdk-11.0.2_linux-x64_bin.tar.gz;
 sudo mv jdk-11.0.2 openjdk;
-</code></pre><p>这时，可以执行以下命令查看是否安装成功</p><pre><code class=language-shell>cd openjdk;
+</code></pre>
+<p>这时，可以执行以下命令查看是否安装成功</p>
+<pre><code class="language-shell">cd openjdk;
 ./bin/java --version;
-</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-51-image.png width=90% loading=lazy></figure><h3 id=安装-hadoop3>安装 hadoop3</h3><p>先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
+</code></pre>
+<p>如果返回如下信息，则说明安装成功：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-51-image.png" width="90%" loading="lazy">
+</figure>
+
+<h3 id="安装-hadoop3">安装 hadoop3</h3>
+<p>先执行以下命令下载压缩包。</p>
+<pre><code class="language-shell">cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/hadoop/common/hadoop-3.2.3/hadoop-3.2.3.tar.gz
-</code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf hadoop-3.2.3.tar.gz;
+</code></pre>
+<p>然后，使用如下命令解压缩：</p>
+<pre><code class="language-shell">sudo tar -xzf hadoop-3.2.3.tar.gz;
 sudo mv hadoop-3.2.3 hadoop
-</code></pre><p>这时，可以执行以下命令查看是否安装成功</p><pre><code class=language-shell>cd hadoop;
+</code></pre>
+<p>这时，可以执行以下命令查看是否安装成功</p>
+<pre><code class="language-shell">cd hadoop;
 ./bin/hadoop version
-</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-53-11-image.png width=90% loading=lazy></figure><h3 id=安装-zookeeper>安装 Zookeeper</h3><p>先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
+</code></pre>
+<p>如果返回如下信息，则说明安装成功：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-53-11-image.png" width="90%" loading="lazy">
+</figure>
+
+<h3 id="安装-zookeeper">安装 Zookeeper</h3>
+<p>先执行以下命令下载压缩包。</p>
+<pre><code class="language-shell">cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/zookeeper/stable/apache-zookeeper-3.6.3-bin.tar.gz;
-</code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf apache-zookeeper-3.6.3-bin.tar.gz;
+</code></pre>
+<p>然后，使用如下命令解压缩：</p>
+<pre><code class="language-shell">sudo tar -xzf apache-zookeeper-3.6.3-bin.tar.gz;
 sudo mv apache-zookeeper-3.6.3-bin zookeeper;
-</code></pre><p>接下来，将 Zookeeper 中的 conf 文件夹里的 zoo_sample.cfg 文件复制一份，改名为 zoo.cfg，然后编辑这个文件，其他的部分不用动，需要修改 dataDir 这一行。dataDir 是 ZooKeeper 的数据文件夹的位置，在我的机器上我用的是/data/zookeeper，你们可以设置成你们的目录。此外，需要在末尾加上所有节点的信息（数字与 myid 要对应）：</p><pre><code class=language-properties>server.1=master:2888:3888
+</code></pre>
+<p>接下来，将 Zookeeper 中的 conf 文件夹里的 zoo_sample.cfg 文件复制一份，改名为 zoo.cfg，然后编辑这个文件，其他的部分不用动，需要修改 dataDir 这一行。dataDir 是 ZooKeeper 的数据文件夹的位置，在我的机器上我用的是/data/zookeeper，你们可以设置成你们的目录。此外，需要在末尾加上所有节点的信息（数字与 myid 要对应）：</p>
+<pre><code class="language-properties">server.1=master:2888:3888
 server.2=slave1:2888:3888
 server.3=slave2:2888:3888
-</code></pre><p>然后再修改 bin/zkEnv.sh，添加以下日志输出文件夹配置：</p><pre><code class=language-shell>ZOO_LOG_DIR=/data/logs/zookeeper
-</code></pre><p>最后，需要在每一个节点上的 dataDir 目录下手动创建一个文件，命名为 myid，并写入这台服务器的 Zookeeper ID。这个 ID 数字可以自己随便写，取值范围是 1~255，在这里我将 master、slave1 和 slave2 分别取值为 1，2，3。配置完成以上全部后，分别使用 zkServer.sh start 命令启动集群，ZooKeeper 会自动根据配置把所有的节点连接成一个集群。启动后使用 jps 命令可以查看到 QuorumPeerMain 进程已经启动成功。</p><h3 id=配置环境变量>配置环境变量</h3><p>配置环境变量后可以在任意目录中直接使用 hadoop、hdfs 等命令。配置方法也比较简单。首先执行命令：</p><pre><code class=language-shell>sudo vim ~/.bashrc
-</code></pre><p>然后，在该文件最上面的位置加入下面内容：</p><pre><code class=language-shell>export JAVA_HOME=/usr/local/softwares/openjdk
+</code></pre>
+<p>然后再修改 bin/zkEnv.sh，添加以下日志输出文件夹配置：</p>
+<pre><code class="language-shell">ZOO_LOG_DIR=/data/logs/zookeeper
+</code></pre>
+<p>最后，需要在每一个节点上的 dataDir 目录下手动创建一个文件，命名为 myid，并写入这台服务器的 Zookeeper ID。这个 ID 数字可以自己随便写，取值范围是 1~255，在这里我将 master、slave1 和 slave2 分别取值为 1，2，3。配置完成以上全部后，分别使用 zkServer.sh start 命令启动集群，ZooKeeper 会自动根据配置把所有的节点连接成一个集群。启动后使用 jps 命令可以查看到 QuorumPeerMain 进程已经启动成功。</p>
+<h3 id="配置环境变量">配置环境变量</h3>
+<p>配置环境变量后可以在任意目录中直接使用 hadoop、hdfs 等命令。配置方法也比较简单。首先执行命令：</p>
+<pre><code class="language-shell">sudo vim ~/.bashrc
+</code></pre>
+<p>然后，在该文件最上面的位置加入下面内容：</p>
+<pre><code class="language-shell">export JAVA_HOME=/usr/local/softwares/openjdk
 export HADOOP_HOME=/usr/local/softwares/hadoop
 export HADOOP_PREFIX=$HADOOP_HOME
 export HADOOP_MAPRED_HOME=$HADOOP_HOME
@@ -72,11 +703,20 @@ export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/natvie
 export HADOOP_INSTALL=$HADOOP_HOME
 export ZK_HOME=/usr/local/softwares/zookeeper
 export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$ZK_HOME/bin
-</code></pre><p>保存后执行如下命令使配置生效：</p><pre><code class=language-shell>source ~/.bashrc
-</code></pre><h3 id=配置-ha-模式集群分布式环境>配置 HA 模式集群分布式环境</h3><h4 id=修改文件-workers>修改文件 workers</h4><p>需要把所有数据节点的主机名写入该文件，每行一个，默认为 localhost（即把本机作为数据节点），在本实验中，master 和 slave1、slave2 都充当 datanode，所以该文件内容配置如下：</p><pre><code class=language-shell>master
+</code></pre>
+<p>保存后执行如下命令使配置生效：</p>
+<pre><code class="language-shell">source ~/.bashrc
+</code></pre>
+<h3 id="配置-ha-模式集群分布式环境">配置 HA 模式集群分布式环境</h3>
+<h4 id="修改文件-workers">修改文件 workers</h4>
+<p>需要把所有数据节点的主机名写入该文件，每行一个，默认为 localhost（即把本机作为数据节点），在本实验中，master 和 slave1、slave2 都充当 datanode，所以该文件内容配置如下：</p>
+<pre><code class="language-shell">master
 slave1
 slave2
-</code></pre><h4 id=修改文件-core-sitexml>修改文件 core-site.xml</h4><p>在一般集群模式中，<code>fs.defaultFS</code> 配置为 hdfs://master:9000，即名称节点所在的主机名加上端口号，但需要注意的是，在 HA 模式下分别有一个 active 和 standby 的名称节点，需要将该属性设置为集群 id，这里写的 ha-cluster 需要与 hdfs-site.xml 中的配置一致，所以将该文件修改为如下内容：</p><pre><code class=language-xml>&lt;configuration&gt;
+</code></pre>
+<h4 id="修改文件-core-sitexml">修改文件 core-site.xml</h4>
+<p>在一般集群模式中，<code>fs.defaultFS</code> 配置为 hdfs://master:9000，即名称节点所在的主机名加上端口号，但需要注意的是，在 HA 模式下分别有一个 active 和 standby 的名称节点，需要将该属性设置为集群 id，这里写的 ha-cluster 需要与 hdfs-site.xml 中的配置一致，所以将该文件修改为如下内容：</p>
+<pre><code class="language-xml">&lt;configuration&gt;
     &lt;property&gt;
         &lt;name&gt;fs.defaultFS&lt;/name&gt;
         &lt;value&gt;hdfs://ha-cluster&lt;/value&gt;
@@ -90,7 +730,10 @@ slave2
          &lt;value&gt;30000&lt;/value&gt;
     &lt;/property&gt;
 &lt;/configuration&gt;
-</code></pre><h4 id=修改文件-hdfs-sitexml>修改文件 hdfs-site.xml</h4><p>对以下属性进行配置：</p><pre><code class=language-xml>&lt;configuration&gt;
+</code></pre>
+<h4 id="修改文件-hdfs-sitexml">修改文件 hdfs-site.xml</h4>
+<p>对以下属性进行配置：</p>
+<pre><code class="language-xml">&lt;configuration&gt;
     &lt;!-- 服务 ID--&gt;
     &lt;property&gt;
         &lt;name&gt;dfs.nameservices&lt;/name&gt;
@@ -165,10 +808,15 @@ slave2
         &lt;value&gt;/data/hadoop/hdfs/jn&lt;/value&gt;
     &lt;/property&gt;
 &lt;/configuration&gt;
-</code></pre><h4 id=修改文件-hadoop-envsh>修改文件 hadoop-env.sh</h4><p>在文件开头添加以下变量</p><pre><code class=language-shell>export HADOOP_NAMENODE_OPS=&quot; -Xms1024m -Xmx1024m -XX:+UseParallelGC&quot;
+</code></pre>
+<h4 id="修改文件-hadoop-envsh">修改文件 hadoop-env.sh</h4>
+<p>在文件开头添加以下变量</p>
+<pre><code class="language-shell">export HADOOP_NAMENODE_OPS=&quot; -Xms1024m -Xmx1024m -XX:+UseParallelGC&quot;
 export HADOOP_DATANODE_OPS=&quot; -Xms1024m -Xmx1024m&quot;
 export HADOOP_LOG_DIR=/data/logs/hadoop
-</code></pre><h4 id=在所有节点上创建数据文件夹和日志文件夹>在所有节点上创建数据文件夹和日志文件夹</h4><pre><code class=language-shell>sudo mkdir -p /data/hadoop/hdfs/nn;
+</code></pre>
+<h4 id="在所有节点上创建数据文件夹和日志文件夹">在所有节点上创建数据文件夹和日志文件夹</h4>
+<pre><code class="language-shell">sudo mkdir -p /data/hadoop/hdfs/nn;
 sudo mkdir -p /data/hadoop/hdfs/dn;
 sudo mkdir -p /data/hadoop/hdfs/jn;
 sudo mkdir -p /data/zookeeper;
@@ -178,23 +826,94 @@ sudo mkdir /data/logs;
 sudo mkdir /data/logs/hadoop;
 sudo mkdir /data/logs/zookeeper;
 sudo chown -R hadoop.hadoop /data/logs
-</code></pre><h4 id=在所有节点上分别启动-journalnode>在所有节点上分别启动 journalnode</h4><pre><code class=language-shell>hdfs --daemon start journalnode
-</code></pre><h4 id=格式化-namenode-节点>格式化 namenode 节点</h4><ul><li><p>在第一个 namenode 上进行格式化并启动 hdfs：</p><pre><code class=language-shell>hdfs namenode -format;
+</code></pre>
+<h4 id="在所有节点上分别启动-journalnode">在所有节点上分别启动 journalnode</h4>
+<pre><code class="language-shell">hdfs --daemon start journalnode
+</code></pre>
+<h4 id="格式化-namenode-节点">格式化 namenode 节点</h4>
+<ul>
+<li>
+<p>在第一个 namenode 上进行格式化并启动 hdfs：</p>
+<pre><code class="language-shell">hdfs namenode -format;
 hdfs --daemon start namenode
-</code></pre></li><li><p>在第二个 namenode 上进行备用初始化</p><pre><code class=language-shell>hdfs namenode -bootstrapStandby
-</code></pre></li><li><p>在第一个 namenode 上进行 journalnode 的初始化</p><pre><code class=language-shell>hdfs namenode -initializeSharedEdits
-</code></pre></li></ul><h4 id=分别在-namenode-节点上启动-zkfc>分别在 namenode 节点上启动 zkfc</h4><pre><code class=language-shel>hdfs zkfc -formatZK
-</code></pre><h4 id=在主节点上启动所有-datanode-节点>在主节点上启动所有 datanode 节点</h4><pre><code class=language-shell>start-dfs.sh
-</code></pre><h3 id=实验结果>实验结果</h3><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-13-image.png width=90% loading=lazy></figure><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-26-image.png width=90% loading=lazy></figure><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-33-image.png width=90% loading=lazy></figure><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-42-image.png width=90% loading=lazy></figure><h3 id=实例运行>实例运行</h3><p>首先创建 HDFS 上的用户目录，命令如下：</p><pre><code class=language-shell>hdfs dfs -mkdir -p /user/hadoop
-</code></pre><p>然后，在 HDFS 中创建一个 input 目录，并将“/usr/local/softwares/hadoop/etc/hadoop”目录中的配置文件作为输入文件复制到 input 目录中，命令如下：</p><pre><code class=language-shell>hdfs dfs -mkdir input;
+</code></pre>
+</li>
+<li>
+<p>在第二个 namenode 上进行备用初始化</p>
+<pre><code class="language-shell">hdfs namenode -bootstrapStandby
+</code></pre>
+</li>
+<li>
+<p>在第一个 namenode 上进行 journalnode 的初始化</p>
+<pre><code class="language-shell">hdfs namenode -initializeSharedEdits
+</code></pre>
+</li>
+</ul>
+<h4 id="分别在-namenode-节点上启动-zkfc">分别在 namenode 节点上启动 zkfc</h4>
+<pre><code class="language-shel">hdfs zkfc -formatZK
+</code></pre>
+<h4 id="在主节点上启动所有-datanode-节点">在主节点上启动所有 datanode 节点</h4>
+<pre><code class="language-shell">start-dfs.sh
+</code></pre>
+<h3 id="实验结果">实验结果</h3>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-13-image.png" width="90%" loading="lazy">
+</figure>
+
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-26-image.png" width="90%" loading="lazy">
+</figure>
+
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-33-image.png" width="90%" loading="lazy">
+</figure>
+
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-42-image.png" width="90%" loading="lazy">
+</figure>
+
+<h3 id="实例运行">实例运行</h3>
+<p>首先创建 HDFS 上的用户目录，命令如下：</p>
+<pre><code class="language-shell">hdfs dfs -mkdir -p /user/hadoop
+</code></pre>
+<p>然后，在 HDFS 中创建一个 input 目录，并将“/usr/local/softwares/hadoop/etc/hadoop”目录中的配置文件作为输入文件复制到 input 目录中，命令如下：</p>
+<pre><code class="language-shell">hdfs dfs -mkdir input;
 hdfs dfs -put /usr/local/softwares/hadoop/etc/hadoop/*.xml input
-</code></pre><p>接着就可以运行 MapReduce 作业了，命令如下：</p><pre><code class=language-shell>hadoop jar /usr/local/softwares/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.3.jar grep input output 'dfs[a-z.]+'
-</code></pre><p>运行结果如下：</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-16-35-image.png width=90% loading=lazy></figure><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-17-58-image.png width=90% loading=lazy></figure><h2 id=补充可选配置>补充：可选配置</h2><h3 id=hdfs-web-ui-配置认证>HDFS Web UI 配置认证</h3><p>HDFS 带有一个可视化的端口号默认为 9870 的 Web UI 界面，这个界面如果没有做防火墙限制的话会暴露在公网上。而该界面又存在着大量的日志和配置信息，直接暴露在公网上不利于系统的安全，所以在这里可以配置一个简单的系统认证功能。步骤如下：</p><ul><li><p>安装 httpd 或安装 httpd-tools</p><pre><code class=language-shell>sudo apt-get install httpd
-</code></pre></li><li><p>安装 nginx：这部分内容较多，不是重点，网上有大量的教程，跟着其中一个进行就行。</p></li><li><p>通过 htpasswd 命令生成用户名和密码数据库文件</p><pre><code class=language-shell>htpasswd -c passwd.db [username]
-</code></pre></li><li><p>查看生成的 db 文件内容</p><pre><code class=language-shell>cat passwd.db
-</code></pre></li><li><p>通过 nginx 代理并设置访问身份验证</p><pre><code class=language-shell># nginx 配置文件
+</code></pre>
+<p>接着就可以运行 MapReduce 作业了，命令如下：</p>
+<pre><code class="language-shell">hadoop jar /usr/local/softwares/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-3.2.3.jar grep input output 'dfs[a-z.]+'
+</code></pre>
+<p>运行结果如下：</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-16-35-image.png" width="90%" loading="lazy">
+</figure>
+
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-17-58-image.png" width="90%" loading="lazy">
+</figure>
+
+<h2 id="补充可选配置">补充：可选配置</h2>
+<h3 id="hdfs-web-ui-配置认证">HDFS Web UI 配置认证</h3>
+<p>HDFS 带有一个可视化的端口号默认为 9870 的 Web UI 界面，这个界面如果没有做防火墙限制的话会暴露在公网上。而该界面又存在着大量的日志和配置信息，直接暴露在公网上不利于系统的安全，所以在这里可以配置一个简单的系统认证功能。步骤如下：</p>
+<ul>
+<li>
+<p>安装 httpd 或安装 httpd-tools</p>
+<pre><code class="language-shell">sudo apt-get install httpd
+</code></pre>
+</li>
+<li>
+<p>安装 nginx：这部分内容较多，不是重点，网上有大量的教程，跟着其中一个进行就行。</p>
+</li>
+<li>
+<p>通过 htpasswd 命令生成用户名和密码数据库文件</p>
+<pre><code class="language-shell">htpasswd -c passwd.db [username]
+</code></pre>
+</li>
+<li>
+<p>查看生成的 db 文件内容</p>
+<pre><code class="language-shell">cat passwd.db
+</code></pre>
+</li>
+<li>
+<p>通过 nginx 代理并设置访问身份验证</p>
+<pre><code class="language-shell"># nginx 配置文件
 vim nginx.conf
-</code></pre><pre><code class=language-textile>server {
+</code></pre>
+<pre><code class="language-textile">server {
     # 使用 9871 端口替代原有的 9870 端口
     listen 9871;
     server_name localhost;
@@ -205,17 +924,497 @@ vim nginx.conf
         proxy_pass http://127.0.0.1:9870
     }
 }
-</code></pre></li><li><p>重新加载 nginx 配置</p><pre><code class=language-shell>cd /usr/local/lighthouse/softwares/nginx/sbin
+</code></pre>
+</li>
+<li>
+<p>重新加载 nginx 配置</p>
+<pre><code class="language-shell">cd /usr/local/lighthouse/softwares/nginx/sbin
 ./nginx -s reload
-</code></pre></li><li><p>启动 nginx</p><pre><code class=language-shell>systemctl start nginx
-</code></pre></li><li><p>到此为止，HDFS Web UI 界面认证设置完成，效果如下：.</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-26-20-15-41-image.png width=90% loading=lazy></figure></li></ul></section><footer class=article-footer><section class=article-tags><a href=/tags/hadoop/>Hadoop</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
-<span>Licensed under CC BY-NC-SA 4.0</span></section></footer><script type=text/javascript src=/js/prism.js async></script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/run-spark-on-hpc/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp loading=lazy data-key=run-spark-on-hpc data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp></div><div class=article-details><h2 class=article-title>在 HPC 上运行 Apache Spark</h2></div></a></article><article class=has-image><a href=/p/matrix-factorization/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp loading=lazy data-key=matrix-factorization data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp></div><div class=article-details><h2 class=article-title>SVD 与 NMF：矩阵分解的两种方法</h2></div></a></article><article class=has-image><a href=/p/flink-native-k8s/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp loading=lazy data-key=flink-native-k8s data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp></div><div class=article-details><h2 class=article-title>基于 Flink Native Kubernetes 的词频统计实验</h2></div></a></article><article class=has-image><a href=/p/spark-on-k8s/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp loading=lazy data-key=spark-on-k8s data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp></div><div class=article-details><h2 class=article-title>基于 Spark on k8s 的词频统计实验</h2></div></a></article><article class=has-image><a href=/p/mapreduce/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp loading=lazy data-key=mapreduce data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp></div><div class=article-details><h2 class=article-title>MapReduce 实验</h2></div></a></article></div></div></aside><script src=https://cdn.bootcdn.net/ajax/libs/twikoo/1.6.20/twikoo.all.min.js></script><div id=tcomment></div><style>.twikoo{background-color:var(--card-background);border-radius:var(--card-border-radius);box-shadow:var(--shadow-l1);padding:var(--card-padding)}:root[data-scheme=dark]{--twikoo-body-text-color-main:rgba(255, 255, 255, 0.9);--twikoo-body-text-color:rgba(255, 255, 255, 0.7)}.twikoo .el-input-group__prepend,.twikoo .tk-action-icon,.twikoo .tk-time,.twikoo .tk-comments-count{color:var(--twikoo-body-text-color)}.twikoo .el-input__inner,.twikoo .el-textarea__inner,.twikoo .tk-preview-container,.twikoo .tk-content,.twikoo .tk-nick,.twikoo .tk-send{color:var(--twikoo-body-text-color-main)}.twikoo .el-button{color:var(--twikoo-body-text-color)!important}.OwO .OwO-body{background-color:var(--body-background)!important;color:var(--body-text-color)!important}</style><script>twikoo.init({envId:"https://comment.cuterwrite.top",el:"#tcomment",lang:"zh-CN"})</script><footer class=site-footer><section class=copyright>&copy;
-2021 -
-2024 cuterwrite</section><section class=running-time>本博客已稳定运行
-<span id=runningdays class=running-days></span></section><section class=totalcount>发表了62篇文章 ·
-总计267.11k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计<br><span>基于 <a href=https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0 target=_blank rel=noopener><b style=color:#9e8f9f>v3.25.0</b></a> 分支版本修改</span><br></section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script type=text/javascript src=/ts/main.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.font.im/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
+</code></pre>
+</li>
+<li>
+<p>启动 nginx</p>
+<pre><code class="language-shell">systemctl start nginx
+</code></pre>
+</li>
+<li>
+<p>到此为止，HDFS Web UI 界面认证设置完成，效果如下：.</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-26-20-15-41-image.png" width="90%" loading="lazy">
+  </figure>
+
+</li>
+</ul>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/hadoop/">Hadoop</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+<script type="text/javascript" src="/js/prism.js" async></script>
+
+    
+</article>
+
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="has-image">
+    <a href="/p/run-spark-on-hpc/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp" loading="lazy" data-key="run-spark-on-hpc" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_afb480a4096d16305dc5696f8072d0c0195413.jpg@1256w_2094h_!web-article-pic-2023-12-30.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">在 HPC 上运行 Apache Spark</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/matrix-factorization/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp" loading="lazy" data-key="matrix-factorization" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/65cf6588fa725014c7cd617ccbeb997f27742e49.jpg@1256w_1880h_!web-article-pic.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">SVD 与 NMF：矩阵分解的两种方法</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/flink-native-k8s/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" loading="lazy" data-key="flink-native-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">基于 Flink Native Kubernetes 的词频统计实验</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/spark-on-k8s/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp" loading="lazy" data-key="spark-on-k8s" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/92.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">基于 Spark on k8s 的词频统计实验</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/mapreduce/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp" loading="lazy" data-key="mapreduce" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210221658.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">MapReduce 实验</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://cdn.bootcdn.net/ajax/libs/twikoo/1.6.20/twikoo.all.min.js"></script>
+<div id="tcomment"></div>
+<style>
+    .twikoo {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+    :root[data-scheme="dark"] {
+        --twikoo-body-text-color-main: rgba(255, 255, 255, 0.9);
+        --twikoo-body-text-color: rgba(255, 255, 255, 0.7);
+    }
+    .twikoo .el-input-group__prepend,
+    .twikoo .tk-action-icon,
+    .twikoo .tk-time,
+    .twikoo .tk-comments-count {
+        color: var(--twikoo-body-text-color);
+    }
+    .twikoo .el-input__inner,
+    .twikoo .el-textarea__inner,
+    .twikoo .tk-preview-container,
+    .twikoo .tk-content,
+    .twikoo .tk-nick,
+    .twikoo .tk-send {
+        color: var(--twikoo-body-text-color-main);
+    }
+    .twikoo .el-button{
+        color: var(--twikoo-body-text-color)!important;
+    }
+    .OwO .OwO-body {
+        background-color: var(--body-background) !important;
+        color: var(--body-text-color) !important;
+    }
+</style><script>
+    twikoo.init({
+        envId: 'https:\/\/comment.cuterwrite.top',
+        el: '#tcomment',lang: 'zh-CN',})
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2021 -
+        
+        2024 cuterwrite
+    </section>
+
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了63篇文章 ·
+        总计268.23k字
+    </section>
+
+
+    <section class="powerby">
+        
+        Welcome to cuterwrite's blog! <br />
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计 <br />
+        
+        <span>基于 <a href="https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0" target="_blank" rel="noopener">
+            <b style="color: #9E8F9F">v3.25.0</b></a> 分支版本修改</span><br />
+        
+    </section>
+
+</footer>
+
+
+<script>
+    let s1 = '2021-4-17'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+
+
+
+
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+        </main>
+    </div>
+    <script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        
+        customFont.href = "https://fonts.font.im/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+
+</body>
+
+</html>

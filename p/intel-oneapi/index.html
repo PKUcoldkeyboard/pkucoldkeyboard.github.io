@@ -1,20 +1,478 @@
-<!doctype html><html lang=zh-cn dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。"><title>记录：安装 Intel® OneAPI-2024.0</title>
-<link rel=canonical href=https://cuterwrite.top/p/intel-oneapi/><link rel=stylesheet href=/scss/style.min.25452a749fc182d17c52bbe26f2be1285ced8ee97190a8430e178d564f8a9c41.css><meta property='og:title' content="记录：安装 Intel® OneAPI-2024.0"><meta property='og:description' content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。"><meta property='og:url' content='https://cuterwrite.top/p/intel-oneapi/'><meta property='og:site_name' content="Cuterwrite's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Intel'><meta property='article:published_time' content='2024-03-08T14:39:00+00:00'><meta property='article:modified_time' content='2024-03-08T14:39:00+00:00'><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp'><meta name=twitter:title content="记录：安装 Intel® OneAPI-2024.0"><meta name=twitter:description content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp'><link rel="shortcut icon" href=/favicon.ico><script async src=https://analytics.cuterwrite.top/uma data-website-id=635c2011-51a9-4ffc-b360-f5572bb94276 data-domains=cuterwrite.top></script></head><body class="article-page
-line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=切换菜单>
-<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
-</a><span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/>Cuterwrite's Blog</a></h1><h2 class=site-description>欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2></div></header><ol class=menu-social><li><a href=https://analytics.cuterwrite.top/share/WcwRpn3giAassmyW/cuterwrite target=_blank title=Analytics rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5H7A2 2 0 005 7v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 17v-5"/><path d="M12 17v-1"/><path d="M15 17v-3"/></svg></a></li><li><a href=https://status.cuterwrite.top target=_blank title=Upptime rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19h16"/><path d="M4 15l4-6 4 2 4-5 4 4"/></svg></a></li><li><a href=/index.xml target=_blank title=RSS rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
-<span>主页 | Home</span></a></li><li><a href=/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
-<span>关于 | About</span></a></li><li><a href=/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-<span>归档 | Archives</span></a></li><li><a href=/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
-<span>搜索 | Search</span></a></li><li><a href=https://cuterwrite.top/image-hosting target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-album"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M12 4v7l2-2 2 2V4"/></svg>
-<span>图册 | Gallery</span></a></li><li><a href=https://draw.cuterwrite.top target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-artboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8m0 1a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H9a1 1 0 01-1-1z"/><path d="M3 8h1"/><path d="M3 16h1"/><path d="M8 3v1"/><path d="M16 3v1"/><path d="M20 8h1"/><path d="M20 16h1"/><path d="M8 20v1"/><path d="M16 20v1"/></svg>
-<span>画板 | Canvas</span></a></li><li><a href=https://it-tools.tech target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tools"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21h4L20 8a1.5 1.5.0 00-4-4L3 17v4"/><path d="M14.5 5.5l4 4"/><path d="M12 8 7 3 3 7l5 5"/><path d="M7 8 5.5 9.5"/><path d="M16 12l5 5-4 4-5-5"/><path d="M16 17l-1.5 1.5"/></svg>
-<span>工具 | Tools</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
-<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
-<span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#base-toolkit>Base Toolkit</a><ul><li><a href=#base-toolkit-安装>Base Toolkit 安装</a></li></ul></li><li><a href=#hpc-toolkit>HPC Toolkit</a><ul><li><a href=#hpc-toolkit-安装>HPC Toolkit 安装</a></li></ul></li><li><a href=#环境配置>环境配置</a></li><li><a href=#运行测试>运行测试</a></li><li><a href=#icx-说明>icx 说明</a><ul><li><a href=#采用-llvm-的好处>采用 LLVM 的好处</a></li></ul></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/intel-oneapi/><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp loading=lazy alt="Featured image of post 记录：安装 Intel® OneAPI-2024.0"></a></div><div class=article-details><header class=article-category><a href=/categories/techstack/ style=background-color:#0177b8;color:#fff>综合技术栈</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/intel-oneapi/>记录：安装 Intel® OneAPI-2024.0</a></h2><h3 class=article-subtitle>OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
-<time class=article-time--published>2024-03-08</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
-<time class=article-time--reading>阅读时长: 4 分钟</time></div><div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M6 10v.01"/><path d="M10 10v.01"/><path d="M14 10v.01"/><path d="M18 10v.01"/><path d="M6 14v.01"/><path d="M18 14v.01"/><path d="M10 14l4 .01"/></svg>
-<time class=article-time--wordcount>字数统计: 1788 字</time></div></footer></div></header><section class=article-content><h1 id=记录安装-intel-oneapi-20240>记录：安装 Intel® OneAPI-2024.0</h1><p>Intel one API 由两个部分组成，前者为基础 Base Toolkit ，后者必须依赖前者，Intel one API HPC Toolkit，也就是要前后依次安装。</p><h2 id=base-toolkit>Base Toolkit</h2><p>Base Toolkit 是 Intel 的一个 API 基础工具包包括以下库和其他库</p><pre><code class=language-text>Intel® oneAPI DPC++/C++ Compiler
+<!DOCTYPE html>
+<html lang="zh-cn" dir="ltr">
+
+<head><script src="/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=livereload" data-no-instant defer></script><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><meta name='description' content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。">
+<title>记录：安装 Intel® OneAPI-2024.0</title>
+
+<link rel='canonical' href='http://localhost:1313/p/intel-oneapi/'>
+
+<link rel="stylesheet" href="/scss/style.min.25452a749fc182d17c52bbe26f2be1285ced8ee97190a8430e178d564f8a9c41.css">
+<meta property='og:title' content="记录：安装 Intel® OneAPI-2024.0">
+<meta property='og:description' content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。">
+<meta property='og:url' content='http://localhost:1313/p/intel-oneapi/'>
+<meta property='og:site_name' content='Cuterwrite&#39;s Blog'>
+<meta property='og:type' content='article'><meta property='article:section' content='Post' /><meta property='article:tag' content='Intel' /><meta property='article:published_time' content='2024-03-08T14:39:00&#43;00:00'/><meta property='article:modified_time' content='2024-03-08T14:39:00&#43;00:00'/><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp' />
+<meta name="twitter:title" content="记录：安装 Intel® OneAPI-2024.0">
+<meta name="twitter:description" content="OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。"><meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content='https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp' />
+    <link rel="shortcut icon" href="/favicon.ico" />
+<script async src="https://analytics.cuterwrite.top/uma"
+        data-website-id="635c2011-51a9-4ffc-b360-f5572bb94276"
+        data-domains="cuterwrite.top"></script>
+</head>
+
+<body class="
+    article-page
+      line-numbers">
+    <script>
+        (function() {
+            const colorSchemeKey = 'StackColorScheme';
+            if(!localStorage.getItem(colorSchemeKey)){
+                localStorage.setItem(colorSchemeKey, "auto");
+            }
+        })();
+    </script><script>
+    (function() {
+        const colorSchemeKey = 'StackColorScheme';
+        const colorSchemeItem = localStorage.getItem(colorSchemeKey);
+        const supportDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches === true;
+
+        if (colorSchemeItem == 'dark' || colorSchemeItem === 'auto' && supportDarkMode) {
+            
+
+            document.documentElement.dataset.scheme = 'dark';
+        } else {
+            document.documentElement.dataset.scheme = 'light';
+        }
+    })();
+</script>
+<div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky ">
+    <button class="hamburger hamburger--spin" type="button" id="toggle-menu" aria-label="切换菜单">
+        <span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+        </span>
+    </button>
+
+    <header>
+        
+            
+            <figure class="site-avatar">
+                <a href="/">
+                
+                    
+
+                    
+                        
+                        <img src="/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png" width="300"
+                            height="300" class="site-logo" loading="lazy" alt="Avatar">
+                    
+                
+                </a>
+                
+                    <span class="emoji">😉</span>
+                
+            </figure>
+            
+        
+
+        <div class="site-meta">
+            <h1 class="site-name"><a href="/">Cuterwrite&#39;s Blog</a></h1>
+            <h2 class="site-description">欢迎来到我的个人博客。我是cuterwrite，一个热爱生活、不断探索的人。在这里，我分享我的想法、经验和学习，希望可以帮助到你，也欢迎你与我分享你的看法。</h2>
+        </div>
+    </header><ol class="menu-social">
+            
+                <li>
+                    <a
+                        href='https://analytics.cuterwrite.top/share/WcwRpn3giAassmyW/cuterwrite'
+                        target="_blank"
+                        title="Analytics"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/>
+  <rect x="9" y="3" width="6" height="4" rx="2"/>
+  <path d="M9 17v-5"/>
+  <path d="M12 17v-1"/>
+  <path d="M15 17v-3"/>
+</svg>
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://status.cuterwrite.top'
+                        target="_blank"
+                        title="Upptime"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19l16 0" /><path d="M4 15l4 -6l4 2l4 -5l4 4" /></svg>
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='/index.xml'
+                        target="_blank"
+                        title="RSS"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="5" cy="19" r="1" />
+  <path d="M4 4a16 16 0 0 1 16 16" />
+  <path d="M4 11a9 9 0 0 1 9 9" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://github.com/PKUcoldkeyboard'
+                        target="_blank"
+                        title="GitHub"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+  <path d="M9 19c-4.3 1.4 -4.3 -2.5 -6 -3m12 5v-3.5c0 -1 .1 -1.4 -.5 -2c2.8 -.3 5.5 -1.4 5.5 -6a4.6 4.6 0 0 0 -1.3 -3.2a4.2 4.2 0 0 0 -.1 -3.2s-1.1 -.3 -3.5 1.3a12.3 12.3 0 0 0 -6.2 0c-2.4 -1.6 -3.5 -1.3 -3.5 -1.3a4.2 4.2 0 0 0 -.1 3.2a4.6 4.6 0 0 0 -1.3 3.2c0 4.6 2.7 5.7 5.5 6c-.6 .6 -.6 1.2 -.5 2v3.5" />
+</svg>
+
+
+
+                        
+                    </a>
+                </li>
+            
+                <li>
+                    <a
+                        href='https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57'
+                        target="_blank"
+                        title="zhihu"
+                        rel="me"
+                    >
+                        
+                        
+                            <svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32">
+    <path d="M341.08 296.26v435.08l46.86 0.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08z m195.5 387.86h-55.88l-55.8 35.02-10.16-34.94-23.8-0.08V343.5h145.64v340.62z m-236.92-188.78H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34 0 0-48.14 0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48 0-31.12 47.24-31.12 47.24h131.16C132.9 642.2 85.66 726.24 0 792.68c40.98 11.7 81.82-1.86 102-19.8 0 0 45.96-41.8 71.18-138.5l107.92 129.88s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-0.18-47.24-15.18-47.24v0.02z m824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86z m-300.18-118.18c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-0.02zM1280 516.7c-39.56 0-261.82 1.86-262.12 1.86v-202c9.62 0 24.84-0.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62 0 0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88v141.84c0 27.94-22.38 43.98-48.96 42.24-28.16 0.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12 0 91.34-34.56 89.78-90.62v-146.64h244.72c19.36 0 17.4-47.56 17.4-47.56l0.06-0.02z" fill="#707070" p-id="21049"></path>
+</svg>
+
+                        
+                    </a>
+                </li>
+            
+        </ol><ol class="menu" id="main-menu">
+        
+        
+        
+        <li >
+            <a href='/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <polyline points="5 12 3 12 12 3 21 12 19 12" />
+  <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7" />
+  <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6" />
+</svg>
+
+
+
+                
+                <span>主页 | Home</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/about/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="7" r="4" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+</svg>
+
+
+
+                
+                <span>关于 | About</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/archives/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <rect x="3" y="4" width="18" height="4" rx="2" />
+  <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-10" />
+  <line x1="10" y1="12" x2="14" y2="12" />
+</svg>
+
+
+
+                
+                <span>归档 | Archives</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='/search/' >
+                
+                
+                
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="10" cy="10" r="7" />
+  <line x1="21" y1="21" x2="15" y2="15" />
+</svg>
+
+
+
+                
+                <span>搜索 | Search</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://cuterwrite.top/image-hosting' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-album"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M12 4v7l2 -2l2 2v-7" /></svg>
+
+                
+                <span>图册 | Gallery</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://draw.cuterwrite.top' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-artboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" /><path d="M3 8l1 0" /><path d="M3 16l1 0" /><path d="M8 3l0 1" /><path d="M16 3l0 1" /><path d="M20 8l1 0" /><path d="M20 16l1 0" /><path d="M8 20l0 1" /><path d="M16 20l0 1" /></svg>
+
+                
+                <span>画板 | Canvas</span>
+            </a>
+        </li>
+        
+        
+        <li >
+            <a href='https://it-tools.tech' target="_blank">
+                
+                
+                
+                    <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-tools"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21h4l13 -13a1.5 1.5 0 0 0 -4 -4l-13 13v4" /><path d="M14.5 5.5l4 4" /><path d="M12 8l-5 -5l-4 4l5 5" /><path d="M7 8l-1.5 1.5" /><path d="M16 12l5 5l-4 4l-5 -5" /><path d="M16 17l-1.5 1.5" /></svg>
+
+                
+                <span>工具 | Tools</span>
+            </a>
+        </li>
+        
+        <li class="menu-bottom-section">
+            <ol class="menu">
+
+                
+                    <li id="dark-mode-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="8" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="16" cy="12" r="2" />
+  <rect x="2" y="6" width="20" height="12" rx="6" />
+</svg>
+
+
+
+                        <span>暗色模式</span>
+                    </li>
+                
+            </ol>
+        </li>
+    </ol>
+</aside>
+
+    <aside class="sidebar right-sidebar sticky">
+        
+            
+                
+    <section class="widget archives">
+        <div class="widget-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <line x1="5" y1="9" x2="19" y2="9" />
+  <line x1="5" y1="15" x2="19" y2="15" />
+  <line x1="11" y1="4" x2="7" y2="20" />
+  <line x1="17" y1="4" x2="13" y2="20" />
+</svg>
+
+
+
+        </div>
+        <h2 class="widget-title section-title">目录</h2>
+        
+        <div class="widget--toc">
+            <nav id="TableOfContents">
+  <ul>
+    <li><a href="#base-toolkit">Base Toolkit</a>
+      <ul>
+        <li><a href="#base-toolkit-安装">Base Toolkit 安装</a></li>
+      </ul>
+    </li>
+    <li><a href="#hpc-toolkit">HPC Toolkit</a>
+      <ul>
+        <li><a href="#hpc-toolkit-安装">HPC Toolkit 安装</a></li>
+      </ul>
+    </li>
+    <li><a href="#环境配置">环境配置</a></li>
+    <li><a href="#运行测试">运行测试</a></li>
+    <li><a href="#icx-说明">icx 说明</a>
+      <ul>
+        <li><a href="#采用-llvm-的好处">采用 LLVM 的好处</a></li>
+      </ul>
+    </li>
+  </ul>
+</nav>
+        </div>
+    </section>
+
+            
+        
+    </aside>
+
+
+        <main class="main full-width">
+    <article class="has-image main-article">
+    <header class="article-header">
+        <div class="article-image">
+            <a href="/p/intel-oneapi/">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp" loading="lazy" alt="Featured image of post 记录：安装 Intel® OneAPI-2024.0" />
+                
+            </a>
+        </div>
+    
+
+    <div class="article-details">
+    
+    <header class="article-category">
+        
+            <a href="/categories/techstack/" style="background-color: #0177b8; color: #fff;">
+                综合技术栈
+            </a>
+        
+    </header>
+    
+
+    <div class="article-title-wrapper">
+        <h2 class="article-title">
+            <a href="/p/intel-oneapi/">记录：安装 Intel® OneAPI-2024.0</a>
+        </h2>
+
+        
+        <h3 class="article-subtitle">
+            OneAPI 是一种开放且基于标准的规范，支持多种架构类型，包括但不限于 GPU、CPU 和 FPGA。该规范具有直接编程和基于 API 的编程范式，Intel® OneAPI 则是一个软件套件，包含了多种工具和库，用于支持 OneAPI 规范。本文记录了在 CentOS 7.6 上安装 Intel® OneAPI-2024.0 的过程。
+        </h3>
+        
+    </div>
+
+    
+    
+    
+    
+    
+    <footer class="article-time">
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <path d="M11.795 21h-6.795a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v4" />
+  <circle cx="18" cy="18" r="4" />
+  <path d="M15 3v4" />
+  <path d="M7 3v4" />
+  <path d="M3 11h16" />
+  <path d="M18 16.496v1.504l1 1" />
+</svg>
+                <time class="article-time--published">2024-03-08</time>
+            </div>
+        
+
+        
+            <div>
+                <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <polyline points="12 7 12 12 15 15" />
+</svg>
+
+
+
+                <time class="article-time--reading">
+                    阅读时长: 4 分钟
+                </time>
+            </div>
+        
+
+        
+            <div>
+                <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 0 1 2 -2h16a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-16a2 2 0 0 1 -2 -2z" /><path d="M6 10l0 .01" /><path d="M10 10l0 .01" /><path d="M14 10l0 .01" /><path d="M18 10l0 .01" /><path d="M6 14l0 .01" /><path d="M18 14l0 .01" /><path d="M10 14l4 .01" /></svg>
+
+                <time class="article-time--wordcount">
+                    字数统计: 1788 字
+                </time>
+            </div>
+        
+    </footer>
+    
+
+    
+</div>
+
+</header>
+
+    <section class="article-content">
+    
+    
+    <h1 id="记录安装-intel-oneapi-20240">记录：安装 Intel® OneAPI-2024.0</h1>
+<p>Intel one API 由两个部分组成，前者为基础 Base Toolkit ，后者必须依赖前者，Intel one API HPC Toolkit，也就是要前后依次安装。</p>
+<h2 id="base-toolkit">Base Toolkit</h2>
+<p>Base Toolkit 是 Intel 的一个 API 基础工具包包括以下库和其他库</p>
+<pre><code class="language-text">Intel® oneAPI DPC++/C++ Compiler
 Intel® DPC++ Compatibility Tool
 Intel® oneAPI DPC++ Library
 Intel® oneAPI Math Kernel Library
@@ -28,20 +486,83 @@ Intel® Advisor
 Intel® Distribution for GDB*
 Intel® Distribution for Python* (separate download required)
 Intel® FPGA Add-on for oneAPI Base Toolkit (separate download required)
-</code></pre><h3 id=base-toolkit-安装>Base Toolkit 安装</h3><ol><li>下载安装包</li></ol><pre><code class=language-bash>$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/163da6e4-56eb-4948-aba3-debcec61c064/l_BaseKit_p_2024.0.1.46_offline.sh
-</code></pre><ol start=2><li>安装</li></ol><pre><code class=language-bash>$ chmod +x l_BaseKit_p_2024.0.1.46_offline.sh
+</code></pre>
+<h3 id="base-toolkit-安装">Base Toolkit 安装</h3>
+<ol>
+<li>下载安装包</li>
+</ol>
+<pre><code class="language-bash">$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/163da6e4-56eb-4948-aba3-debcec61c064/l_BaseKit_p_2024.0.1.46_offline.sh
+</code></pre>
+<ol start="2">
+<li>安装</li>
+</ol>
+<pre><code class="language-bash">$ chmod +x l_BaseKit_p_2024.0.1.46_offline.sh
 $ sudo ./l_BaseKit_p_2024.0.1.46_offline.sh
-</code></pre><ul><li>如果自定义安装在用户目录，就不需要 root 权限</li></ul><pre><code>./l_BaseKit_p_2024.0.1.46_offline.sh
-</code></pre><p>然后将启动一个图形安装界面，继续操作：</p><p><strong>（1）选择 Accept & customize</strong><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Accepet-2024-03-09.png alt=OneAPI-Accepet-2024-03-09 width=auto loading=lazy></figure></p><p><strong>（2）选择安装的组件</strong><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-2-2024-03-09.png alt=OneAPI-Select-2-2024-03-09 width=auto loading=lazy></figure></p><p><strong>（3）选择安装的路径</strong><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-3-2024-03-09.png alt=OneAPI-Select-3-2024-03-09 width=auto loading=lazy></figure></p><p><strong>（4）选择 Next</strong><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-4-2024-03-09.png alt=OneAPI-Select-4-2024-03-09 width=auto loading=lazy></figure></p><p><strong>（5）选择 2 然后开始安装</strong><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-5-2024-03-09.png alt=OneAPI-Select-5-2024-03-09 width=auto loading=lazy></figure></p><p>接下来等待安装完成即可。</p><h2 id=hpc-toolkit>HPC Toolkit</h2><p>运行基于 Base Toolkit ，这个必须作为后者安装</p><pre><code class=language-text>Intel® Fortran Compiler
+</code></pre>
+<ul>
+<li>如果自定义安装在用户目录，就不需要 root 权限</li>
+</ul>
+<pre><code>./l_BaseKit_p_2024.0.1.46_offline.sh
+</code></pre>
+<p>然后将启动一个图形安装界面，继续操作：</p>
+<p><strong>（1）选择 Accept &amp; customize</strong>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Accepet-2024-03-09.png"
+    alt="OneAPI-Accepet-2024-03-09" width="auto" loading="lazy">
+</figure>
+</p>
+<p><strong>（2）选择安装的组件</strong>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-2-2024-03-09.png"
+    alt="OneAPI-Select-2-2024-03-09" width="auto" loading="lazy">
+</figure>
+</p>
+<p><strong>（3）选择安装的路径</strong>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-3-2024-03-09.png"
+    alt="OneAPI-Select-3-2024-03-09" width="auto" loading="lazy">
+</figure>
+</p>
+<p><strong>（4）选择 Next</strong>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-4-2024-03-09.png"
+    alt="OneAPI-Select-4-2024-03-09" width="auto" loading="lazy">
+</figure>
+</p>
+<p><strong>（5）选择 2 然后开始安装</strong>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-5-2024-03-09.png"
+    alt="OneAPI-Select-5-2024-03-09" width="auto" loading="lazy">
+</figure>
+</p>
+<p>接下来等待安装完成即可。</p>
+<h2 id="hpc-toolkit">HPC Toolkit</h2>
+<p>运行基于 Base Toolkit ，这个必须作为后者安装</p>
+<pre><code class="language-text">Intel® Fortran Compiler
 Intel® Fortran Compiler Classic
 Intel® Inspector
 Intel® MPI Library
 Intel® Trace Analyzer and Collector
-</code></pre><h3 id=hpc-toolkit-安装>HPC Toolkit 安装</h3><ol><li>下载安装包</li></ol><pre><code class=language-bash>$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/67c08c98-f311-4068-8b85-15d79c4f277a/l_HPCKit_p_2024.0.1.38_offline.sh
-</code></pre><ol start=2><li>安装</li></ol><pre><code class=language-bash>$ chmod +x l_HPCKit_p_2024.0.1.38_offline.sh
+</code></pre>
+<h3 id="hpc-toolkit-安装">HPC Toolkit 安装</h3>
+<ol>
+<li>下载安装包</li>
+</ol>
+<pre><code class="language-bash">$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/67c08c98-f311-4068-8b85-15d79c4f277a/l_HPCKit_p_2024.0.1.38_offline.sh
+</code></pre>
+<ol start="2">
+<li>安装</li>
+</ol>
+<pre><code class="language-bash">$ chmod +x l_HPCKit_p_2024.0.1.38_offline.sh
 $ sudo ./l_HPCKit_p_2024.0.1.38_offline.sh
-</code></pre><ul><li>如果自定义安装在用户目录，就不需要 root 权限</li></ul><pre><code>./l_HPCKit_p_2024.0.1.38_offline.sh
-</code></pre><p>必须安装的库文件： Intel® MPI Library Intel® Fortran Compiler (Beta) & Intel® Fortran Compiler Classic Intel® oneAPI DPC++/C++ Compiler & Intel® C++ Compiler Classic</p><p>安装过程与 Base Toolkit 类似，不再赘述。</p><h2 id=环境配置>环境配置</h2><p>安装完成后，需要配置环境变量，以便在终端中使用 Intel® oneAPI 工具。</p><p>在 HPC 环境中，使用 <code>modulefile</code> 来管理环境变量，可以使用 <code>module</code> 命令来加载环境变量。</p><p>以下是参考的 <code>modulefile</code> 文件，可以根据自己的安装路径进行修改。</p><pre><code class=language-modulefile>#%Module1.0#####################################################################
+</code></pre>
+<ul>
+<li>如果自定义安装在用户目录，就不需要 root 权限</li>
+</ul>
+<pre><code>./l_HPCKit_p_2024.0.1.38_offline.sh
+</code></pre>
+<p>必须安装的库文件： Intel® MPI Library Intel® Fortran Compiler (Beta) &amp; Intel® Fortran Compiler Classic Intel® oneAPI DPC++/C++ Compiler &amp; Intel® C++ Compiler Classic</p>
+<p>安装过程与 Base Toolkit 类似，不再赘述。</p>
+<h2 id="环境配置">环境配置</h2>
+<p>安装完成后，需要配置环境变量，以便在终端中使用 Intel® oneAPI 工具。</p>
+<p>在 HPC 环境中，使用 <code>modulefile</code> 来管理环境变量，可以使用 <code>module</code> 命令来加载环境变量。</p>
+<p>以下是参考的 <code>modulefile</code> 文件，可以根据自己的安装路径进行修改。</p>
+<pre><code class="language-modulefile">#%Module1.0#####################################################################
 ##
 ## modules modulefile
 ##
@@ -119,9 +640,16 @@ prepend-path	INTEL_PYTHONHOME	${prefix}/debugger/2024.0/dep
 prepend-path	INTEL_LICENSE_FILE	/opt/intel/licenses:/root/intel/licenses
 prepend-path	CPATH			${prefix}/tbb/2021.11/env/../include:${prefix}/mpi/2021.11//include:${prefix}/mkl/2024.0/include:${prefix}/ipp/2021.10/include:${prefix}/ippcp/2021.9/include:${prefix}/ipp/2021.10/include:${prefix}/dpl/2022.3/linux/include:${prefix}/dpcpp-ct/2024.0/include:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/include:${prefix}/dev-utilities/2024.0/include:${prefix}/cdal/2024.0/include:${prefix}/compiler/2024.0/lib/oclfpga/include:${prefix}/ccl/2021.11/include/cpu_gpu_dpcpp
 #prepend-path	CPATH			${prefix}/tbb/2021.11/env/../include:${prefix}/mkl/2024.0/include:${prefix}/ipp/2021.10/include:${prefix}/ippcp/2021.9/include:${prefix}/ipp/2021.10/include:${prefix}/dpl/2022.3/linux/include:${prefix}/dpcpp-ct/2024.0/include:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/include:${prefix}/dev-utilities/2024.0/include:${prefix}/cdal/2024.0/include:${prefix}/compiler/2024.0/lib/oclfpga/include:${prefix}/ccl/2021.11/include/cpu_gpu_dpcpp
-</code></pre><h2 id=运行测试>运行测试</h2><p>通过 <code>module load</code> 命令加载环境变量</p><pre><code class=language-bash>$ module load intel/oneapi2024.0
-</code></pre><p>测试是否安装成功</p><pre><code class=language-bash>$ icx -v
-</code></pre><p>如果输出版本信息，则安装成功。</p><pre><code class=language-bash>Intel(R) oneAPI DPC++/C++ Compiler 2024.0.2 (2024.0.2.20231213)
+</code></pre>
+<h2 id="运行测试">运行测试</h2>
+<p>通过 <code>module load</code> 命令加载环境变量</p>
+<pre><code class="language-bash">$ module load intel/oneapi2024.0
+</code></pre>
+<p>测试是否安装成功</p>
+<pre><code class="language-bash">$ icx -v
+</code></pre>
+<p>如果输出版本信息，则安装成功。</p>
+<pre><code class="language-bash">Intel(R) oneAPI DPC++/C++ Compiler 2024.0.2 (2024.0.2.20231213)
 Target: x86_64-unknown-linux-gnu
 Thread model: posix
 InstalledDir: /opt/software/intel/oneapi2024.0/compiler/2024.0/bin/compiler
@@ -131,17 +659,529 @@ Selected GCC installation: /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-
 Candidate multilib: .;@m64
 Candidate multilib: 32;@m32
 Selected multilib: .;@m64
-</code></pre><p>继续测试 MPI</p><pre><code class=language-bash>$ mpirun --version
-</code></pre><p>如果输出版本信息，则安装成功。</p><pre><code class=language-bash>Intel(R) MPI Library for Linux* OS, Version 2021.11 Build 20231005 (id: 74c4a23)
+</code></pre>
+<p>继续测试 MPI</p>
+<pre><code class="language-bash">$ mpirun --version
+</code></pre>
+<p>如果输出版本信息，则安装成功。</p>
+<pre><code class="language-bash">Intel(R) MPI Library for Linux* OS, Version 2021.11 Build 20231005 (id: 74c4a23)
 Copyright 2003-2023, Intel Corporation.
-</code></pre><h2 id=icx-说明>icx 说明</h2><blockquote><p><strong>Intel® oneAPI DPC++/C++ Compiler (icx)</strong> is Intel nextgen compiler based on Clang /LLVM technology plus Intel proprietary optimizations and code generation.</p><span class=cite><span>― </span><span>Intel®, </span><a href=https://www.intel.cn/content/www/cn/zh/developer/articles/technical/adoption-of-llvm-complete-icx.html><cite>Intel® C/C++ Compilers Complete Adoption of LLVM</cite></a></span></blockquote><p>icx 是基于 Clang /LLVM 技术的 Intel 下一代编译器，加上 Intel 专有的优化和代码生成。</p><p>LLVM 帮助实现了为英特尔架构提供更加优秀的 C/C++编译器这一目标。最新的英特尔 C/C++编译器使用 LLVM 架构，可提供更快的编译时间、更好的优化、增强的标准支持以及对 GPU 和 FPGA 负载转移（offloading）的支持。</p><h3 id=采用-llvm-的好处>采用 LLVM 的好处</h3><p>LLVM 开源项目是模块化和可重用的编译器和一系列工具链技术的集合，整个项目支持多种处理器架构和编程语言。Clang 开源项目提供了一个 C/C++前端，为 LLVM 项目支持了最新的语言标准。包括 Clang 在内，LLVM 是由一个庞大且非常活跃的开发社区维护的。</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09.webp alt=v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09 width=auto loading=lazy></figure><p>采用 LLVM 的好处有很多，第一条要说的是更快的构建时间。众所周知，Clang 是很快的！我们使用英特尔 oneAPI 2021.3 工具包中的英特尔 C/C++编译器时，测得构建时间减少了 14％。除了减少构建时间外，采用 Clang 使我们可以从社区支持最新 C++语言标准的一系列成果中受益，并贡献成果来反哺社区。</p><p>英特尔为开源项目提供贡献和支持的历史颇为悠久，其中向 LLVM 做出贡献就有十年时间了。我们今天的主动合作行为包括了优化报告补充、扩大的浮点模型支持，以及向量增强。英特尔直接对 LLVM 项目做出贡献，也有一个临时区域（英特尔 LLVM 技术项目），针对 SYCL 支持。</p><p>在英特尔架构上，英特尔 C/C++编译器预期能提供比基础 Clang+LLVM 编译器更高的性能。接下来英特尔 C/C++编译器都会是采用了 LLVM 开源基础架构的版本（icx）。我们会继续之前的长期努力，持续为 Clang 和 LLVM 项目做出贡献，包括为它们提供优化。并非所有的优化技术都会被上游采纳，有时是因为它们太新了，有时因为它们过于针对英特尔架构。这是可以预料的，并且与其他已经采用 LLVM 的编译器是同样的情况。</p><figure><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09.webp alt=v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09 width=auto loading=lazy></figure><p>英特尔 C/C++编译器一直都在提供最优秀的性能。经典版本的英特尔 C/C++编译器取得了对 GCC 18％的优势，而基于 LLVM 的英特尔 C/C++编译器取得了 41％的优势。</p></section><footer class=article-footer><section class=article-tags><a href=/tags/intel/>Intel</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
-<span>Licensed under CC BY-NC-SA 4.0</span></section></footer><script type=text/javascript src=/js/prism.js async></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css integrity="sha256-3574TpfThVfeAhg+I4+N39EJiLN3QUkuEsMVe8hWAR4=" crossorigin=anonymous><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js integrity="sha256-1PDqJcTMt5hrIp1kJ3lLcGPPMgmwN2z1pkv8TdeRjJU=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js integrity="sha256-nLjaz8CGwpZsnsS6VPSi3EO3y+KzPOwaJ0PYhsf7R6c=" crossorigin=anonymous defer></script><script>window.addEventListener("DOMContentLoaded",()=>{renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:!0},{left:"$",right:"$",display:!1},{left:"\\(",right:"\\)",display:!1},{left:"\\[",right:"\\]",display:!0}],ignoredClasses:["gist"]})})</script></article><aside class=related-content--wrapper><h2 class=section-title>相关文章</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/thead-tools/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp loading=lazy data-key=thead-tools data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp></div><div class=article-details><h2 class=article-title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h2></div></a></article><article class=has-image><a href=/p/gcc-13-source-install/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp loading=lazy data-key=gcc-13-source-install data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp></div><div class=article-details><h2 class=article-title>GCC-13.2.0 编译安装</h2></div></a></article><article class=has-image><a href=/p/processing-avif-heic-images-pillow-plugins/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp loading=lazy data-key=processing-avif-heic-images-pillow-plugins data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp></div><div class=article-details><h2 class=article-title>使用 Pillow + Plugin 处理 AVIF 和 HEIC 图片</h2></div></a></article><article class=has-image><a href=/p/ring-buffer/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp loading=lazy data-key=ring-buffer data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp></div><div class=article-details><h2 class=article-title>Ring buffer 详解</h2></div></a></article><article class=has-image><a href=/p/false-sharing/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp loading=lazy data-key=false-sharing data-hash=https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp></div><div class=article-details><h2 class=article-title>性能刺客之伪共享</h2></div></a></article></div></div></aside><script src=https://cdn.bootcdn.net/ajax/libs/twikoo/1.6.20/twikoo.all.min.js></script><div id=tcomment></div><style>.twikoo{background-color:var(--card-background);border-radius:var(--card-border-radius);box-shadow:var(--shadow-l1);padding:var(--card-padding)}:root[data-scheme=dark]{--twikoo-body-text-color-main:rgba(255, 255, 255, 0.9);--twikoo-body-text-color:rgba(255, 255, 255, 0.7)}.twikoo .el-input-group__prepend,.twikoo .tk-action-icon,.twikoo .tk-time,.twikoo .tk-comments-count{color:var(--twikoo-body-text-color)}.twikoo .el-input__inner,.twikoo .el-textarea__inner,.twikoo .tk-preview-container,.twikoo .tk-content,.twikoo .tk-nick,.twikoo .tk-send{color:var(--twikoo-body-text-color-main)}.twikoo .el-button{color:var(--twikoo-body-text-color)!important}.OwO .OwO-body{background-color:var(--body-background)!important;color:var(--body-text-color)!important}</style><script>twikoo.init({envId:"https://comment.cuterwrite.top",el:"#tcomment",lang:"zh-CN"})</script><footer class=site-footer><section class=copyright>&copy;
-2021 -
-2024 cuterwrite</section><section class=running-time>本博客已稳定运行
-<span id=runningdays class=running-days></span></section><section class=totalcount>发表了62篇文章 ·
-总计267.11k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计<br><span>基于 <a href=https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0 target=_blank rel=noopener><b style=color:#9e8f9f>v3.25.0</b></a> 分支版本修改</span><br></section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-<button class="pswp__button pswp__button--share" title=Share></button>
-<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-</button>
-<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script type=text/javascript src=/ts/main.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.font.im/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
+</code></pre>
+<h2 id="icx-说明">icx 说明</h2>
+<blockquote>
+    <p><strong>Intel® oneAPI DPC++/C++ Compiler (icx)</strong> is Intel nextgen compiler based on Clang /LLVM technology plus Intel proprietary optimizations and code generation.</p><span class="cite"><span>― </span><span>Intel®, </span><a href="https://www.intel.cn/content/www/cn/zh/developer/articles/technical/adoption-of-llvm-complete-icx.html"><cite>Intel® C/C&#43;&#43; Compilers Complete Adoption of LLVM</cite></a></span></blockquote>
+<p>icx 是基于 Clang /LLVM 技术的 Intel 下一代编译器，加上 Intel 专有的优化和代码生成。</p>
+<p>LLVM 帮助实现了为英特尔架构提供更加优秀的 C/C++编译器这一目标。最新的英特尔 C/C++编译器使用 LLVM 架构，可提供更快的编译时间、更好的优化、增强的标准支持以及对 GPU 和 FPGA 负载转移（offloading）的支持。</p>
+<h3 id="采用-llvm-的好处">采用 LLVM 的好处</h3>
+<p>LLVM 开源项目是模块化和可重用的编译器和一系列工具链技术的集合，整个项目支持多种处理器架构和编程语言。Clang 开源项目提供了一个 C/C++前端，为 LLVM 项目支持了最新的语言标准。包括 Clang 在内，LLVM 是由一个庞大且非常活跃的开发社区维护的。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09.webp"
+    alt="v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09" width="auto" loading="lazy">
+</figure>
+
+<p>采用 LLVM 的好处有很多，第一条要说的是更快的构建时间。众所周知，Clang 是很快的！我们使用英特尔 oneAPI 2021.3 工具包中的英特尔 C/C++编译器时，测得构建时间减少了 14％。除了减少构建时间外，采用 Clang 使我们可以从社区支持最新 C++语言标准的一系列成果中受益，并贡献成果来反哺社区。</p>
+<p>英特尔为开源项目提供贡献和支持的历史颇为悠久，其中向 LLVM 做出贡献就有十年时间了。我们今天的主动合作行为包括了优化报告补充、扩大的浮点模型支持，以及向量增强。英特尔直接对 LLVM 项目做出贡献，也有一个临时区域（英特尔 LLVM 技术项目），针对 SYCL 支持。</p>
+<p>在英特尔架构上，英特尔 C/C++编译器预期能提供比基础 Clang+LLVM 编译器更高的性能。接下来英特尔 C/C++编译器都会是采用了 LLVM 开源基础架构的版本（icx）。我们会继续之前的长期努力，持续为 Clang 和 LLVM 项目做出贡献，包括为它们提供优化。并非所有的优化技术都会被上游采纳，有时是因为它们太新了，有时因为它们过于针对英特尔架构。这是可以预料的，并且与其他已经采用 LLVM 的编译器是同样的情况。</p>
+<figure><img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09.webp"
+    alt="v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09" width="auto" loading="lazy">
+</figure>
+
+<p>英特尔 C/C++编译器一直都在提供最优秀的性能。经典版本的英特尔 C/C++编译器取得了对 GCC 18％的优势，而基于 LLVM 的英特尔 C/C++编译器取得了 41％的优势。</p>
+
+</section>
+
+
+    <footer class="article-footer">
+    
+    <section class="article-tags">
+        
+            <a href="/tags/intel/">Intel</a>
+        
+    </section>
+
+
+    
+    <section class="article-copyright">
+        <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <path stroke="none" d="M0 0h24v24H0z"/>
+  <circle cx="12" cy="12" r="9" />
+  <path d="M14.5 9a3.5 4 0 1 0 0 6" />
+</svg>
+
+
+
+        <span>Licensed under CC BY-NC-SA 4.0</span>
+    </section>
+    </footer>
+
+<script type="text/javascript" src="/js/prism.js" async></script>
+
+    
+        <link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.css"integrity="sha256-3574TpfThVfeAhg&#43;I4&#43;N39EJiLN3QUkuEsMVe8hWAR4="crossorigin="anonymous"
+            ><script 
+                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/katex.min.js"integrity="sha256-1PDqJcTMt5hrIp1kJ3lLcGPPMgmwN2z1pkv8TdeRjJU="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.bootcdn.net/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js"integrity="sha256-nLjaz8CGwpZsnsS6VPSi3EO3y&#43;KzPOwaJ0PYhsf7R6c="crossorigin="anonymous"
+                defer
+                >
+            </script><script>
+    window.addEventListener("DOMContentLoaded", () => {
+        renderMathInElement(document.body, {
+            delimiters: [
+                { left: "$$", right: "$$", display: true },
+                { left: "$", right: "$", display: false },
+                { left: "\\(", right: "\\)", display: false },
+                { left: "\\[", right: "\\]", display: true }
+            ],
+            ignoredClasses: ["gist"]
+        });})
+</script>
+
+    
+</article>
+
+
+    
+
+    
+
+<aside class="related-content--wrapper">
+    <h2 class="section-title">相关文章</h2>
+    <div class="related-content">
+        <div class="flex article-list--tile">
+            
+                
+<article class="has-image">
+    <a href="/p/thead-tools/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" loading="lazy" data-key="thead-tools" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">搭建玄铁 900 系列工具链与 xuantie-qemu 环境</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/gcc-13-source-install/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp" loading="lazy" data-key="gcc-13-source-install" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped-2024-01-30.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">GCC-13.2.0 编译安装</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/processing-avif-heic-images-pillow-plugins/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp" loading="lazy" data-key="processing-avif-heic-images-pillow-plugins" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/img/4674616682ccadfd81f2dc86c6241f23195413.jpg@1256w_704h_!web-article-pic-2023-12-22-2023-12-31.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">使用 Pillow &#43; Plugin 处理 AVIF 和 HEIC 图片</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/ring-buffer/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp" loading="lazy" data-key="ring-buffer" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/9fd865ce11924381a127462463ae2234-2023-12-02.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">Ring buffer 详解</h2>
+        </div>
+    </a>
+</article>
+
+            
+                
+<article class="has-image">
+    <a href="/p/false-sharing/">
+        
+        
+            <div class="article-image">
+                
+                    <img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp" loading="lazy" data-key="false-sharing" data-hash="https://cuterwrite-1302252842.file.myqcloud.com/blog/6c3f8961290e41f894f5a1cbb768aba9-2023-12-02.webp"/>
+                
+            </div>
+        
+
+        <div class="article-details">
+            <h2 class="article-title">性能刺客之伪共享</h2>
+        </div>
+    </a>
+</article>
+
+            
+        </div>
+    </div>
+</aside>
+
+     
+    
+        
+    <script src="https://cdn.bootcdn.net/ajax/libs/twikoo/1.6.20/twikoo.all.min.js"></script>
+<div id="tcomment"></div>
+<style>
+    .twikoo {
+        background-color: var(--card-background);
+        border-radius: var(--card-border-radius);
+        box-shadow: var(--shadow-l1);
+        padding: var(--card-padding);
+    }
+    :root[data-scheme="dark"] {
+        --twikoo-body-text-color-main: rgba(255, 255, 255, 0.9);
+        --twikoo-body-text-color: rgba(255, 255, 255, 0.7);
+    }
+    .twikoo .el-input-group__prepend,
+    .twikoo .tk-action-icon,
+    .twikoo .tk-time,
+    .twikoo .tk-comments-count {
+        color: var(--twikoo-body-text-color);
+    }
+    .twikoo .el-input__inner,
+    .twikoo .el-textarea__inner,
+    .twikoo .tk-preview-container,
+    .twikoo .tk-content,
+    .twikoo .tk-nick,
+    .twikoo .tk-send {
+        color: var(--twikoo-body-text-color-main);
+    }
+    .twikoo .el-button{
+        color: var(--twikoo-body-text-color)!important;
+    }
+    .OwO .OwO-body {
+        background-color: var(--body-background) !important;
+        color: var(--body-text-color) !important;
+    }
+</style><script>
+    twikoo.init({
+        envId: 'https:\/\/comment.cuterwrite.top',
+        el: '#tcomment',lang: 'zh-CN',})
+</script>
+
+    
+
+    <footer class="site-footer">
+    <section class="copyright">
+        &copy;
+        
+        2021 -
+        
+        2024 cuterwrite
+    </section>
+
+    
+    <section class="running-time">
+        本博客已稳定运行
+        <span id="runningdays" class="running-days"></span>
+    </section>
+
+    
+    <section class="totalcount">
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        发表了63篇文章 ·
+        总计268.23k字
+    </section>
+
+
+    <section class="powerby">
+        
+        Welcome to cuterwrite's blog! <br />
+        使用 <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a> 构建 <br />
+        主题 <b><a href="https://github.com/CaiJimmy/hugo-theme-stack" target="_blank" rel="noopener"
+                data-version="3.17.0">Stack</a></b> 由 <a href="https://jimmycai.com" target="_blank" rel="noopener">Jimmy</a> 设计 <br />
+        
+        <span>基于 <a href="https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0" target="_blank" rel="noopener">
+            <b style="color: #9E8F9F">v3.25.0</b></a> 分支版本修改</span><br />
+        
+    </section>
+
+</footer>
+
+
+<script>
+    let s1 = '2021-4-17'; 
+    s1 = new Date(s1.replace(/-/g, "/"));
+    let s2 = new Date();
+    let timeDifference = s2.getTime() - s1.getTime();
+
+    let days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+    let hours = Math.floor((timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    let minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+
+    let result = days + "天" + hours + "小时" + minutes + "分钟";
+    document.getElementById('runningdays').innerHTML = result;
+</script>
+
+
+
+
+
+
+    
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    
+    <div class="pswp__bg"></div>
+
+    
+    <div class="pswp__scroll-wrap">
+
+        
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                
+                
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.js"integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo="crossorigin="anonymous"
+                defer
+                >
+            </script><script 
+                src="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe-ui-default.min.js"integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU="crossorigin="anonymous"
+                defer
+                >
+            </script><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/default-skin/default-skin.min.css"crossorigin="anonymous"
+            ><link 
+                rel="stylesheet" 
+                href="https://cdn.bootcdn.net/ajax/libs/photoswipe/4.1.3/photoswipe.min.css"crossorigin="anonymous"
+            >
+
+        </main>
+    </div>
+    <script type="text/javascript" src="/ts/main.js" defer></script>
+<script>
+    (function () {
+        const customFont = document.createElement('link');
+        
+        customFont.href = "https://fonts.font.im/css2?family=Lato:wght@300;400;700&display=swap";
+
+        customFont.type = "text/css";
+        customFont.rel = "stylesheet";
+
+        document.head.appendChild(customFont);
+    }());
+</script>
+
+
+</body>
+
+</html>

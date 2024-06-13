@@ -1,304 +1,327 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Zookeeper on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/zookeeper/</link><description>Recent content in Zookeeper on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 21 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/zookeeper/index.xml" rel="self" type="application/rss+xml"/><item><title>Zookeeper on k8s 部署实验</title><link>https://cuterwrite.top/p/zookeeper-on-k8s/</link><pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/zookeeper-on-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp" alt="Featured image of post Zookeeper on k8s 部署实验" />&lt;h1 id="zookeeper-on-k8s-部署实验">Zookeeper on k8s 部署实验&lt;/h1>
-&lt;h2 id="1-简介">1 简介&lt;/h2>
-&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
-&lt;p>已经使用 Kuboard Spary 搭建好 Kubernetes 集群和 Kuboard，使用的软件如下：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>名称&lt;/th>
-&lt;th>版本&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>kuboard spary&lt;/td>
-&lt;td>v1.2.3-amd64&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>kubernetes&lt;/td>
-&lt;td>v1.25.5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>zookeeper&lt;/td>
-&lt;td>3.8.0&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
-&lt;ul>
-&lt;li>Zookeeper（三台 4 核 8G 的 Ubuntu20.04 服务器）&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>主机名&lt;/th>
-&lt;th>IP&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>node1&lt;/td>
-&lt;td>192.168.0.6&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node2&lt;/td>
-&lt;td>192.168.0.7&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>node3&lt;/td>
-&lt;td>192.168.0.14&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="2-创建-configmap">2 创建 ConfigMap&lt;/h2>
-&lt;h3 id="21-创建-zookeeper-environment">2.1 创建 zookeeper-environment&lt;/h3>
-&lt;ul>
-&lt;li>创建一个名为&lt;code>zookeeper-environment&lt;/code> 的配置字典，包含变量对如下：
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>Key&lt;/th>
-&lt;th>Value&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>ALLOW_ANONYMOUS_LOGIN&lt;/td>
-&lt;td>yes&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>BITNAMI_DEBUG&lt;/td>
-&lt;td>false&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_4LW_COMMANDS_WHITELIST&lt;/td>
-&lt;td>srvr, mntr, ruok&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_DATA_LOG_DIR&lt;/td>
-&lt;td>&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_ENABLE_AUTH&lt;/td>
-&lt;td>no&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_INIT_LIMIT&lt;/td>
-&lt;td>10&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_LOG_LEVEL&lt;/td>
-&lt;td>ERROR&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_MAX_CLIENT_CNXNS&lt;/td>
-&lt;td>60&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_PORT_NUMBER&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_SERVERS&lt;/td>
-&lt;td>zookeeper-statefulset-0.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::1 zookeeper-statefulset-1.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::2 zookeeper-statefulset-2.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::3&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_SYNC_LIMIT&lt;/td>
-&lt;td>5&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ZOO_TICK_TIME&lt;/td>
-&lt;td>2000&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="22-创建-zookeeper-setup">2.2 创建 zookeeper-setup&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>创建一个名为&lt;code>zookeeper-setup&lt;/code> 的配置字典，Key 为&lt;code>setup.sh&lt;/code>，value 如下：&lt;/p>
-&lt;pre>&lt;code class="language-shell">#!/bin/bash
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Zookeeper on Cuterwrite&#39;s Blog</title>
+        <link>http://localhost:1313/tags/zookeeper/</link>
+        <description>Recent content in Zookeeper on Cuterwrite&#39;s Blog</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>zh-cn</language>
+        <copyright>cuterwrite</copyright>
+        <lastBuildDate>Wed, 21 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/zookeeper/index.xml" rel="self" type="application/rss+xml" /><item>
+        <title>Zookeeper on k8s 部署实验</title>
+        <link>http://localhost:1313/p/zookeeper-on-k8s/</link>
+        <pubDate>Wed, 21 Dec 2022 00:00:00 +0000</pubDate>
+        
+        <guid>http://localhost:1313/p/zookeeper-on-k8s/</guid>
+        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/202210172323.webp" alt="Featured image of post Zookeeper on k8s 部署实验" /&gt;&lt;h1 id=&#34;zookeeper-on-k8s-部署实验&#34;&gt;Zookeeper on k8s 部署实验&lt;/h1&gt;
+&lt;h2 id=&#34;1-简介&#34;&gt;1 简介&lt;/h2&gt;
+&lt;h3 id=&#34;11-实验环境&#34;&gt;1.1 实验环境&lt;/h3&gt;
+&lt;p&gt;已经使用 Kuboard Spary 搭建好 Kubernetes 集群和 Kuboard，使用的软件如下：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;名称&lt;/th&gt;
+&lt;th&gt;版本&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;kuboard spary&lt;/td&gt;
+&lt;td&gt;v1.2.3-amd64&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;kubernetes&lt;/td&gt;
+&lt;td&gt;v1.25.5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;zookeeper&lt;/td&gt;
+&lt;td&gt;3.8.0&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h3 id=&#34;12-集群规划&#34;&gt;1.2 集群规划&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;Zookeeper（三台 4 核 8G 的 Ubuntu20.04 服务器）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;主机名&lt;/th&gt;
+&lt;th&gt;IP&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;node1&lt;/td&gt;
+&lt;td&gt;192.168.0.6&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node2&lt;/td&gt;
+&lt;td&gt;192.168.0.7&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;node3&lt;/td&gt;
+&lt;td&gt;192.168.0.14&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;h2 id=&#34;2-创建-configmap&#34;&gt;2 创建 ConfigMap&lt;/h2&gt;
+&lt;h3 id=&#34;21-创建-zookeeper-environment&#34;&gt;2.1 创建 zookeeper-environment&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;创建一个名为&lt;code&gt;zookeeper-environment&lt;/code&gt; 的配置字典，包含变量对如下：
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;Key&lt;/th&gt;
+&lt;th&gt;Value&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;ALLOW_ANONYMOUS_LOGIN&lt;/td&gt;
+&lt;td&gt;yes&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;BITNAMI_DEBUG&lt;/td&gt;
+&lt;td&gt;false&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_4LW_COMMANDS_WHITELIST&lt;/td&gt;
+&lt;td&gt;srvr, mntr, ruok&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_DATA_LOG_DIR&lt;/td&gt;
+&lt;td&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_ENABLE_AUTH&lt;/td&gt;
+&lt;td&gt;no&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_INIT_LIMIT&lt;/td&gt;
+&lt;td&gt;10&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_LOG_LEVEL&lt;/td&gt;
+&lt;td&gt;ERROR&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_MAX_CLIENT_CNXNS&lt;/td&gt;
+&lt;td&gt;60&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_PORT_NUMBER&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_SERVERS&lt;/td&gt;
+&lt;td&gt;zookeeper-statefulset-0.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::1 zookeeper-statefulset-1.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::2 zookeeper-statefulset-2.zookeeper-statefulset.bigdata.svc.cluster.local:2888:3888::3&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_SYNC_LIMIT&lt;/td&gt;
+&lt;td&gt;5&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;ZOO_TICK_TIME&lt;/td&gt;
+&lt;td&gt;2000&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;22-创建-zookeeper-setup&#34;&gt;2.2 创建 zookeeper-setup&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;创建一个名为&lt;code&gt;zookeeper-setup&lt;/code&gt; 的配置字典，Key 为&lt;code&gt;setup.sh&lt;/code&gt;，value 如下：&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;#!/bin/bash
 if [[ -f &amp;quot;/bitnami/zookeeper/data/myid&amp;quot; ]]; then
-export ZOO_SERVER_ID=&amp;quot;$(cat /bitnami/zookeeper//data/myid)&amp;quot;
+    export ZOO_SERVER_ID=&amp;quot;$(cat /bitnami/zookeeper//data/myid)&amp;quot;
 else
-HOSTNAME=&amp;quot;$(hostname -s)&amp;quot;
-if [[ $HOSTNAME =~ (.*)-([0-9]+)$ ]]; then
-ORD=${BASH_REMATCH[2]}
-export ZOO_SERVER_ID=&amp;quot;$((ORD + 1 ))&amp;quot;
-else
-echo &amp;quot;Failed to get index from hostname $HOST&amp;quot;
-exit 1
-fi
+    HOSTNAME=&amp;quot;$(hostname -s)&amp;quot;
+    if [[ $HOSTNAME =~ (.*)-([0-9]+)$ ]]; then
+        ORD=${BASH_REMATCH[2]}
+        export ZOO_SERVER_ID=&amp;quot;$((ORD + 1 ))&amp;quot;
+    else
+        echo &amp;quot;Failed to get index from hostname $HOST&amp;quot;
+        exit 1
+    fi
 fi
 exec /entrypoint.sh /run.sh
-&lt;/code>&lt;/pre>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="3-创建-statefulset">3 创建 StatefulSet&lt;/h2>
-&lt;ul>
-&lt;li>创建一个名为&lt;code>zookeeper-statefulset&lt;/code> 的有状态副本集，设置 replica 为&lt;strong>3&lt;/strong>&lt;/li>
-&lt;/ul>
-&lt;h3 id="31-创建工作容器">3.1 创建工作容器&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>容器名称：zookeeper&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器镜像：bitnami/zookeeper:3.8.0&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>命令：&lt;code>/opt/scripts/setup.sh&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>环境变量：引用之前创建的配置字典&lt;code>zookeeper-environment&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器端口：2181&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>资源请求限制：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>CPU 资源请求：500m&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>内存资源请求：500Mi&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>CPU 资源限制：500m&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>内存资源限制：500Mi&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>健康检查：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>容器存活探针：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>执行命令：&lt;code>/bin/bash -c 'echo &amp;quot;ruok&amp;quot; | timeout 2 nc -w 2 localhost 2181 | grep imok'&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>初始延迟：30 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>执行探测频率：10 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>超时时间：5 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>健康阈值：1 秒&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>不健康阈值：6 秒&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>容器就绪探针：与容器存活探针相同&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>容器安全上下文：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>runAsNonRoot：&lt;code>true&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>用户：1001&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="32-创建存储挂载">3.2 创建存储挂载&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>数据卷：配置字典&lt;code>zookeeper-setup&lt;/code>&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>挂载路径：/opt/scripts/setup.sh&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>子路径：setup.sh&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="33-创建-svc">3.3 创建 SVC&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>服务类型：NodePort&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>端口：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>端口名称&lt;/th>
-&lt;th>port&lt;/th>
-&lt;th>targetPort&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>client&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;td>2181&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>server&lt;/td>
-&lt;td>2888&lt;/td>
-&lt;td>2888&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>leader-election&lt;/td>
-&lt;td>3888&lt;/td>
-&lt;td>3888&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="34-设置亲和性">3.4 设置亲和性&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>设置 Node 亲和性（硬策略）&lt;/p>
-&lt;ul>
-&lt;li>必须满足标签表达式：app.kubernetes.io/component=zookeeper&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>设置 Pod 反亲和性（软策略）&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>尽量满足标签表达式&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>权重：49&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>togologykey：app.kubernetes.io/name&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>表达式：app.kubernetes.io/component=zookeeper&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="4-部署结果">4 部署结果&lt;/h2>
-&lt;h3 id="41-集群信息">4.1 集群信息&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-40-07-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h3 id="42-节点状态测试">4.2 节点状态测试&lt;/h3>
-&lt;pre>&lt;code class="language-shell">zkServer.sh status
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-41-38-image.png" width="90%" loading="lazy">
-&lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-42-22-image.png" width="90%" loading="lazy">
-&lt;/figure></description></item></channel></rss>
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;3-创建-statefulset&#34;&gt;3 创建 StatefulSet&lt;/h2&gt;
+&lt;ul&gt;
+&lt;li&gt;创建一个名为&lt;code&gt;zookeeper-statefulset&lt;/code&gt; 的有状态副本集，设置 replica 为&lt;strong&gt;3&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;31-创建工作容器&#34;&gt;3.1 创建工作容器&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;容器名称：zookeeper&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器镜像：bitnami/zookeeper:3.8.0&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;命令：&lt;code&gt;/opt/scripts/setup.sh&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;环境变量：引用之前创建的配置字典&lt;code&gt;zookeeper-environment&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器端口：2181&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;资源请求限制：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;CPU 资源请求：500m&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;内存资源请求：500Mi&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;CPU 资源限制：500m&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;内存资源限制：500Mi&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;健康检查：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;容器存活探针：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;执行命令：&lt;code&gt;/bin/bash -c &#39;echo &amp;quot;ruok&amp;quot; | timeout 2 nc -w 2 localhost 2181 | grep imok&#39;&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;初始延迟：30 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;执行探测频率：10 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;超时时间：5 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;健康阈值：1 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;不健康阈值：6 秒&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器就绪探针：与容器存活探针相同&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;容器安全上下文：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;runAsNonRoot：&lt;code&gt;true&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;用户：1001&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;32-创建存储挂载&#34;&gt;3.2 创建存储挂载&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;数据卷：配置字典&lt;code&gt;zookeeper-setup&lt;/code&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;挂载路径：/opt/scripts/setup.sh&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;子路径：setup.sh&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;33-创建-svc&#34;&gt;3.3 创建 SVC&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;服务类型：NodePort&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;端口：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;端口名称&lt;/th&gt;
+&lt;th&gt;port&lt;/th&gt;
+&lt;th&gt;targetPort&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;client&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;td&gt;2181&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;server&lt;/td&gt;
+&lt;td&gt;2888&lt;/td&gt;
+&lt;td&gt;2888&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;leader-election&lt;/td&gt;
+&lt;td&gt;3888&lt;/td&gt;
+&lt;td&gt;3888&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id=&#34;34-设置亲和性&#34;&gt;3.4 设置亲和性&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;设置 Node 亲和性（硬策略）&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;必须满足标签表达式：app.kubernetes.io/component=zookeeper&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;设置 Pod 反亲和性（软策略）&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;尽量满足标签表达式&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;权重：49&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;togologykey：app.kubernetes.io/name&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;表达式：app.kubernetes.io/component=zookeeper&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&#34;4-部署结果&#34;&gt;4 部署结果&lt;/h2&gt;
+&lt;h3 id=&#34;41-集群信息&#34;&gt;4.1 集群信息&lt;/h3&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-40-07-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&#34;42-节点状态测试&#34;&gt;4.2 节点状态测试&lt;/h3&gt;
+&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;zkServer.sh status
+&lt;/code&gt;&lt;/pre&gt;
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-41-38-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-12-21-21-42-22-image.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
+&lt;/figure&gt;
+
+</description>
+        </item>
+        
+    </channel>
+</rss>
