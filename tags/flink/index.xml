@@ -1,326 +1,300 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-    <channel>
-        <title>Flink on Cuterwrite&#39;s Blog</title>
-        <link>http://localhost:1313/tags/flink/</link>
-        <description>Recent content in Flink on Cuterwrite&#39;s Blog</description>
-        <generator>Hugo -- gohugo.io</generator>
-        <language>zh-cn</language>
-        <copyright>cuterwrite</copyright>
-        <lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="http://localhost:1313/tags/flink/index.xml" rel="self" type="application/rss+xml" /><item>
-        <title>基于 Flink Native Kubernetes 的词频统计实验</title>
-        <link>http://localhost:1313/p/flink-native-k8s/</link>
-        <pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate>
-        
-        <guid>http://localhost:1313/p/flink-native-k8s/</guid>
-        <description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" /&gt;&lt;h1 id=&#34;基于-flink-native-kubernetes-的词频统计实验&#34;&gt;基于 Flink Native Kubernetes 的词频统计实验&lt;/h1&gt;
-&lt;h2 id=&#34;1-简介&#34;&gt;1 简介&lt;/h2&gt;
-&lt;h3 id=&#34;11-实验环境&#34;&gt;1.1 实验环境&lt;/h3&gt;
-&lt;p&gt;本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;名称&lt;/th&gt;
-&lt;th&gt;版本&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;kuboard spary&lt;/td&gt;
-&lt;td&gt;v1.2.3-amd64&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;kubernetes&lt;/td&gt;
-&lt;td&gt;v1.25.4&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;calico&lt;/td&gt;
-&lt;td&gt;v3.23.3&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;etcd&lt;/td&gt;
-&lt;td&gt;v3.5.5&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;crictl&lt;/td&gt;
-&lt;td&gt;v1.25.0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;crun&lt;/td&gt;
-&lt;td&gt;1.4.5&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;krew&lt;/td&gt;
-&lt;td&gt;v0.4.3&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;runc&lt;/td&gt;
-&lt;td&gt;v1.1.4&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;cni&lt;/td&gt;
-&lt;td&gt;v1.1.1&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;nerdctl&lt;/td&gt;
-&lt;td&gt;1.0.0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;coredns&lt;/td&gt;
-&lt;td&gt;v1.8.6&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;dnsautoscaler&lt;/td&gt;
-&lt;td&gt;1.8.5&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;pod_infra&lt;/td&gt;
-&lt;td&gt;3.7&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;flink&lt;/td&gt;
-&lt;td&gt;1.16.0&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;hadoop&lt;/td&gt;
-&lt;td&gt;3.2.3&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;h3 id=&#34;12-集群规划&#34;&gt;1.2 集群规划&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;Kuborad Spary&lt;/li&gt;
-&lt;/ul&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;主机名&lt;/th&gt;
-&lt;th&gt;IP&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;kuborad&lt;/td&gt;
-&lt;td&gt;192.168.0.15&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;ul&gt;
-&lt;li&gt;NFS Server&lt;/li&gt;
-&lt;/ul&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;主机名&lt;/th&gt;
-&lt;th&gt;IP&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;NFS-server&lt;/td&gt;
-&lt;td&gt;192.168.0.15&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;ul&gt;
-&lt;li&gt;Kubernetes 集群规划&lt;/li&gt;
-&lt;/ul&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;主机名&lt;/th&gt;
-&lt;th&gt;IP&lt;/th&gt;
-&lt;th&gt;控制节点&lt;/th&gt;
-&lt;th&gt;etcd 节点&lt;/th&gt;
-&lt;th&gt;工作节点&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;node1&lt;/td&gt;
-&lt;td&gt;192.168.0.6&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;node2&lt;/td&gt;
-&lt;td&gt;192.168.0.7&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;node3&lt;/td&gt;
-&lt;td&gt;192.168.0.14&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;td&gt;是&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;h2 id=&#34;2-kubernetes-集群部署&#34;&gt;2 Kubernetes 集群部署&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;这部分内容已经在&lt;a class=&#34;link&#34; href=&#34;https://cuterwrite.top/p/spark-on-k8s/&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;Spark on K8s
-    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
-            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
-            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
-            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
-                fill=&#34;currentColor&#34;&gt;
-        &lt;/svg&gt;&lt;/span&gt;
-    
-&lt;/a&gt;
-实验中给出详细步骤，这里不再重复。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;3-flink-native-kubernetes-部署&#34;&gt;3 Flink Native Kubernetes 部署&lt;/h2&gt;
-&lt;h3 id=&#34;31-配置-flink-用户权限&#34;&gt;3.1 配置 flink 用户权限&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;创建用户&lt;code&gt;flink&lt;/code&gt; 并配置权限&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;kubectl create serviceaccount flink -n bigdata
-
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Flink on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/flink/</link><description>Recent content in Flink on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/flink/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Flink Native Kubernetes 的词频统计实验</title><link>https://cuterwrite.top/p/flink-native-k8s/</link><pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/flink-native-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" />&lt;h1 id="基于-flink-native-kubernetes-的词频统计实验">基于 Flink Native Kubernetes 的词频统计实验&lt;/h1>
+&lt;h2 id="1-简介">1 简介&lt;/h2>
+&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
+&lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>名称&lt;/th>
+&lt;th>版本&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>kuboard spary&lt;/td>
+&lt;td>v1.2.3-amd64&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>kubernetes&lt;/td>
+&lt;td>v1.25.4&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>calico&lt;/td>
+&lt;td>v3.23.3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>etcd&lt;/td>
+&lt;td>v3.5.5&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>crictl&lt;/td>
+&lt;td>v1.25.0&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>crun&lt;/td>
+&lt;td>1.4.5&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>krew&lt;/td>
+&lt;td>v0.4.3&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>runc&lt;/td>
+&lt;td>v1.1.4&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>cni&lt;/td>
+&lt;td>v1.1.1&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>nerdctl&lt;/td>
+&lt;td>1.0.0&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>coredns&lt;/td>
+&lt;td>v1.8.6&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>dnsautoscaler&lt;/td>
+&lt;td>1.8.5&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>pod_infra&lt;/td>
+&lt;td>3.7&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>flink&lt;/td>
+&lt;td>1.16.0&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>hadoop&lt;/td>
+&lt;td>3.2.3&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
+&lt;ul>
+&lt;li>Kuborad Spary&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>主机名&lt;/th>
+&lt;th>IP&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>kuborad&lt;/td>
+&lt;td>192.168.0.15&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>NFS Server&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>主机名&lt;/th>
+&lt;th>IP&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>NFS-server&lt;/td>
+&lt;td>192.168.0.15&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>Kubernetes 集群规划&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>主机名&lt;/th>
+&lt;th>IP&lt;/th>
+&lt;th>控制节点&lt;/th>
+&lt;th>etcd 节点&lt;/th>
+&lt;th>工作节点&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>node1&lt;/td>
+&lt;td>192.168.0.6&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>node2&lt;/td>
+&lt;td>192.168.0.7&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>node3&lt;/td>
+&lt;td>192.168.0.14&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="2-kubernetes-集群部署">2 Kubernetes 集群部署&lt;/h2>
+&lt;ul>
+&lt;li>这部分内容已经在&lt;a class="link" href="https://cuterwrite.top/p/spark-on-k8s/" target="_blank" rel="noopener" >Spark on K8s
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+实验中给出详细步骤，这里不再重复。&lt;/li>
+&lt;/ul>
+&lt;h2 id="3-flink-native-kubernetes-部署">3 Flink Native Kubernetes 部署&lt;/h2>
+&lt;h3 id="31-配置-flink-用户权限">3.1 配置 flink 用户权限&lt;/h3>
+&lt;ul>
+&lt;li>创建用户&lt;code>flink&lt;/code> 并配置权限&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-shell">kubectl create serviceaccount flink -n bigdata
 kubectl create clusterrolebinding flink-role-binding-flink \
-  --clusterrole=edit \
-  --serviceaccount=bigdata:flink
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h3 id=&#34;32-创建-session-cluster&#34;&gt;3.2 创建 session cluster&lt;/h3&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/kubernetes-session.sh \
-    -Dkubernetes.namespace=bigdata \
-    -Dkubernetes.jobmanager.service-account=flink \
-    -Dkubernetes.rest-service.exposed.type=NodePort \
-    -Dkubernetes.cluster-id=flink-session-cluster \
-    -Dtaskmanager.memory.process.size=2048m \
-    -Dkubernetes.taskmanager.cpu=1 \
-    -Dkubernetes.jobmanager.replicas=1 \
-    -Dtaskmanager.numberOfTaskSlots=3 \
-    -Dresourcemanager.taskmanager-timeout=3600000
-&lt;/code&gt;&lt;/pre&gt;
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;p&gt;可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：&lt;a class=&#34;link&#34; href=&#34;http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web&#34;  target=&#34;_blank&#34; rel=&#34;noopener&#34; &gt;http://192.168.0.6:32077，可以看到 Web
-    &lt;span style=&#34;white-space: nowrap;&#34;&gt;&lt;svg width=&#34;.8em&#34; height=&#34;.8em&#34; viewBox=&#34;0 0 21 21&#34;
-            xmlns=&#34;http://www.w3.org/2000/svg&#34;&gt;
-            &lt;path d=&#34;m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z&#34; fill=&#34;currentColor&#34; /&gt;
-            &lt;path d=&#34;M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z&#34;
-                fill=&#34;currentColor&#34;&gt;
-        &lt;/svg&gt;&lt;/span&gt;
-    
-&lt;/a&gt;
- UI 界面如下：&lt;/p&gt;
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/flink run -d \
-  --target kubernetes-session \
-  -Dkubernetes.namespace=bigdata \
-  -Dkubernetes.cluster-id=flink-session-cluster \
-  -Dkubernetes.service-account=flink \
-  -Dkubernetes.namespace=bigdata \
-  -Dkubernetes.taskmanager.cpu=1 \
-
-  examples/streaming/WindowJoin.jar
-&lt;/code&gt;&lt;/pre&gt;
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;p&gt;可以看到&lt;code&gt;WindowJoin.jar&lt;/code&gt; 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h2 id=&#34;4-编写-wordcount-程序&#34;&gt;4 编写 WordCount 程序&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;配置 POM 文件：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre&gt;&lt;code class=&#34;language-xml&#34;&gt;&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
+--clusterrole=edit \
+--serviceaccount=bigdata:flink
+&lt;/code>&lt;/pre>
+&lt;h3 id="32-创建-session-cluster">3.2 创建 session cluster&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：&lt;/p>
+&lt;pre>&lt;code class="language-shell">./bin/kubernetes-session.sh \
+-Dkubernetes.namespace=bigdata \
+-Dkubernetes.jobmanager.service-account=flink \
+-Dkubernetes.rest-service.exposed.type=NodePort \
+-Dkubernetes.cluster-id=flink-session-cluster \
+-Dtaskmanager.memory.process.size=2048m \
+-Dkubernetes.taskmanager.cpu=1 \
+-Dkubernetes.jobmanager.replicas=1 \
+-Dtaskmanager.numberOfTaskSlots=3 \
+-Dresourcemanager.taskmanager-timeout=3600000
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%BE%AE%E4%BF%A1%E6%88%AA%E5%9B%BE_20221223121223.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>可以看到，控制台提示创建成功，并且提示了 Flink Web UI 的访问地址为：&lt;a class="link" href="http://192.168.0.6:32077%EF%BC%8C%E5%8F%AF%E4%BB%A5%E7%9C%8B%E5%88%B0Web" target="_blank" rel="noopener" >http://192.168.0.6:32077，可以看到 Web
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+UI 界面如下：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/web%20ui.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;/li>
+&lt;li>
+&lt;p>继续在 flink 根目录下执行以下命令，将官方自带的 WindowJoin 任务提交到 session cluster 测试部署是否成功：&lt;/p>
+&lt;pre>&lt;code class="language-shell">./bin/flink run -d \
+--target kubernetes-session \
+-Dkubernetes.namespace=bigdata \
+-Dkubernetes.cluster-id=flink-session-cluster \
+-Dkubernetes.service-account=flink \
+-Dkubernetes.namespace=bigdata \
+-Dkubernetes.taskmanager.cpu=1 \
+examples/streaming/WindowJoin.jar
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bash.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/flink-run.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>可以看到&lt;code>WindowJoin.jar&lt;/code> 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="4-编写-wordcount-程序">4 编写 WordCount 程序&lt;/h2>
+&lt;ul>
+&lt;li>配置 POM 文件：&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-xml">&amp;lt;?xml version=&amp;quot;1.0&amp;quot; encoding=&amp;quot;UTF-8&amp;quot;?&amp;gt;
 &amp;lt;project xmlns=&amp;quot;http://maven.apache.org/POM/4.0.0&amp;quot;
-         xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
-         xsi:schemaLocation=&amp;quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&amp;quot;&amp;gt;
-    &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt;
-
-    &amp;lt;groupId&amp;gt;com.cuterwrite&amp;lt;/groupId&amp;gt;
-    &amp;lt;artifactId&amp;gt;FlinkApp&amp;lt;/artifactId&amp;gt;
-    &amp;lt;version&amp;gt;1.0-SNAPSHOT&amp;lt;/version&amp;gt;
-
-    &amp;lt;properties&amp;gt;
-        &amp;lt;flink.version&amp;gt;1.16.0&amp;lt;/flink.version&amp;gt;
-        &amp;lt;maven.compiler.source&amp;gt;11&amp;lt;/maven.compiler.source&amp;gt;
-        &amp;lt;maven.compiler.target&amp;gt;11&amp;lt;/maven.compiler.target&amp;gt;
-        &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt;
-    &amp;lt;/properties&amp;gt;
-    &amp;lt;dependencies&amp;gt;
-        &amp;lt;!-- Flink dependencies --&amp;gt;
-        &amp;lt;dependency&amp;gt;
-            &amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
-            &amp;lt;artifactId&amp;gt;flink-java&amp;lt;/artifactId&amp;gt;
-            &amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
-            &amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
-        &amp;lt;/dependency&amp;gt;
-        &amp;lt;dependency&amp;gt;
-            &amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
-            &amp;lt;artifactId&amp;gt;flink-streaming-java&amp;lt;/artifactId&amp;gt;
-            &amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
-            &amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
-        &amp;lt;/dependency&amp;gt;
-    &amp;lt;/dependencies&amp;gt;
-    &amp;lt;build&amp;gt;
-        &amp;lt;plugins&amp;gt;
-            &amp;lt;plugin&amp;gt;
-                &amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt;
-                &amp;lt;artifactId&amp;gt;maven-shade-plugin&amp;lt;/artifactId&amp;gt;
-                &amp;lt;version&amp;gt;3.1.1&amp;lt;/version&amp;gt;
-                &amp;lt;executions&amp;gt;
-                    &amp;lt;execution&amp;gt;
-                        &amp;lt;phase&amp;gt;package&amp;lt;/phase&amp;gt;
-                        &amp;lt;goals&amp;gt;
-                            &amp;lt;goal&amp;gt;shade&amp;lt;/goal&amp;gt;
-                        &amp;lt;/goals&amp;gt;
-                        &amp;lt;configuration&amp;gt;
-                            &amp;lt;artifactSet&amp;gt;
-                                &amp;lt;excludes&amp;gt;
-                                    &amp;lt;exclude&amp;gt;com.google.code.findbugs:jsr305&amp;lt;/exclude&amp;gt;
-                                &amp;lt;/excludes&amp;gt;
-                            &amp;lt;/artifactSet&amp;gt;
-                            &amp;lt;filters&amp;gt;
-                                &amp;lt;filter&amp;gt;
-                                    &amp;lt;!-- Do not copy the signatures in the META-INF folder.
-                                    Otherwise, this might cause SecurityExceptions when using the JAR. --&amp;gt;
-                                    &amp;lt;artifact&amp;gt;*:*&amp;lt;/artifact&amp;gt;
-                                    &amp;lt;excludes&amp;gt;
-                                        &amp;lt;exclude&amp;gt;META-INF/*.SF&amp;lt;/exclude&amp;gt;
-                                        &amp;lt;exclude&amp;gt;META-INF/*.DSA&amp;lt;/exclude&amp;gt;
-                                        &amp;lt;exclude&amp;gt;META-INF/*.RSA&amp;lt;/exclude&amp;gt;
-                                    &amp;lt;/excludes&amp;gt;
-                                &amp;lt;/filter&amp;gt;
-                            &amp;lt;/filters&amp;gt;
-                            &amp;lt;transformers&amp;gt;
-                                &amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&amp;quot;&amp;gt;
-                                    &amp;lt;!-- Replace this with the main class of your job --&amp;gt;
-                                    &amp;lt;mainClass&amp;gt;com.cuterwrite.WordCount&amp;lt;/mainClass&amp;gt;
-                                &amp;lt;/transformer&amp;gt;
-                                &amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&amp;quot;/&amp;gt;
-                            &amp;lt;/transformers&amp;gt;
-                        &amp;lt;/configuration&amp;gt;
-                    &amp;lt;/execution&amp;gt;
-                &amp;lt;/executions&amp;gt;
-            &amp;lt;/plugin&amp;gt;
-        &amp;lt;/plugins&amp;gt;
-    &amp;lt;/build&amp;gt;
+xmlns:xsi=&amp;quot;http://www.w3.org/2001/XMLSchema-instance&amp;quot;
+xsi:schemaLocation=&amp;quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&amp;quot;&amp;gt;
+&amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt;
+&amp;lt;groupId&amp;gt;com.cuterwrite&amp;lt;/groupId&amp;gt;
+&amp;lt;artifactId&amp;gt;FlinkApp&amp;lt;/artifactId&amp;gt;
+&amp;lt;version&amp;gt;1.0-SNAPSHOT&amp;lt;/version&amp;gt;
+&amp;lt;properties&amp;gt;
+&amp;lt;flink.version&amp;gt;1.16.0&amp;lt;/flink.version&amp;gt;
+&amp;lt;maven.compiler.source&amp;gt;11&amp;lt;/maven.compiler.source&amp;gt;
+&amp;lt;maven.compiler.target&amp;gt;11&amp;lt;/maven.compiler.target&amp;gt;
+&amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt;
+&amp;lt;/properties&amp;gt;
+&amp;lt;dependencies&amp;gt;
+&amp;lt;!-- Flink dependencies --&amp;gt;
+&amp;lt;dependency&amp;gt;
+&amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
+&amp;lt;artifactId&amp;gt;flink-java&amp;lt;/artifactId&amp;gt;
+&amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
+&amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&amp;lt;dependency&amp;gt;
+&amp;lt;groupId&amp;gt;org.apache.flink&amp;lt;/groupId&amp;gt;
+&amp;lt;artifactId&amp;gt;flink-streaming-java&amp;lt;/artifactId&amp;gt;
+&amp;lt;version&amp;gt;${flink.version}&amp;lt;/version&amp;gt;
+&amp;lt;scope&amp;gt;provided&amp;lt;/scope&amp;gt;
+&amp;lt;/dependency&amp;gt;
+&amp;lt;/dependencies&amp;gt;
+&amp;lt;build&amp;gt;
+&amp;lt;plugins&amp;gt;
+&amp;lt;plugin&amp;gt;
+&amp;lt;groupId&amp;gt;org.apache.maven.plugins&amp;lt;/groupId&amp;gt;
+&amp;lt;artifactId&amp;gt;maven-shade-plugin&amp;lt;/artifactId&amp;gt;
+&amp;lt;version&amp;gt;3.1.1&amp;lt;/version&amp;gt;
+&amp;lt;executions&amp;gt;
+&amp;lt;execution&amp;gt;
+&amp;lt;phase&amp;gt;package&amp;lt;/phase&amp;gt;
+&amp;lt;goals&amp;gt;
+&amp;lt;goal&amp;gt;shade&amp;lt;/goal&amp;gt;
+&amp;lt;/goals&amp;gt;
+&amp;lt;configuration&amp;gt;
+&amp;lt;artifactSet&amp;gt;
+&amp;lt;excludes&amp;gt;
+&amp;lt;exclude&amp;gt;com.google.code.findbugs:jsr305&amp;lt;/exclude&amp;gt;
+&amp;lt;/excludes&amp;gt;
+&amp;lt;/artifactSet&amp;gt;
+&amp;lt;filters&amp;gt;
+&amp;lt;filter&amp;gt;
+&amp;lt;!-- Do not copy the signatures in the META-INF folder.
+Otherwise, this might cause SecurityExceptions when using the JAR. --&amp;gt;
+&amp;lt;artifact&amp;gt;*:*&amp;lt;/artifact&amp;gt;
+&amp;lt;excludes&amp;gt;
+&amp;lt;exclude&amp;gt;META-INF/*.SF&amp;lt;/exclude&amp;gt;
+&amp;lt;exclude&amp;gt;META-INF/*.DSA&amp;lt;/exclude&amp;gt;
+&amp;lt;exclude&amp;gt;META-INF/*.RSA&amp;lt;/exclude&amp;gt;
+&amp;lt;/excludes&amp;gt;
+&amp;lt;/filter&amp;gt;
+&amp;lt;/filters&amp;gt;
+&amp;lt;transformers&amp;gt;
+&amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ManifestResourceTransformer&amp;quot;&amp;gt;
+&amp;lt;!-- Replace this with the main class of your job --&amp;gt;
+&amp;lt;mainClass&amp;gt;com.cuterwrite.WordCount&amp;lt;/mainClass&amp;gt;
+&amp;lt;/transformer&amp;gt;
+&amp;lt;transformer implementation=&amp;quot;org.apache.maven.plugins.shade.resource.ServicesResourceTransformer&amp;quot;/&amp;gt;
+&amp;lt;/transformers&amp;gt;
+&amp;lt;/configuration&amp;gt;
+&amp;lt;/execution&amp;gt;
+&amp;lt;/executions&amp;gt;
+&amp;lt;/plugin&amp;gt;
+&amp;lt;/plugins&amp;gt;
+&amp;lt;/build&amp;gt;
 &amp;lt;/project&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;ul&gt;
-&lt;li&gt;编写&lt;code&gt;WordCount.java&lt;/code&gt;：&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre&gt;&lt;code class=&#34;language-java&#34;&gt;package com.cuterwrite;
-
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>编写&lt;code>WordCount.java&lt;/code>：&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-java">package com.cuterwrite;
 import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
@@ -331,74 +305,63 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.util.Collector;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-
 public class WordCount {
-    private static final Logger log = LoggerFactory.getLogger(WordCount.class);
-    public WordCount() {}
-
-    public static void main(String[] args) throws Exception {
-        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        env.setParallelism(3);
-        // 监听 9999 端口的 socket 输入
-        DataStreamSource&amp;lt;String&amp;gt; text = env.socketTextStream(&amp;quot;192.168.0.6&amp;quot;, 9999);
-
-        text.flatMap(new FlatMapFunction&amp;lt;String, Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
-            @Override
-            public void flatMap(String value, Collector&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt; collector) throws Exception {
-                String[] tokens = value.toLowerCase().split(&amp;quot; &amp;quot;);
-                for (String token : tokens) {
-                    collector.collect(new Tuple2&amp;lt;&amp;gt;(token, 1));
-                }
-            }
-            // 合并相同单词的频数
-        })
-        .keyBy(item -&amp;gt; item.f0)
-        .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
-        .sum(1)
-        .addSink(new SinkFunction&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
-            @Override
-            public void invoke(Tuple2&amp;lt;String, Integer&amp;gt; value, Context context) throws Exception {
-                log.info(&amp;quot;单词：&amp;quot; + value.f0 + &amp;quot;,频率：&amp;quot; + value.f1);
-            }
-        });
-
-        env.execute(&amp;quot;Word Count&amp;quot;);
-    }
+private static final Logger log = LoggerFactory.getLogger(WordCount.class);
+public WordCount() {}
+public static void main(String[] args) throws Exception {
+StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+env.setParallelism(3);
+// 监听 9999 端口的 socket 输入
+DataStreamSource&amp;lt;String&amp;gt; text = env.socketTextStream(&amp;quot;192.168.0.6&amp;quot;, 9999);
+text.flatMap(new FlatMapFunction&amp;lt;String, Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
+@Override
+public void flatMap(String value, Collector&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt; collector) throws Exception {
+String[] tokens = value.toLowerCase().split(&amp;quot; &amp;quot;);
+for (String token : tokens) {
+collector.collect(new Tuple2&amp;lt;&amp;gt;(token, 1));
 }
-&lt;/code&gt;&lt;/pre&gt;
-&lt;h2 id=&#34;5-实验结果&#34;&gt;5 实验结果&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;
-&lt;p&gt;提交 WordCount 程序 jar 包&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;./bin/flink run -d \
-  --target kubernetes-session \
-  -Dkubernetes.namespace=bigdata \
-  -Dkubernetes.cluster-id=flink-session-cluster \
-  -Dkubernetes.service-account=flink \
-  -Dkubernetes.namespace=bigdata \
-  /root/FlinkApp-1.0-SNAPSHOT.jar
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;查看 Flink Web UI：&lt;/p&gt;
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;使用 socket 传输字符进行测试：&lt;/p&gt;
-&lt;pre&gt;&lt;code class=&#34;language-shell&#34;&gt;nc 192.168.0.6 9999
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;实验结果：&lt;/p&gt;
-&lt;figure&gt;&lt;img src=&#34;https://cuterwrite-1302252842.file.myqcloud.com/img/log.png&#34; width=&#34;90%&#34; loading=&#34;lazy&#34;&gt;
-  &lt;/figure&gt;
-
-&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-        </item>
-        
-    </channel>
-</rss>
+}
+// 合并相同单词的频数
+})
+.keyBy(item -&amp;gt; item.f0)
+.window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+.sum(1)
+.addSink(new SinkFunction&amp;lt;Tuple2&amp;lt;String, Integer&amp;gt;&amp;gt;() {
+@Override
+public void invoke(Tuple2&amp;lt;String, Integer&amp;gt; value, Context context) throws Exception {
+log.info(&amp;quot;单词：&amp;quot; + value.f0 + &amp;quot;,频率：&amp;quot; + value.f1);
+}
+});
+env.execute(&amp;quot;Word Count&amp;quot;);
+}
+}
+&lt;/code>&lt;/pre>
+&lt;h2 id="5-实验结果">5 实验结果&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>提交 WordCount 程序 jar 包&lt;/p>
+&lt;pre>&lt;code class="language-shell">./bin/flink run -d \
+--target kubernetes-session \
+-Dkubernetes.namespace=bigdata \
+-Dkubernetes.cluster-id=flink-session-cluster \
+-Dkubernetes.service-account=flink \
+-Dkubernetes.namespace=bigdata \
+/root/FlinkApp-1.0-SNAPSHOT.jar
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>查看 Flink Web UI：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202022-12-23%20143910.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;/li>
+&lt;li>
+&lt;p>使用 socket 传输字符进行测试：&lt;/p>
+&lt;pre>&lt;code class="language-shell">nc 192.168.0.6 9999
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>实验结果：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/log.png" width="90%" loading="lazy">
+&lt;/figure>
+&lt;/li>
+&lt;/ul></description></item></channel></rss>
