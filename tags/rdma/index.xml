@@ -1,4 +1,55 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RDMA on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/rdma/</link><description>Recent content in RDMA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 18 Apr 2024 21:42:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/rdma/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RDMA on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/rdma/</link><description>Recent content in RDMA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 15 Jun 2024 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/rdma/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>知乎专栏：8. RDMA 之 Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>前面已经介绍过，RDMA 通信的基本单元是 QP。我们来思考一个问题，假设 A 节点的某个 QP 要跟 B 节点的某个 QP 交换信息，除了要知道 B 节点的 QP 序号——QPN 之外，还需要什么信息？要知道，QPN 是每个节点独立维护的序号，不是整个网络中唯一的。比如 A 的 QP 3 要跟 B 的 QP 5 通信，网络中可不止一个 QP5，可能有很多个节点都有自己的 QP 5。所以我们自然可以想到，还需要找到让每个节点都有一个独立的标识。&lt;/p>
+&lt;p>在传统 TCP-IP 协议栈中，使用了家喻户晓的 IP 地址来标识网络层的每个节点。而 IB 协议中的这个标识被称为&lt;strong>GID（Global Identifier，全局 ID）&lt;/strong>，是一个 128 bits 的序列。关于 GID 本篇不展开讨论，将在后面介绍。&lt;/p>
+&lt;h2 id="ah-是什么">AH 是什么&lt;/h2>
+&lt;p>AH 全称为 Address Handle，没有想到特别合适的中文翻译，就先直译为“地址句柄”吧。这里的地址，指的是一组用于找到某个远端节点的信息的集合，在 IB 协议中，地址指的是 GID、端口号等等信息；而所谓句柄，我们可以理解为一个指向某个对象的指针。&lt;/p>
+&lt;p>大家是否还记得 IB 协议中有四种基本服务类型——RC、UD、RD 和 UC，其中最常用的是 RC 和 UD。RC 的特点是两个节点的 QP 之间会建立可靠的连接，一旦建立连接关系便不容易改变，对端的信息是创建 QP 的时候储存在 QP Context 中的；&lt;/p>
+&lt;p>而对于 UD 来说，QP 间没有连接关系，用户想发给谁，就在 WQE 中填好对端的地址信息就可以了。&lt;strong>用户不是直接把对端的地址信息填到 WQE 中的，而是提前准备了一个“地址薄”，每次通过一个索引来指定对端节点的地址信息，而这个索引就是 AH。&lt;/strong>&lt;/p>
+&lt;p>AH 的概念大致可以用下图表示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_1.webp"
+alt="2024-06-16_8_1" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Address Handle 功能示意图&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>对于每一个目的节点，本端都会创建一个对应的 AH，而同一个 AH 可以被多个 QP 共同使用。&lt;/p>
+&lt;h2 id="ah-的作用">AH 的作用&lt;/h2>
+&lt;p>每次进行 UD 服务类型的通信之前，用户都需要先通过 IB 框架提供的接口，来&lt;strong>为每一个可能的对端节点创建一个 AH&lt;/strong>，然后这些 AH 会被驱动放到一个“安全”的区域，并返回一个索引（指针/句柄）给用户。用户真正下发 WR（Work Request）时，就把这个索引传递进来就可以了。&lt;/p>
+&lt;p>上述过程如下图所示，A 节点收到用户的这样一个任务——使用本端的 QP4 与 B 节点（通过 AH 指定）的 QP3 进行数据交换：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_2.webp"
+alt="2024-06-16_8_2" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>UD 服务类型使用 AH 指定对端节点&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>IB 协议中并没有对为什么使用 AH 做出解释，我认为定义 AH 的概念的原因有以下三种：&lt;/p>
+&lt;ol>
+&lt;li>保证目的地址可用，提高效率&lt;/li>
+&lt;/ol>
+&lt;p>因为 UD 无连接的特点，用户可以在用户态直接通过 WR 来指定目的地。而如果让用户随意填写地址信息，然后硬件就根据这些信息进行组包的话，是会带来问题的。比如有这样一种场景：用户通过 WR 告诉硬件请给 GID 为 X，MAC 地址为 Y 的节点的端口 Z 发送数据。然而 X，Y，Z 可能不是一个合法的组合，或者 GID 为 X 的节点压根都不存在于网络中，而硬件是无力校验这些内容的，只能乖乖的组包、发送数据，这个目的地无效的数据包就白白发送出去了。&lt;/p>
+&lt;p>而提前准备好地址信息，则可以避免上述情况。用户在创建 AH 时会陷入内核态，如果用户传递的参数有效，内核会把这些目的节点信息储存起来，生成一个指针返回给用户；如果用户传递的参数无效，AH 将创建失败。这一过程可以保证地址信息是有效的。用户通过指针就可以快速指定目的节点，加快数据交互流程。&lt;/p>
+&lt;p>可能有人会问，既然内核是可信的，为什么不能在发送数据时陷入内核态去校验用户传递的地址信息呢？请别忘了 RDMA 技术的一大优势在哪里——数据流程可以直接从用户空间到硬件，完全绕过内核，这样可以避免系统调用和拷贝的开销。如果每次发送都要检验地址合法性的话，必然会降低通信速率。&lt;/p>
+&lt;ol start="2">
+&lt;li>向用户隐藏底层地址细节&lt;/li>
+&lt;/ol>
+&lt;p>用户创建 AH 时，只需要传递 gid、端口号、静态速率等信息，而其他通信所需的地址信息（主要是 MAC 地址）是内核驱动通过查询系统邻居表等方式解析到的，底层没有必要暴露这些额外的信息给用户层。&lt;/p>
+&lt;ol start="3">
+&lt;li>可以使用 PD 对目的地址进行管理&lt;/li>
+&lt;/ol>
+&lt;p>前文我们介绍保护域时曾经提过，除了 QP、MR 之外，AH 也由 PD 来进行资源划分。当定义了 AH 这个软件实体之后，我们就可以对所有的 QP 可达的目的地进行相互隔离和管理。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_3.webp"
+alt="2024-06-16_8_3" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>使用 PD 隔离 AH&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>​比如上图中，AH1~3 只能被同一个 PD 下的 QP3 和 QP9 使用，而 AH4 只能被 QP5 使用。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;p>协议中关于 AH 的篇幅并不多，甚至没有独立介绍其概念的章节：&lt;/p>
+&lt;p>[1] 9.8.3 UD 服务类型中的目的地址由哪些部分组成：包括 AH、 QPN 和 Q_key&lt;/p>
+&lt;p>[2] 10.2.2.2 目的地址的相关注意事项&lt;/p>
+&lt;p>[3] 11.2.2.1 AH 相关的 Verbs 接口&lt;/p>
+&lt;p>AH 就介绍到这里，感谢阅读。下一篇打算向大家描述更多关于 QP 的细节。&lt;/p></description></item><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>知乎专栏：7. RDMA 之 Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1260,11 +1311,11 @@ alt="20230725225943" width="90%" loading="lazy">
 &lt;/li>
 &lt;/ul>
 &lt;h3 id="3-项目实现">3. 项目实现&lt;/h3>
-&lt;a href="https://github.com/PKUcoldkeyboard/RDMA-examples" target="_blank" class="card-github fetch-waiting no-styling" repo="PKUcoldkeyboard/RDMA-examples" id="0.7833784971741693-card">
+&lt;a href="https://github.com/PKUcoldkeyboard/RDMA-examples" target="_blank" class="card-github fetch-waiting no-styling" repo="PKUcoldkeyboard/RDMA-examples" id="0.3777241785628949-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="0.7833784971741693-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="0.3777241785628949-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">PKUcoldkeyboard&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1272,45 +1323,45 @@ alt="20230725225943" width="90%" loading="lazy">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="0.7833784971741693-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="0.3777241785628949-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="0.7833784971741693-stars" class="gc-stars">0&lt;/div>
-&lt;div id="0.7833784971741693-forks" class="gc-forks">0&lt;/div>
-&lt;div id="0.7833784971741693-license" class="gc-license">unkown&lt;/div>
-&lt;div id="0.7833784971741693-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="0.3777241785628949-stars" class="gc-stars">0&lt;/div>
+&lt;div id="0.3777241785628949-forks" class="gc-forks">0&lt;/div>
+&lt;div id="0.3777241785628949-license" class="gc-license">unkown&lt;/div>
+&lt;div id="0.3777241785628949-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="0.7833784971741693-script" type="text/javascript" defer>
+&lt;script id="0.3777241785628949-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/PKUcoldkeyboard\/RDMA-examples', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('0.7833784971741693-description').innerText = data.description.replace(
+document.getElementById('0.3777241785628949-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('0.7833784971741693-language').innerText = data.language;
-document.getElementById('0.7833784971741693-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('0.3777241785628949-language').innerText = data.language;
+document.getElementById('0.3777241785628949-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('0.7833784971741693-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('0.3777241785628949-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('0.7833784971741693-avatar');
+const avatarEl = document.getElementById('0.3777241785628949-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('0.7833784971741693-license').innerText = data.license.spdx_id
+document.getElementById('0.3777241785628949-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('0.7833784971741693-license').classList.add = "no-license"
+document.getElementById('0.3777241785628949-license').classList.add = "no-license"
 };
-document.getElementById('0.7833784971741693-card').classList.remove("fetch-waiting");
-console.log("[GITHUB-CARD] Loaded card for PKUcoldkeyboard\/RDMA-examples | 0.7833784971741693.")
+document.getElementById('0.3777241785628949-card').classList.remove("fetch-waiting");
+console.log("[GITHUB-CARD] Loaded card for PKUcoldkeyboard\/RDMA-examples | 0.3777241785628949.")
 }).catch(err => {
-const c = document.getElementById('0.7833784971741693-card');
+const c = document.getElementById('0.3777241785628949-card');
 c.classList.add("fetch-error");
-console.warn("[GITHUB-CARD] (Error) Loading card for PKUcoldkeyboard\/RDMA-examples | 0.7833784971741693.")
+console.warn("[GITHUB-CARD] (Error) Loading card for PKUcoldkeyboard\/RDMA-examples | 0.3777241785628949.")
 })
 &lt;/script>
 &lt;h3 id="4-补充rdma-应用程序标准流程">4. 补充：RDMA 应用程序标准流程&lt;/h3>
@@ -1805,177 +1856,4 @@ alt="20230728235849" width="90%" loading="lazy">
 &lt;h2 id="参考文献">参考文献&lt;/h2>
 &lt;ul>
 &lt;li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li>
-&lt;/ul></description></item><item><title>RDMA：Soft-RoCE 环境搭建实验</title><link>https://cuterwrite.top/p/soft-roce/</link><pubDate>Sat, 11 Feb 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/soft-roce/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/86.webp" alt="Featured image of post RDMA：Soft-RoCE 环境搭建实验" />&lt;h1 id="rdma-soft-roce-环境搭建实验">RDMA: Soft-RoCE 环境搭建实验&lt;/h1>
-&lt;h2 id="1-roce-简介">1. RoCE 简介&lt;/h2>
-&lt;p>RoCE 是三大 RDMA 协议之一，全称为 RDMA Over Converged Ethernet，即基于融合以太网的 RDMA。它是一种基于传统以太网的部分下层协议，在其基础上实现 InfiniBand 的部分上层协议。&lt;/p>
-&lt;p>RoCE 的发展历史如下：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>1999 年，由 Compaq, Dell, HP, IBM, Intel, Microsoft 和 Sun 公司组成了 IBTA 组织。愿景是&lt;strong>设计一种更高速的新的互联协议规范标准，来应对传统以太网在面对未来计算机行业的发展时可能遇到的瓶颈&lt;/strong>。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>2000 年，IBTA 组织设计并发布了 Infiniband Architecture Specification 1.0（IB 规范）。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>2007 年，IETF 发布了 iWARP（Internet Wide Area RDMA Protocol）的一系列 RFC。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>2010 年，IBTA 发布了 RoCE v1 规范。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>2014 年，IBTA 发布了 RoCE v2 规范。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="2-roce-的协议层次">2. RoCE 的协议层次&lt;/h2>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-106078a152d4926ac8234022bd629c79_1440w.jpg" width="90%" loading="lazy">
-&lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-17e04efb14c550ad0be456b7b71209b4_1440w.jpg" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>首先是二层的以太网链路帧，然后是 IP 报文头和 UDP 报文头，最后是各层级协议的校验。而 Infiniband 传输层报文实际上是 UDP 层的负载，也就是深蓝色背景的部分。UDP 报文头中有一个字段 Destination Port Number（目的端口号），对于 RoCE v2 来说固定是 4791，当对端网卡收到报文后，会根据该字段识别是普通的以太网数据包，还是 RoCE 数据包，或者是其他协议的数据包，然后再进行解析。深蓝色背景的 IB 传输层部分又分成了 IB 报头，实际的用户数据（Payload）以及校验部分。&lt;/p>
-&lt;h2 id="3-roce-的优势">3. RoCE 的优势&lt;/h2>
-&lt;p>为什么我们有了 Infiniband 协议之后，还要设计 RoCE 协议呢？最主要的原因还是成本问题：由于 Infiniband 协议本身定义了一套全新的层次架构，从链路层到传输层，都无法与现有的以太网设备兼容。也就是说，如果某个数据中心因为性能瓶颈，想要把数据交换方式从以太网切换到 Infiniband 技术，那么需要购买全套的 Infiniband 设备，包括网卡、线缆、交换机和路由器等等。商用级设备由于对可靠性有比较高的要求，所以这一套下来是非常昂贵的。&lt;/p>
-&lt;p>而 RoCE 协议的出现解决了这一问题，如果用户想要从以太网切换到 RoCE，那么只需要购买支持 RoCE 的网卡就可以了，线缆、交换机和路由器（RoCE v1 不支持以太网路由器）等网络设备都是兼容的——因为我们只是在以太网传输层基础上又定义了一套协议而已。&lt;/p>
-&lt;p>所以 RoCE 相比于 Infiniband，主要还是省钱，当然性能上相比 Infiniband 还是有一些损失，毕竟人家是全套重新设计的。&lt;/p>
-&lt;p>至于 iWARP，相比于 RoCE 协议栈更复杂，并且由于 TCP 的限制，只能支持可靠传输，即无法支持 UD 等传输类型。所以目前 iWARP 的发展并不如 RoCE 和 Infiniband。&lt;/p>
-&lt;h2 id="4-soft-roce">4. Soft-RoCE&lt;/h2>
-&lt;p>虽然 RoCE 相比 Infiniband 具有兼容性优势，价格也便宜，但是&lt;strong>实际应用&lt;/strong>的时候&lt;strong>依然需要专用的网卡支持&lt;/strong>。&lt;/p>
-&lt;p>RoCE 本身确实可以由软件实现，也就是本节即将介绍的 Soft-RoCE，但是商用的时候，几乎不会有人用软件实现的 RoCE。RDMA 技术本身的一大特点就是“硬件卸载”，即把本来软件（CPU）做的事情放到硬件中实现以达到加速的目的。CPU 主要是用来计算的，让它去处理协议封包和解析以及搬运数据，这是对计算资源的浪费。所以 RoCE 网卡会把 TCP/IP 协议栈放到硬件中实现以解放 CPU，让它去做更重要的事。&lt;/p>
-&lt;p>我们说回 Soft-RoCE，它由 IBM 和 Mellanox 牵头的 IBTA RoCE 工作组实现。本身的设计初衷有几点：&lt;/p>
-&lt;ul>
-&lt;li>
-&lt;p>降低 RoCE 部署成本：Soft-RoCE 可以使不具备 RoCE 能力的硬件和支持 RoCE 的硬件间进行基于 IB 语义的交流，这样可以免于替换网络中的一些非关键节点的旧型号网卡。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>相比 TCP 提升性能：虽然软件实现 IB 传输层带来了一定的开销，但是相比基于 Socket-TCP/IP 的传统通信方式，Soft-RoCE 因为减少了系统调用（只在软件通知硬件下发了新 SQ WQE 时才会使用系统调用），发送端的零拷贝以及接收端的只需要单次拷贝等原因，仍然带来了性能上的提升。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>便于开发和测试 RDMA 程序：有了 Soft-RoCE，我们基于 Verbs API 编写的程序，就可以不依赖于硬件执行起来，可以很方便地运行程序。&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;p>&lt;strong>实现原理&lt;/strong>&lt;/p>
-&lt;p>Soft-RoCE 就是把本来应该卸载到硬件的封包和解析工作，又拿到软件来做。其本身是基于 Linux 内核的 TCP/IP 协议栈实现的，网卡本身并不感知收发的数据包是 RoCE 报文，其驱动程序按照 IB 规范中的报文格式将用户数据封装成 IB 传输层报文，然后把报文整体当做数据填入 Socket Buffer 当中，由网卡进行下一步收发包处理。&lt;/p>
-&lt;h2 id="5-部署实验">5. 部署实验&lt;/h2>
-&lt;h3 id="51-实验环境">5.1. 实验环境&lt;/h3>
-&lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 2 台 2 核 4GB 云服务器作为 Soft-RoCE 的部署环境。&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:left">节点&lt;/th>
-&lt;th style="text-align:left">IP 地址&lt;/th>
-&lt;th style="text-align:left">RDMA 设备名&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:left">node1&lt;/td>
-&lt;td style="text-align:left">172.16.16.10&lt;/td>
-&lt;td style="text-align:left">node1&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">node2&lt;/td>
-&lt;td style="text-align:left">172.16.16.6&lt;/td>
-&lt;td style="text-align:left">node2&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h3 id="52-部署-rdma-软件栈">5.2. 部署 RDMA 软件栈&lt;/h3>
-&lt;h4 id="521-确认当前内核是否支持-rxe">5.2.1. 确认当前内核是否支持 RXE&lt;/h4>
-&lt;pre>&lt;code class="language-shell">cat /boot/config-$(uname -r) | grep RXE
-&lt;/code>&lt;/pre>
-&lt;p>如果 CONFIG_RDMA_RXE 的值为 y 或者 m，表示当前的操作系统可以使用 RXE。&lt;/p>
-&lt;h4 id="522-安装用户态动态链接库">5.2.2. 安装用户态动态链接库&lt;/h4>
-&lt;pre>&lt;code class="language-shell">sudo apt-get install libibverbs1 ibverbs-utils librdmacm1 libibumad3 ibverbs-providers rdma-core
-&lt;/code>&lt;/pre>
-&lt;p>这几个软件包的作用如下：&lt;/p>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>软件包名&lt;/th>
-&lt;th>主要功能&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>libibverbs1&lt;/td>
-&lt;td>ibverbs 动态链接库&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ibverbs-utils&lt;/td>
-&lt;td>ibverbs 示例程序&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>librdmacm1&lt;/td>
-&lt;td>rdmacm 动态链接库&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>libibumad3&lt;/td>
-&lt;td>ibumad 动态链接库&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ibverbs-providers&lt;/td>
-&lt;td>ibverbs 各厂商用户态驱动（包括 RXE）&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>rdma-core&lt;/td>
-&lt;td>文档及用户态配置文件&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;p>安装完上述软件之后，可以执行 ibv_devices 看看有没有报错：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152257.webp"
-alt="20230725152257" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>这是个基于 verbs 接口编写的小程序，用来获取并打印出当前系统中的 RDMA 设备列表。&lt;/p>
-&lt;p>查看安装的版本：&lt;/p>
-&lt;pre>&lt;code class="language-shell">dpkg -L libibverbs1
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152107.webp"
-alt="20230725152107" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>可以看到安装的版本是 1.14.19.0&lt;/p>
-&lt;h4 id="523-安装-iproute2-和-perftest">5.2.3. 安装 iproute2 和 perftest&lt;/h4>
-&lt;p>iproute2 是用来替代 net-tools 软件包的，是一组开源的网络工具集合，比如用更强大 ip 命令替换了以前常用的 ifconfig。我们需要其中的 rdma 工具来对 RXE 进行配置。一般的操作系统都已经包含了，安装也很简单：&lt;/p>
-&lt;pre>&lt;code class="language-shell">sudo apt-get install iproute2
-&lt;/code>&lt;/pre>
-&lt;p>perftest 是一个基于 Verbs 接口开发的开源 RDMA 性能测试工具，可以对支持 RDMA 技术的节点进行带宽和时延测试。相比于 rdma-core 自带的示例程序 ，功能更加强大，当然也更复杂。使用如下命令安装：&lt;/p>
-&lt;pre>&lt;code class="language-shell">sudo apt-get install perftest
-&lt;/code>&lt;/pre>
-&lt;h3 id="53-配置-rxe-网卡">5.3. 配置 RXE 网卡&lt;/h3>
-&lt;p>首先我们需要加载内核驱动，modprobe 会自动加载依赖的其他驱动。&lt;/p>
-&lt;pre>&lt;code class="language-shell">sudo modprobe rdma_rxe
-&lt;/code>&lt;/pre>
-&lt;p>然后进行用户态配置：&lt;/p>
-&lt;pre>&lt;code class="language-shell">sudo rdma link add rxe_0 type rxe netdev eth0
-&lt;/code>&lt;/pre>
-&lt;p>其中 rxe_0 是你希望的 RDMA 的设备名，可任意取名。eth0 为 Soft-RoCE 设备所绑定的网络设备名，也就是 ifconfig 中看到的网卡名。&lt;/p>
-&lt;p>接着我们用 rdma 工具查看是否添加成功：&lt;/p>
-&lt;pre>&lt;code class="language-shell">rdma link
-&lt;/code>&lt;/pre>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152620.webp"
-alt="20230725152620" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>再次运行&lt;code>ibv_devices&lt;/code> 程序，可以看到 RXE 网卡已经出现在设备列表里。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152728.webp"
-alt="20230725152728" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>也可以运行&lt;code>ibv_devinfo -d node1&lt;/code> 命令查看虚拟 RDMA 设备的信息。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152801.webp"
-alt="20230725152801" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h3 id="54-执行-perftest-测试">5.4. 执行 perftest 测试&lt;/h3>
-&lt;p>分别在两端执行以下命令：&lt;/p>
-&lt;pre>&lt;code class="language-shell">ib_send_bw -d node2
-&lt;/code>&lt;/pre>
-&lt;p>以及：&lt;/p>
-&lt;pre>&lt;code class="language-shell">ib_send_bw -d node1 172.16.16.6
-&lt;/code>&lt;/pre>
-&lt;p>ib_send_bw 是用来测试 SEND 操作的带宽的程序（infiniband_send bandwidth），其中 &lt;strong>&amp;lt;server_ip&amp;gt;&lt;/strong> 表示对端的 IP&lt;/p>
-&lt;p>两端的结果如下，Server 端：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725152955.webp"
-alt="20230725152955" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>Client 端：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725153015.webp"
-alt="20230725153015" width="90%" loading="lazy">
-&lt;/figure>
-&lt;p>可以看到两端都打印出了一些测试信息以及最后的测试结果，也就是带宽信息。&lt;/p></description></item></channel></rss>
+&lt;/ul></description></item></channel></rss>

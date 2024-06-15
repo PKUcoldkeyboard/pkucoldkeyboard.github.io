@@ -1,4 +1,55 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 18 Apr 2024 21:42:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 15 Jun 2024 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>知乎专栏：8. RDMA 之 Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>前面已经介绍过，RDMA 通信的基本单元是 QP。我们来思考一个问题，假设 A 节点的某个 QP 要跟 B 节点的某个 QP 交换信息，除了要知道 B 节点的 QP 序号——QPN 之外，还需要什么信息？要知道，QPN 是每个节点独立维护的序号，不是整个网络中唯一的。比如 A 的 QP 3 要跟 B 的 QP 5 通信，网络中可不止一个 QP5，可能有很多个节点都有自己的 QP 5。所以我们自然可以想到，还需要找到让每个节点都有一个独立的标识。&lt;/p>
+&lt;p>在传统 TCP-IP 协议栈中，使用了家喻户晓的 IP 地址来标识网络层的每个节点。而 IB 协议中的这个标识被称为&lt;strong>GID（Global Identifier，全局 ID）&lt;/strong>，是一个 128 bits 的序列。关于 GID 本篇不展开讨论，将在后面介绍。&lt;/p>
+&lt;h2 id="ah-是什么">AH 是什么&lt;/h2>
+&lt;p>AH 全称为 Address Handle，没有想到特别合适的中文翻译，就先直译为“地址句柄”吧。这里的地址，指的是一组用于找到某个远端节点的信息的集合，在 IB 协议中，地址指的是 GID、端口号等等信息；而所谓句柄，我们可以理解为一个指向某个对象的指针。&lt;/p>
+&lt;p>大家是否还记得 IB 协议中有四种基本服务类型——RC、UD、RD 和 UC，其中最常用的是 RC 和 UD。RC 的特点是两个节点的 QP 之间会建立可靠的连接，一旦建立连接关系便不容易改变，对端的信息是创建 QP 的时候储存在 QP Context 中的；&lt;/p>
+&lt;p>而对于 UD 来说，QP 间没有连接关系，用户想发给谁，就在 WQE 中填好对端的地址信息就可以了。&lt;strong>用户不是直接把对端的地址信息填到 WQE 中的，而是提前准备了一个“地址薄”，每次通过一个索引来指定对端节点的地址信息，而这个索引就是 AH。&lt;/strong>&lt;/p>
+&lt;p>AH 的概念大致可以用下图表示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_1.webp"
+alt="2024-06-16_8_1" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Address Handle 功能示意图&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>对于每一个目的节点，本端都会创建一个对应的 AH，而同一个 AH 可以被多个 QP 共同使用。&lt;/p>
+&lt;h2 id="ah-的作用">AH 的作用&lt;/h2>
+&lt;p>每次进行 UD 服务类型的通信之前，用户都需要先通过 IB 框架提供的接口，来&lt;strong>为每一个可能的对端节点创建一个 AH&lt;/strong>，然后这些 AH 会被驱动放到一个“安全”的区域，并返回一个索引（指针/句柄）给用户。用户真正下发 WR（Work Request）时，就把这个索引传递进来就可以了。&lt;/p>
+&lt;p>上述过程如下图所示，A 节点收到用户的这样一个任务——使用本端的 QP4 与 B 节点（通过 AH 指定）的 QP3 进行数据交换：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_2.webp"
+alt="2024-06-16_8_2" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>UD 服务类型使用 AH 指定对端节点&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>IB 协议中并没有对为什么使用 AH 做出解释，我认为定义 AH 的概念的原因有以下三种：&lt;/p>
+&lt;ol>
+&lt;li>保证目的地址可用，提高效率&lt;/li>
+&lt;/ol>
+&lt;p>因为 UD 无连接的特点，用户可以在用户态直接通过 WR 来指定目的地。而如果让用户随意填写地址信息，然后硬件就根据这些信息进行组包的话，是会带来问题的。比如有这样一种场景：用户通过 WR 告诉硬件请给 GID 为 X，MAC 地址为 Y 的节点的端口 Z 发送数据。然而 X，Y，Z 可能不是一个合法的组合，或者 GID 为 X 的节点压根都不存在于网络中，而硬件是无力校验这些内容的，只能乖乖的组包、发送数据，这个目的地无效的数据包就白白发送出去了。&lt;/p>
+&lt;p>而提前准备好地址信息，则可以避免上述情况。用户在创建 AH 时会陷入内核态，如果用户传递的参数有效，内核会把这些目的节点信息储存起来，生成一个指针返回给用户；如果用户传递的参数无效，AH 将创建失败。这一过程可以保证地址信息是有效的。用户通过指针就可以快速指定目的节点，加快数据交互流程。&lt;/p>
+&lt;p>可能有人会问，既然内核是可信的，为什么不能在发送数据时陷入内核态去校验用户传递的地址信息呢？请别忘了 RDMA 技术的一大优势在哪里——数据流程可以直接从用户空间到硬件，完全绕过内核，这样可以避免系统调用和拷贝的开销。如果每次发送都要检验地址合法性的话，必然会降低通信速率。&lt;/p>
+&lt;ol start="2">
+&lt;li>向用户隐藏底层地址细节&lt;/li>
+&lt;/ol>
+&lt;p>用户创建 AH 时，只需要传递 gid、端口号、静态速率等信息，而其他通信所需的地址信息（主要是 MAC 地址）是内核驱动通过查询系统邻居表等方式解析到的，底层没有必要暴露这些额外的信息给用户层。&lt;/p>
+&lt;ol start="3">
+&lt;li>可以使用 PD 对目的地址进行管理&lt;/li>
+&lt;/ol>
+&lt;p>前文我们介绍保护域时曾经提过，除了 QP、MR 之外，AH 也由 PD 来进行资源划分。当定义了 AH 这个软件实体之后，我们就可以对所有的 QP 可达的目的地进行相互隔离和管理。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_3.webp"
+alt="2024-06-16_8_3" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>使用 PD 隔离 AH&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>​比如上图中，AH1~3 只能被同一个 PD 下的 QP3 和 QP9 使用，而 AH4 只能被 QP5 使用。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;p>协议中关于 AH 的篇幅并不多，甚至没有独立介绍其概念的章节：&lt;/p>
+&lt;p>[1] 9.8.3 UD 服务类型中的目的地址由哪些部分组成：包括 AH、 QPN 和 Q_key&lt;/p>
+&lt;p>[2] 10.2.2.2 目的地址的相关注意事项&lt;/p>
+&lt;p>[3] 11.2.2.1 AH 相关的 Verbs 接口&lt;/p>
+&lt;p>AH 就介绍到这里，感谢阅读。下一篇打算向大家描述更多关于 QP 的细节。&lt;/p></description></item><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>知乎专栏：7. RDMA 之 Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
