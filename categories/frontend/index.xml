@@ -1,0 +1,1107 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>前端技术 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/frontend/</link><description>Recent content in 前端技术 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 18 Jun 2024 22:28:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/frontend/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Workbox 实现 Hugo 渐进式 Web 应用</title><link>https://cuterwrite.top/p/hugo-pwa/</link><pubDate>Tue, 18 Jun 2024 22:28:00 +0000</pubDate><guid>https://cuterwrite.top/p/hugo-pwa/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116406967_p0_master1200.webp" alt="Featured image of post 基于 Workbox 实现 Hugo 渐进式 Web 应用" />&lt;h1 id="基于-workbox-实现-hugo-pwa">基于 Workbox 实现 Hugo PWA&lt;/h1>
+&lt;p>最近给基于 &lt;a class="link" href="https://gohugo.io/" target="_blank" rel="noopener" >Hugo
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+搭建的博客添加了 PWA 功能，显著提升了加载速度和用户体验，甚至实现了离线访问。至于如何实现，那么你需要了解 &lt;strong>Progressive Web Apps (PWA)&lt;/strong>。&lt;/p>
+&lt;h2 id="什么是-pwa">什么是 PWA&lt;/h2>
+&lt;p>渐进式 Web 应用（Progressive Web Apps，简称 PWA）利用现代 Web API 和传统的渐进式增强策略，打造出跨平台的 Web 应用程序。这些应用无处不在，功能丰富，为用户带来媲美原生应用的体验。&lt;/p>
+&lt;p>&lt;strong>PWA 的优势：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>⚡️ &lt;strong>更快的加载速度&lt;/strong>: PWA 可以缓存重要资源，即使网络状况不佳也能快速加载。&lt;/li>
+&lt;li>✈️ &lt;strong>离线访问&lt;/strong>: PWA 可以缓存内容，让用户即使离线也能访问内容。&lt;/li>
+&lt;li>🔔 &lt;strong>推送通知&lt;/strong>: 像原生应用一样，PWA 可以向用户发送推送通知，提高用户参与度。&lt;/li>
+&lt;li>📱 &lt;strong>安装到主屏幕&lt;/strong>: 用户可以将你的应用添加到电脑或手机桌面，像原生应用一样浏览你的 Web 应用。&lt;/li>
+&lt;/ul>
+&lt;p>PWA 的实现原理是 &lt;strong>Service Worker&lt;/strong>。&lt;strong>Service Worker 是一种特殊的 JavaScript 资源，在浏览器后台独立运行，充当着网络浏览器和 Web 服务器之间的代理。它可以拦截和处理网络请求、缓存资源以及推送通知&lt;/strong>。&lt;/p>
+&lt;p>主流的前端框架 Vue、React、Angular 都提供了相应的 PWA 插件。而对于 Hugo 这样的静态网站生成器，我们可以通过手动添加 &lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+来实现 PWA 功能。&lt;/p>
+&lt;h2 id="workbox">Workbox&lt;/h2>
+&lt;p>&lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+是由 Google Chrome 团队开发的一套模块，旨在简化常见的 Service Worker 路由和缓存操作。每个模块都针对 Service Worker 开发的特定方面进行了优化。Workbox 的目标是尽可能简化 Service Worker 的使用，同时在需要时灵活地满足复杂应用的需求。&lt;/p>
+&lt;p>如果没有 Workbox，我们需要手动编写 Service Worker 来监听 fetch 事件、缓存资源并实现离线访问等功能。而 Workbox 提供了一套工具，可以帮助我们自动生成 Service Worker，并且内置了一些常用的缓存策略，使我们能够更加专注于业务逻辑。&lt;/p>
+&lt;h2 id="配置-pwa">配置 PWA&lt;/h2>
+&lt;p>在上一节中，我们了解了 PWA 的概念和优势，以及 Workbox 如何简化 Service Worker 的开发。接下来将一步步地给 Hugo 博客配置 PWA 功能。&lt;/p>
+&lt;h3 id="注册-service-worker">注册 Service Worker&lt;/h3>
+&lt;p>首先，我们需要在页面中注册 Service Worker。将以下代码段添加到你的 Hugo 主题的 &lt;code>layouts/partials/footer/custom.html&lt;/code> 文件中（其他主题可能需要根据文件结构进行调整）：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">&amp;lt;script&amp;gt;
+// Check that service workers are registered
+if ('serviceWorker' in navigator) {
+// Use the window load event to keep the page load performant
+window.addEventListener('load', () =&amp;gt; {
+navigator.serviceWorker.register('/sw.js').then(reg =&amp;gt; {
+console.log('Service worker registered with scope: ', reg.scope);
+}, err =&amp;gt; {
+console.log('Service worker registration failed: ', err);
+});
+});
+}
+&amp;lt;/script&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>注意： 在注册 Service Worker 之前，你需要先创建 &lt;code>sw.js&lt;/code> 文件，我们将在下一小节中完成这一步骤。&lt;/p>&lt;/div>
+&lt;p>完成注册后，你可以在浏览器的开发者工具 (F12) 中的 &lt;strong>&amp;ldquo;Application&amp;rdquo; -&amp;gt; &amp;ldquo;Service Workers&amp;rdquo;&lt;/strong> 面板中查看 Service Worker 的注册状态。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_service-worker.webp"
+alt="Service Worker" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Service Worker&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="导入-workbox">导入 Workbox&lt;/h3>
+&lt;p>在你的 Hugo 网站根目录下的 &lt;code>static&lt;/code> 文件夹中创建 &lt;code>sw.js&lt;/code> 文件。然后，在 &lt;code>sw.js&lt;/code> 文件中添加以下代码，使用 CDN 导入 Workbox：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+&lt;/code>&lt;/pre>
+&lt;h3 id="缓存策略">缓存策略&lt;/h3>
+&lt;p>Workbox 提供了一些常用的缓存策略，如 &lt;code>CacheFirst&lt;/code>、&lt;code>NetworkFirst&lt;/code>、&lt;code>StaleWhileRevalidate&lt;/code> 等。这里先介绍几种常用的策略。&lt;/p>
+&lt;h4 id="cacheonly-仅缓存">CacheOnly 仅缓存&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-6850d07d742bf_1440.webp"
+alt="CacheOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>强制响应来自缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkonly-仅网络">NetworkOnly 仅网络&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-48f46158a5575_1440.webp"
+alt="NetworkOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略强制要求所有请求都从网络获取最新数据，完全绕过缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cachefirst-优先缓存">CacheFirst 优先缓存&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-falling-to-networ-f4c1aa5570621_1440.webp"
+alt="CacheFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略以速度为优先，会首先尝试从缓存中获取响应，以尽快向用户显示内容。如果缓存中没有所需数据，它才会向网络发起请求获取数据。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkfirst-优先网络">NetworkFirst 优先网络&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-falling-to-cache-39d267a044b35_1440.webp"
+alt="NetworkFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略优先使用最新数据，因此会首先尝试从网络获取响应。如果网络请求失败，例如用户离线或网络连接不稳定，它会回退使用缓存中的数据，确保用户仍然可以访问内容。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="stalewhilerevalidate-读取缓存同时发起网络请求">StaleWhileRevalidate 读取缓存，同时发起网络请求&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-network-873b1ec5f25cc_1440.webp"
+alt="StaleWhileRevalidate" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>StaleWhileRevalidate&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略优先返回缓存内容（如果有）。即使缓存内容有效，它也会在后台发起网络请求以获取最新数据，保证用户最终能看到最新内容。虽然这种策略能确保用户定期更新缓存，但也意味着每次请求都会产生网络流量，即使数据没有变化，也比较浪费带宽。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="策略配置">策略配置&lt;/h4>
+&lt;p>Workbox 不仅提供上述策略，还允许通过 cacheName、plugins 和 expiration 等配置项进行自定义。你可以通过定义要使用的插件来自定义路由行为。例如，你可以配置缓存名称、缓存有效期以及可缓存的响应状态码，如下所示：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst({
+cacheName: 'my-cache',
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: 60,
+maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="本站配置">本站配置&lt;/h3>
+&lt;h4 id="全局配置">全局配置&lt;/h4>
+&lt;p>以下是全局缓存配置：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">// 缓存版本号
+let cacheVersion = '-240619';
+// 最大条目数
+const maxEntries = 100;
+&lt;/code>&lt;/pre>
+&lt;h4 id="twitto-配置">Twitto 配置&lt;/h4>
+&lt;p>为了确保用户即使在离线状态下也能查看评论，Twitto 评论 API 采用了 &lt;code>NetworkFirst&lt;/code> 缓存策略。这意味着浏览器会优先尝试从网络获取最新数据，如果网络不可用，则使用缓存中的数据。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="rss-与-sitemap-配置">RSS 与 Sitemap 配置&lt;/h4>
+&lt;p>为了确保用户始终获取最新的 RSS 和 Sitemap 数据，这些页面配置为仅使用网络策略 (&lt;code>NetworkOnly&lt;/code>)，不进行缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="html-配置">HTML 配置&lt;/h4>
+&lt;p>为了在保证用户快速加载页面的同时，也能获取到最新内容，网站对 HTML 页面采用了 &lt;code>StaleWhileRevalidate&lt;/code> 缓存策略。这意味着浏览器会优先使用缓存中的页面进行展示，同时在后台向服务器发起请求，获取最新版本，并在下次请求时使用。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="google-fonts-配置">Google Fonts 配置&lt;/h4>
+&lt;p>为了在保证字体文件更新的同时，也能利用缓存加速页面加载速度，网站对 Google Fonts 资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://fonts\.googleapis\.com'),
+new workbox.strategies.CacheFirst({
+cacheName: 'google-fonts-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cdn-配置">CDN 配置&lt;/h4>
+&lt;p>为了最大程度地利用缓存加速页面加载速度，网站对来自常用 CDN 的资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'bootcdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="umani-网站统计配置">Umani 网站统计配置&lt;/h4>
+&lt;p>为了确保网站统计数据的准确性，网站对 Umani 网站统计请求采用了 &lt;code>NetworkOnly&lt;/code> 策略，并使用 &lt;code>BackgroundSyncPlugin&lt;/code> 插件来实现即使在网络离线的情况下也能保证数据最终发送成功。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// 使用 background sync 插件实现后台同步
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="图片配置">图片配置&lt;/h4>
+&lt;p>为了加速图片加载速度，并减少网络请求次数，网站对图片资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="后缀匹配配置">后缀匹配配置&lt;/h4>
+&lt;p>为了兼顾加载速度和内容更新，网站对未被域名匹配到的静态文件（例如图片、CSS 和 JavaScript 文件）采用了 &lt;code>StaleWhileRevalidate&lt;/code> 缓存策略。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="默认行为配置">默认行为配置&lt;/h4>
+&lt;p>为了处理未被任何自定义路由规则匹配到的请求，网站配置了默认缓存行为，使用 &lt;code>NetworkFirst&lt;/code> 策略并设置了网络超时时间，以兼顾资源获取速度和离线可用性。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.setDefaultHandler(
+// 优先使用缓存，缓存没有则使用网络请求
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="完整配置">完整配置&lt;/h3>
+&lt;details>
+&lt;summary>sw.js&lt;/summary>
+&lt;pre>&lt;code class="language-javascript">importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+// 缓存版本号
+let cacheVersion = '-240619';
+// 最大条目数
+const maxEntries = 100;
+if (workbox) {
+console.log(`Yay! Workbox is loaded 🎉`);
+// 评论缓存
+workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// rss 、sitemap 不缓存
+workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+// 缓存 HTML
+workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 缓存 Google Fonts
+workbox.routing.registerRoute(
+new RegExp('^https://fonts\.font\.im'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'google-fonts' + cacheVersion,
+plugins: [
+// 使用 expiration 插件实现缓存条目数目和时间控制
+new workbox.expiration.ExpirationPlugin({
+// 最大缓存条目数
+maxEntries: maxEntries,
+// 最长缓存时间 30 天
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+// 使用 cacheableResponse 插件缓存状态码为 0 的请求
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 缓存 bootcdn、unpkg、jsdelivr 等公共库，用正则匹配
+workbox.routing.registerRoute(
+new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'bootcdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+// 自建 UMA 统计脚本: https://analytics.cuterwrite.top/uma
+workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// 使用 background sync 插件实现后台同步
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+// 缓存存储桶图片 https://cuterwrite-1302252842.file.myqcloud.com/
+workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 后缀匹配，针对其余没有被域名匹配到的静态文件
+workbox.routing.registerRoute(
+new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+// 默认匹配剩下的请求
+workbox.routing.setDefaultHandler(
+// 优先使用缓存，缓存没有则使用网络请求
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+} else {
+console.log(`Boo! Workbox didn't load 😬`);
+}
+&lt;/code>&lt;/pre>
+&lt;/details>
+&lt;h3 id="manifestjson">manifest.json&lt;/h3>
+&lt;p>在你的 Hugo 博客的根目录 &lt;code>static&lt;/code> 文件夹下创建 &lt;code>manifest.json&lt;/code> 文件，该文件包含了关于你的博客的元数据，例如名称、图标和显示选项。&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;name&amp;quot;: &amp;quot;你的博客名称&amp;quot;,
+&amp;quot;short_name&amp;quot;: &amp;quot;博客简称&amp;quot;,
+&amp;quot;start_url&amp;quot;: &amp;quot;/&amp;quot;,
+&amp;quot;display&amp;quot;: &amp;quot;standalone&amp;quot;,
+&amp;quot;background_color&amp;quot;: &amp;quot;#ffffff&amp;quot;,
+&amp;quot;theme_color&amp;quot;: &amp;quot;#000000&amp;quot;,
+&amp;quot;icons&amp;quot;: [{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-192x192.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;192x192&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+},
+{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-512x512.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;512x512&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>注意：将 icon-192x192.png 和 icon-512x512.png 替换为你自己的图标文件名。并确保将这两个图标文件放置在 Hugo 博客的 &lt;code>static&lt;/code> 文件夹中。如果你想修改主题颜色和背景颜色，可以修改 theme_color 和 background_color 字段。&lt;/p>&lt;/div>
+&lt;h2 id="完成配置">完成配置&lt;/h2>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-20_pwa.webp"
+alt="PWA" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>完成以上步骤后，你的 Hugo 博客将能够被移动设备识别为一个 Web 应用，并提供更佳的用户体验。&lt;/p></description></item><item><title>前端开发知识点复习-基础篇</title><link>https://cuterwrite.top/p/web-development-1/</link><pubDate>Tue, 27 Apr 2021 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/web-development-1/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/lake-5538757_1920.2fnhpht9u2vw.webp" alt="Featured image of post 前端开发知识点复习-基础篇" />&lt;h1 id="前端开发知识点-基础篇">前端开发知识点-基础篇&lt;/h1>
+&lt;h2 id="1-cookiesessionsessionstorage-和-localstorage">1 Cookie、Session、SessionStorage 和 LocalStorage&lt;/h2>
+&lt;p>Cookie：服务器提供的一种用于维护会话状态信息的数据，通过服务器发送到浏览器，浏览器保存在本地的一种纯文本文件，当下一次有同源的请求时，将保存的 Cookie 数据添加到请求头部，发送给服务端。可以用来实现记录用户登录状态等功能。&lt;/p>
+&lt;p>Session：服务器为了保存用户状态而创建的一个特殊的对象。在浏览器第一次访问服务器时，服务器会创建一个 session 对象,该对象有一个唯一的 id,即 sessionid，服务器会把 sessionid 以 cookie 的形式发送给浏览器,当浏览器再次访问服务器时,会携带 cookie 在请求头,可以通过 cookie 中的 sessionid 来访问 session 对象，可以实现在 http 无状态基础上实现用户状态管理。&lt;/p>
+&lt;p>Cookie 的特点：&lt;/p>
+&lt;ol>
+&lt;li>Cookie 数据存放在客户端上。&lt;/li>
+&lt;li>Cookie 是非安全的，由于存在本地，有被盗取的可能。&lt;/li>
+&lt;li>Cookie 保存的数据不能超过 4K。&lt;/li>
+&lt;li>Cookie 始终在同源的 HTTP 请求中携带。&lt;/li>
+&lt;/ol>
+&lt;p>如何设置 Cookie：&lt;/p>
+&lt;ol>
+&lt;li>服务端：使用 Set-Cookie 的响应头部，包含 5 个属性值 expires、 domain、path、secure 和 httponly，分别代表过期时间、域名、路径、安全传输、是否禁用客户端 js 脚本访问。&lt;/li>
+&lt;li>客户端：通过 JS 脚本，例如 document.cookie&lt;/li>
+&lt;/ol>
+&lt;p>Cookie 和 Session 和区别：&lt;/p>
+&lt;ol>
+&lt;li>Cookie 存放在客户端，Session 存放在服务端。&lt;/li>
+&lt;li>Cookie 是非安全的，考虑安全应该使用 Session&lt;/li>
+&lt;li>访问增多时，服务器压力比较大，考虑使用 Cookie&lt;/li>
+&lt;li>单个 Cookie 保存的数据不能超过 4K&lt;/li>
+&lt;/ol>
+&lt;p>Cookie、SessionStorage 和 LocalStorage 的区别：&lt;/p>
+&lt;ol>
+&lt;li>Cookie 始终在同源的 HTTP 请求中携带。（即使不需要）&lt;/li>
+&lt;li>Cookie 可以限制可访问的 path&lt;/li>
+&lt;li>存储大小：Cookie 存放数据不能超过 4k，WebStorage 可以达到 5M 或更大。&lt;/li>
+&lt;li>有效期不同：SessionStorage 只在当前浏览器窗口关闭前有效，LocalStorage 始终有效，用作持久化，Cookie 在设置的过期时间之前一直有效。&lt;/li>
+&lt;/ol>
+&lt;p>Cookie 常用场景：&lt;/p>
+&lt;ol>
+&lt;li>保持用户登录状态&lt;/li>
+&lt;li>跟踪用户行为，记录用户选项&lt;/li>
+&lt;/ol>
+&lt;h2 id="2-http-和-https-的区别">2 Http 和 Https 的区别&lt;/h2>
+&lt;p>HTTPS 基本原理：客户端使用 HTTPS URL 访问服务端，要去服务端建立 SSL 连接，服务端接收到客户端请求后，会将网站的证书（携带公钥）返回给客户端，客户端和服务端开始协商 SSL 连接的安全等级，也就是&lt;strong>加密等级&lt;/strong>，然后两者通过协商一致的安全等级，建立&lt;strong>会话密钥&lt;/strong>，然后客户端通过网站的公钥来加密会话密钥，传给网站，服务端通过自己的&lt;strong>私钥&lt;/strong>解密出会话密钥，通过会话密钥加密与客户端的通信。&lt;/p>
+&lt;ol>
+&lt;li>安全性：HTTPS 是安全超文本协议，在 HTTP 基础上有更强的安全性，简单来说，HTTPS 是使用了 TLS/SSL 加密的 HTTP 协议。&lt;/li>
+&lt;li>申请证书：HTTPS 需要使用 CA 证书。&lt;/li>
+&lt;li>传输协议：HTTP 以明文形式传输数据，HTTPS 以加密形式传输数据。&lt;/li>
+&lt;li>端口号不同：一般来说，HTTP 协议的端口为 80，HTTPS 的端口为 443&lt;/li>
+&lt;li>连接方式：HTTP 的连接简单，是无状态的，HTTPS 在 HTTP 的基础上使用了 SSL 协议进行加密传输。&lt;/li>
+&lt;/ol>
+&lt;h2 id="3-http20-的特性">3 Http2.0 的特性&lt;/h2>
+&lt;ol>
+&lt;li>提升了访问速度&lt;/li>
+&lt;li>允许多路复用：允许同时通过单一的 HTTP/2 连接发送多重请求-响应信息。&lt;/li>
+&lt;li>二进制分帧：将所有的传输数据分割为更小的数据帧，并对它们进行二进制编码。&lt;/li>
+&lt;li>首部压缩&lt;/li>
+&lt;li>服务器端推送&lt;/li>
+&lt;/ol>
+&lt;h2 id="4-osi-七层模型">4 OSI 七层模型&lt;/h2>
+&lt;ol>
+&lt;li>应用层：文件传输，常用协议 HTTP、STMP、FTP&lt;/li>
+&lt;li>表示层：数据格式化、代码转换、数据加密&lt;/li>
+&lt;li>会话层：建立和解除会话&lt;/li>
+&lt;li>传输层：提供端对端的接口，TCP/UDP&lt;/li>
+&lt;li>网络层：为数据包选择路由，IP/ICMP&lt;/li>
+&lt;li>数据链路层：传输带有地址的帧。&lt;/li>
+&lt;li>物理层：二进制的数据形式在物理媒体上传输数据。&lt;/li>
+&lt;/ol>
+&lt;h2 id="5-tcp-和-udp-的区别">5 TCP 和 UDP 的区别&lt;/h2>
+&lt;ol>
+&lt;li>TCP 是面向连接的，UDP 是无连接的，即发送数据前不需要先建立连接。&lt;/li>
+&lt;li>TCP 提供可靠的服务，无差错、不丢失、不重复、按序到达，UDP 尽最大努力交付。（大数据量使用 TCP）&lt;/li>
+&lt;li>TCP 面向字节流，UDP 面向报文。（UDP 无拥塞控制，可能出现丢包）&lt;/li>
+&lt;li>TCP 只能 1 对 1，UDP 支持 1 对 1 和 1 对多。&lt;/li>
+&lt;li>TCP 首部较大为 20 字节，UDP 只有 8 字节。&lt;/li>
+&lt;/ol>
+&lt;h2 id="6-tcp-三次握手和四次挥手">6 TCP 三次握手和四次挥手&lt;/h2>
+&lt;p>TCP 三次握手：（A 为客户端，B 为服务端）&lt;/p>
+&lt;ol>
+&lt;li>B 处于监听，A 向 B 发送连接请求报文 SYN=1，ACK=0，选择一个初始的序号 x&lt;/li>
+&lt;li>B 收到连接请求报文，如果同意连接，则向 A 发送连接确认报文 SYN=1，ACK=1，确认号 ack=x+1，选择初始序号 y&lt;/li>
+&lt;li>A 收到 B 的连接确认报文，向 B 发送确认报文 ACK=1，确认号 ack=y+1，序号为 x+1&lt;/li>
+&lt;li>B 收到 A 的确认，连接建立。&lt;/li>
+&lt;/ol>
+&lt;p>&lt;strong>三次握手的原因&lt;/strong>&lt;/p>
+&lt;p>第三次握手防止失效的连接请求到达服务器，让服务器错误打开连接。客户端发送的连接请求如果在网络中滞留，那么就会隔很长一段时间才能收到服务端返回的确认，导致：客户端超时重传重新建立连接，这时就会出现 2 个 SYN 连接。如果有第三次握手，客户端会忽略服务端之后发送的对滞留连接请求的确认，不进行第三次握手，因此就不会打开连接。&lt;/p>
+&lt;p>TCP 四次挥手：&lt;/p>
+&lt;ol>
+&lt;li>A 发送连接释放报文 FIN=1，序号为 u&lt;/li>
+&lt;li>B 收到后发出确认 ACK=1, ack=x+1, 序号为 v，此时 TCP 属于半关闭状态，A 不能发数据，B 能发数据。&lt;/li>
+&lt;li>B 不需要连接时，发送连接释放报文 FIN=1，ACK=1，ack=u+1，序号为 w&lt;/li>
+&lt;li>A 收到后发出确认 ACK=1，ack=w+1，序号为 u+1，进入 TIME-WAIT 状态，等待 2MSL（最大报文存存活时间）后释放连接。&lt;/li>
+&lt;li>B 收到 A 的确认后释放连接。&lt;/li>
+&lt;/ol>
+&lt;h2 id="7-http-状态码">7 HTTP 状态码&lt;/h2>
+&lt;p>状态码按第一个数字分类，1 表示信息，2 表示成功，3 表示重定向，4 表示客户端错误，5 表示服务端错误。&lt;/p>
+&lt;p>常见状态码：101 切换协议、200 成功、301 永久重定向、302 临时重定向、304 未修改、400 请求无效、401 未认证、403 拒绝执行、404 未找到资源&lt;/p>
+&lt;p>200 和 304 的区别：&lt;/p>
+&lt;ol>
+&lt;li>200 是请求成功，一般用于 GET 和 POST&lt;/li>
+&lt;li>304 是未修改，所请求的资源未修改，服务器返回此状态码时，不会返回任何资源，客户端通过缓存访问资源（协商缓存）。&lt;/li>
+&lt;/ol>
+&lt;h2 id="8-http-缓存机制">8 HTTP 缓存机制&lt;/h2>
+&lt;ol>
+&lt;li>强缓存：返回状态码为 200，不会向服务端发送请求，直接从缓存取资源。相关字段有 pragma、expires、cache-control（cache-control 优先级更高，pragma 优先级最高）。&lt;/li>
+&lt;li>协商缓存：返回状态码为 304，会向服务端发送请求，通过服务器告知缓存是否可用。相关字段有 Last-Modified/If-Modified-Since，Etag/If-None-Match&lt;/li>
+&lt;/ol>
+&lt;p>缓存流程：&lt;/p>
+&lt;ol>
+&lt;li>缓存是否过期：未过期，则从缓存读取（强缓存），否则下一步。&lt;/li>
+&lt;li>Etag 值：True，向服务端发送带 If-None-Match 的请求，否则继续判断 Last-Modified&lt;/li>
+&lt;li>Last-Modified 为 True，向服务端发送带 If-Modified-Since 的请求，否则正式发送请求，相应后缓存协商。。（无缓存）&lt;/li>
+&lt;li>服务器根据 If-None-Match 和 If-Modified-Since 决策返回 200 还是 304，304 则从缓存读取（协商缓存），200 则走正常请求。&lt;/li>
+&lt;/ol>
+&lt;h2 id="9-xss-攻击和-csrf-攻击">9 XSS 攻击和 CSRF 攻击&lt;/h2>
+&lt;p>XSS 攻击：跨站脚本攻击，盗取 Cookie，在返回的 HTML 中嵌入 js 脚本，防范方法：用户输入检查（过滤特殊字符等）、设置 set-cookie 的 httponly 属性。&lt;/p>
+&lt;p>CSRF 攻击：跨站请求伪造，利用 Cookie，以用户的名义发送恶意请求。防范方法：验证码、检查 HTTPS 头部的 referer、使用 token。&lt;/p>
+&lt;h2 id="10-http-常见请求头">10 HTTP 常见请求头&lt;/h2>
+&lt;p>可以划分为：通用首部、请求首部、相应首部和实体首部&lt;/p>
+&lt;p>通用首部：&lt;/p>
+&lt;ol>
+&lt;li>Accept：可接受的响应内容类型&lt;/li>
+&lt;li>Accept-Encoding：可接受的响应内容编码形式&lt;/li>
+&lt;li>Accept-Language：可接受的响应语言列表&lt;/li>
+&lt;li>Cache-Control：是否使用强缓存&lt;/li>
+&lt;li>Pragma：一般来说指，是否使用强缓存&lt;/li>
+&lt;li>Connection：连接类型（keep-alive）&lt;/li>
+&lt;li>User-Agent：浏览器的身份标识字符串&lt;/li>
+&lt;li>Content-Length：8 进制标识的请求体的长度。&lt;/li>
+&lt;li>Content-Type：请求体的 MIME 类型，用于 POST 和 GET&lt;/li>
+&lt;li>Host：服务器的域名及监听端口号，80 则可以省略&lt;/li>
+&lt;/ol>
+&lt;p>请求首部：&lt;/p>
+&lt;ol>
+&lt;li>cookie&lt;/li>
+&lt;li>Etag/If-None-Match&lt;/li>
+&lt;li>Last-Modified/if-Modified-Since 等&lt;/li>
+&lt;/ol>
+&lt;p>响应首部：&lt;/p>
+&lt;ol>
+&lt;li>set-cookie 等&lt;/li>
+&lt;/ol>
+&lt;h2 id="11-http-常见请求方法">11 HTTP 常见请求方法&lt;/h2>
+&lt;ol>
+&lt;li>get：请求资源&lt;/li>
+&lt;li>head：请求 header&lt;/li>
+&lt;li>post：建立或修改资源。&lt;/li>
+&lt;li>put：取代资源&lt;/li>
+&lt;li>delete：删除指定资源&lt;/li>
+&lt;li>connect：&lt;/li>
+&lt;li>options：允许客户端查看服务端的性能&lt;/li>
+&lt;li>trace：回显服务器收到的请求，用于测试和诊断&lt;/li>
+&lt;li>patch：对 put 的补充，对已有资源局部更新。&lt;/li>
+&lt;/ol>
+&lt;h2 id="12-输入-url-到显示页面的过程">12 输入 URL 到显示页面的过程&lt;/h2>
+&lt;ol>
+&lt;li>首先需要找到这个 url 域名的服务器 ip，首先会寻找缓存中的记录，如果没有则查找本地的 hosts 文件是否有记录，如果没有则进行下一步。&lt;/li>
+&lt;li>DNS 解析：首先，客户端通过发送 DHCP 请求报文获取网关路由器的 IP 地址，然后通过 ARP 协议获取网关路由器的 MAC 地址，接着向网关路由器发送 DNS 查询报文，到达 DNS 服务器后，在 DNS 数据库中查询域名解析后的 IP 地址。&lt;/li>
+&lt;li>浏览器根据得到的 IP 地址及相应的端口号，构造一个 HTTP 请求报文，并将这个 HTTP 请求封装在一个 TCP 包中，依次经过传输层、网络层、数据链路层、物理层到达服务端，服务端解析这个请求来作出响应给浏览器。&lt;/li>
+&lt;li>浏览器解析响应内容并渲染页面，结束连接。（DOM 树和 CSSOM 树）&lt;/li>
+&lt;/ol>
+&lt;h2 id="13-websocket">13 Websocket&lt;/h2>
+&lt;p>WebSocket 是 HTML5 中的协议，支持持久连续，http 协议不支持持久性连接。Http1.0 和 HTTP1.1 都不支持持久性的链接，HTTP1.1 中的 keep-alive，将多个 http 请求合并为 1 个。&lt;/p>
+&lt;p>HTTP 的生命周期通过 Request 来界定，也就是 Request 一个 Response，那么在 Http1.0 协议中，这次 Http 请求就结束了。在 Http1.1 中进行了改进，有一个 connection：Keep-alive，也就是说，在一个 Http 连接中，可以发送多个 Request，接收多个 Response。但是必须记住，在 Http 中一个 Request 只能对应有一个 Response，而且这个 Response 是被动的，不能主动发起。&lt;/p>
+&lt;p>WebSocket 是基于 Http 协议的，或者说借用了 Http 协议来完成一部分握手，在握手阶段与 Http 是相同的。有 2 个相关的请求头，upgrade，connection。&lt;/p>
+&lt;p>upgrade:websocket&lt;/p>
+&lt;p>connection:upgrade&lt;/p>
+&lt;h2 id="14-bom-对象">14 BOM 对象&lt;/h2>
+&lt;p>浏览器对象，location、history 和 navigator&lt;/p>
+&lt;p>常用属性和方法：&lt;/p>
+&lt;ol>
+&lt;li>history：go、back、forward&lt;/li>
+&lt;li>navigator：userAgent、cookieEnabled&lt;/li>
+&lt;li>location：
+&lt;ol>
+&lt;li>get 类型：href、search、hash、host、hostname、pathname、port、protocal&lt;/li>
+&lt;li>set 类型：assgin（设置 url）、replace（设置 url，并且在 history 中移除）、reload&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="15-cors-跨域请求的方式">15 CORS 跨域请求的方式&lt;/h2>
+&lt;p>cors：跨域资源共享，客服了 AJAX 只能同源使用的限制。&lt;/p>
+&lt;p>只要同时满足以下两大条件，就属于简单请求&lt;/p>
+&lt;ol>
+&lt;li>请求方法为 head、get、post 之一&lt;/li>
+&lt;li>请求头只有：Accepet、Accpet-Language、Content-Language、Last-Event-ID、Content-Type 这五种，并且 Content-type 只有 application/x-www-form-unlencoded、multipart/form-data、text/plain 这三种。&lt;/li>
+&lt;/ol>
+&lt;p>对于简单请求，浏览器直接发出 CORS 请求，在请求头加上 Origin 字段，用来说明来自哪个源，服务器根据这个值决定是否同意此次请求，同意则返回响应，响应头多出几个字段（以&lt;strong>Access-Control-&lt;strong>开头），否则返回一个正常的 HTTP 响应，但请求头&lt;/strong>不包含 Access-Control-Allow-Origin 字段&lt;/strong>，抛出一个错误。&lt;/p>
+&lt;p>&lt;strong>withCredentials 属性&lt;/strong>&lt;/p>
+&lt;p>CORS 请求默认不发送 Cookie 和 HTTP 认证信息，如果需要发送，一方面需要服务器同意，指定 Access-Control-Allow-Credentials 为 True，另一方面 ajax 请求要设置 withCredentials 属性为 true。此外，如果要发送 Cookie，Access-Control-Allow-Origin 就不能设置为星号，必须指定明确的、与明确网页一致的域名。同时，Cookie 依然遵循同源政策。&lt;/p>
+&lt;p>&lt;strong>预检请求&lt;/strong>&lt;/p>
+&lt;p>对于复杂请求的 CORS 请求，会在正式通信前，增加一次 HTTP 查询请求，称为预检请求，浏览器先询问服务器，如果同意才会发出正式的 XMLHttpRequest 请求，否则就报错。&lt;/p>
+&lt;p>预检请求用的请求方法为 OPTIONS，请求头有 Origin、Access-Control-Request-Method、Access-Control-Request-Headers 这三个字段。&lt;/p>
+&lt;p>一旦服务器通过了预检请求，以后每次浏览器正常的 CORS 请求，都跟正常请求一样，会有一个 OrIgin 请求头字段，服务器响应请求头会带有 Access-Control-Allow-Origin。&lt;/p>
+&lt;h2 id="16-css-盒模型">16 CSS 盒模型&lt;/h2>
+&lt;ol>
+&lt;li>标准盒模型：box-sizing：content-box；width=content&lt;/li>
+&lt;li>IE 盒模型：box-sizing：border-box；width=content+border+padding&lt;/li>
+&lt;li>box-sizing：padding-box；width=content+padding&lt;/li>
+&lt;/ol>
+&lt;h2 id="17-link-标签和-import-标签的区别">17 link 标签和 import 标签的区别&lt;/h2>
+&lt;ol>
+&lt;li>link 属于 html 标签，@import 是 css 提供的。&lt;/li>
+&lt;li>加载时机：页面加载时，link 会同时加载，而@import 引用的 css 会等到页面加载结束后加载。&lt;/li>
+&lt;li>兼容性：@import 只有 IE5 以上才支持。&lt;/li>
+&lt;li>优先级：link 大于@import&lt;/li>
+&lt;/ol>
+&lt;h2 id="18-transition-和-animation-的区别">18 transition 和 animation 的区别&lt;/h2>
+&lt;ol>
+&lt;li>大部分属性相同，都是随时间改变元素的属性值。&lt;/li>
+&lt;li>transition 需要触发一个事件才能改变属性，而 animation 不需要触发任何事件。&lt;/li>
+&lt;li>transition 为 2 帧，animation 可以一帧一帧。&lt;/li>
+&lt;/ol>
+&lt;h2 id="19-flex-布局">19 Flex 布局&lt;/h2>
+&lt;p>弹性布局，用来为盒状模型提供最大的灵活性。&lt;/p>
+&lt;p>划分：容器属性和元素属性&lt;/p>
+&lt;p>容器属性：&lt;/p>
+&lt;ol>
+&lt;li>flex-direction：主轴方向&lt;/li>
+&lt;li>flex-wrap：换行规则&lt;/li>
+&lt;li>flew-flow：上面两者结合。&lt;/li>
+&lt;li>justify-content：主轴对齐方式&lt;/li>
+&lt;li>align-items：交叉轴对齐方式&lt;/li>
+&lt;/ol>
+&lt;p>元素属性：&lt;/p>
+&lt;ol>
+&lt;li>order：排列顺序&lt;/li>
+&lt;li>flex-glow：放大比例&lt;/li>
+&lt;li>flex-shrink：缩小比例&lt;/li>
+&lt;li>flex-basis：占据空间&lt;/li>
+&lt;li>flex：上面三者的缩写&lt;/li>
+&lt;li>align-self：允许元素与其它项目的对齐方式不一样，默认 auto，继承父元素的 align-item&lt;/li>
+&lt;/ol>
+&lt;h2 id="20-bfc">20 BFC&lt;/h2>
+&lt;p>BFC：块级格式化上下文，用于清除浮动，防止 margin 重叠等&lt;/p>
+&lt;p>BFC 是页面上的一个独立容器，子元素不会影响到外面，计算 BFC 的高度时，浮动元素也会参与计算。&lt;/p>
+&lt;p>会生成 BFC 的元素：&lt;/p>
+&lt;ol>
+&lt;li>float 不为 none 的元素&lt;/li>
+&lt;li>position 为 fixed 和 absolute 的元素&lt;/li>
+&lt;li>display 为 inline-block、table-cell、table-caption、flex、inline-flex 的元素。&lt;/li>
+&lt;li>overflow 不为 visible 的元素&lt;/li>
+&lt;/ol>
+&lt;h2 id="21-块元素和行元素">21 块元素和行元素&lt;/h2>
+&lt;ol>
+&lt;li>块元素：独占一行，并且有自动填满父元素，可以设置 margin 和 padding 以及高度和宽度&lt;/li>
+&lt;li>行元素：不会独占一行，width 和 height 会失效，并且在垂直方向的 padding 和 margin 会失效。&lt;/li>
+&lt;/ol>
+&lt;h2 id="22-html5-和-css3-的新元素">22 HTML5 和 CSS3 的新元素&lt;/h2>
+&lt;ol>
+&lt;li>HTML5 新增元素：
+&lt;ol>
+&lt;li>新标签：8 个语义标签（header、section、footer、aside、nav、main、article、figure）、mark 高亮、progress 进度、新表单控件(calendar、data、time、email、url、search)、新的 input 类型（color、date、datetime、datetime-local、email）&lt;/li>
+&lt;li>canvas 绘图，支持内联 SVG，支持 MathML&lt;/li>
+&lt;li>多媒体：audio、video、source、embed track&lt;/li>
+&lt;li>本地离线存储：manifest 配置文件&lt;/li>
+&lt;li>web 存储：localStorage、SessionStorage&lt;/li>
+&lt;li>其它：web worker、websocket&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;li>CSS3 新元素
+&lt;ol>
+&lt;li>边框： border-radius、box-shadow&lt;/li>
+&lt;li>背景：background-size、background-origin&lt;/li>
+&lt;li>文本效果：text-shadow、word-wrap、word-break 等&lt;/li>
+&lt;li>2D/3D 转换：transform&lt;/li>
+&lt;li>动画：animation&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="23-重绘和重排">23 重绘和重排&lt;/h2>
+&lt;p>DOM 的变化影响到了预算内宿的几何属性比如宽高，浏览器重新计算元素的几何属性，其他元素的几何属性也会受到影响，浏览器需要重新构造渲染树，这个过程称之为&lt;strong>重排&lt;/strong>，浏览器将受到影响的部分重新绘制在屏幕上的过程称为&lt;strong>重绘&lt;/strong>。&lt;/p>
+&lt;p>重绘和重排的原因：&lt;/p>
+&lt;ol>
+&lt;li>添加或删除可见的 DOM 元素&lt;/li>
+&lt;li>元素尺寸位置的改变&lt;/li>
+&lt;li>浏览器页面初始化&lt;/li>
+&lt;li>浏览器窗口大小发生改变。&lt;/li>
+&lt;/ol>
+&lt;p>&lt;strong>重排一定导致重绘，重绘不一定导致重排。&lt;/strong>&lt;/p>
+&lt;p>减少重排，提高性能的方法：&lt;/p>
+&lt;ol>
+&lt;li>元素的多次样式修改合并成一次修改。&lt;/li>
+&lt;li>如需进行对 DOM 节点进行多次操作，先将其脱离文本流之后再进行多次操作。&lt;/li>
+&lt;li>table 布局的渲染与普通 DOM 节点的操作相比，性能消耗更大，如果可以，尽量减少 table 布局的使用。&lt;/li>
+&lt;li>缓存常用的布局信息。&lt;/li>
+&lt;/ol>
+&lt;h2 id="24-闭包">24 闭包&lt;/h2>
+&lt;p>闭包：当一个嵌套的内部函数引用了外部函数的变量或者函数时，外部函数在执行时就产生了闭包。&lt;/p>
+&lt;p>典型的闭包：&lt;/p>
+&lt;ol>
+&lt;li>将函数作为灵一个函数的返回值&lt;/li>
+&lt;li>将函数作为实参传给另一个函数调用&lt;/li>
+&lt;/ol>
+&lt;p>闭包特点：函数嵌套函数，内部函数引用外部函数的变量。&lt;/p>
+&lt;p>闭包的作用：&lt;/p>
+&lt;ol>
+&lt;li>延长外部函数局部变量的生命周期，可以用于实现计数器。&lt;/li>
+&lt;li>可以形成变量的局部作用域，实现函数封装。&lt;/li>
+&lt;/ol>
+&lt;p>闭包的缺点：函数定义的变量和数据会一直存在内存函数中，不会被及时释放，容易导致内存泄漏。&lt;/p>
+&lt;h2 id="25-类的创建和继承">25 类的创建和继承&lt;/h2>
+&lt;p>类的创建：new 一个 function，在这个 function 中的 prototype 里面添加属性和方法&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Animal(name){
+this.name = name || 'Animal';
+//实例方法
+this.sleep = function(){
+console.log(this.name + &amp;quot;正在睡觉!&amp;quot;);
+}
+//原型方法
+Animal.prototype.eat = function(food){
+console.log(this.name + &amp;quot;正在吃&amp;quot; + food);
+};
+}
+&lt;/code>&lt;/pre>
+&lt;p>类的继承：4 种方式&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>原型链继承（new 一个空对象，空对象指向 Animal，缺点是无法多继承）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Cat(){
+Cat.prototype = new Animal();
+Cat.prototype.name = 'Cat';
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>构造继承（使用父亲的构造函数来增强子类实例，等于复制父亲的实例属性）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Cat(name){
+Animal.call(this);
+this.name = name || 'Tom';
+}
+&lt;/code>&lt;/pre>
+&lt;p>优点：可以多继承&lt;/p>
+&lt;p>缺点：只能继承实例属性和方法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>实例集成和拷贝继承：&lt;/p>
+&lt;ol>
+&lt;li>实例继承：为父亲实例添加新特性，作为子类实例返回&lt;/li>
+&lt;li>拷贝继承：拷贝父亲元素上的属性和方法&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;li>
+&lt;p>组合继承：构造继承和原型链继承的组合&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Cat(name){
+Animal.call(this);
+this.name = name || 'Tom';
+}
+Cat.prototype = new Animal();
+Cat.prototype.constructor = Cat;
+&lt;/code>&lt;/pre>
+&lt;p>通过调用父类构造，继承父亲的属性并保留传参的优点，然后通过将父亲实例作为子类原型，实现函数复用。&lt;/p>
+&lt;p>特点：可以继承实例属性，也可以继承原型属性&lt;/p>
+&lt;p>缺点：调用了两次父类构造函数，生成了两份实例&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>寄生组合继承：通过寄生方式，砍掉父亲的实例属性&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Cat(name){
+Animal.call(this);
+this.name = name || 'Tom';
+}
+var Super = function(){};
+Super.prototype = Animal.prototype;
+Cat.prototype = new Super();
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>最常用的方法：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">Cat.prototype = Object.create(Animal.prototype);
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="26-promisegeneratorasyncawait">26 promise、generator、async/await&lt;/h2>
+&lt;p>promise：CommonJS 工作组提出的一种规范，目的是为异步编程提供统一接口。每一个异步任务返回一个 Promise 对象，该对象有一个 then 方法，允许指定回调函数。有三个状态：等待（pending）、已完成（resolved，又称 fulfilled）、已拒绝（rejected）。promise 必须实现 then 方法（可以说，then 就是 promise 的核心），而且 then 必须返回一个 promise，同一个 promise 的 then 可以调用多次，并且回调的执行顺序跟它们被定义时的顺序一致。then 方法接受两个参数，第一个参数是成功时的回调，在 promise 由“等待”态转换到“完成”态时调用，另一个是失败时的回调，在 promise 由“等待”态转换到“拒绝”态时调用。同时，then 可以接受另一个 promise 传入，也接受一个“类 then”的对象或方法，即 thenable 对象。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>使用举例：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">func(){
+return new Promise((resolve,reject)=&amp;gt;{
+work().then(res=&amp;gt;{
+this.data = res.data;
+resolve();
+}).catch(error=&amp;gt;{
+reject(error);
+})
+})
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ul>
+&lt;p>promise 的用处&lt;/p>
+&lt;ol>
+&lt;li>解决了回调函数的回调地狱问题，有时候我们的请求需要上一个请求返回的结果，会造成相互间回调函数的嵌套，使得代码的可读性和维护性很低。&lt;/li>
+&lt;li>让代码变得扁平，可读性更好，then 返回一个 promise，可以把 then 串起来，then 返回的 promise 装载了由调用返回的值。&lt;/li>
+&lt;li>在异步回调中，函数的执行栈与原函数分离开，导致外部无法抓住异常。在 promise 中我们可以使用 reject 捕获失败情况，和 catch 捕获执行异常。&lt;/li>
+&lt;li>promise 只不过是一种更良好的编程风格。&lt;/li>
+&lt;/ol>
+&lt;p>promise 的缺点：&lt;/p>
+&lt;ol>
+&lt;li>不设置回调函数，promise 内部抛出的错误，无法返回到外部。&lt;/li>
+&lt;li>处于 pending 状态时，无法得知进展到哪一个阶段。&lt;/li>
+&lt;/ol>
+&lt;p>async 和 await：&lt;/p>
+&lt;ol>
+&lt;li>async 函数返回一个 promise 对象，在没有 await 的情况下执行 async 函数，它会立即返回一个 promise 对象，并且，绝对不会注意后面语句的执行，await 关键字只能用在 aync 定义的函数内；
+await 可以用于等待一个 async 函数的返回值，如果它等到的是一个 Promise 对象，await 就忙起来了，它会阻塞后面的代码，等着 Promise 对象 resolve，然后得到 resolve 的值，作为 await 表达式的运算结果。async/await 使得异步代码看起来像同步代码，使代码简洁，可读性更好，避免嵌套。&lt;/li>
+&lt;/ol>
+&lt;h2 id="27-事件流">27 事件流&lt;/h2>
+&lt;p>事件流：从页面接受事件的顺序，DOM2 级事件流包括下面几个阶段&lt;/p>
+&lt;ol>
+&lt;li>事件捕获阶段&lt;/li>
+&lt;li>处于目标阶段&lt;/li>
+&lt;li>事件冒泡阶段&lt;/li>
+&lt;/ol>
+&lt;p>addEventListener：DOM2 级事件新增的指定事件处理程序的操作，这个方法接受三个参数，要处理的事件名，作为事件处理程序的函数和一个布尔值（true 则在捕获阶段调用事件处理程序，否则在冒泡阶段调用）。IE 只支持事件冒泡。&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>addEventListener 示例：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">var op = document.getElementById(&amp;quot;id&amp;quot;);
+op.addEventListener('click', function(e){
+//do something
+}, false);
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="28-事件委托代理">28 事件委托（代理）&lt;/h2>
+&lt;p>事件委托：事件委托指的是，不在事件的发生地（直接 dom）上设置监听函数，而是在其父元素上设置监听函数，通过事件冒泡，父元素可以监听到子元素上事件的触发，通过判断事件发生元素 DOM 的类型，来做出不同的响应。&lt;/p>
+&lt;p>举例：最经典的就是 ul 和 li 标签的事件监听，比如我们在添加事件时候，采用事件委托机制，不会在 li 标签上直接添加，而是在 ul 父元素上添加。&lt;/p>
+&lt;p>优点：比较合适动态元素的绑定，新添加的子元素也会有监听函数，也可以有事件触发机制。&lt;/p>
+&lt;h2 id="29-事件循环">29 事件循环&lt;/h2>
+&lt;p>事务队列中，在每一次事件循环中，宏任务只会提取一个执行，而微任务会一直提取，直到微任务队列为空为止。&lt;/p>
+&lt;p>也就是说如果某个微任务任务被推入到执行中，那么当主线程任务执行完成后，会循环调用该队列任务中的下一个任务来执行，直到该任务队列到最后一个任务为止。而事件循环每次只会入栈一个宏任务,主线程执行完成该任务后又会检查微任务队列并完成里面的所有任务后再执行宏任务队列的任务。&lt;/p>
+&lt;p>宏任务：setTimeOut、setInterval、setImmediate、IO、UI 渲染、主 JS、requestAnimationFrame 等。&lt;/p>
+&lt;p>微任务：process.nextTick、promise.then()，Object.observe()等&lt;/p>
+&lt;h2 id="30-图片懒加载和预加载">30 图片懒加载和预加载&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>懒加载：迟缓加载甚至不加载。（减少服务器的压力）&lt;/p>
+&lt;ol>
+&lt;li>实现方法：图片地址不放在 src，而是放在其它属性，页面加载后，根据 scrollTop 判断图片是否在用户视野内，如果在，则将 data-original 属性中的值放在 src。在滚动事件中重复判断图片是否进入视野。&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;li>
+&lt;p>预加载：提前加载图片，当用户需要查看时直接从本地缓存中渲染。（会增大服务器的压力）&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>CSS 实现：background：url()&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>JS 实现：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">const img = new Image();
+img.src = 'xxx';
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="31-new-操作符">31 new 操作符&lt;/h2>
+&lt;p>new 操作符新建了一个空对象，这个对象原型指向构造函数的 prototype，执行构造函数后返回这个对象&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>实现一个 new 的方法：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function Animal(){...}
+//var a = new Animal();
+function myNew(){
+let obj = {}
+let Constructor = [].shifit.apply(arguments);
+//绑定原型
+obj.__proto__ = Constructor.prototype;
+//调用构造函数
+let res = Constructor.apply(obj, arguments);
+return typeof res === 'object' ? res : obj;
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="32-bindapplycall-的区别">32 bind、apply、call 的区别&lt;/h2>
+&lt;ol>
+&lt;li>apply 和 call 用来改变函数的 this 指向，它们两个函数的第一个参数都是一样的，表示要改变指向的那个对象，第二个参数，apply 中是数组，而 call 是 arg1,arg2&amp;hellip;的形式。&lt;/li>
+&lt;li>bind 改变 this 作用域会返回一个新的函数，这个函数不会立即执行。&lt;/li>
+&lt;/ol>
+&lt;h2 id="33-节流和防抖">33 节流和防抖&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>防抖：持续拖动滚动条，只要不停止触发，就永远不会有输出。短时间内触发的事件，在某个时间期限内，函数只执行一次。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function debounce(func, wait){
+var timeout;
+return function(){
+clearTimeout(timeout);
+timeout = setTimeout(func,wait);
+}
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>节流：持续拖动滚动条，每间隔一段时间，就会输出反馈。相当于&lt;strong>技能冷却&lt;/strong>，执行之后，函数会失效一段时间，冷却之后，又会恢复，设置一个状态位，判断是否处于工作状态。（在防抖基础上，到达指定事件必须输出）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function throttle(func, wait, mustRun){
+var timeout, start = new Data();
+return function(){
+var context = this, args = arguments;
+var cur = new Data();
+clearTimeout(timeout);
+if (cur - start &amp;gt;= mustRun){
+func.apply(context, args);
+start = cur;
+} else {
+timeout = setTimeout(func, wait);
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="34-深拷贝">34 深拷贝&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>简单深拷贝：JSON 序列化和反序列化&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function deepCopy(obj){
+let __obj = JSON.stringify(obj);
+return JSON.parse(_obj);
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>递归方法：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">function deepCopy(obj){
+let res;
+if (typeof obj === 'Object'){
+if (Array.isArray(obj)){
+res = []
+for (let i in obj){
+res.push(deepCopy(obj[i]))
+}
+} else if (obj == null){
+res = null;
+} else if (obj.constructor === 'RegExp'){
+res = obj;
+} else {
+res = {}
+for (let i in obj){
+res[i] = deepCopy(obj[i])
+}
+}
+} else {
+res = obj;
+}
+return res;
+}
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="35-对象属性改变监听-proxy">35 对象属性改变监听-Proxy&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>示例&lt;/p>
+&lt;pre>&lt;code class="language-javascript">var user = new Proxy({}, {
+set:function(target,key,value,receiver){
+}
+})
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="36-变量提升和暂时性死区">36 变量提升和暂时性死区&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>变量提升：var 定义变量，变量可以在声明前使用，值为 undefined；let 不会出现这个情况。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>暂时性死区 TDZ：只要一进入当前作用域，所要使用的变量就已经存在了，但是不可获取，只有等待变量声明的那一行代码出现，才可以获取和使用该变量。&lt;/p>
+&lt;p>&lt;strong>只要块级作用域内存在 let 和 const 命令，它所声明的变量就会绑定这个区域，不再受外部影响。&lt;/strong>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="37-箭头函数">37 箭头函数&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>基本语法&lt;/p>
+&lt;pre>&lt;code class="language-javascript">let func = value=&amp;gt;value;
+//aka
+let func = function(value){
+return value;
+};
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;li>
+&lt;p>与普通函数的区别&lt;/p>
+&lt;ol>
+&lt;li>箭头函数没有 this，如果普通函数包含箭头函数，那么 this 访问的就是最近一层普通函数的 this&lt;/li>
+&lt;li>箭头函数是匿名函数，不能作为构造函数，不能使用 new&lt;/li>
+&lt;li>箭头函数没有自己的 arguments 参数，虽然有 name 属性但是是空字符串，用&amp;hellip;扩展运算符。&lt;/li>
+&lt;li>箭头函数通过 call()或 apply()方法调用一个函数时，只传入了一个参数，对 this 并没有影响。&lt;/li>
+&lt;li>箭头函数没有原型属性 prototype&lt;/li>
+&lt;/ol>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="38-原型链">38 原型链&lt;/h2>
+&lt;ol>
+&lt;li>
+&lt;p>原型：prototype，是一个对象，作用是共享属性和方法&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>原型链：原型与原型层层连接的过程即为原型链&lt;/p>
+&lt;p>假设 B 继承了 A，b 是 B 的实例，那么就有以下关系：&lt;/p>
+&lt;p>（1）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">b.__proto__ = B.prototype
+&lt;/code>&lt;/pre>
+&lt;p>（2）B.prototype.constructor = B，A.prototype.constructor = A&lt;/p>
+&lt;p>（3）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">B.__proto__ = A
+&lt;/code>&lt;/pre>
+&lt;p>（4）&lt;/p>
+&lt;pre>&lt;code class="language-javascript">B.prototype.__proto__ = A.prototype
+&lt;/code>&lt;/pre>
+&lt;/li>
+&lt;/ol>
+&lt;h2 id="39-es6-新特性">39 ES6 新特性&lt;/h2>
+&lt;ol>
+&lt;li>let（解决了变量提升）、 const 常量，块级作用域（暂时性死区）。&lt;/li>
+&lt;li>模板字符串：“xxx${}”&lt;/li>
+&lt;li>箭头函数&lt;/li>
+&lt;li>对象，数组解构赋值&lt;/li>
+&lt;li>for in 和 for of&lt;/li>
+&lt;li>class 类&lt;/li>
+&lt;li>extend 类继承&lt;/li>
+&lt;/ol>
+&lt;h2 id="40-垂直居中的方法">40 垂直居中的方法&lt;/h2>
+&lt;ol>
+&lt;li>margin：auto，left、right、top、bottom 全设为 0&lt;/li>
+&lt;li>display：flex，align-items:center，justify-content:center;&lt;/li>
+&lt;/ol>
+&lt;h2 id="41-前端性能优化">41 前端性能优化&lt;/h2>
+&lt;ol>
+&lt;li>降低请求量：合并资源、减少 HTTP 请求数、minify/gzip 压缩，webP，懒加载&lt;/li>
+&lt;li>加快请求速度：预解析 DNS、减少域名数、并行加载、CDN 分发&lt;/li>
+&lt;li>缓存：HTTP 协议缓存请求、离线缓存 manifest、离线数据缓存 localStorage&lt;/li>
+&lt;li>渲染：JS/CSS 优化，加载顺序，服务端渲染，pipeline&lt;/li>
+&lt;/ol>
+&lt;h2 id="42-get-和-post-的区别">42 get 和 post 的区别&lt;/h2>
+&lt;ol>
+&lt;li>get 参数通过 url 传递，post 放在 request body 中&lt;/li>
+&lt;li>get 请求在 url 中传递的参数有长度限制，post 没有&lt;/li>
+&lt;li>get 参数暴露在 url，不安全。&lt;/li>
+&lt;li>get 请求只能进行 url 编码，post 支持多种编码方式&lt;/li>
+&lt;li>get 请求浏览器会主动缓存。&lt;/li>
+&lt;li>get 请求参数会被完整保留在浏览历史记录。&lt;/li>
+&lt;li>get 用来获取资源，post 用来增加或更新资源。&lt;/li>
+&lt;/ol>
+&lt;h2 id="43-web-worker">43 web worker&lt;/h2>
+&lt;p>在 HTML 页面中，如果在执行脚本时，页面的状态是不可响应的，直到脚本执行完成后，页面才变成可响应。web worker 是运行在后台的 js，独立于其他脚本，不会影响页面你的性能。并且通过 postMessage 将结果回传到主线程。这样在进行复杂操作的时候，就不会阻塞主线程了。&lt;/p>
+&lt;p>如何创建 web worker：&lt;/p>
+&lt;p>检测浏览器对于 web worker 的支持性&lt;/p>
+&lt;p>创建 web worker 文件（js，回传函数等）&lt;/p>
+&lt;p>创建 web worker 对象&lt;/p>
+&lt;h2 id="44-浮动清除">44 浮动清除&lt;/h2>
+&lt;ol>
+&lt;li>overflow:hidden/auto&lt;/li>
+&lt;li>给浮动的元素的容器添加浮动&lt;/li>
+&lt;/ol>
+&lt;h2 id="45-css-选择器">45 CSS 选择器&lt;/h2>
+&lt;p>ID 选择器、Class 选择器、标签选择器、伪元素选择器、伪类选择器&lt;/p>
+&lt;p>优先级：&lt;/p>
+&lt;ol>
+&lt;li>引入了同类的选择器：排在后面的样式属性优先&lt;/li>
+&lt;li>引入了不同的选择器：id&amp;gt;class&amp;gt;标签&lt;/li>
+&lt;/ol></description></item></channel></rss>

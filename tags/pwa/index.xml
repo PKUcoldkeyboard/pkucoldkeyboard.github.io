@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>PWA on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/pwa/</link><description>Recent content in PWA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 18 Jun 2024 22:28:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/pwa/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Workbox 实现 Hugo 渐进式 Web 应用</title><link>https://cuterwrite.top/p/hugo-pwa/</link><pubDate>Tue, 18 Jun 2024 22:28:00 +0000</pubDate><guid>https://cuterwrite.top/p/hugo-pwa/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116406967_p0_master1200.webp" alt="Featured image of post 基于 Workbox 实现 Hugo 渐进式 Web 应用" />&lt;h1 id="基于-workbox-实现-hugo-pwa">基于 Workbox 实现 Hugo PWA&lt;/h1>
+&lt;p>最近给基于 &lt;a class="link" href="https://gohugo.io/" target="_blank" rel="noopener" >Hugo
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+搭建的博客添加了 PWA 功能，显著提升了加载速度和用户体验，甚至实现了离线访问。至于如何实现，那么你需要了解 &lt;strong>Progressive Web Apps (PWA)&lt;/strong>。&lt;/p>
+&lt;h2 id="什么是-pwa">什么是 PWA&lt;/h2>
+&lt;p>渐进式 Web 应用（Progressive Web Apps，简称 PWA）利用现代 Web API 和传统的渐进式增强策略，打造出跨平台的 Web 应用程序。这些应用无处不在，功能丰富，为用户带来媲美原生应用的体验。&lt;/p>
+&lt;p>&lt;strong>PWA 的优势：&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>⚡️ &lt;strong>更快的加载速度&lt;/strong>: PWA 可以缓存重要资源，即使网络状况不佳也能快速加载。&lt;/li>
+&lt;li>✈️ &lt;strong>离线访问&lt;/strong>: PWA 可以缓存内容，让用户即使离线也能访问内容。&lt;/li>
+&lt;li>🔔 &lt;strong>推送通知&lt;/strong>: 像原生应用一样，PWA 可以向用户发送推送通知，提高用户参与度。&lt;/li>
+&lt;li>📱 &lt;strong>安装到主屏幕&lt;/strong>: 用户可以将你的应用添加到电脑或手机桌面，像原生应用一样浏览你的 Web 应用。&lt;/li>
+&lt;/ul>
+&lt;p>PWA 的实现原理是 &lt;strong>Service Worker&lt;/strong>。&lt;strong>Service Worker 是一种特殊的 JavaScript 资源，在浏览器后台独立运行，充当着网络浏览器和 Web 服务器之间的代理。它可以拦截和处理网络请求、缓存资源以及推送通知&lt;/strong>。&lt;/p>
+&lt;p>主流的前端框架 Vue、React、Angular 都提供了相应的 PWA 插件。而对于 Hugo 这样的静态网站生成器，我们可以通过手动添加 &lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+来实现 PWA 功能。&lt;/p>
+&lt;h2 id="workbox">Workbox&lt;/h2>
+&lt;p>&lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+是由 Google Chrome 团队开发的一套模块，旨在简化常见的 Service Worker 路由和缓存操作。每个模块都针对 Service Worker 开发的特定方面进行了优化。Workbox 的目标是尽可能简化 Service Worker 的使用，同时在需要时灵活地满足复杂应用的需求。&lt;/p>
+&lt;p>如果没有 Workbox，我们需要手动编写 Service Worker 来监听 fetch 事件、缓存资源并实现离线访问等功能。而 Workbox 提供了一套工具，可以帮助我们自动生成 Service Worker，并且内置了一些常用的缓存策略，使我们能够更加专注于业务逻辑。&lt;/p>
+&lt;h2 id="配置-pwa">配置 PWA&lt;/h2>
+&lt;p>在上一节中，我们了解了 PWA 的概念和优势，以及 Workbox 如何简化 Service Worker 的开发。接下来将一步步地给 Hugo 博客配置 PWA 功能。&lt;/p>
+&lt;h3 id="注册-service-worker">注册 Service Worker&lt;/h3>
+&lt;p>首先，我们需要在页面中注册 Service Worker。将以下代码段添加到你的 Hugo 主题的 &lt;code>layouts/partials/footer/custom.html&lt;/code> 文件中（其他主题可能需要根据文件结构进行调整）：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">&amp;lt;script&amp;gt;
+// Check that service workers are registered
+if ('serviceWorker' in navigator) {
+// Use the window load event to keep the page load performant
+window.addEventListener('load', () =&amp;gt; {
+navigator.serviceWorker.register('/sw.js').then(reg =&amp;gt; {
+console.log('Service worker registered with scope: ', reg.scope);
+}, err =&amp;gt; {
+console.log('Service worker registration failed: ', err);
+});
+});
+}
+&amp;lt;/script&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>注意： 在注册 Service Worker 之前，你需要先创建 &lt;code>sw.js&lt;/code> 文件，我们将在下一小节中完成这一步骤。&lt;/p>&lt;/div>
+&lt;p>完成注册后，你可以在浏览器的开发者工具 (F12) 中的 &lt;strong>&amp;ldquo;Application&amp;rdquo; -&amp;gt; &amp;ldquo;Service Workers&amp;rdquo;&lt;/strong> 面板中查看 Service Worker 的注册状态。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_service-worker.webp"
+alt="Service Worker" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Service Worker&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="导入-workbox">导入 Workbox&lt;/h3>
+&lt;p>在你的 Hugo 网站根目录下的 &lt;code>static&lt;/code> 文件夹中创建 &lt;code>sw.js&lt;/code> 文件。然后，在 &lt;code>sw.js&lt;/code> 文件中添加以下代码，使用 CDN 导入 Workbox：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+&lt;/code>&lt;/pre>
+&lt;h3 id="缓存策略">缓存策略&lt;/h3>
+&lt;p>Workbox 提供了一些常用的缓存策略，如 &lt;code>CacheFirst&lt;/code>、&lt;code>NetworkFirst&lt;/code>、&lt;code>StaleWhileRevalidate&lt;/code> 等。这里先介绍几种常用的策略。&lt;/p>
+&lt;h4 id="cacheonly-仅缓存">CacheOnly 仅缓存&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-6850d07d742bf_1440.webp"
+alt="CacheOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>强制响应来自缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkonly-仅网络">NetworkOnly 仅网络&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-48f46158a5575_1440.webp"
+alt="NetworkOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略强制要求所有请求都从网络获取最新数据，完全绕过缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cachefirst-优先缓存">CacheFirst 优先缓存&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-falling-to-networ-f4c1aa5570621_1440.webp"
+alt="CacheFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略以速度为优先，会首先尝试从缓存中获取响应，以尽快向用户显示内容。如果缓存中没有所需数据，它才会向网络发起请求获取数据。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkfirst-优先网络">NetworkFirst 优先网络&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-falling-to-cache-39d267a044b35_1440.webp"
+alt="NetworkFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略优先使用最新数据，因此会首先尝试从网络获取响应。如果网络请求失败，例如用户离线或网络连接不稳定，它会回退使用缓存中的数据，确保用户仍然可以访问内容。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="stalewhilerevalidate-读取缓存同时发起网络请求">StaleWhileRevalidate 读取缓存，同时发起网络请求&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-network-873b1ec5f25cc_1440.webp"
+alt="StaleWhileRevalidate" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>StaleWhileRevalidate&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>这种缓存策略优先返回缓存内容（如果有）。即使缓存内容有效，它也会在后台发起网络请求以获取最新数据，保证用户最终能看到最新内容。虽然这种策略能确保用户定期更新缓存，但也意味着每次请求都会产生网络流量，即使数据没有变化，也比较浪费带宽。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="策略配置">策略配置&lt;/h4>
+&lt;p>Workbox 不仅提供上述策略，还允许通过 cacheName、plugins 和 expiration 等配置项进行自定义。你可以通过定义要使用的插件来自定义路由行为。例如，你可以配置缓存名称、缓存有效期以及可缓存的响应状态码，如下所示：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst({
+cacheName: 'my-cache',
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: 60,
+maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="本站配置">本站配置&lt;/h3>
+&lt;h4 id="全局配置">全局配置&lt;/h4>
+&lt;p>以下是全局缓存配置：&lt;/p>
+&lt;pre>&lt;code class="language-javascript">// 缓存版本号
+let cacheVersion = '-240619';
+// 最大条目数
+const maxEntries = 100;
+&lt;/code>&lt;/pre>
+&lt;h4 id="twitto-配置">Twitto 配置&lt;/h4>
+&lt;p>为了确保用户即使在离线状态下也能查看评论，Twitto 评论 API 采用了 &lt;code>NetworkFirst&lt;/code> 缓存策略。这意味着浏览器会优先尝试从网络获取最新数据，如果网络不可用，则使用缓存中的数据。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="rss-与-sitemap-配置">RSS 与 Sitemap 配置&lt;/h4>
+&lt;p>为了确保用户始终获取最新的 RSS 和 Sitemap 数据，这些页面配置为仅使用网络策略 (&lt;code>NetworkOnly&lt;/code>)，不进行缓存。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="html-配置">HTML 配置&lt;/h4>
+&lt;p>为了在保证用户快速加载页面的同时，也能获取到最新内容，网站对 HTML 页面采用了 &lt;code>StaleWhileRevalidate&lt;/code> 缓存策略。这意味着浏览器会优先使用缓存中的页面进行展示，同时在后台向服务器发起请求，获取最新版本，并在下次请求时使用。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="google-fonts-配置">Google Fonts 配置&lt;/h4>
+&lt;p>为了在保证字体文件更新的同时，也能利用缓存加速页面加载速度，网站对 Google Fonts 资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://fonts\.googleapis\.com'),
+new workbox.strategies.CacheFirst({
+cacheName: 'google-fonts-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cdn-配置">CDN 配置&lt;/h4>
+&lt;p>为了最大程度地利用缓存加速页面加载速度，网站对来自常用 CDN 的资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'bootcdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="umani-网站统计配置">Umani 网站统计配置&lt;/h4>
+&lt;p>为了确保网站统计数据的准确性，网站对 Umani 网站统计请求采用了 &lt;code>NetworkOnly&lt;/code> 策略，并使用 &lt;code>BackgroundSyncPlugin&lt;/code> 插件来实现即使在网络离线的情况下也能保证数据最终发送成功。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// 使用 background sync 插件实现后台同步
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="图片配置">图片配置&lt;/h4>
+&lt;p>为了加速图片加载速度，并减少网络请求次数，网站对图片资源采用了 &lt;code>CacheFirst&lt;/code> 缓存策略，并设置了较长的缓存过期时间。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="后缀匹配配置">后缀匹配配置&lt;/h4>
+&lt;p>为了兼顾加载速度和内容更新，网站对未被域名匹配到的静态文件（例如图片、CSS 和 JavaScript 文件）采用了 &lt;code>StaleWhileRevalidate&lt;/code> 缓存策略。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="默认行为配置">默认行为配置&lt;/h4>
+&lt;p>为了处理未被任何自定义路由规则匹配到的请求，网站配置了默认缓存行为，使用 &lt;code>NetworkFirst&lt;/code> 策略并设置了网络超时时间，以兼顾资源获取速度和离线可用性。&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.setDefaultHandler(
+// 优先使用缓存，缓存没有则使用网络请求
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="完整配置">完整配置&lt;/h3>
+&lt;details>
+&lt;summary>sw.js&lt;/summary>
+&lt;pre>&lt;code class="language-javascript">importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+// 缓存版本号
+let cacheVersion = '-240619';
+// 最大条目数
+const maxEntries = 100;
+if (workbox) {
+console.log(`Yay! Workbox is loaded 🎉`);
+// 评论缓存
+workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// rss 、sitemap 不缓存
+workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+// 缓存 HTML
+workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 缓存 Google Fonts
+workbox.routing.registerRoute(
+new RegExp('^https://fonts\.font\.im'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'google-fonts' + cacheVersion,
+plugins: [
+// 使用 expiration 插件实现缓存条目数目和时间控制
+new workbox.expiration.ExpirationPlugin({
+// 最大缓存条目数
+maxEntries: maxEntries,
+// 最长缓存时间 30 天
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+// 使用 cacheableResponse 插件缓存状态码为 0 的请求
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 缓存 bootcdn、unpkg、jsdelivr 等公共库，用正则匹配
+workbox.routing.registerRoute(
+new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'bootcdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+// 自建 UMA 统计脚本: https://analytics.cuterwrite.top/uma
+workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// 使用 background sync 插件实现后台同步
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+// 缓存存储桶图片 https://cuterwrite-1302252842.file.myqcloud.com/
+workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// 后缀匹配，针对其余没有被域名匹配到的静态文件
+workbox.routing.registerRoute(
+new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+// 默认匹配剩下的请求
+workbox.routing.setDefaultHandler(
+// 优先使用缓存，缓存没有则使用网络请求
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+} else {
+console.log(`Boo! Workbox didn't load 😬`);
+}
+&lt;/code>&lt;/pre>
+&lt;/details>
+&lt;h3 id="manifestjson">manifest.json&lt;/h3>
+&lt;p>在你的 Hugo 博客的根目录 &lt;code>static&lt;/code> 文件夹下创建 &lt;code>manifest.json&lt;/code> 文件，该文件包含了关于你的博客的元数据，例如名称、图标和显示选项。&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;name&amp;quot;: &amp;quot;你的博客名称&amp;quot;,
+&amp;quot;short_name&amp;quot;: &amp;quot;博客简称&amp;quot;,
+&amp;quot;start_url&amp;quot;: &amp;quot;/&amp;quot;,
+&amp;quot;display&amp;quot;: &amp;quot;standalone&amp;quot;,
+&amp;quot;background_color&amp;quot;: &amp;quot;#ffffff&amp;quot;,
+&amp;quot;theme_color&amp;quot;: &amp;quot;#000000&amp;quot;,
+&amp;quot;icons&amp;quot;: [{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-192x192.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;192x192&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+},
+{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-512x512.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;512x512&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>注意：将 icon-192x192.png 和 icon-512x512.png 替换为你自己的图标文件名。并确保将这两个图标文件放置在 Hugo 博客的 &lt;code>static&lt;/code> 文件夹中。如果你想修改主题颜色和背景颜色，可以修改 theme_color 和 background_color 字段。&lt;/p>&lt;/div>
+&lt;h2 id="完成配置">完成配置&lt;/h2>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-20_pwa.webp"
+alt="PWA" width="90%" loading="lazy">
+&lt;/figure>
+&lt;p>完成以上步骤后，你的 Hugo 博客将能够被移动设备识别为一个 Web 应用，并提供更佳的用户体验。&lt;/p></description></item></channel></rss>
