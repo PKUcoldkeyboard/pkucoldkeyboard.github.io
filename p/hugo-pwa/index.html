@@ -14,7 +14,7 @@ line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getIte
 <span>暗色模式</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">目录</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#什么是-pwa>什么是 PWA</a></li><li><a href=#workbox>Workbox</a></li><li><a href=#配置-pwa>配置 PWA</a><ul><li><a href=#注册-service-worker>注册 Service Worker</a></li><li><a href=#导入-workbox>导入 Workbox</a></li><li><a href=#缓存策略>缓存策略</a><ul><li><a href=#cacheonly-仅缓存>CacheOnly 仅缓存</a></li><li><a href=#networkonly-仅网络>NetworkOnly 仅网络</a></li><li><a href=#cachefirst-优先缓存>CacheFirst 优先缓存</a></li><li><a href=#networkfirst-优先网络>NetworkFirst 优先网络</a></li><li><a href=#stalewhilerevalidate-读取缓存同时发起网络请求>StaleWhileRevalidate 读取缓存，同时发起网络请求</a></li><li><a href=#策略配置>策略配置</a></li></ul></li><li><a href=#本站配置>本站配置</a><ul><li><a href=#全局配置>全局配置</a></li><li><a href=#twitto-配置>Twitto 配置</a></li><li><a href=#rss-与-sitemap-配置>RSS 与 Sitemap 配置</a></li><li><a href=#html-配置>HTML 配置</a></li><li><a href=#google-fonts-配置>Google Fonts 配置</a></li><li><a href=#cdn-配置>CDN 配置</a></li><li><a href=#umani-网站统计配置>Umani 网站统计配置</a></li><li><a href=#图片配置>图片配置</a></li><li><a href=#后缀匹配配置>后缀匹配配置</a></li><li><a href=#默认行为配置>默认行为配置</a></li></ul></li><li><a href=#完整配置>完整配置</a></li><li><a href=#manifestjson>manifest.json</a></li></ul></li><li><a href=#参考资料>参考资料</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/hugo-pwa/><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116406967_p0_master1200.webp loading=lazy alt="Featured image of post 基于 Workbox 实现 Hugo 渐进式 Web 应用"></a></div><div class=article-details><header class=article-category><a href=/categories/frontend/ style=background-color:#afb0b2;color:#fff>前端技术</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/hugo-pwa/>基于 Workbox 实现 Hugo 渐进式 Web 应用</a></h2><h3 class=article-subtitle>本文讲述了如何利用 Workbox 为 Hugo 静态网站添加 PWA 功能，通过 Service Worker 提升加载速度和用户体验。PWA 的优势包括快速加载、离线访问、推送通知和安装到主屏幕。文章详细介绍了注册 Service Worker、使用 Workbox 的缓存策略，并提供了详细的配置步骤和示例代码。</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
 <time class=article-time--published>2024-06-18</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
 <time class=article-time--reading>阅读时长: 7 分钟</time></div><div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M6 10v.01"/><path d="M10 10v.01"/><path d="M14 10v.01"/><path d="M18 10v.01"/><path d="M6 14v.01"/><path d="M18 14v.01"/><path d="M10 14l4 .01"/></svg>
-<time class=article-time--wordcount>字数统计: 3189 字</time></div></footer></div></header><section class=article-content><h1 id=基于-workbox-实现-hugo-pwa>基于 Workbox 实现 Hugo PWA</h1><p>最近给基于 <a class=link href=https://gohugo.io/ target=_blank rel=noopener>Hugo
+<time class=article-time--wordcount>字数统计: 3241 字</time></div></footer></div></header><section class=article-content><h1 id=基于-workbox-实现-hugo-pwa>基于 Workbox 实现 Hugo PWA</h1><p>最近给基于 <a class=link href=https://gohugo.io/ target=_blank rel=noopener>Hugo
 <span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span>
 </a>搭建的博客添加了 PWA 功能，显著提升了加载速度和用户体验，甚至实现了离线访问。至于如何实现，那么你需要了解 <strong>Progressive Web Apps (PWA)</strong>。</p><h2 id=什么是-pwa>什么是 PWA</h2><p>渐进式 Web 应用（Progressive Web Apps，简称 PWA）利用现代 Web API 和传统的渐进式增强策略，打造出跨平台的 Web 应用程序。这些应用无处不在，功能丰富，为用户带来媲美原生应用的体验。</p><p><strong>PWA 的优势：</strong></p><ul><li>⚡️ <strong>更快的加载速度</strong>: PWA 可以缓存重要资源，即使网络状况不佳也能快速加载。</li><li>✈️ <strong>离线访问</strong>: PWA 可以缓存内容，让用户即使离线也能访问内容。</li><li>🔔 <strong>推送通知</strong>: 像原生应用一样，PWA 可以向用户发送推送通知，提高用户参与度。</li><li>📱 <strong>安装到主屏幕</strong>: 用户可以将你的应用添加到电脑或手机桌面，像原生应用一样浏览你的 Web 应用。</li></ul><p>PWA 的实现原理是 <strong>Service Worker</strong>。<strong>Service Worker 是一种特殊的 JavaScript 资源，在浏览器后台独立运行，充当着网络浏览器和 Web 服务器之间的代理。它可以拦截和处理网络请求、缓存资源以及推送通知</strong>。</p><p>主流的前端框架 Vue、React、Angular 都提供了相应的 PWA 插件。而对于 Hugo 这样的静态网站生成器，我们可以通过手动添加 <a class=link href=https://developer.chrome.com/docs/workbox target=_blank rel=noopener>Workbox
 <span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span>
@@ -107,14 +107,18 @@ const maxEntries = 100;
     })
 );
 </code></pre><h4 id=google-fonts-配置>Google Fonts 配置</h4><p>为了在保证字体文件更新的同时，也能利用缓存加速页面加载速度，网站对 Google Fonts 资源采用了 <code>CacheFirst</code> 缓存策略，并设置了较长的缓存过期时间。</p><pre><code class=language-javascript>workbox.routing.registerRoute(
-    new RegExp('.*.(?:woff|woff2|ttf|otf|eot)'),
-    new workbox.strategies.CacheFirst({
-        cacheName: 'google-fonts-cache' + cacheVersion,
+    new RegExp('.*\.(?:woff|woff2|ttf|otf|eot)'),
+    new workbox.strategies.StaleWhileRevalidate({
+        cacheName: 'google-fonts' + cacheVersion,
         plugins: [
+            // 使用 expiration 插件实现缓存条目数目和时间控制
             new workbox.expiration.ExpirationPlugin({
+                // 最大缓存条目数
                 maxEntries: maxEntries,
+                // 最长缓存时间 30 天
                 maxAgeSeconds: 30 * 24 * 60 * 60,
             }),
+            // 使用 cacheableResponse 插件缓存状态码为 0 的请求
             new workbox.cacheableResponse.CacheableResponsePlugin({
                 statuses: [0, 200],
             }),
@@ -122,7 +126,7 @@ const maxEntries = 100;
     })
 );
 </code></pre><h4 id=cdn-配置>CDN 配置</h4><p>为了最大程度地利用缓存加速页面加载速度，网站对来自常用 CDN 的资源采用了 <code>CacheFirst</code> 缓存策略，并设置了较长的缓存过期时间。</p><pre><code class=language-javascript>workbox.routing.registerRoute(
-    new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+    new RegExp('^https://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
     new workbox.strategies.CacheFirst({
         cacheName: 'cdn' + cacheVersion,
         fetchOptions: {
@@ -164,11 +168,11 @@ const maxEntries = 100;
     })
 );
 </code></pre><h4 id=后缀匹配配置>后缀匹配配置</h4><p>为了兼顾加载速度和内容更新，网站对未被域名匹配到的静态文件（例如图片、CSS 和 JavaScript 文件）采用了 <code>StaleWhileRevalidate</code> 缓存策略。</p><pre><code class=language-javascript>workbox.routing.registerRoute(
-    new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
+    new RegExp('.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
     new workbox.strategies.StaleWhileRevalidate()
 );
 workbox.routing.registerRoute(
-    new RegExp('.*.(css|js)'),
+    new RegExp('.*\.(css|js)'),
     new workbox.strategies.StaleWhileRevalidate()
 );
 </code></pre><h4 id=默认行为配置>默认行为配置</h4><p>为了处理未被任何自定义路由规则匹配到的请求，网站配置了默认缓存行为，使用 <code>NetworkFirst</code> 策略并设置了网络超时时间，以兼顾资源获取速度和离线可用性。</p><pre><code class=language-javascript>workbox.routing.setDefaultHandler(
@@ -224,7 +228,7 @@ if (workbox) {
     );
     // 缓存 Google Fonts
     workbox.routing.registerRoute(
-        new RegExp('.*.(?:woff|woff2|ttf|otf|eot)'),
+        new RegExp('.*\.(?:woff|woff2|ttf|otf|eot)'),
         new workbox.strategies.StaleWhileRevalidate({
             cacheName: 'google-fonts' + cacheVersion,
             plugins: [
@@ -244,7 +248,7 @@ if (workbox) {
     );
     // 缓存 bootcdn、unpkg、jsdelivr 等公共库，用正则匹配
     workbox.routing.registerRoute(
-        new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+        new RegExp('^https://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
         new workbox.strategies.CacheFirst({
             cacheName: 'cdn' + cacheVersion,
             fetchOptions: {
@@ -290,11 +294,11 @@ if (workbox) {
 
     // 后缀匹配，针对其余没有被域名匹配到的静态文件
     workbox.routing.registerRoute(
-        new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
+        new RegExp('.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
         new workbox.strategies.StaleWhileRevalidate()
     );
     workbox.routing.registerRoute(
-        new RegExp('.*.(css|js)'),
+        new RegExp('.*\.(css|js)'),
         new workbox.strategies.StaleWhileRevalidate()
     );
 
@@ -337,7 +341,7 @@ if (workbox) {
 2021 -
 2024 cuterwrite</section><section class=running-time>本博客已稳定运行
 <span id=runningdays class=running-days></span></section><section class=totalcount>发表了66篇文章 ·
-总计276.58k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计<br><span>基于 <a href=https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0 target=_blank rel=noopener><b style=color:#9e8f9f>v3.25.0</b></a> 分支版本修改</span><br></section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+总计276.64k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>使用 <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a> 构建<br>主题 <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> 由 <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a> 设计<br><span>基于 <a href=https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0 target=_blank rel=noopener><b style=color:#9e8f9f>v3.25.0</b></a> 分支版本修改</span><br></section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
 <button class="pswp__button pswp__button--share" title=Share></button>
 <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
 <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
