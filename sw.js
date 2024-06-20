@@ -45,7 +45,7 @@ if (workbox) {
     );
     // 缓存 Google Fonts
     workbox.routing.registerRoute(
-        new RegExp('^https://fonts\.font\.im'),
+        new RegExp('.*.(?:woff|woff2|ttf|otf|eot)'),
         new workbox.strategies.StaleWhileRevalidate({
             cacheName: 'google-fonts' + cacheVersion,
             plugins: [
@@ -67,7 +67,7 @@ if (workbox) {
     workbox.routing.registerRoute(
         new RegExp('^https?://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
         new workbox.strategies.CacheFirst({
-            cacheName: 'bootcdn' + cacheVersion,
+            cacheName: 'cdn' + cacheVersion,
             fetchOptions: {
                 mode: 'cors',
                 credentials: 'omit',
@@ -111,7 +111,7 @@ if (workbox) {
 
     // 后缀匹配，针对其余没有被域名匹配到的静态文件
     workbox.routing.registerRoute(
-        new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp)'),
+        new RegExp('.*.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
         new workbox.strategies.StaleWhileRevalidate()
     );
     workbox.routing.registerRoute(
