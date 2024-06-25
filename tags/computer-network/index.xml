@@ -1,4 +1,154 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 15 Jun 2024 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 25 Jun 2024 02:21:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">RDMA 之 Queue Pair&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/195757767">&lt;cite>知乎专栏：9. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;h2 id="queue-pair">Queue Pair&lt;/h2>
+&lt;p>我们曾经在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >“3. RDMA 基本元素”
+&lt;/a>
+一文中简单的介绍了 QP 的概念，本文将更深入的讲解一些关于 QP 的细节。&lt;/p>
+&lt;h2 id="基本概念回顾">基本概念回顾&lt;/h2>
+&lt;p>首先我们来简单回顾下关于 QP 的基础知识：&lt;/p>
+&lt;p>根据 IB 协议中的描述，QP 是硬件和软件之间的一个虚拟接口。QP 是队列结构，按顺序存储着软件给硬件下发的任务（WQE），WQE 中包含从哪里取出多长的数据，并且发送给哪个目的地等等信息。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_1.webp"
+alt="2024-06-26_9_1" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QP 的概念&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>每个 QP 间都是独立的，彼此通过 PD 隔离，因此一个 QP 可以被视为某个用户独占的一种资源，一个用户也可以同时使用多个 QP。&lt;/p>
+&lt;p>QP 有很多种服务类型，包括 RC、UD、RD 和 UC 等，所有的源 QP 和目的 QP 必须为同一种类型才能进行数据交互。&lt;/p>
+&lt;p>虽然 IB 协议将 QP 称为“虚拟接口”，但是它是有实体的：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>硬件上，QP 是一段包含着若干个 WQE 的存储空间，IB 网卡会从这段空间中读取 WQE 的内容，并按照用户的期望去内存中存取数据。至于这个存储空间是内存空间还是 IB 网卡的片内存储空间，IB 协议并未做出限制，每个厂商有各自的实现&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>软件上，QP 是一个由 IB 网卡的驱动程序所维护的数据结构，其中包含 QP 的地址指针以及一些相关的软件属性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="qpc">QPC&lt;/h3>
+&lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-service-types/" >“5. RDMA 基本服务类型”
+&lt;/a>
+一文中，我们曾经提到过 QPC 全称是 Queue Pair Context，用于存储 QP 相关属性。驱动程序里面是有储存 QP 的软件属性的，既然我们可以在软件里储存 QP 的属性，为什么还要用使用 QPC 呢？&lt;/p>
+&lt;p>这是因为&lt;strong>QPC 主要是给硬件看的，也会用来在软硬件之间同步 QP 的信息。&lt;/strong>&lt;/p>
+&lt;p>我们说过 QP 在硬件上的实体只是一段存储空间而已，硬件除了知道这段空间的起始地址和大小之外一无所知，甚至连这个 QP 服务类型都不知道。还有很多其他的重要信息，比如某个 QP 中包含了若干个 WQE，硬件怎么知道有多少个，当前应该处理第几个呢？&lt;/p>
+&lt;p>所有上述的这些信息，软件是可以设计一定的数据结构并为其申请内存空间的，但是软件看到的都是虚拟地址，这些内存空间在物理上是离散的，硬件并不知道这些数据存放到了哪里。所以就需要软件通过操作系统提前申请好一大片连续的空间，即 QPC 来承载这些信息给硬件看。网卡及其配套的驱动程序提前约定好了 QPC 中都有哪些内容，这些内容分别占据多少空间，按照什么顺序存放。这样驱动和硬件就可以通过通过 QPC 这段空间来读写 QP 的状态等等信息。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_2_QPC.webp"
+alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QPC 的概念&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>如上图所示，硬件其实只需要知道 QPC 的地址 0x12350000 就可以了，因为它可以解析 QPC 的内容，从而得知 QP 的位置，QP 序号，QP 大小等等信息。进而就能找到 QP，知道应该取第几个 WQE 去处理。不同的厂商可能实现有些差异，但是大致的原理就是这样。&lt;/p>
+&lt;p>IB 软件栈中还有很多 Context 的概念，除了 QPC 之外，还有 Device Context，SRQC，CQC，EQC（Event Queue Context，事件队列上下文）等，它们的作用与 QPC 类似，都是用来在记录和同步某种资源的相关属性。&lt;/p>
+&lt;h3 id="qp-number">QP Number&lt;/h3>
+&lt;p>简称为 QPN，就是每个 QP 的编号。IB 协议中规定用 $2^{24}$ 个 bit 来表示 QPN，即每个节点最大可以同时使用 $2^{24}$ 个 QP，这已经是一个很大的数量了，几乎不可能用完。每个节点都各自维护着 QPN 的集合，相互之间是独立的，即不同的节点上可以存在编号相同的 QP。&lt;/p>
+&lt;p>QPN 的概念本身非常简单，但是有两个特殊的保留编号需要额外注意一下：&lt;/p>
+&lt;h4 id="qp0">QP0&lt;/h4>
+&lt;p>编号为 0 的 QP 用于子网管理接口 SMI（Subnet Management Interface），用于管理子网中的全部节点，说实话我也还没搞清楚这个接口的作用，暂且按下不表。&lt;/p>
+&lt;h4 id="qp1">QP1&lt;/h4>
+&lt;p>编号为 1 的 QP 用于通用服务接口 GSI（General Service Interface），GSI 是一组管理服务，其中最出名的就是 CM（Communication Management），是一种在通信双方节点正式建立连接之前用来交换必须信息的一种方式。其细节将在后面的文章中专门展开介绍。&lt;/p>
+&lt;p>这也就是我们之前的文章画的关于 QP 的图中，没有出现过 QP0 和 QP1 的原因了。这两个 QP 之外的其他 QP 就都是普通 QP 了。用户在创建 QP 的时候，驱动或者硬件会给这个新 QP 分配一个 QPN，一般的 QPN 都是 2、3、4 这样按顺序分配的。当 QP 被销毁之后，它的 QPN 也会被重新回收，并在合适的时候分配给其他新创建的 QP。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;p>我们从控制层面和数据层面来分类介绍用户接口，控制面即用户对某种资源进行某种设置，一般都是在正式收发数据之前进行；而数据面自然就是真正的数据收发过程中进行的操作。&lt;/p>
+&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;p>接触过算法的读者应该都了解，链表的节点涉及到“增、删、改、查”四个操作，链表的节点是一片内存区域，是一种软件资源。&lt;/p>
+&lt;p>“增”即向操作系统申请一片内存用来存放数据，系统将在内存中划分一块空间，并将其标记为“已被进程 XX 使用”，其他没有权限的进程将无法覆盖甚至读取这片内存空间。&lt;/p>
+&lt;p>“删”即通知操作系统，这片空间我不使用了，可以标记成“未使用”并给其它进程使用了。&lt;/p>
+&lt;p>“改”就是写，即修改这片内存区域的内容。&lt;/p>
+&lt;p>&amp;ldquo;查&amp;quot;就是读，即获取这片内存区域的内容。&lt;/p>
+&lt;p>QP 作为 RDMA 技术中最重要的一种资源，在生命周期上与链表并无二致：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>操作&lt;/th>
+&lt;th>链表节点&lt;/th>
+&lt;th>QP&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>增&lt;/td>
+&lt;td>struct ListNode *node = malloc(sizeof(struct ListNode *));&lt;/td>
+&lt;td>Create QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>删&lt;/td>
+&lt;td>free(node);&lt;/td>
+&lt;td>Destroy QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>改&lt;/td>
+&lt;td>node-&amp;gt;val = xxx;&lt;/td>
+&lt;td>Modify QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>查&lt;/td>
+&lt;td>xxx = node-&amp;gt;val;&lt;/td>
+&lt;td>Query QP&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>这四种操作，其实就是 Verbs（RDMA 对上层应用的 API）在控制面上对上层用户提供给用户的几个接口：&lt;/p>
+&lt;h4 id="create-qp">Create QP&lt;/h4>
+&lt;p>创建一个 QP 的软硬件资源，包含 QP 本身以及 QPC。用户创建时会写传入一系列的初始化属性，包含该 QP 的服务类型，可以储存的 WQE 数量等信息&lt;/p>
+&lt;h4 id="destroy-qp">Destroy QP&lt;/h4>
+&lt;p>释放一个 QP 的全部软硬件资源，包含 QP 本身及 QPC。销毁 QP 后，用户将无法通过 QPN 索引到这个 QP。&lt;/p>
+&lt;h4 id="modify-qp">Modify QP&lt;/h4>
+&lt;p>修改一个 QP 的某些属性，比如 QP 的状态，路径的 MTU 等等。这个修改过程既包括软件数据结构的修改，也包括对 QPC 的修改。&lt;/p>
+&lt;h4 id="query-qp">Query QP&lt;/h4>
+&lt;p>查询一个 QP 当前的状态和一些属性，查询到的数据来源于驱动以及 QPC 的内容。&lt;/p>
+&lt;p>这四种操作都有配套的 Verbs 接口，类似于 &lt;code>ibv_create_qp()&lt;/code> 这种形式，我们编写 APP 时直接调用就可以了。更多关于对上层的 API 的细节，我们将在后面专门进行介绍。&lt;/p>
+&lt;h2 id="数据面">数据面&lt;/h2>
+&lt;p>数据面上，一个 QP 对上层的接口其实只有两种，分别用于向 QP 中填写发送和接收请求。&lt;strong>这里的“发送”和“接收”并不是指的发送和接收数据，而是指的是一次通信过程的“发起方”（Requestor）和“接收方”（Responser）&lt;/strong>。&lt;/p>
+&lt;p>在行为上都是软件向 QP 中填写一个 WQE（对应用层来说叫 WR），请求硬件执行一个动作。所以这两种行为都叫做“Post XXX Request”的形式，即下发 XXX 请求。&lt;/p>
+&lt;h3 id="post-send-request">Post Send Request&lt;/h3>
+&lt;p>再强调一下，Post Send 本身不是指这个 WQE 的操作类型是 Send，而是表示这个 WQE 属于通信发起方。这个流程中填写到 QP 中的 WQE/WR 可以是 Send 操作，RDMA Write 操作以及 RDMA Read 操作等。&lt;/p>
+&lt;p>用户需要提前准备好数据缓冲区、目的地址等信息，然后调用接口将 WR 传给驱动，驱动再把 WQE 填写到 QP 中。&lt;/p>
+&lt;h3 id="post-receive-request">Post Receive Request&lt;/h3>
+&lt;p>Post Recv 的使用场景就相对比较少了，一般只在 Send-Recv 操作的接收端执行，接收端需要提前准备好接收数据的缓冲区，并将缓冲区地址等信息以 WQE 的形式告知硬件。&lt;/p>
+&lt;h2 id="qp-状态机">QP 状态机&lt;/h2>
+&lt;p>说到 QP 的状态，就不得不祭出下面这张图（取自 IB 协议 10.3.1 节）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_3.webp"
+alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QP 状态机&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>所谓状态机，就是描述一个对象的不同状态，以及触发状态间跳转的条件。为一个对象设计状态机可以使这个对象的生命周期变得非常明确，实现上也会使得逻辑更加清晰。&lt;/p>
+&lt;p>对于 QP 来说，IB 规范也为其设计了几种状态，处于不同状态的 QP 的功能是有差异的，比如只有进入到 Ready to Send 状态之后，QP 才能够进行 Post Send 数据操作。正常状态（绿色的）之间的状态转换都是由用户通过上文介绍的 Modify QP 的用户接口来主动触发的；而错误状态（红色的）往往是出错之后自动跳转的，当一个 QP 处于错误状态之后就无法执行正常的业务了，就需要上层通过 Modify QP 将其重新配置到正常状态上。&lt;/p>
+&lt;p>上图中我们只关注 QP 的部分，EE（End-to-End Context）是专门给 RD 服务类型使用的一个概念，我们暂不涉及。我们通过 Create QP 接口来进入这个状态图，通过 Destroy QP 接口来离开这个状态图。&lt;/p>
+&lt;p>QP 有以下几种状态，我们仅介绍一下比较重要的点：&lt;/p>
+&lt;h3 id="rstreset">RST（Reset）&lt;/h3>
+&lt;p>复位状态。当一个 QP 通过 Create QP 创建好之后就处于这个状态，相关的资源都已经申请好了，但是这个 QP 目前什么都做不了，其无法接收用户下发的 WQE，也无法接受对端某个 QP 的消息。&lt;/p>
+&lt;h3 id="initinitialized">INIT（Initialized）&lt;/h3>
+&lt;p>已初始化状态。这个状态下，用户可以通过 Post Receive 给这个 QP 下发 Receive WR，但是接收到的消息并不会被处理，会被静默丢弃；如果用户下发了一个 Post Send 的 WR，则会报错。&lt;/p>
+&lt;h3 id="rtrready-to-receive">RTR（Ready to Receive）&lt;/h3>
+&lt;p>准备接收状态。在 INIT 状态的基础上，RQ 可以正常工作，即对于接收到的消息，可以按照其中 WQE 的指示搬移数据到指定内存位置。此状态下 SQ 仍然不能工作。&lt;/p>
+&lt;h3 id="rtsready-to-send">RTS（Ready to Send）&lt;/h3>
+&lt;p>准备发送状态。在 RTR 基础上，SQ 可以正常工作，即用户可以进行 Post Send，并且硬件也会根据 SQ 的内容将数据发送出去。进入该状态前，QP 必须已于对端建立好链接。&lt;/p>
+&lt;h3 id="sqdsend-queue-drain">SQD（Send Queue Drain）&lt;/h3>
+&lt;p>SQ 排空状态。顾名思义，该状态会将 SQ 队列中现存的未处理的 WQE 全部处理掉，这个时候用户还可以下发新的 WQE 下来，但是这些 WQE 要等到旧的 WQE 全处理之后才会被处理。&lt;/p>
+&lt;h3 id="sqersend-queue-error">SQEr（Send Queue Error）&lt;/h3>
+&lt;p>SQ 错误状态。当某个 Send WR 发生完成错误（即硬件通过 CQE 告知驱动发生的错误）时，会导致 QP 进入此状态。&lt;/p>
+&lt;h3 id="errerror">ERR（Error）&lt;/h3>
+&lt;p>即错误状态。其他状态如果发生了错误，都可能进入该状态。Error 状态时，QP 会停止处理 WQE，已经处理到一半的 WQE 也会停止。上层需要在修复错误后再将 QP 重新切换到 RST 的初始状态。&lt;/p>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>本文先回顾了 QP 的一些重要基本概念，然后讲解了 QPC、QPN 等 QP 强相关的概念，最后介绍了用户操作 QP 常用的接口以及 QP 状态机，相信本文过后读者一定对 QP 有了更深的了解。&lt;/p>
+&lt;p>其实作为 RDMA 的核心概念，QP 的内容很多，本文难以全部囊括。我将在后面的文章中逐渐把相关的内容补全，比如 QKey 的概念将在后续专门介绍各种 Key 的文章中讲解。&lt;/p>
+&lt;p>好了，本文就到这了，感谢阅读。预告下一篇文章将详细讲解 CQ。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>3.5.1 10.2.4 QP 的基本概念&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.3 QP 状态机&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.2.5 QP 相关的软件接口&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.4 Post Send Post Recv&lt;/p>
+&lt;/li>
+&lt;/ul></description></item><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>知乎专栏：8. RDMA 之 Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -891,628 +1041,4 @@ IB 领域的领头羊，协议标准制定、软硬件开发和生态建设都�
 &lt;/ul>
 &lt;h2 id="用户">用户&lt;/h2>
 &lt;p>微软、IBM 和国内的阿里、京东都正在使用 RDMA，另外还有很多大型 IT 公司在做初步的开发和测试。在数据中心和高性能计算场景下，RDMA 代替传统网络是大势所趋。笔者对于市场接触不多，所以并不能提供更详细的应用情况。&lt;/p>
-&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item><item><title>RDMA 技术及其编程方法（二）：编程指导</title><link>https://cuterwrite.top/p/rdma-tutorial/2/</link><pubDate>Thu, 27 Jul 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-tutorial/2/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725145210.webp" alt="Featured image of post RDMA 技术及其编程方法（二）：编程指导" />&lt;h1 id="rdma-技术及其编程方法二编程指导">RDMA 技术及其编程方法（二）：编程指导&lt;/h1>
-&lt;h2 id="一libibverbs-简介">一、libibverbs 简介&lt;/h2>
-&lt;ul>
-&lt;li>libibverbs 由 Roland Dreier 自 2006 年开始开发和维护，实际上是*nix 中的 Verbs API 标准
-&lt;ul>
-&lt;li>开源&lt;/li>
-&lt;li>Verbs 的核心部分自 2005 年起集成到 Linux 内核中&amp;ndash;内核 2.6.11&lt;/li>
-&lt;li>Inbox in several *nix distributions&lt;/li>
-&lt;li>目前有多个硬件供应商提供的级别较低的库&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>对所有启用 RDMA 的传输协议使用相同的 API
-&lt;ul>
-&lt;li>&lt;strong>InfiniBand&lt;/strong>： 支持 RDMA 的网络体系结构
-&lt;ul>
-&lt;li>需要支持它的网卡和 InfiniBand 交换机。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;strong>RoCE&lt;/strong>：基于以太网/IP 帧的 RDMA 数据包封装
-&lt;ul>
-&lt;li>需要支持它的网卡和标准以太网交换机&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;strong>iWARP&lt;/strong>：提供基于流控制传输协议(SCTP)和传输控制协议(TCP)的 RDMA
-&lt;ul>
-&lt;li>需要支持它的网卡和标准以太网交换机&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>libibverbs 是完全线程安全的
-&lt;ul>
-&lt;li>libibverbs 本身是线程安全的&lt;/li>
-&lt;li>用户态空间低级驱动程序库也是线程安全的&lt;/li>
-&lt;li>应用程序可以在多线程中使用 RDMA 资源&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;div class="notice notice-warning" >
-&lt;div class="notice-title">&lt;svg t="1705945674099" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="16953" width="200" height="200">&lt;path d="M512 106.666667a405.333333 405.333333 0 1 0 405.333333 405.333333A405.333333 405.333333 0 0 0 512 106.666667z m120.533333 489.6a25.621333 25.621333 0 0 1 0 36.266666 25.749333 25.749333 0 0 1-36.266666 0L512 548.266667l-84.266667 84.266666a25.749333 25.749333 0 0 1-36.266666 0 25.621333 25.621333 0 0 1 0-36.266666L475.733333 512l-84.266666-84.266667a25.642667 25.642667 0 0 1 36.266666-36.266666L512 475.733333l84.266667-84.266666a25.642667 25.642667 0 0 1 36.266666 36.266666L548.266667 512z" fill="#ffffff" p-id="16954">&lt;/path>&lt;/svg>&lt;/div>&lt;p>销毁一个线程中的资源并在另一个线程中使用它将导致 segmentation fault，这个问题在非多线程代码中也会发生&lt;/p>&lt;/div>
-&lt;ul>
-&lt;li>使用 libibverbs 的基本须知
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:left">tips&lt;/th>
-&lt;th style="text-align:left">说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:left">头文件引入&lt;/td>
-&lt;td style="text-align:left">#include&amp;lt;infiniband/verbs.h&amp;gt;&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">编译时链接&lt;/td>
-&lt;td style="text-align:left">-libverbs&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">所有的 input structures 需要为 zeroed&lt;/td>
-&lt;td style="text-align:left">使用 memset()或结构初始化、如果该 structure 有扩充的需求，则零值将保留遗留行为&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">大多数资源句柄都是指针，因此使用错误的句柄可能会导致分段错误&lt;/td>
-&lt;td style="text-align:left">使用 NULL 检查句柄&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">返回指针的 Verbs 成功时返回有效值，失败时返回 NULL&lt;/td>
-&lt;td style="text-align:left">检查返回值&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">返回整形变量的 Verbs 如果成功则返回零，如果成功则返回-1 或 errno&lt;/td>
-&lt;td style="text-align:left">检查返回值&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="二verbs-api-详解">二、Verbs API 详解&lt;/h2>
-&lt;h3 id="1-简介">1. 简介&lt;/h3>
-&lt;ul>
-&lt;li>在内核和用户态空间均可使用&lt;/li>
-&lt;li>Verbs 中的类
-&lt;ul>
-&lt;li>资源管理：Qps、CQs、SRQs 等等&lt;/li>
-&lt;li>WR 处理：post send, 轮询 CQ 等等&lt;/li>
-&lt;li>内存注册&lt;/li>
-&lt;li>地址句柄&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>Verbs 中的操作
-&lt;ul>
-&lt;li>Device 操作&lt;/li>
-&lt;li>上下文操作&lt;/li>
-&lt;li>PD 操作&lt;/li>
-&lt;li>QP bringup&lt;/li>
-&lt;li>活跃 QP 操作&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-verbs-对象创建层次">2. Verbs 对象创建层次&lt;/h3>
-&lt;ol>
-&lt;li>获取 devide 列表&lt;/li>
-&lt;li>打开请求的 device&lt;/li>
-&lt;li>查询 device 功能&lt;/li>
-&lt;li>分配 PD 内存空间&lt;/li>
-&lt;li>注册内存域 MR&lt;/li>
-&lt;li>关联并创建完成队列 CQ&lt;/li>
-&lt;li>创建 QP&lt;/li>
-&lt;li>Bring up a QP&lt;/li>
-&lt;li>Post WR 并且轮询 CQ&lt;/li>
-&lt;li>清理资源
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235009.webp"
-alt="20230724235009" width="90%" loading="lazy">
-&lt;/figure>
-&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230724235116.webp"
-alt="20230724235116" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h3 id="3-两个动态库">3. 两个动态库&lt;/h3>
-&lt;ul>
-&lt;li>libibverbs.so
-&lt;ul>
-&lt;li>用于直接通过用户态空间访问 InfiniBand 硬件的库&lt;/li>
-&lt;li>Infiniband(根据 Infiniband 规范)和 iWarp(iWARP 动词规范)的 RDMA Verbs 的实现&lt;/li>
-&lt;li>它处理创建、修改、查询和销毁资源的控制路径，如保护域(PD)、完成队列(CQ)、队列对(QP)、共享接收队列(SRQ)、地址句柄(AH)、内存区域(MR)&lt;/li>
-&lt;li>它还处理发送和接收发布到 QPS 和 SRQ 的数据，使用轮询和完成事件从 CQs 获取完成&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>librdmacm.so
-&lt;ul>
-&lt;li>用户态空间的 RDMA 连接管理器&lt;/li>
-&lt;li>使用 Socket 语义的 RDMA(InfiniBand、ROCE 和 iWARP)通信管理库&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="三connection-manager">三、Connection Manager&lt;/h2>
-&lt;h3 id="1-连接的建立">1. 连接的建立&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>基于 Infiniband 通信管理(CM)协议（在通用服务接口(GSI)上定义的协议 QP：QP1）&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>提供以下服务&lt;/p>
-&lt;ul>
-&lt;li>在对等 RC 和 QP 之间交换必要的参数，使它们为通信做好准备
-&lt;ul>
-&lt;li>初始化器请求连接到远程上的服务 ID（服务 ID 映射）&lt;/li>
-&lt;li>类 TCP 握手：请求/响应/即用消息&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>查找给定服务 ID 的远程 UD 和 QP 序号
-&lt;ul>
-&lt;li>服务 ID 请求/响应消息&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>加载备用路径&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>连接管理器（Connection Manager，CM）是一个用户态空间的库，它提供了一个通用的接口，用于在 RDMA 网络中建立连接。它可以用于建立连接，也可以用于查找远程 QP 的地址，以便在不建立连接的情况下发送数据。&lt;/p>
-&lt;ul>
-&lt;li>需要在对等 QP 之间交换信息&lt;/li>
-&lt;li>负责 RC、UC、RD 连接的建立&lt;/li>
-&lt;li>应用程序使用 SA 来获取其他信息(例如路径记录)&lt;/li>
-&lt;li>SIDR 用于 UD&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-cm-的抽象类型rdmacm">2. CM 的抽象类型（RDMACM）&lt;/h3>
-&lt;ul>
-&lt;li>类似于 Socket 连接模式的语义&lt;/li>
-&lt;li>对 IB 和 ROCE 都使用基于 IP 的寻址模式&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:left">类&lt;/th>
-&lt;th style="text-align:left">说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_create/destroy_id&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">creates/destroys a connection identifier (equivalent to a socket)&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_create/destroy_qp&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">allocate/destroy a qp for communication&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_bind_addr&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">set local port to listen on&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_resolve_addr&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">obtain local RDMA device to reach remote address&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_resolve_route&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">determine route to remote address&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_get_src_port&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">query local port&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_get_local_addr&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">query local ip&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_get_peer_addr&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">query remote ip&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_connect/disconnect&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">connect/disconnect rc qps, or resolve service id to qp for ud qps&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_listen&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">listen for incoming connections&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_accept/reject&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">accept/reject incoming connection requests&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_create/destroy_event_channel&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">allocate/destroy an event channel&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_get_cm_event&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">get next event&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_ack_cm_event&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">acknowledge event(s) to rdmacm&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">&lt;strong>rdma_join/leave_multicast&lt;/strong>&lt;/td>
-&lt;td style="text-align:left">join/leave multicast addresses&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>使用 rdmacm 的基本须知
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:left">tips&lt;/th>
-&lt;th style="text-align:left">说明&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:left">头文件引入&lt;/td>
-&lt;td style="text-align:left">#include&amp;lt;rdma/rdma_cma.h&amp;gt;&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:left">编译时链接&lt;/td>
-&lt;td style="text-align:left">-lrdmacm&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="四-rdmacm-程序解析被动方">四、 RDMACM 程序解析——被动方&lt;/h2>
-&lt;p>流程如下：&lt;/p>
-&lt;ol>
-&lt;li>创建事件 channel，以便我们可以接收 rdmacm 事件，如连接请求和连接建立通知。&lt;/li>
-&lt;li>创建连接 ID 并绑定到地址。&lt;/li>
-&lt;li>创建 Listener 并返回端口/地址。&lt;/li>
-&lt;li>等待连接请求&lt;/li>
-&lt;li>创建 PD、CQ 和 Send-Receive QP&lt;/li>
-&lt;li>接受连接请求&lt;/li>
-&lt;li>等待建立连接&lt;/li>
-&lt;li>视情况发布操作&lt;/li>
-&lt;/ol>
-&lt;h3 id="1-创建事件-channel">1. 创建事件 channel&lt;/h3>
-&lt;ul>
-&lt;li>打开用于报告通信事件的 channel。异步事件将通过事件 channel 报告给用户，对应方法为&lt;code>struct rdma_event_channel * rdma_create_event_channel(void)&lt;/code>。&lt;/li>
-&lt;li>事件 channel 用于定向 rdma_cm_id 上的所有事件。对于许多客户端来说，单个事件 channel 可能就足够了，然而，当管理大量的连接或 cm_id 时，用户可能会发现将不同 cm_id 的事件定向到不同的 channel 进行处理是有用的。&lt;/li>
-&lt;li>必须通过调用&lt;code>rdma_destroy_event_channel&lt;/code> 销毁所有创建的事件 channel。用户应该调用&lt;code>rdma_get_cm_event&lt;/code> 来检索事件 channel 上的事件。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">struct rdma_event_channel *channel = rdma_create_event_channel();
-if (!channel) {
-perror(&amp;quot;rdma_create_event_channel&amp;quot;);
-return -1;
-}
-struct rdma_cm_event* event;
-// 此处会阻塞，直到有事件发生
-int err = rdma_get_cm_event(channel, &amp;amp;event);
-if (err) {
-perror(&amp;quot;rdma_get_cm_event&amp;quot;);
-return err;
-}
-// 中间处理代码...
-rdma_destroy_event_channel(channel);
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>每个事件 channel 都映射到一个文件描述符。可以像使用和操作任何其他 FD 一样使用和操作关联的文件描述符，以更改其行为。&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-创建连接-id">2. 创建连接 ID&lt;/h3>
-&lt;ul>
-&lt;li>创建用于跟踪通信信息的标识符，对应方法为&lt;code>int rdma_create_id(struct rdma_event_channel *channel, struct rdma_cm_id **id, void *context, enum rdma_port_space ps)&lt;/code>。&lt;/li>
-&lt;li>输入参数：
-&lt;ul>
-&lt;li>channel：事件 channel&lt;/li>
-&lt;li>id：指向 rdma_cm_id 指针的指针，用于返回新创建的 rdma_cm_id&lt;/li>
-&lt;li>context：用户上下文，将在事件中返回给用户&lt;/li>
-&lt;li>ps：RDMA 端口空间，指定要使用的端口空间&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>rdma_cm_id 在概念上等同于用于 RDMA 通信的套接字。不同之处在于，RDMA 通信需要显式绑定到指定的 RDMA 设备，然后才能进行通信，并且大多数操作本质上是异步的。&lt;/li>
-&lt;li>端口空间
-&lt;ul>
-&lt;li>RDMA_PS_TCP：提供可靠、面向连接的 QP 通信。与 TCP 不同，RDMA 端口空间提供基于消息的通信，而不是基于流的通信。&lt;/li>
-&lt;li>RDMA_PS_UDP：提供不可靠、无连接的 QP 通信。支持数据报和组播通信。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>销毁：在调用此函数并确认相关事件之前，用户必须释放任何与 rdma_cm_id 相关的 QP。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">struct rdma_cm_id *listen_id;
-int err = rdma_create_id(channel, &amp;amp;listen_id, NULL, RDMA_PS_TCP);
-if (err) {
-perror(&amp;quot;rdma_create_id&amp;quot;);
-return err;
-}
-// 中间处理代码...
-rdma_destroy_id(listen_id);
-&lt;/code>&lt;/pre>
-&lt;h3 id="3-绑定地址">3. 绑定地址&lt;/h3>
-&lt;ul>
-&lt;li>将源地址与 rdma_cm_id 相关联。对应方法为&lt;code>int rdma_bind_addr(struct rdma_cm_id *id, struct sockaddr *addr)&lt;/code>。
-&lt;ul>
-&lt;li>地址中可以包含通配符。&lt;/li>
-&lt;li>如果绑定到特定本地地址，则 rdma_cm_id 也将绑定到本地 RDMA 设备。&lt;/li>
-&lt;li>通常，在调用&lt;code>rdma_listen&lt;/code> 以绑定到特定端口号之前调用此函数，但也可以在调用&lt;code>rdma_resolve_addr&lt;/code> 以绑定到特定地址之前在主动方调用该函数。&lt;/li>
-&lt;li>如果用于绑定到端口 0，rdma_cm 将选择一个可用端口，可以使用&lt;code>rdma_get_src_port&lt;/code> 检索该端口。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">/* sockaddr_in 是 IPV4 的地址结构体
-* AF_INET：IPV4
-* htons：将主机字节序转换为网络字节序（小端存储）, 20079 是端口号
-* INADDR_ANY：表示任意地址
-*/
-struct sockaddr_in addr = {
-.sin_family = AF_INET,
-.sin_port = htons(20079),
-.sin_addr = { .s_addr = INADDR_ANY },
-};
-err = rdma_bind_addr(listen_id, (struct sockaddr *)&amp;amp;addr);
-if (err) {
-perror(&amp;quot;rdma_bind_addr&amp;quot;);
-return err;
-}
-&lt;/code>&lt;/pre>
-&lt;h3 id="4-创建-listener返回端口地址">4. 创建 Listener，返回端口/地址&lt;/h3>
-&lt;ul>
-&lt;li>初始化传入连接请求或数据报服务查找的 Listener。对应方法为&lt;code>int rdma_listen(struct rdma_cm_id *id, int backlog)&lt;/code>。
-&lt;ul>
-&lt;li>侦听将被限制为本地绑定源地址&lt;/li>
-&lt;li>在调用此函数之前，用户必须已通过调用&lt;code>rdma_bind_addr&lt;/code> 将&lt;code>rdma_cm_id&lt;/code> 绑定到本地地址。&lt;/li>
-&lt;li>如果&lt;code>rdma_cm_id&lt;/code> 绑定到特定的 IP 地址，则侦听将仅限于该地址和关联的 RDMA 设备。&lt;/li>
-&lt;li>如果&lt;code>rdma_cm_id&lt;/code> 仅绑定到 RDMA 端口号，则将在所有 RDMA 设备上进行侦听。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>返回已绑定到本地地址的&lt;code>rdma_cm_id&lt;/code> 的本地端口号。对应方法为&lt;code>uint16_t rdma_get_src_port(struct rdma_cm_id *id)&lt;/code>。&lt;/li>
-&lt;li>返回已绑定到本地设备的&lt;code>rdma_cm_id&lt;/code> 的本地 IP 地址。对应方法为&lt;code>struct sockaddr * rdma_get_local_addr(struct rdma_cm_id *id)&lt;/code>。&lt;/li>
-&lt;li>解析目的节点和服务地址，并返回建立通信所需的信息。提供与 getaddrinfo 等效的 RDMA 功能(配合&lt;code>rdma_create_ep&lt;/code> 使用)。对应方法为&lt;code>int rdma_getaddrinfo (char *node, char *service, struct rdma_addrinfo *hints, struct rdma_addrinfo **res)&lt;/code>。
-&lt;ul>
-&lt;li>node: 可选，目的节点的主机名，或者点分十进制的 IPv4/IPv6 十六进制地址&lt;/li>
-&lt;li>service：地址的服务名称或端口号。&lt;/li>
-&lt;li>hints：一个包含有关调用方支持的服务类型的提示的 rdma_addrinfo 结构的引用。&lt;/li>
-&lt;li>res：指向包含响应信息的 rdma_addrinfo 结构的 LinkedList 的指针。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">// 等待连接请求的最大数量
-int backlog = 10;
-err = rdma_listen(listen_id, backlog);
-if (err) {
-perror(&amp;quot;rdma_listen&amp;quot;);
-return err;
-}
-uint16_t port = rdma_get_src_port(listen_id);
-port = ntohs(port);
-printf(&amp;quot;listening on port %u.\n&amp;quot;, port);
-struct sockaddr *local_addr = rdma_get_local_addr(listen_id);
-if (local_addr-&amp;gt;sa_family == AF_INET) {
-struct sockaddr_in *sin = (struct sockaddr_in *)local_addr;
-char ip[INET_ADDRSTRLEN];
-// 需要加上头文件 #include &amp;lt;arpa/inet.h&amp;gt;
-inet_ntop(AF_INET, &amp;amp;(sin-&amp;gt;sin_addr), ip, INET_ADDRSTRLEN);
-printf(&amp;quot;Local IP address is: %s\n&amp;quot;, ip);
-printf(&amp;quot;Local port is: %d\n&amp;quot;, ntohs(sin-&amp;gt;sin_port));
-}
-struct rdma_addrinfo hints;
-memset(&amp;amp;hints, 0, sizeof(hints));
-hints.ai_flags = RAI_PASSIVE;
-hints.ai_port_space = RDMA_PS_TCP;
-struct rdma_addrinfo *res;
-err = rdma_getaddrinfo(NULL, &amp;quot;20079&amp;quot;, &amp;amp;hints, &amp;amp;res);
-if (err) {
-perror(&amp;quot;rdma_getaddrinfo&amp;quot;);
-return err;
-}
-// do something with struct rdma_addrinfo *cur = res...
-&lt;/code>&lt;/pre>
-&lt;h3 id="5-等待连接请求">5. 等待连接请求&lt;/h3>
-&lt;ul>
-&lt;li>检索通信事件。如果没有挂起的事件，默认情况下，调用将阻塞，直到接收到事件。对应方法为&lt;code>int rdma_get_cm_event(struct rdma_event_channel *channel, struct rdma_cm_event **event)&lt;/code>。&lt;/li>
-&lt;li>通过修改与给定通道相关联的文件描述符，可以更改此函数的默认同步行为。&lt;/li>
-&lt;li>所有报告的事件都必须通过调用&lt;code>rdma_ack_cm_event&lt;/code> 进行确认。&lt;/li>
-&lt;li>&lt;code>rdma_cm_id&lt;/code> 的销毁将被阻塞，直到相关事件被确认。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">struct rdma_cm_event* event;
-// 此处会阻塞，直到有事件发生
-err = rdma_get_cm_event(channel, &amp;amp;event);
-&lt;/code>&lt;/pre>
-&lt;h3 id="6-创建-pdcq-和-send-receive-qp">6. 创建 PD、CQ 和 Send-Receive QP&lt;/h3>
-&lt;ul>
-&lt;li>分配与指定的&lt;code>rdma_cm_id&lt;/code> 相关联的 QP，并将其转换为用于发送和接收。对应方法为&lt;code>int rdma_create_qp(struct rdma_cm_id *id, struct ibv_pd *pd, struct ibv_qp_init_attr *qp_init_attr)&lt;/code>。&lt;/li>
-&lt;li>在调用此函数之前，&lt;code>rdma_cm_id&lt;/code> 必须绑定到本地 RDMA 设备，且保护域 PD 必须用于同一设备。&lt;/li>
-&lt;li>被分配给&lt;code>rdma_cm_id&lt;/code> 的 QP 会由 librdmacm 自动转换状态.&lt;/li>
-&lt;li>分配完毕后，QP 将准备就绪，处理接收信息的发布。如果 QP 未连接，它将准备好发布发送。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">pd = ibv_alloc_pd(cm_client_id-&amp;gt;verbs);
-if (!pd) {
-perror(&amp;quot;Failed to allocate a protection domain&amp;quot;);
-return -1;
-}
-io_completion_channel = ibv_create_comp_channel(cm_client_id-&amp;gt;verbs);
-if (!io_completion_channel) {
-perror(&amp;quot;Failed to create an I/O completion event channel&amp;quot;);
-return -1;
-}
-cq = ibv_create_cq(cm_client_id-&amp;gt;verbs, 10, NULL, io_completion_channel, 0);
-if (!cq) {
-perror(&amp;quot;Failed to create a completion queue&amp;quot;);
-return -1;
-}
-ret = ibv_req_notify_cq(cq, 0);
-if (ret) {
-perror(&amp;quot;Failed to request notifications&amp;quot;);
-return -1;
-}
-bzero(&amp;amp;qp_init_attr, sizeof(qp_init_attr));
-qp_init_attr.qp_type = IBV_QPT_RC;
-qp_init_attr.cap.max_send_wr = 10;
-qp_init_attr.cap.max_recv_wr = 10;
-qp_init_attr.cap.max_send_sge = 1;
-qp_init_attr.cap.max_recv_sge = 1;
-qp_init_attr.send_cq = cq;
-qp_init_attr.recv_cq = cq;
-ret = rdma_create_qp(cm_client_id, pd, &amp;amp;qp_init_attr);
-if (ret) {
-perror(&amp;quot;Failed to create QP&amp;quot;);
-return -1;
-}
-client_qp = cm_client_id-&amp;gt;qp;
-&lt;/code>&lt;/pre>
-&lt;h3 id="7-最后的操作">7. 最后的操作&lt;/h3>
-&lt;ol>
-&lt;li>Accept 请求连接&lt;/li>
-&lt;li>等待连接建立&lt;/li>
-&lt;li>发布操作&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725224928.webp"
-alt="20230725224928" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h2 id="五-rdmacm-程序解析主动方">五、 RDMACM 程序解析——主动方&lt;/h2>
-&lt;h3 id="1-创建事件-channel-1">1. 创建事件 channel&lt;/h3>
-&lt;ul>
-&lt;li>与被动方相同&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-创建连接-id-1">2. 创建连接 ID&lt;/h3>
-&lt;ul>
-&lt;li>与被动方相同&lt;/li>
-&lt;/ul>
-&lt;h3 id="3-绑定地址-1">3. 绑定地址&lt;/h3>
-&lt;ul>
-&lt;li>将目的地址和可选源地址从 IP 地址解析为 RDMA 地址。如果成功，则指定的 rdma_cm_id 将绑定到本地设备。对应方法为&lt;code>int rdma_resolve_addr (struct rdma_cm_id *id, struct sockaddr *src_addr, struct sockaddr *dst_addr, int timeout_ms)&lt;/code>。&lt;/li>
-&lt;li>此方法用于将给定的目标 IP 地址映射到可用的 RDMA 地址。&lt;/li>
-&lt;li>IP 到 RDMA 地址的映射使用本地路由表或通过 ARP 完成。&lt;/li>
-&lt;li>如果给定源地址，则将&lt;code>rdma_cm_id&lt;/code> 绑定到该地址，就像调用&lt;code>rdma_ind_addr&lt;/code> 一样。&lt;/li>
-&lt;li>如果没有给出源地址，并且&lt;code>rdma_cm_id&lt;/code> 尚未绑定到设备，则&lt;code>rdma_cm_id&lt;/code> 将根据本地路由表绑定到源地址。&lt;/li>
-&lt;li>在此方法调用之后，&lt;code>rdma_cm_id&lt;/code> 将绑定到 RDMA 设备。&lt;/li>
-&lt;li>该方法调用通常在调用 &lt;code>rdma_resolve_route&lt;/code> 和 &lt;code>rdma_connect&lt;/code> 之前在主动方上进行。&lt;/li>
-&lt;/ul>
-&lt;div class="notice notice-note" >
-&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>InfiniBand 特定&lt;/p>&lt;/div>
-&lt;ul>
-&lt;li>此方法还会将目标 IP 地址和源 IP 地址(如果给定)映射到 GID。&lt;/li>
-&lt;li>为了执行映射，IPoIB 必须同时在本地和远程节点上运行。&lt;/li>
-&lt;/ul>
-&lt;h3 id="4-创建-qp">4. 创建 QP&lt;/h3>
-&lt;ul>
-&lt;li>与被动方相同&lt;/li>
-&lt;/ul>
-&lt;h3 id="5-解析路由">5. 解析路由&lt;/h3>
-&lt;ul>
-&lt;li>解析指向目标地址的 RDMA 路由，以建立连接。目标地址必须已通过调用 rdma_resolve_addr 解析。对应方法为&lt;code>int rdma_resolve_route (struct rdma_cm_id *id, int timeout_ms);&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;h3 id="6-建立连接">6. 建立连接&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>对应方法为&lt;code>int rdma_connect (struct rdma_cm_id *id, struct rdma_conn_param *conn_param);&lt;/code>&lt;/p>
-&lt;ul>
-&lt;li>id：指向 rdma_cm_id 的指针&lt;/li>
-&lt;li>conn_param：指向 rdma_conn_param 结构的指针，包含连接参数&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>对于 &lt;code>RDMA_PS_TCP&lt;/code> 类型的 &lt;code>rdma_cm_id&lt;/code>，该调用会向远程目的地发起连接请求&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>对于 &lt;code>RDMA_PS_UDP&lt;/code> 类型的 &lt;code>rdma_cm_id&lt;/code>，它会启动对提供数据报服务的远程 QP 的查询&lt;/p>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="7-最后的操作-1">7. 最后的操作&lt;/h3>
-&lt;ol>
-&lt;li>等待连接建立&lt;/li>
-&lt;li>发布操作&lt;/li>
-&lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225927.webp"
-alt="20230725225927" width="90%" loading="lazy">
-&lt;/figure>
-&lt;hr>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230725225943.webp"
-alt="20230725225943" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h2 id="六实战基于-rdma-的-client-server-程序">六、实战：基于 RDMA 的 client-server 程序&lt;/h2>
-&lt;h3 id="1-server-端">1. server 端&lt;/h3>
-&lt;ul>
-&lt;li>工作流程：
-&lt;ol>
-&lt;li>初始化 RDMA 资源&lt;/li>
-&lt;li>等待 client 连接&lt;/li>
-&lt;li>分配并固定服务器缓冲区 buffer&lt;/li>
-&lt;li>接受客户端连接&lt;/li>
-&lt;li>将有关本地服务器缓冲区的信息发送到客户端&lt;/li>
-&lt;li>等待断开连接&lt;/li>
-&lt;/ol>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="2-client-端">2. client 端&lt;/h3>
-&lt;ul>
-&lt;li>工作流程：
-&lt;ol>
-&lt;li>初始化 RDMA 资源&lt;/li>
-&lt;li>连接 server&lt;/li>
-&lt;li>通过发送/接收 exchange 接收服务器端缓冲区信息&lt;/li>
-&lt;li>从（第一个）本地缓冲区向服务器缓冲区进行 RDMA 写入。&lt;/li>
-&lt;li>进行 RDMA 读取，将服务器缓冲区的内容读入第二个本地缓冲区。&lt;/li>
-&lt;li>比较第一缓冲区和第二缓冲区的内容，并进行匹配&lt;/li>
-&lt;li>断开连接&lt;/li>
-&lt;/ol>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="3-项目实现">3. 项目实现&lt;/h3>
-&lt;a href="https://github.com/PKUcoldkeyboard/RDMA-examples" target="_blank" class="card-github fetch-waiting no-styling"
-repo="PKUcoldkeyboard/RDMA-examples" id="repo-pxY3dh92DfsUmK9l-card">
-&lt;div class="gc-titlebar">
-&lt;div class="gc-titlebar-left">
-&lt;div class="gc-owner">
-&lt;div id="repo-pxY3dh92DfsUmK9l-avatar" class="gc-avatar">&lt;/div>
-&lt;div class="gc-user">PKUcoldkeyboard&lt;/div>
-&lt;/div>
-&lt;div class="gc-divider">/&lt;/div>
-&lt;div class="gc-repo">RDMA-examples&lt;/div>
-&lt;/div>
-&lt;div class="github-logo">&lt;/div>
-&lt;/div>
-&lt;div id="repo-pxY3dh92DfsUmK9l-description" class="gc-description">Waiting for api.github.com...&lt;/div>
-&lt;div class="gc-infobar">
-&lt;div id="repo-pxY3dh92DfsUmK9l-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-pxY3dh92DfsUmK9l-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-pxY3dh92DfsUmK9l-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-pxY3dh92DfsUmK9l-language" class="gc-language">Waiting...&lt;/div>
-&lt;/div>
-&lt;/a>
-&lt;script id="repo-pxY3dh92DfsUmK9l-script" type="text/javascript" defer>
-fetch('https://api.cuterwrite.top/api/repos/PKUcoldkeyboard\/RDMA-examples', {
-referrerPolicy: "no-referrer"
-})
-.then(response => response.json())
-.then(data => {
-document.getElementById('repo-pxY3dh92DfsUmK9l-description').innerText = data.description.replace(
-/:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-pxY3dh92DfsUmK9l-language').innerText = data.language;
-document.getElementById('repo-pxY3dh92DfsUmK9l-forks').innerText = Intl.NumberFormat('en-us', {
-notation: "compact",
-maximumFractionDigits: 1
-}).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-pxY3dh92DfsUmK9l-stars').innerText = Intl.NumberFormat('en-us', {
-notation: "compact",
-maximumFractionDigits: 1
-}).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-pxY3dh92DfsUmK9l-avatar');
-avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
-avatarEl.style.backgroundColor = 'transparent';
-if (data.license?.spdx_id) {
-document.getElementById('repo-pxY3dh92DfsUmK9l-license').innerText = data.license.spdx_id
-} else {
-document.getElementById('repo-pxY3dh92DfsUmK9l-license').classList.add = "no-license"
-};
-document.getElementById('repo-pxY3dh92DfsUmK9l-card').classList.remove("fetch-waiting");
-console.log("[GITHUB-CARD] Loaded card for PKUcoldkeyboard\/RDMA-examples.")
-}).catch(err => {
-const c = document.getElementById('repo-pxY3dh92DfsUmK9l-card');
-c.classList.add("fetch-error");
-console.warn("[GITHUB-CARD] (Error) Loading card for PKUcoldkeyboard\/RDMA-examples.")
-})
-&lt;/script>
-&lt;h3 id="4-补充rdma-应用程序标准流程">4. 补充：RDMA 应用程序标准流程&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230729185145.webp"
-alt="20230729185145" width="90%" loading="lazy">
-&lt;/figure>
-&lt;h2 id="参考文献">参考文献&lt;/h2>
-&lt;ul>
-&lt;li>Mellanox Technologies, Inc. (2017). RDMA Aware Networks Programming User Manual. Mellanox Technologies, Inc.&lt;/li>
-&lt;/ul></description></item></channel></rss>
+&lt;p>下一篇将用比较直观的方式比较一次典型的基于 Socket 的传统以太网和 RDMA 通信过程。&lt;/p></description></item></channel></rss>

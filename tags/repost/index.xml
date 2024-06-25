@@ -1,4 +1,154 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sat, 15 Jun 2024 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 25 Jun 2024 02:21:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">RDMA 之 Queue Pair&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/195757767">&lt;cite>知乎专栏：9. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;h2 id="queue-pair">Queue Pair&lt;/h2>
+&lt;p>我们曾经在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >“3. RDMA 基本元素”
+&lt;/a>
+一文中简单的介绍了 QP 的概念，本文将更深入的讲解一些关于 QP 的细节。&lt;/p>
+&lt;h2 id="基本概念回顾">基本概念回顾&lt;/h2>
+&lt;p>首先我们来简单回顾下关于 QP 的基础知识：&lt;/p>
+&lt;p>根据 IB 协议中的描述，QP 是硬件和软件之间的一个虚拟接口。QP 是队列结构，按顺序存储着软件给硬件下发的任务（WQE），WQE 中包含从哪里取出多长的数据，并且发送给哪个目的地等等信息。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_1.webp"
+alt="2024-06-26_9_1" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QP 的概念&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>每个 QP 间都是独立的，彼此通过 PD 隔离，因此一个 QP 可以被视为某个用户独占的一种资源，一个用户也可以同时使用多个 QP。&lt;/p>
+&lt;p>QP 有很多种服务类型，包括 RC、UD、RD 和 UC 等，所有的源 QP 和目的 QP 必须为同一种类型才能进行数据交互。&lt;/p>
+&lt;p>虽然 IB 协议将 QP 称为“虚拟接口”，但是它是有实体的：&lt;/p>
+&lt;ul>
+&lt;li>
+&lt;p>硬件上，QP 是一段包含着若干个 WQE 的存储空间，IB 网卡会从这段空间中读取 WQE 的内容，并按照用户的期望去内存中存取数据。至于这个存储空间是内存空间还是 IB 网卡的片内存储空间，IB 协议并未做出限制，每个厂商有各自的实现&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>软件上，QP 是一个由 IB 网卡的驱动程序所维护的数据结构，其中包含 QP 的地址指针以及一些相关的软件属性。&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="qpc">QPC&lt;/h3>
+&lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-service-types/" >“5. RDMA 基本服务类型”
+&lt;/a>
+一文中，我们曾经提到过 QPC 全称是 Queue Pair Context，用于存储 QP 相关属性。驱动程序里面是有储存 QP 的软件属性的，既然我们可以在软件里储存 QP 的属性，为什么还要用使用 QPC 呢？&lt;/p>
+&lt;p>这是因为&lt;strong>QPC 主要是给硬件看的，也会用来在软硬件之间同步 QP 的信息。&lt;/strong>&lt;/p>
+&lt;p>我们说过 QP 在硬件上的实体只是一段存储空间而已，硬件除了知道这段空间的起始地址和大小之外一无所知，甚至连这个 QP 服务类型都不知道。还有很多其他的重要信息，比如某个 QP 中包含了若干个 WQE，硬件怎么知道有多少个，当前应该处理第几个呢？&lt;/p>
+&lt;p>所有上述的这些信息，软件是可以设计一定的数据结构并为其申请内存空间的，但是软件看到的都是虚拟地址，这些内存空间在物理上是离散的，硬件并不知道这些数据存放到了哪里。所以就需要软件通过操作系统提前申请好一大片连续的空间，即 QPC 来承载这些信息给硬件看。网卡及其配套的驱动程序提前约定好了 QPC 中都有哪些内容，这些内容分别占据多少空间，按照什么顺序存放。这样驱动和硬件就可以通过通过 QPC 这段空间来读写 QP 的状态等等信息。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_2_QPC.webp"
+alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QPC 的概念&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>如上图所示，硬件其实只需要知道 QPC 的地址 0x12350000 就可以了，因为它可以解析 QPC 的内容，从而得知 QP 的位置，QP 序号，QP 大小等等信息。进而就能找到 QP，知道应该取第几个 WQE 去处理。不同的厂商可能实现有些差异，但是大致的原理就是这样。&lt;/p>
+&lt;p>IB 软件栈中还有很多 Context 的概念，除了 QPC 之外，还有 Device Context，SRQC，CQC，EQC（Event Queue Context，事件队列上下文）等，它们的作用与 QPC 类似，都是用来在记录和同步某种资源的相关属性。&lt;/p>
+&lt;h3 id="qp-number">QP Number&lt;/h3>
+&lt;p>简称为 QPN，就是每个 QP 的编号。IB 协议中规定用 $2^{24}$ 个 bit 来表示 QPN，即每个节点最大可以同时使用 $2^{24}$ 个 QP，这已经是一个很大的数量了，几乎不可能用完。每个节点都各自维护着 QPN 的集合，相互之间是独立的，即不同的节点上可以存在编号相同的 QP。&lt;/p>
+&lt;p>QPN 的概念本身非常简单，但是有两个特殊的保留编号需要额外注意一下：&lt;/p>
+&lt;h4 id="qp0">QP0&lt;/h4>
+&lt;p>编号为 0 的 QP 用于子网管理接口 SMI（Subnet Management Interface），用于管理子网中的全部节点，说实话我也还没搞清楚这个接口的作用，暂且按下不表。&lt;/p>
+&lt;h4 id="qp1">QP1&lt;/h4>
+&lt;p>编号为 1 的 QP 用于通用服务接口 GSI（General Service Interface），GSI 是一组管理服务，其中最出名的就是 CM（Communication Management），是一种在通信双方节点正式建立连接之前用来交换必须信息的一种方式。其细节将在后面的文章中专门展开介绍。&lt;/p>
+&lt;p>这也就是我们之前的文章画的关于 QP 的图中，没有出现过 QP0 和 QP1 的原因了。这两个 QP 之外的其他 QP 就都是普通 QP 了。用户在创建 QP 的时候，驱动或者硬件会给这个新 QP 分配一个 QPN，一般的 QPN 都是 2、3、4 这样按顺序分配的。当 QP 被销毁之后，它的 QPN 也会被重新回收，并在合适的时候分配给其他新创建的 QP。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;p>我们从控制层面和数据层面来分类介绍用户接口，控制面即用户对某种资源进行某种设置，一般都是在正式收发数据之前进行；而数据面自然就是真正的数据收发过程中进行的操作。&lt;/p>
+&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;p>接触过算法的读者应该都了解，链表的节点涉及到“增、删、改、查”四个操作，链表的节点是一片内存区域，是一种软件资源。&lt;/p>
+&lt;p>“增”即向操作系统申请一片内存用来存放数据，系统将在内存中划分一块空间，并将其标记为“已被进程 XX 使用”，其他没有权限的进程将无法覆盖甚至读取这片内存空间。&lt;/p>
+&lt;p>“删”即通知操作系统，这片空间我不使用了，可以标记成“未使用”并给其它进程使用了。&lt;/p>
+&lt;p>“改”就是写，即修改这片内存区域的内容。&lt;/p>
+&lt;p>&amp;ldquo;查&amp;quot;就是读，即获取这片内存区域的内容。&lt;/p>
+&lt;p>QP 作为 RDMA 技术中最重要的一种资源，在生命周期上与链表并无二致：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>操作&lt;/th>
+&lt;th>链表节点&lt;/th>
+&lt;th>QP&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>增&lt;/td>
+&lt;td>struct ListNode *node = malloc(sizeof(struct ListNode *));&lt;/td>
+&lt;td>Create QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>删&lt;/td>
+&lt;td>free(node);&lt;/td>
+&lt;td>Destroy QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>改&lt;/td>
+&lt;td>node-&amp;gt;val = xxx;&lt;/td>
+&lt;td>Modify QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>查&lt;/td>
+&lt;td>xxx = node-&amp;gt;val;&lt;/td>
+&lt;td>Query QP&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>这四种操作，其实就是 Verbs（RDMA 对上层应用的 API）在控制面上对上层用户提供给用户的几个接口：&lt;/p>
+&lt;h4 id="create-qp">Create QP&lt;/h4>
+&lt;p>创建一个 QP 的软硬件资源，包含 QP 本身以及 QPC。用户创建时会写传入一系列的初始化属性，包含该 QP 的服务类型，可以储存的 WQE 数量等信息&lt;/p>
+&lt;h4 id="destroy-qp">Destroy QP&lt;/h4>
+&lt;p>释放一个 QP 的全部软硬件资源，包含 QP 本身及 QPC。销毁 QP 后，用户将无法通过 QPN 索引到这个 QP。&lt;/p>
+&lt;h4 id="modify-qp">Modify QP&lt;/h4>
+&lt;p>修改一个 QP 的某些属性，比如 QP 的状态，路径的 MTU 等等。这个修改过程既包括软件数据结构的修改，也包括对 QPC 的修改。&lt;/p>
+&lt;h4 id="query-qp">Query QP&lt;/h4>
+&lt;p>查询一个 QP 当前的状态和一些属性，查询到的数据来源于驱动以及 QPC 的内容。&lt;/p>
+&lt;p>这四种操作都有配套的 Verbs 接口，类似于 &lt;code>ibv_create_qp()&lt;/code> 这种形式，我们编写 APP 时直接调用就可以了。更多关于对上层的 API 的细节，我们将在后面专门进行介绍。&lt;/p>
+&lt;h2 id="数据面">数据面&lt;/h2>
+&lt;p>数据面上，一个 QP 对上层的接口其实只有两种，分别用于向 QP 中填写发送和接收请求。&lt;strong>这里的“发送”和“接收”并不是指的发送和接收数据，而是指的是一次通信过程的“发起方”（Requestor）和“接收方”（Responser）&lt;/strong>。&lt;/p>
+&lt;p>在行为上都是软件向 QP 中填写一个 WQE（对应用层来说叫 WR），请求硬件执行一个动作。所以这两种行为都叫做“Post XXX Request”的形式，即下发 XXX 请求。&lt;/p>
+&lt;h3 id="post-send-request">Post Send Request&lt;/h3>
+&lt;p>再强调一下，Post Send 本身不是指这个 WQE 的操作类型是 Send，而是表示这个 WQE 属于通信发起方。这个流程中填写到 QP 中的 WQE/WR 可以是 Send 操作，RDMA Write 操作以及 RDMA Read 操作等。&lt;/p>
+&lt;p>用户需要提前准备好数据缓冲区、目的地址等信息，然后调用接口将 WR 传给驱动，驱动再把 WQE 填写到 QP 中。&lt;/p>
+&lt;h3 id="post-receive-request">Post Receive Request&lt;/h3>
+&lt;p>Post Recv 的使用场景就相对比较少了，一般只在 Send-Recv 操作的接收端执行，接收端需要提前准备好接收数据的缓冲区，并将缓冲区地址等信息以 WQE 的形式告知硬件。&lt;/p>
+&lt;h2 id="qp-状态机">QP 状态机&lt;/h2>
+&lt;p>说到 QP 的状态，就不得不祭出下面这张图（取自 IB 协议 10.3.1 节）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_3.webp"
+alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>QP 状态机&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>所谓状态机，就是描述一个对象的不同状态，以及触发状态间跳转的条件。为一个对象设计状态机可以使这个对象的生命周期变得非常明确，实现上也会使得逻辑更加清晰。&lt;/p>
+&lt;p>对于 QP 来说，IB 规范也为其设计了几种状态，处于不同状态的 QP 的功能是有差异的，比如只有进入到 Ready to Send 状态之后，QP 才能够进行 Post Send 数据操作。正常状态（绿色的）之间的状态转换都是由用户通过上文介绍的 Modify QP 的用户接口来主动触发的；而错误状态（红色的）往往是出错之后自动跳转的，当一个 QP 处于错误状态之后就无法执行正常的业务了，就需要上层通过 Modify QP 将其重新配置到正常状态上。&lt;/p>
+&lt;p>上图中我们只关注 QP 的部分，EE（End-to-End Context）是专门给 RD 服务类型使用的一个概念，我们暂不涉及。我们通过 Create QP 接口来进入这个状态图，通过 Destroy QP 接口来离开这个状态图。&lt;/p>
+&lt;p>QP 有以下几种状态，我们仅介绍一下比较重要的点：&lt;/p>
+&lt;h3 id="rstreset">RST（Reset）&lt;/h3>
+&lt;p>复位状态。当一个 QP 通过 Create QP 创建好之后就处于这个状态，相关的资源都已经申请好了，但是这个 QP 目前什么都做不了，其无法接收用户下发的 WQE，也无法接受对端某个 QP 的消息。&lt;/p>
+&lt;h3 id="initinitialized">INIT（Initialized）&lt;/h3>
+&lt;p>已初始化状态。这个状态下，用户可以通过 Post Receive 给这个 QP 下发 Receive WR，但是接收到的消息并不会被处理，会被静默丢弃；如果用户下发了一个 Post Send 的 WR，则会报错。&lt;/p>
+&lt;h3 id="rtrready-to-receive">RTR（Ready to Receive）&lt;/h3>
+&lt;p>准备接收状态。在 INIT 状态的基础上，RQ 可以正常工作，即对于接收到的消息，可以按照其中 WQE 的指示搬移数据到指定内存位置。此状态下 SQ 仍然不能工作。&lt;/p>
+&lt;h3 id="rtsready-to-send">RTS（Ready to Send）&lt;/h3>
+&lt;p>准备发送状态。在 RTR 基础上，SQ 可以正常工作，即用户可以进行 Post Send，并且硬件也会根据 SQ 的内容将数据发送出去。进入该状态前，QP 必须已于对端建立好链接。&lt;/p>
+&lt;h3 id="sqdsend-queue-drain">SQD（Send Queue Drain）&lt;/h3>
+&lt;p>SQ 排空状态。顾名思义，该状态会将 SQ 队列中现存的未处理的 WQE 全部处理掉，这个时候用户还可以下发新的 WQE 下来，但是这些 WQE 要等到旧的 WQE 全处理之后才会被处理。&lt;/p>
+&lt;h3 id="sqersend-queue-error">SQEr（Send Queue Error）&lt;/h3>
+&lt;p>SQ 错误状态。当某个 Send WR 发生完成错误（即硬件通过 CQE 告知驱动发生的错误）时，会导致 QP 进入此状态。&lt;/p>
+&lt;h3 id="errerror">ERR（Error）&lt;/h3>
+&lt;p>即错误状态。其他状态如果发生了错误，都可能进入该状态。Error 状态时，QP 会停止处理 WQE，已经处理到一半的 WQE 也会停止。上层需要在修复错误后再将 QP 重新切换到 RST 的初始状态。&lt;/p>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>本文先回顾了 QP 的一些重要基本概念，然后讲解了 QPC、QPN 等 QP 强相关的概念，最后介绍了用户操作 QP 常用的接口以及 QP 状态机，相信本文过后读者一定对 QP 有了更深的了解。&lt;/p>
+&lt;p>其实作为 RDMA 的核心概念，QP 的内容很多，本文难以全部囊括。我将在后面的文章中逐渐把相关的内容补全，比如 QKey 的概念将在后续专门介绍各种 Key 的文章中讲解。&lt;/p>
+&lt;p>好了，本文就到这了，感谢阅读。预告下一篇文章将详细讲解 CQ。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>3.5.1 10.2.4 QP 的基本概念&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.3 QP 状态机&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.2.5 QP 相关的软件接口&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.4 Post Send Post Recv&lt;/p>
+&lt;/li>
+&lt;/ul></description></item><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>知乎专栏：8. RDMA 之 Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
