@@ -1,4 +1,238 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 25 Jun 2024 02:21:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">RDMA 之 Queue Pair&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>转载 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/repost/</link><description>Recent content in 转载 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:11:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/259650980">&lt;cite>知乎专栏：10. RDMA 之 Completion Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们曾经在前面的文章中简单介绍过 CQ，本文将更深入的讲解关于它的一些细节。阅读本文前，读者可以先温习一下这篇文章： &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >“3. RDMA 基本元素”
+&lt;/a>
+。&lt;/p>
+&lt;h2 id="基本概念">基本概念&lt;/h2>
+&lt;p>我们先回顾下 CQ 的作用。CQ 意为完成队列，它的作用和 WQ（SQ 和 RQ）相反，硬件通过 CQ 中的 CQE/WC 来告诉软件某个 WQE/WR 的完成情况。再次提醒读者，对于上层用户来说一般用 WC，对于驱动程序来说，一般称为 CQE，本文不对两者进行区分。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_1.webp"
+alt="2024-06-27_10_1" width="80%" loading="lazy">
+&lt;/figure>
+&lt;p>CQE 可以看作一份“报告”，其中写明了某个任务的执行情况，其中包括：&lt;/p>
+&lt;ul>
+&lt;li>本次完成了哪个 QP 的哪一个 WQE 指定的任务（QP Number 和 WR ID）&lt;/li>
+&lt;li>本次任务执行了什么操作（Opcode 操作类型）&lt;/li>
+&lt;li>本次任务执行成功/失败，失败原因是 XXX（Status 状态和错误码）&lt;/li>
+&lt;li>&amp;hellip;&lt;/li>
+&lt;/ul>
+&lt;p>每当硬件处理完一个 WQE 之后，都会产生一个 CQE 放在 CQ 队列中。如果一个 WQE 对应的 CQE 没有产生，那么这个 WQE 就会一直被认为还未处理完，这意味着什么呢？&lt;/p>
+&lt;ul>
+&lt;li>涉及从内存中取数据的操作（SEND 和 WRITE）&lt;/li>
+&lt;/ul>
+&lt;p>在产生 CQE 之前，硬件可能还未发送消息，可能正在发送消息，可能对端有接收到正确的消息。由于内存区域是在发送前申请好的，所以上层软件收到对应的 CQE 之前，其必须认为这片内存区域仍在使用中，不能将所有相关的内存资源进行释放。&lt;/p>
+&lt;ul>
+&lt;li>涉及向内存中存放数据的操作（RECV 和 READ）&lt;/li>
+&lt;/ul>
+&lt;p>在产生 CQE 之前，有可能硬件还没有开始写入数据，有可能数据才写了一半，也有可能数据校验出错。所以上层软件在获得 CQE 之前，这段用于存放接收数据的内存区域中的内容是不可信的。&lt;/p>
+&lt;p>总之，用户必须获取到 CQE 并确认其内容之后才能认为消息收发任务已经完成。&lt;/p>
+&lt;h3 id="何时产生">何时产生&lt;/h3>
+&lt;p>我们将按照服务类型（本篇只讲 RC 和 UD）和操作类型来分别说明，因为不同的情况产生 CQE 的时机和含义都不同，建议读者回顾第 4 篇和第 5 篇： &lt;a class="link" href="https://cuterwrite.top/p/rdma-op/" >“4. RDMA 基本操作”
+&lt;/a>
+、&lt;a class="link" href="https://cuterwrite.top/p/rdma-service-types/" >“5. RDMA 基本服务类型”
+&lt;/a>
+。&lt;/p>
+&lt;ul>
+&lt;li>可靠服务类型（RC）&lt;/li>
+&lt;/ul>
+&lt;p>前面的文章说过，&lt;strong>可靠意味着本端关心发出的消息能够被对端准确的接收&lt;/strong>，这是通过 ACK、校验和重传等机制保证的。&lt;/p>
+&lt;ul>
+&lt;li>SEND&lt;/li>
+&lt;/ul>
+&lt;p>SEND 操作需要硬件从内存中获取数据，然后组装成数据包通过物理链路发送到对端。对 SEND 来说，Client 端产生 CQE 表示&lt;strong>对端已准确无误的收到数据&lt;/strong>，对端硬件收到数据并校验之后，会回复 ACK 包给发送方。发送方收到这 ACK 之后才会产生 CQE，从而告诉用户这个任务成功执行了。如图所示，左侧 Client 端在红点的位置产生了本次任务的 CQE。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_2.webp"
+alt="2024-06-27_10_2" width="50%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>RECV&lt;/li>
+&lt;/ul>
+&lt;p>RECV 操作需要硬件将收到的数据放到用户 WQE 中指定的内存区域，完成校验和数据存放动作后，硬件就会产生 CQE。如上图右侧 Server 端所示。&lt;/p>
+&lt;ul>
+&lt;li>WRITE&lt;/li>
+&lt;/ul>
+&lt;p>对于 Client 端来说，WRITE 操作和 SEND 操作是一样的，硬件会从内存中取出数据，并等待对端回复 ACK 后，才会产生 CQE。差别在于，因为 WRITE 是 RDMA 操作，对端 CPU 不感知，自然用户也不感知，所以上面的图变成了这样：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_3.webp"
+alt="2024-06-27_10_3" width="50%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>READ&lt;/li>
+&lt;/ul>
+&lt;p>READ 和 RECV 有点像，Client 端发起 READ 操作后，对端会回复我们想读取的数据，然后本端校验没问题后，会把数据放到 WQE 中指定的位置。完成上述动作后，本端会产生 CQE。READ 同样是 RDMA 操作，对端用户不感知，自然也没有 CQE 产生。这种情况上图变成了这样：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_4.webp"
+alt="2024-06-27_10_4" width="50%" loading="lazy">
+&lt;/figure>
+&lt;ul>
+&lt;li>不可靠服务类型（UD）&lt;/li>
+&lt;/ul>
+&lt;p>因为不可靠的服务类型没有重传和确认机制，所以产生 CQE 表示硬件&lt;strong>已经将对应 WQE 指定的数据发送出去了&lt;/strong>。以前说过 UD 只支持 SEND-RECV 操作，不支持 RDMA 操作。所以对于 UD 服务的两端，CQE 产生时机如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_5.webp"
+alt="2024-06-27_10_5" width="50%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="wq-和-cq-的对应关系">WQ 和 CQ 的对应关系&lt;/h3>
+&lt;p>&lt;strong>每个 WQ 都必须关联一个 CQ，而每个 CQ 可以关联多个 SQ 和 RQ。&lt;/strong>&lt;/p>
+&lt;p>这里的所谓“关联”，指的是一个 WQ 的所有 WQE 对应的 CQE，都会被硬件放到绑定的 CQ 中，需要注意同属于一个 QP 的 SQ 和 RQ 可以各自关联不同的 CQ。如下图所示，QP1 的 SQ 和 RQ 都关联了 CQ1，QP2 的 RQ 关联到了 CQ1、SQ 关联到了 CQ2。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_6.webp"
+alt="2024-06-27_10_6" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>因为每个 WQ 必须关联一个 CQ，所以用户创建 QP 前需要提前创建好 CQ，然后分别指定 SQ 和 RQ 将会使用的 CQ。&lt;/p>
+&lt;p>&lt;strong>同一个 WQ 中的 WQE，其对应的 CQE 间是保序的&lt;/strong>&lt;/p>
+&lt;p>硬件是按照“先进先出”的 FIFO 顺序从某一个 WQ（SQ 或者 RQ）中取出 WQE 并进行处理的，而向 WR 关联的 CQ 中存放 CQE 时，也是遵从这些 WQE 被放到 WQ 中的顺序的。简单来说，就是谁先被放到队列里，谁就先被完成。该过程如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_7.webp"
+alt="2024-06-27_10_7" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>需要注意的是，使用 SRQ 的情况以及 RD 服务类型的 RQ 这两种情况是不保序的，本文中不展开讨论。&lt;/p>
+&lt;p>&lt;strong>不同 WQ 中的 WQE，其对应的 CQE 间是不保序的&lt;/strong>&lt;/p>
+&lt;p>前文中我们说过，一个 CQ 可能会被多个 WQ 共享。这种情况下，是不能保证这些 WQE 对应的 CQE 的产生顺序的。如下图所示（WQE 编号表示下发的次序，即 1 最先被下发，6 最后被下发）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_8.webp"
+alt="2024-06-27_10_8" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>上面的描述其实还包含了“同一个 QP 的 SQ 和 RQ 中的 WQE，其对应的 CQE 间是不保序的”的情况，这一点其实比较容易理解，SQ 和 RQ，一个负责主动发起的任务，一个负责被动接收的任务，它们本来就可以是认为是两条不同方向的通道，自然不应该相互影响。假设用户对同一个 QP 先下发了一个 Receive WQE，又下发一个 Send WQE，总不能对端不给本端发送消息，本端就不能发送消息给对端了吧？&lt;/p>
+&lt;p>既然这种情况下 CQE 产生的顺序和获取 WQE 的顺序是不相关的，那么上层应用和驱动是如何知道收到的 CQE 关联的是哪个 WQE 呢？其实很简单，&lt;strong>CQE 中指明它所对应的 WQE 的编号&lt;/strong>就可以了。&lt;/p>
+&lt;p>另外需要注意的是，即使在多个 WQ 共用一个 CQ 的情况下，“同一个 WQ 中的 WQE，其对应的 CQE 间是保序的”这一点也是一定能够保证的，即上图中的属于 WQ1 的 WQE 1、3、4 对应的 CQE 一定是按照顺序产生的，对于属于 WQ2 的 WQE 2、5、6 也是如此。&lt;/p>
+&lt;h3 id="cqc">CQC&lt;/h3>
+&lt;p>同 QP 一样，CQ 只是一段存放 CQE 的队列内存空间。硬件除了知道首地址以外，对于这片区域可以说是一无所知。所以需要提前跟软件约定好格式，然后驱动将申请内存，并按照格式把 CQ 的基本信息填写到这片内存中供硬件读取，这片内存就是 CQC。CQC 中包含了 CQ 的容量大小，当前处理的 CQE 的序号等等信息。所以把 QPC 的图稍微修改一下，就能表示出 CQC 和 CQ 的关系：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_9.webp"
+alt="2024-06-27_10_9" width="auto" loading="lazy">
+&lt;/figure>
+&lt;h3 id="cqn">CQN&lt;/h3>
+&lt;p>CQ Number，就是 CQ 的编号，用来区别不同的 CQ。CQ 没有像 QP0 和 QP1 一样的特殊保留编号，本文中不再赘述了。&lt;/p>
+&lt;h2 id="完成错误">完成错误&lt;/h2>
+&lt;p>IB 协议中有三种错误类型，立即错误（immediate error）、完成错误（Completion Error）以及异步错误（Asynchronous Errors)。&lt;/p>
+&lt;p>立即错误的是“立即停止当前操作，并返回错误给上层用户”；完成错误指的是“通过 CQE 将错误信息返回给上层用户”；而异步错误指的是“通过中断事件的方式上报给上层用户”。可能还是有点抽象，我们来举个例子说明这两种错误都会在什么情况下产生：&lt;/p>
+&lt;ul>
+&lt;li>用户在 Post Send 时传入了非法的操作码，比如想在 UD 的时候使用 RDMA WRITE 操作。&lt;/li>
+&lt;/ul>
+&lt;p>结果：产生立即错误（有的厂商在这种情况会产生完成错误）&lt;/p>
+&lt;p>一般这种情况下，驱动程序会直接退出 post send 流程，并返回错误码给上层用户。注意此时 WQE 还没有下发到硬件就返回了。&lt;/p>
+&lt;ul>
+&lt;li>用户下发了一个 WQE，操作类型为 SEND，但是长时间没有受到对方的 ACK。&lt;/li>
+&lt;/ul>
+&lt;p>结果：产生完成错误&lt;/p>
+&lt;p>因为 WQE 已经到达了硬件，所以硬件会产生对应的 CQE，CQE 中包含超时未响应的错误详情。&lt;/p>
+&lt;ul>
+&lt;li>用户态下发了多个 WQE，所以硬件会产生多个 CQE，但是软件一直没有从 CQ 中取走 CQE，导致 CQ 溢出。
+结果：产生异步错误&lt;/li>
+&lt;/ul>
+&lt;p>因为软件一直没取 CQE，所以自然不会从 CQE 中得到信息。此时 IB 框架会调用软件注册的事件处理函数，来通知用户处理当前的错误。&lt;/p>
+&lt;p>由此可见，它们都是底层向上层用户报告错误的方式，只是产生的时机不一样而已。IB 协议中对不同情况的错误应该以哪种方式上报做了规定，比如下图中，对于 Modify QP 过程中修改非法的参数，应该返回立即错误。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_10.webp"
+alt="2024-06-27_10_10" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>本文的重点在于 CQ，所以介绍完错误类型之后，我们着重来看一下完成错误。完成错误是硬件通过在 CQE 中填写错误码来实现上报的，一次通信过程需要发起端（Requester）和响应端（Responder）参与，具体的错误原因也分为本端和对端。我们先来看一下错误检测是在什么阶段进行的（下图对 IB 协议中 Figure 118 进行了重画）：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_11.webp"
+alt="2024-06-27_10_11" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>Requester 的错误检测点有两个：&lt;/p>
+&lt;ol>
+&lt;li>本地错误检测&lt;/li>
+&lt;/ol>
+&lt;p>即对 SQ 中的 WQE 进行检查，如果检测到错误，就从本地错误检查模块直接产生 CQE 到 CQ，不会发送数据到响应端了；如果没有错误，则发送数据到对端。&lt;/p>
+&lt;ol start="2">
+&lt;li>远端错误检测&lt;/li>
+&lt;/ol>
+&lt;p>即检测响应端的 ACK 是否异常，ACK/NAK 是由对端的本地错误检测模块检测后产生的，里面包含了响应端是否有错误，以及具体的错误类型。无论远端错误检测的结果是否有问题，都会产生 CQE 到 CQ 中。&lt;/p>
+&lt;p>Responder 的错误检测点只有一个：&lt;/p>
+&lt;ol>
+&lt;li>本地错误检测&lt;/li>
+&lt;/ol>
+&lt;p>实际上检测的是对端报文是否有问题，IB 协议也将其称为“本地”错误检测。如果检测到错误，则会体现在 ACK/NAK 报文中回复给对端，以及在本地产生一个 CQE。&lt;/p>
+&lt;p>需要注意的是，上述的产生 ACK 和远端错误检测只对面向连接的服务类型有效，无连接的服务类型。比如 UD 类型并不关心对端是否收到，接收端也不会产生 ACK，所以在 Requester 的本地错误检测之后就一定会产生 CQE，无论是否有远端错误。&lt;/p>
+&lt;p>然后我们简单介绍下几种常见的完成错误：&lt;/p>
+&lt;ul>
+&lt;li>RC 服务类型的 SQ 完成错误&lt;/li>
+&lt;li>Local Protection Error
+&lt;ul>
+&lt;li>本地保护域错误。本地 WQE 中指定的数据内存地址的 MR 不合法，即用户试图使用一片未注册的内存中的数据。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Remote Access Error
+&lt;ul>
+&lt;li>远端权限错误。本端没有权限读/写指定的对端内存地址。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Transport Retry Counter Exceeded Error
+&lt;ul>
+&lt;li>重传超次错误。对端一直未回复正确的 ACK，导致本端多次重传，超过了预设的次数。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>RC 服务类型的 RQ 完成错误&lt;/li>
+&lt;li>Local Access Error
+&lt;ul>
+&lt;li>本地访问错误。说明对端试图写入其没有权限写入的内存区域。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Local Length Error
+&lt;ul>
+&lt;li>本地长度错误。本地 RQ 没有足够的空间来接收对端发送的数据。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;p>完整的完成错误类型列表请参考 IB 协议的 10.10.3 节。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;p>同 QP 一样，我们依然从通信准备阶段（控制面）和通信进行阶段（数据面）来介绍 IB 协议对上层提供的关于 CQ 的接口。&lt;/p>
+&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;p>同 QP 一样，还是“增删改查”四种，但是可能因为对于 CQ 来说，上层用户是资源使用者而不是管理者，只能从 CQ 中读数据而不能写数据，所以对用户开放的可配的参数就只有“CQ 规格”一种。&lt;/p>
+&lt;ul>
+&lt;li>创建——Create CQ&lt;/li>
+&lt;/ul>
+&lt;p>创建的时候用户必须指定 CQ 的规格，即能够储存多少个 CQE，另外用户还可以填写一个 CQE 产生后的回调函数指针（下文会涉及）。内核态驱动会将其他相关的参数配置好，填写到跟硬件约定好的 CQC 中告知硬件。&lt;/p>
+&lt;ul>
+&lt;li>销毁——Destroy CQ&lt;/li>
+&lt;/ul>
+&lt;p>释放一个 CQ 软硬件资源，包含 CQ 本身及 CQC，另外 CQN 自然也将失效。&lt;/p>
+&lt;ul>
+&lt;li>修改——Resize CQ&lt;/li>
+&lt;/ul>
+&lt;p>这里名字稍微有点区别，因为 CQ 只允许用户修改规格大小，所以就用的 Resize 而不是 Modify。&lt;/p>
+&lt;ul>
+&lt;li>查询——Query CQ&lt;/li>
+&lt;/ul>
+&lt;p>查询 CQ 的当前规格，以及用于通知的回调函数指针。&lt;/p>
+&lt;blockquote>
+&lt;p>通过对比 RDMA 规范和软件协议栈，可以发现很多 verbs 接口并不是按照规范实现的。所以读者如果发现软件 API 和协议有差异时也无须感到疑惑，RDMA 技术本身一直还在演进，软件框架也处于活跃更新的状态。如果更关心编程实现，那么请以软件协议栈的 API 文档为准；如果更关心学术上的研究，那么请以 RDMA 规范为准。&lt;/p>
+&lt;/blockquote>
+&lt;h3 id="数据面">数据面&lt;/h3>
+&lt;p>CQE 是硬件将信息传递给软件的媒介，虽然软件知道在什么情况下会产生 CQE，但是软件并不知道具体什么时候硬件会把 CQE 放到 CQ 中。在通信和计算机领域，我们把这种接收方不知道发送方什么时候发送的模式称为“异步”。我们先来举一个网卡的例子，再来说明用户如何通过数据面接口获取 CQE（WC）。&lt;/p>
+&lt;p>网卡收到数据包后如何让 CPU 知道这件事，并进行数据包处理，有两种常见的模式：&lt;/p>
+&lt;ul>
+&lt;li>中断模式&lt;/li>
+&lt;/ul>
+&lt;p>当数据量较少，或者说偶发的数据交换较多时，适合采用中断模式——即 CPU 平常在做其他事情，当网卡收到数据包时，会上报中断打断 CPU 当前的任务，CPU 转而来处理数据包（比如 TCP/IP 协议栈的各层解析）。处理完数据之后，CPU 跳回到中断前的任务继续执行。&lt;/p>
+&lt;p>每次中断都需要保护现场，也就是把当前各个寄存器的值、局部变量的值等等保存到栈中，回来之后再恢复现场（出栈），这本身是有开销的。如果业务负载较重，网卡一直都在接收数据包，那么 CPU 就会一直收到中断，CPU 将一直忙于中断切换，导致其他任务得不到调度。&lt;/p>
+&lt;ul>
+&lt;li>轮询模式&lt;/li>
+&lt;/ul>
+&lt;p>所以除了中断模式之外，网卡还有一种轮询模式，即收到数据包后都先放到缓冲区里，CPU 每隔一段时间会去检查网卡是否受到数据。如果有数据，就把缓冲区里的数据一波带走进行处理，没有的话就接着处理别的任务。&lt;/p>
+&lt;p>通过对比中断模式我们可以发现，轮询模式虽然每隔一段时间需要 CPU 检查一次，带来了一定的开销，但是当业务繁忙的时候采用轮询模式能够极大的减少中断上下文的切换次数，反而减轻了 CPU 的负担。&lt;/p>
+&lt;p>现在的网卡，一般都是中断+轮询的方式，也就是根据业务负载动态切换。&lt;/p>
+&lt;p>在 RDMA 协议中，CQE 就相当于是网卡收到的数据包，RDMA 硬件把它传递给 CPU 去处理。RDMA 框架定义了两种对上层的接口，分别是 poll 和 notify，对应着轮询和中断模式。&lt;/p>
+&lt;h3 id="poll-completion-queue">Poll completion queue&lt;/h3>
+&lt;p>很直白，poll 就是轮询的意思。用户调用这个接口之后，CPU 就会定期去检查 CQ 里面是否有新鲜的 CQE，如果有的话，就取出这个 CQE（注意取出之后 CQE 就被“消耗”掉了），解析其中的信息并返回给上层用户。&lt;/p>
+&lt;h3 id="request-completion-notification">Request completion notification&lt;/h3>
+&lt;p>直译过来是请求完成通知，用户调用这个接口之后，相当于向系统注册了一个中断。这样当硬件将 CQE 放到 CQ 中后，会立即触发一个中断给 CPU，CPU 进而就会停止手上的工作取出 CQE，处理后返回给用户。&lt;/p>
+&lt;p>同样的，这两种接口使用哪种，取决于用户对于实时性的要求，以及实际业务的繁忙程度。&lt;/p>
+&lt;p>感谢阅读，CQ 就介绍到这里，下篇打算详细讲讲 SRQ。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>9.9 CQ 错误检测和恢复&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.2.6 CQ 和 WQ 的关系&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.10 错误类型及其处理&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.2.8 CQ 相关控制面接口&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.4.2 CQ 相关数据面接口&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="其他参考资料">其他参考资料&lt;/h2>
+&lt;p>[1] Linux Kernel Networking - Implement and Theory. Chapter 13. Completion Queue&lt;/p></description></item><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">RDMA 之 Queue Pair&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/195757767">&lt;cite>知乎专栏：9. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
