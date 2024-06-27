@@ -1,4 +1,451 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:11:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">RDMA 之 Memory Window&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/353590347">&lt;cite>知乎专栏：14. RDMA 之 Memory Window&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>&lt;strong>本文是“RDMA 杂谈”专栏文章的第 14 篇，欢迎转载，转载请注明出处&lt;/strong>&lt;/p>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+一文中介绍过 Memory Region，它是一片由用户注册的特殊的内存区域：一方面其中的内容不会被换页到硬盘中，另一方面 RDMA 网卡中记录了它的地址转换关系，使得硬件拿到用户指定在 WR 中的虚拟地址之后找到对应的物理地址。&lt;/p>
+&lt;p>本文我们来讲解 Memory Window 的概念，它是一种基于 Memory Region 的、更灵活的内存管理单元。除了 MW 的概念之外，本文也会更详细的介绍一些 RDMA 领域的内存相关概念，比如 L_Key/R_Key 等。本文配合 &lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+阅读效果更佳，建议先读者温习一下。&lt;/p>
+&lt;h2 id="memory-window-是什么">Memory Window 是什么&lt;/h2>
+&lt;p>Memory Window 简称 MW，中文就翻译成内存窗口吧。是一种由用户申请的，用于让远端节点访问本端内存区域的 RDMA 资源。每个 MW 都会绑定（称为 bind）在一个已经注册的 MR 上，但是它相比于 MR 可以提供更灵活的权限控制。MW 可以粗略理解为是 MR 的子集，一个 MR 上可以划分出很多 MW，每个 MW 都可以设置自己的权限。MW 和 MR 的关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_1.webp"
+alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
+&lt;h4>MR 与 MW 的关系&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="内存的访问权限控制">内存的访问权限控制&lt;/h2>
+&lt;p>为了后文说明为何设计 MW，我们先来把 MR 和 MW 都涉及的权限控制讲解一下。&lt;/p>
+&lt;h3 id="mrmw-的权限配置">MR/MW 的权限配置&lt;/h3>
+&lt;p>这里的权限，指的是本端/对端节点，对于本端内存的读/写权限，它们两两组合形成了四种权限：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>本端&lt;/th>
+&lt;th>对端&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>读&lt;/td>
+&lt;td>Local Read&lt;/td>
+&lt;td>Remote Read&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>写&lt;/td>
+&lt;td>Local Write&lt;/td>
+&lt;td>Remote Write&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>除了这四种权限之外，还有 Atomic 权限等，不在本文讨论范围内。&lt;/p>
+&lt;p>上表中这四种权限中最低的是本地读（Local Read），是用户必须赋予 MR/MW 的权限，因为如果一块内存本地的用户都无法访问的话，那就失去意义了；另外还有个限制，如果某个 MR 需要配置远端写（Remote Write）或者还没介绍的远端原子操作权限（Remote Atomic），那么也一定要配置本地写（Local Write）权限。在此约束之下，每个 MR 或者 MW 都可以按需配置权限，比如我们注册的一个 MR 需要允许远端节点写入数据，而不允许读，那么我们就打开 Remote Write 权限，关闭 Remote Read 权限。这样 HCA（网卡）收到对端发起的对这个 MR 范围内的某个地址的 WRITE 请求之后，就可以予以放行；而 HCA 收到对端对这个 MR 的 READ 操作时，就会拒绝这个请求，并返回错误信息给对端。&lt;/p>
+&lt;h3 id="memory-key">Memory Key&lt;/h3>
+&lt;p>上述的访问权限配置，并不能杜绝恶意用户对于本地或者远端内存的访问。比如某个节点给了一块内存区域的 Remote Write 权限，那么岂不是任意远端节点（进程）只要传入了合法的地址信息，都可以对这片区域进行写入了？因此，IB 规范设计了 Memory Key，简单理解它就是访问 MR 的钥匙机制，只有持有正确的钥匙，才能打开 MR/MW 的大门。&lt;/p>
+&lt;p>Key 是一串数字，由两部分组成：24bit 的 Index 以及 8bit 的 Key：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_2.webp"
+alt="2024-06-28_12_2" width="60%" loading="lazy">&lt;figcaption>
+&lt;h4>L_Key/R_Key 的组成&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>其中，Index 用于 HCA 快速索引到本地的虚拟-物理地址转换表等 MR 相关的信息，而 Key 用于校验整个字段的合法性，以防止未授权的用户任意传递 Index。&lt;/p>
+&lt;p>Memory Key 按照用途分为两种，Local Key 和 Remote Key：&lt;/p>
+&lt;h4 id="l_key">L_Key&lt;/h4>
+&lt;p>即 Local Key，关联到一个 MR 上，用于 HCA 访问本端内存。当本端的某个进程试图使用一个已经注册的 MR 的内存时，HCA 会校验其传递的 L_Key。并且利用 L_Key 中的索引查找地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-shared-receive-queue/" >【RDMA 之 Shared Receive Queue】
+&lt;/a>
+一文中描述过 sge，sge 由起始地址、长度和秘钥组成。用户在填写 WR 时，如果需要 HCA 访问本端内存，那么就需要通过一个 sge 的链表（sgl）来描述内存块，这里 sge 的秘钥填的就是 L_Key，也就是下图中的 key1 和 key3，他们分别是 MR1 的 L_Key 和 MR2 的 L_Key。如果没有 L_Key，那么任何一个本地用户进程都可以指挥硬件访问其他本地用户注册的 MR 的内容，硬件也难以高效的将虚拟地址翻译成物理地址。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_3.webp"
+alt="2024-06-28_12_3" width="50%" loading="lazy">&lt;figcaption>
+&lt;h4>L_Key 的作用&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="r_key">R_Key&lt;/h4>
+&lt;p>即 Remote Key，关联到一个 MR 或者 MW 上，用于远端节点访问本端内存。当远端节点试图访问本端的内存时，一方面本端的 HCA 会校验 R_Key 是否合法，另一方面会利用 R_Key 中的索引查地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
+&lt;p>凡是 RDMA 操作（即 Write/Read/Atomic），用户都要在 WR 中携带远端内存区域的 R_Key。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_4.webp"
+alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
+&lt;h4>R_Key 的作用&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>IB 规范通过上述两种机制，来确保 MR 可以按照用户的期望被正确且安全的访问。我们用一个比喻来总结下 MR/MW 权限控制相关的内容：&lt;/p>
+&lt;p>A 给自己的房间（MR）配了两把钥匙（Memory Key），一把留作自用（L_Key），另一把钥匙（R_Key）邮寄（可以是任何通信方式）给了 B。B 可以在 A 不在家的时候（本端 CPU 不感知远端节点对本地内存的 RDMA 操作），通过钥匙（R_Key）打开门。打开门之后，可能 B 只能隔着玻璃查看房间的摆设（A 只给了这个 MR 远程读权限），或者进入房间内发现漆黑一片什么也看不到，但是可以向房间里放物品（A 只给了这个 MR 远程写权限），当然也有可能没有玻璃也开了灯（同时给了远程读写权限）。&lt;/p>
+&lt;h2 id="为什么要有-mw">为什么要有 MW&lt;/h2>
+&lt;p>简而言之，设计 MW 的目的就是想更灵活的控制内存的远程访问权限。&lt;/p>
+&lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+一文中我们介绍过用户注册 MR 的过程，需要从用户态陷入内核态，调用内核提供的函数 pin 住内存（防止换页），然后制作虚拟-物理地址映射表并下发给硬件。&lt;/p>
+&lt;p>因为 MR 是由内核管理的，如果用户想修改一个已经存在的 MR 的信息，比如我想收回某个 MR 的远端写权限，只保留远端读权限；或者想要使一个之前已经授权给远端节点的 R_Key 失效，那么用户需要通过重注册 MR（Reregister MR）接口来进行修改，该接口等价于先取消注册 MR（Deregister MR），然后注册 MR（Register MR）。&lt;strong>上述流程需要陷入内核态来完成，而这个过程是耗时较长的&lt;/strong>。&lt;/p>
+&lt;p>不同于需要通过控制路径修改权限的 MR，&lt;strong>MW 在创建好之后，可以通过数据路径（即通过用户态直接下发 WR 到硬件的方式）动态的绑定到一个已经注册的 MR 上，并同时设置或者更改其访问权限，这个过程的速度远远超过重新注册 MR 的过程&lt;/strong>。&lt;/p>
+&lt;p>那么现在为了使一片内存能够被远端节点进行 RDMA WRITE/READ 操作，我们就拥有了注册 MR 以及注册 MW 然后绑定到一个已注册的 MR 两种方式，它们都会产生一个 R_Key 来提供给远端节点。前一种方式准备阶段的步骤简单，但是不够灵活，一旦注册之后修改起来会比较麻烦；后一种方式相比前一种多了注册 MW 和绑定 MW 到 MR 两种操作，但是可以方便迅速的控制远端访问权限。&lt;/p>
+&lt;h2 id="mw-和-mr-权限的关系">MW 和 MR 权限的关系&lt;/h2>
+&lt;p>也许有的读者会想到，MR 申请时配置了自己的权限，MW 绑定到 MR 时也会配置自己的权限，这两者的权限是什么关系呢？IB 规范在 10.6.7.2.2 节有专门介绍：&lt;/p>
+&lt;blockquote>
+&lt;p>When binding a Memory Window, a Consumer can request any combination of remote access rights for the Window. However, if the associated Region does not have local write access enabled and the Consumer requests remote write or remote atomic access for the Window, the Channel Interface must return an error either at bind time or access time.&lt;/p>
+&lt;/blockquote>
+&lt;p>总结来说，&lt;strong>如果想要给 MW 配置远程写或者远程原子操作（Atomic）权限，那么它绑定到的 MR 必须有本地写权限，其他情况下两者权限互不干扰&lt;/strong>：远端用户用 MW，就要遵循 MW 的权限配置；远端用户用 MR，就要遵循 MR 的权限配置。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;p>老样子，用户接口时我们按照控制路径和数据路径来分类：&lt;/p>
+&lt;h3 id="控制路径">控制路径&lt;/h3>
+&lt;p>MW 支持增、删和查，不能直接修改：&lt;/p>
+&lt;h4 id="创建allocate-mw">创建——Allocate MW&lt;/h4>
+&lt;p>申请 MW，主要是创建 MW 相关的软件结构和让硬件做好准备，用户需要指定后文中介绍的 MW 的类型。这个接口会产生一个 Memory Window 的句柄，用户以后可以用这个句柄指代这个 MW。&lt;/p>
+&lt;p>注意此时 MW 没有绑定到 MR 上，处于不可从远端访问的状态。&lt;/p>
+&lt;h4 id="删除deallocate-mw">删除——Deallocate MW&lt;/h4>
+&lt;p>取消注册 MW。很好理解，就是销毁相关资源。&lt;/p>
+&lt;h4 id="查询query-mw">查询——Query MW&lt;/h4>
+&lt;p>查询 MW 的信息，包括 R_Key 及其状态、MW 类型以及 PD 等。&lt;/p>
+&lt;p>需要再次强调的是，虽然这个 Verbs 在 IB 规范中有描述，但是并没有在 RDMA 软件栈中实现相关的 API。类似情况的 Verbs 接口还有不少，RDMA 软件栈以实用为原则，没有用户需求的接口一般都没有实现。&lt;/p>
+&lt;h3 id="数据路径">数据路径&lt;/h3>
+&lt;p>MW 在数据路径有一套独特的接口，分为 Bind 和 Invalidate 两类：&lt;/p>
+&lt;h4 id="绑定bind">绑定——Bind&lt;/h4>
+&lt;p>Bind(ing)意为“绑定”，指的是将一个 MW“关联”到一个已经注册的 MR 的指定范围上，并配置一定的读写权限。绑定的结果会产生一个 R_key，用户可以把这个 R_Key 传递给远端节点用于远程访问。注意一个 MW 可以被多次绑定，一个 MR 上也可以绑定多个 MW。如果一个 MR 还有被绑定的 MW，那么这个 MR 是不能被取消注册的。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_5.webp"
+alt="2024-06-28_12_5" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Bind 的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Bind 有两种方式，一种是调用 Post Send 接口下发 Bind MW WR，一种是调用 Bind MW 接口。&lt;/p>
+&lt;ul>
+&lt;li>Post Send Bind MW WR&lt;/li>
+&lt;/ul>
+&lt;p>前文我们讲过，相比于 MR，MW 最大的优势就是可以从数据路径快速的配置权限。Post Send Bind MW WR 操作，指的就是用户通过 post send 接口（比如 ibv_post_send()）下发一个 WR 到 SQ 中，这个 WR 的操作类型（比如 SEND/RDMA WRITE/RDMA READ）被指定为 BIND MW，此外 WR 中还携带有权限和要绑定到的 MR 的范围信息。与其他 WR 不同，下发 Bind MW 的 WR 之后，硬件并不会发送任何数据包，而是将 MW 绑定到了指定 MR 上。&lt;/p>
+&lt;p>这种方式仅适用于后文介绍的 Type 2 的 MW。&lt;/p>
+&lt;ul>
+&lt;li>Bind MW&lt;/li>
+&lt;/ul>
+&lt;p>虽然这是一个独立的接口，但是实际是在 Post Send Bind MW WR 外面又封装了一层。用户传入 MW 绑定的相关信息，包括权限及要绑定的 MR 的信息，驱动程序负责组装和下发 WR 到硬件中。该接口成功后，会将新生成的 R_Key 返回给用户。&lt;/p>
+&lt;p>这种方式仅适用于后文介绍的 Type 1 的 MW。&lt;/p>
+&lt;p>上述两种操作的关系是这样的：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_6.webp"
+alt="2024-06-28_12_6" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>两种 Bind 操作的关系&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="无效化invalidate">无效化——Invalidate&lt;/h4>
+&lt;p>Invalidate 意为无效化，指的是用户通过下发一个带有 Invalidate 操作码的 WR 到硬件而使一个 R_Key 无效的操作。&lt;/p>
+&lt;p>&lt;strong>需要强调的是，Invalidate 操作的对象是 R_Key 而不是 MW 本身，即 Invalidate 之后的效果是：远端用户无法再使用这个 R_Key 访问对应的 MW，而 MW 资源仍然存在，以后仍然可以生成新的 R_Key 给远端使用。&lt;/strong>&lt;/p>
+&lt;p>Invalidate 操作只能用于下文介绍的 Type 2 的 MW。&lt;/p>
+&lt;p>按照 Invalidate 操作的发起方不同，又可以进一步分成两种：&lt;/p>
+&lt;ul>
+&lt;li>Local Invalidate&lt;/li>
+&lt;/ul>
+&lt;p>本地无效操作。上层用户如果想在不回收 MW 资源的情况下，收回某个远端的用户的 R_Key 的权限。那么就可以下发一个 Local Invalidate 操作到 SQ 中，硬件收到之后会对相应的 MR 的配置进行修改。成功执行之后，如果持有这个 R_Key 的远端用户想要对 MW 进行 RDMA 操作，将会被本地的硬件拒绝并返回错误。&lt;/p>
+&lt;p>因为是本地操作，所以硬件收到这个 WR 之后也不会发送消息到链路上。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_7.webp"
+alt="2024-06-28_12_7" width="60%" loading="lazy">&lt;figcaption>
+&lt;h4>Local Invalidate 操作的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Remote Invalidate&lt;/li>
+&lt;/ul>
+&lt;p>远端无效操作。当一个远端用户不再使用一个 R_Key 之后，可以主动发送消息，让本端回收这个 R_Key。远端用户下发一个带有此操作码的 WR 到 SQ 中，其硬件收到后，将会组装一个报文并发送到本端。本端硬件收到远端的 Remote Invalidate 操作之后，将会把对应的 R_Key 置为不可用状态。同 Local Invalidate 一样，此后对端将无法使用这个 R_Key 对对应的 MW 进行 RDMA 操作。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_8.webp"
+alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Remote Invalidate 操作的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="mw-的类型">MW 的类型&lt;/h2>
+&lt;p>根据实现和应用场景的不同，IB 规范对 MW 进行了分类：&lt;/p>
+&lt;h3 id="type-1">Type 1&lt;/h3>
+&lt;p>Type 1 的 MW 通过 PD 和一个 QP 关联，不会绑定到一个 QP 上，所以也不会影响销毁同一个 PD 下的 QP。&lt;/p>
+&lt;p>Type 1 的 MW 的 R_Key 的 key 域段由驱动和硬件掌握，这里“掌握”的意思是，由驱动和硬件分配 key，而不是上层用户。这也是前文中说 Type 1 的 MW 不能被执行 Invalidate 操作的原因。如果 Type 1 MW 的用户想要使一个 R_Key 失效，那么重新通过 Bind MW 接口绑定一次这个 MW，硬件或者驱动就回自动分配一个新的 R_Key 的 key 域段，原有的 R_Key 也就失效了。&lt;/p>
+&lt;p>此外，如果用户暂时想要使一个 MW 不再绑定到任何 MR，但是又想保留相关的资源而不是销毁这个 MW，那么可以通过调用 Bind MW 接口，并将 MW 长度设置为 0 来实现。&lt;/p>
+&lt;p>IB 规范允许多个 Type 1 MW 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
+&lt;h3 id="type-2">Type 2&lt;/h3>
+&lt;p>Type 2 的 MW 赋予了用户更大的自由度，其 R_Key 的 key 域段由用户掌握，即用户想怎么分配就怎么分配。前文已经讲过，用户通过 Post Send Bind MW WR 操作来进行绑定，这个过程并不会返回 R_Key。用户必须记住 Allocate MW 时的 index，并且和其选择的 8 bit key 组成 R_Key 并发送给对端。&lt;/p>
+&lt;p>用户可以通过前文介绍过的 Invalidate 操作来使一个 R_Key 无效，如果想要分配一个新的 R_Key 到 MW 上，必须先通过 Invalidate 操作无效之前的 R_Key。&lt;/p>
+&lt;p>与 Type 1 不同，Type 2 的 MW 不支持 0 长度的绑定。&lt;/p>
+&lt;p>IB 规范同样也允许多个 Type 2 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
+&lt;p>此外，根据绑定关系不同，Type 2 还可以分为两种实现方式，它们的差异仅在于和 QP 的绑定关系上。&lt;/p>
+&lt;h4 id="type-2a">Type 2A&lt;/h4>
+&lt;p>通过 QPN 和一个 QP 关联，也就是说远端访问这个 MW 范围内的内存时候，除了 R_Key 之外，还必须指定正确的 QPN。如果一个 QP 上还有绑定的 Type 2A 的 MW，那么这个 QP 不可以被销毁。&lt;/p>
+&lt;h4 id="type-2b">Type 2B&lt;/h4>
+&lt;p>通过 QPN 和 PD 与一个 QP 关联，比 Type 2A 多了个 PD 的校验，即远端通过 RDMA 操作访问 MW 的内存时，除了 QPN 要正确之外，其指定的本端 QP 的 PD 要与绑定这个 MW 时的 PD 相同。另外，与 Type 2A 不同，QP 如果还有 Type 2B MW 绑定关系时是可以被销毁的。&lt;/p>
+&lt;p>这里 IB 规范中原有的介绍就比较分散，我们来简单总结一下几种 MW 的异同：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>Type 1&lt;/th>
+&lt;th>Type 2A&lt;/th>
+&lt;th>Type 2B&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>关联关系&lt;/td>
+&lt;td>PD&lt;/td>
+&lt;td>QP&lt;/td>
+&lt;td>PD + QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>R_Key 的 key 域归属&lt;/td>
+&lt;td>驱动+硬件&lt;/td>
+&lt;td>用户&lt;/td>
+&lt;td>用户&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>绑定方式&lt;/td>
+&lt;td>Bind MW 绑定后之前的 R_Key 自动失效&lt;/td>
+&lt;td>Post Send Bind MWWR 绑定前需要先使之前的 R_Key 无效化&lt;/td>
+&lt;td>Post Send Bind MWWR 绑定前需要先使之前的 R_Key 无效化&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>是否支持零长度&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>否&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>是否支持 Invalidate&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>关联的 QP 是否可以被销毁&lt;/td>
+&lt;td>-&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>此外，IB 规范中对上述几种类型还有如下描述：HCA 必须实现 Type 1 的 MW，另外可以仅选择实现 Type 2A 和 2B 中的一种。Type 1 和 Type 2 的 MW 可以同时关联到同一个 MR 上。因为我了解到的应用程序中使用 MW 的情况不多，所以具体在什么场景下应该使用哪种 MW 也说不出所以然来，如果读者有对这方面的了解欢迎一起交流。&lt;/p>
+&lt;p>好了，MW 就讲到这里，到此为止 RDMA 技术中常见的资源就都介绍完了。&lt;/p>
+&lt;p>鉴于一般支持 RDMA 的设备都比较昂贵，下一篇我将介绍如何通过软件模拟设备的方式——即 Soft-RoCE 进行一些编程实验。&lt;/p>
+&lt;h2 id="ib-规范相关章节">IB 规范相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>3.5.3 Memory Keys 介绍&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>9.4.1.1 Invalidate 操作&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.6.7 权限管理&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.2.10.9~12 相关 Verbs 介绍&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考文档">参考文档&lt;/h2>
+&lt;p>[1] IB Specification Vol 1-Release-1.4&lt;/p>
+&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA 之 Shared Receive Queue</title><link>https://cuterwrite.top/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA 之 Shared Receive Queue" />&lt;h1 id="rdma-之-shared-receive-queue">RDMA 之 Shared Receive Queue&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/279904125">&lt;cite>知乎专栏：11. RDMA 之 Shared Receive Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们曾在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【3. RDMA 基本元素】
+&lt;/a>
+中简单介绍了 SRQ 的概念，本文将带大家了解更多关于 SRQ 的细节。&lt;/p>
+&lt;h2 id="基本概念">基本概念&lt;/h2>
+&lt;h3 id="什么是-srq">什么是 SRQ&lt;/h3>
+&lt;p>全称为 Shared Receive Queue，直译为共享接收队列。我们知道，RDMA 通信的基本单位是 QP，每个 QP 都由一个发送队列 SQ 和接收队列 RQ 组成。&lt;/p>
+&lt;p>SRQ 是 IB 协议为了给接收端节省资源而设计的。我们可以把一个 RQ 共享给所有关联的 QP 使用，这个公用的 RQ 就称为 SRQ。当与其关联的 QP 想要下发接收 WQE 时，都填写到这个 SRQ 中。然后每当硬件接收到数据后，就根据 SRQ 中的下一个 WQE 的内容把数据存放到指定位置。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_1.webp"
+alt="2024-06-28_11_1" width="80%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="为什么要用-srq">为什么要用 SRQ&lt;/h3>
+&lt;p>通常情况下，我们向 SQ 中下任务的数量要远远超过向 RQ 中下发任务的数量。为什么呢？请先回忆一下哪些操作类型会用到 SQ，哪些又会用到 RQ。&lt;/p>
+&lt;p>SEND/WRITE/READ 都需要通信发起方向 SQ 中下发一个 WR，而只有和 SEND 配合的 RECV 操作才需要通信响应方下发 WR 到 RQ 中（带立即数的 Write 操作也会消耗 Receive WR，我们还没讲到）。而我们又知道，SEND-RECV 这一对操作通常都是用于传递控制信息，WRITE 和 READ 才是进行大量远端内存读写操作时的主角，所以自然 SQ 的使用率是远远高于 RQ 的。&lt;/p>
+&lt;p>每个队列都是有实体的，占用着内存以及网卡的片上存储空间。在商用场景下，QP 的数量是可能达到十万级甚至更高的，对内存容量提出了很高的要求，内存都是白花花的银子买的，SRQ 就是 IB 协议为了节省用户的内存而设计的一种机制。&lt;/p>
+&lt;p>来看一下协议中对为什么要使用 SRQ 的官方解释（10.2.9.1 章节）：&lt;/p>
+&lt;blockquote>
+&lt;p>Without SRQ, an RC, UC or UD Consumer must post the number of receive WRs necessary to handle incoming receives on a given QP. If the Consumer cannot predict the incoming rate on a given QP, because, for example, the connection has a bursty nature, the Consumer must either: post a sufficient number of RQ WRs to handle the highest incoming rate for each connection, or, for RC, let message flow control cause the remote sender to back off until local Consumer posts more WRs.&lt;/p>
+&lt;p>• Posting sufficient WRs on each QP to hold the possible incoming rate, wastes WQEs, and the associated Data Segments, when the Receive Queue is inactive. Furthermore, the HCA doesn’t provide a way of reclaiming these WQEs for use on other connections.&lt;/p>
+&lt;p>• Letting the RC message flow control cause the remote sender to back off can add unnecessary latencies, specially if the local Consumer is unaware that the RQ is starving.&lt;/p>
+&lt;/blockquote>
+&lt;p>简单来说，就是没有 SRQ 的情况下，因为 RC/UC/UD 的接收方不知道对端什么时候会发送过来多少数据，所以必须做好最坏的打算，做好突发性收到大量数据的准备，也就是向 RQ 中下发足量的接收 WQE；另外 RC 服务类型可以利用流控机制来反压发送方，也就是告诉对端”我这边 RQ WQE 不够了“，这样发送端就会暂时放缓或停止发送数据。&lt;/p>
+&lt;p>但是正如我们前文所说，第一种方法由于是为最坏情况准备的，大部分时候有大量的 RQ WQE 处于空闲状态未被使用，这对内存是一种极大地浪费；第二种方法虽然不用下发那么多 RQ WQE 了，但是流控是有代价的，即会增加通信时延。&lt;/p>
+&lt;p>而 SRQ 通过允许很多 QP 共享接收 WQE（以及用于存放数据的内存空间）来解决了上面的问题。当任何一个 QP 收到消息后，硬件会从 SRQ 中取出一个 WQE，根据其内容存放接收到的数据，然后硬件通过 Completion Queue 来返回接收任务的完成信息给对应的上层用户。&lt;/p>
+&lt;p>我们来看一下使用 SRQ 比使用普通的 RQ 可以节省多少内存&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>：&lt;/p>
+&lt;p>假设接受数据的节点上有 N 对 QP，并且每个 QP 都可能在随机的时间收到连续的 M 个消息（每个消息都需要消耗一个 RQ 中的 WQE），&lt;/p>
+&lt;ul>
+&lt;li>如果不使用 SRQ 的话，用户一共需要下发 N * M 个 RQ WQE。&lt;/li>
+&lt;li>如果使用 SRQ 的话，用户只需要下发 K * M 个 RQ WQE，而 K 远小于 N。&lt;/li>
+&lt;/ul>
+&lt;p>这个 K 是可以由用户根据业务来配置的，如果存在大量的并发接收的情况，那么就把 K 设置大一点，否则 K 设置成个位数就足够应付一般的情况了。&lt;/p>
+&lt;p>我们一共节省了 (N - K) * M 个 RQ WQE，RQ WQE 本身其实不是很大，大约在几个 KB 的样子，看起来好像占不了多少内存。但是如前文所说，实际上节省的还有用于&lt;strong>存放数据的内存空间&lt;/strong>，这可是很大一块内存了，我们用图来说明：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_2.webp"
+alt="2024-06-28_11_2" width="80%" loading="lazy">
+&lt;/figure>
+&lt;p>上图中的 SRQ 中有两个 RQ WQE，我们看一下 RQ WQE 的内容，它们是由数个 sge（Scatter/Gather Element）组成的，每个 sge 由一个内存地址，长度和秘钥组成。有了起始地址和长度，sge 就可以指向一块连续的内存区域，那么多个 sge 就可以表示多个彼此离散的连续内存块，我们称多个 sge 为 sgl（Scatter/Gather List）。sge 在 IB 软件协议栈中随处可见（其实在整个 Linux 都很常见），可以用非常少的空间表示非常大的内存区域，IB 的用户都使用 sge 来指定发送和接收区域的。&lt;/p>
+&lt;p>可以简单估算下每个 sge 可以指向多大的内存区域，length 是一个 32bit 的无符号整型，可以表示 4GB 的空间。假设一个 RQ WQE 最大可以存放 256 个 sge，那么一个 RQ WQE 一共就是 1TB。当然实际上不可能这么大，这里只是想直观的告诉读者 RQ WQE 背后可能占用着多大的内存空间。&lt;/p>
+&lt;h3 id="srqc">SRQC&lt;/h3>
+&lt;p>即 SRQ Context。同 QPC 一样，SRQC 是用来告知硬件跟 SRQ 有关的属性的，包括深度、WQE 大小等信息，本文不再赘述了。&lt;/p>
+&lt;h3 id="srqn">SRQN&lt;/h3>
+&lt;p>即 SRQ Number。同 QP 一样，每个节点中可能存在多个 SRQ，为了标识和区分这些 SRQ，每个 SRQ 都有一个序号，称为 SRQN。&lt;/p>
+&lt;h3 id="srq-的-pd">SRQ 的 PD&lt;/h3>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-protection-domain/" >【7. RDMA 之 Protection Domain】
+&lt;/a>
+中介绍过 Protection Domain 的概念，它用来隔离不同的 RDMA 资源。每个 SRQ 都必须指定一个自己的 PD，可以跟自己关联的 QP 的 PD 相同，也可以不同；SRQ 之间也可以使用相同的 PD。&lt;/p>
+&lt;p>如果在使用 SRQ 的时候，收到了数据包，那么只有在要访问的 MR 和 SRQ 处于同一个 PD 下，才会正常接收这个数据包，否则会产生立即错误。&lt;/p>
+&lt;h2 id="异步事件">异步事件&lt;/h2>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-completion-queue/" >【10. RDMA 之 Completion Queue】
+&lt;/a>
+一文中介绍过，IB 协议根据错误的上报方式将错误类型分为立即错误，完成错误和异步错误。其中的异步错误类似于中断/事件，所以我们有时候也称其为异步事件。每个 HCA 都会注册一个事件处理函数专门用来处理异步事件，收到异步事件后，驱动程序会对其进行必要的处理和进一步上报给用户。&lt;/p>
+&lt;p>关于 SRQ 有一个特殊的异步事件，用来及时通知上层用户 SRQ 的状态，即 SRQ Limit Reached 事件。&lt;/p>
+&lt;h3 id="srq-limit">SRQ Limit&lt;/h3>
+&lt;p>SRQ 可以设置一个水线/阈值，当队列中剩余的 WQE 数量小于水线时，这个 SRQ 会就上报一个异步事件。提醒用户“队列中的 WQE 快用完了，请下发更多 WQE 以防没有地方接收新的数据”。这个水线/阈值就被称为 SRQ Limit，这个上报的事件就被称为 SRQ Limit Reached。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_3.webp"
+alt="2024-06-28_11_3" width="30%" loading="lazy">
+&lt;/figure>
+&lt;p>因为 SRQ 是多个 QP 共享的，所以如果深度比较小的情况下，很有可能突然里面的 WQE 就用完了。所以协议设计了这种机制，来保证用户能够及时干预 WQE 不够的情况。&lt;/p>
+&lt;p>上报异步事件之后，SRQ Limit 的值会被硬件重新设置为 0（应该是为了防止一直上报异步事件给上层）。当然用户可以不使用这个机制，只需要将 SRQ Limit 的值设为 0 即可。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;p>还是老四样——“增、删、改、查”：&lt;/p>
+&lt;ul>
+&lt;li>创建——Create SRQ&lt;/li>
+&lt;/ul>
+&lt;p>创建 SRQ 的时候，跟 QP 一样会申请所有 SRQ 相关的软硬件资源，比如驱动程序会申请 SRQN，申请 SRQC 的空间并向其中填写配置。创建 SRQ 时还必须指定每个 SRQ 的深度（能存放多少 WQE）以及每个 WQE 的最大 sge 数量。&lt;/p>
+&lt;ul>
+&lt;li>销毁——Destroy SRQ&lt;/li>
+&lt;/ul>
+&lt;p>销毁 SRQ 的所有相关软硬件资源。&lt;/p>
+&lt;ul>
+&lt;li>修改——Modify SRQ&lt;/li>
+&lt;/ul>
+&lt;p>除了 SRQ 深度等属性外，SRQ Limit 的值也是通过这个接口设置的。因为每次产生 SRQ Limit Reached 事件之后，水线的值都会被清零，所以每次都需要用户调用 Modify SRQ 重新设置水线。&lt;/p>
+&lt;ul>
+&lt;li>查询——Query SRQ&lt;/li>
+&lt;/ul>
+&lt;p>通常是用来查询水线的配置的。&lt;/p>
+&lt;h3 id="数据面">数据面&lt;/h3>
+&lt;h3 id="post-srq-receive">Post SRQ Receive&lt;/h3>
+&lt;p>跟 Post Receive 一样，就是向 SRQ 中下发接收 WQE，里面包含了作为接收缓冲区的内存块的信息。需要注意的是，&lt;strong>主语是 SRQ，与 QP 没有任何关系&lt;/strong>，现在用户是不关心这个 SRQ 被哪些 QP 关联的。&lt;/p>
+&lt;h2 id="srq-和-rq-的区别">SRQ 和 RQ 的区别&lt;/h2>
+&lt;p>从功能上来说，SRQ 和 RQ 一样都是用来储存接收任务书的，但是由于 SRQ 的共享性，所以其和 RQ 有一些差异。&lt;/p>
+&lt;h3 id="状态机">状态机&lt;/h3>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-queue-pair/" >【9. RDMA 之 Queue Pair】
+&lt;/a>
+中介绍过，QP 有着复杂的状态机，不同的状态下 QP 的收发能力存在差异。而 SRQ 只有非错误和错误两种状态：&lt;/p>
+&lt;p>无论是哪种状态下，用户都可以向 SRQ 中下发 WQE，但是在错误状态下，相关联的 QP 不能从这个 SRQ 中获得收到的数据。另外在错误状态下，用户也无法查询和修改 SRQ 的属性。&lt;/p>
+&lt;p>QP 处于错误状态时，可以通过 Modify QP 来使其回到 RESET 状态，但是对 SRQ 来说，只能通过销毁它来退出错误状态。&lt;/p>
+&lt;h3 id="接收流程">接收流程&lt;/h3>
+&lt;p>对于一个 QP 来说，RQ 和 SRQ 不能同时使用，两者需选其一，如果对一个已经关联 SRQ 的 QP 的 RQ 下发 WQE，那么会返回一个立即错误。&lt;/p>
+&lt;p>下面我们来对比看一下 SRQ 和 RQ 的接收流程。本小结的内容是本文的重点，相信读者看过之后，就对 SRQ 的机制有比较完整的了解了。&lt;/p>
+&lt;h3 id="rq-的接收流程">RQ 的接收流程&lt;/h3>
+&lt;p>首先，我们重温一下普通 RQ 的接收流程（结合发送端的完整流程请阅读 &lt;a class="link" href="https://cuterwrite.top/p/rdma-op/" >【4. RDMA 操作类型】
+&lt;/a>
+）一文）：&lt;/p>
+&lt;ol start="0">
+&lt;li>
+&lt;p>创建 QP。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过 Post Recv 接口，用户分别向 QP2 和 QP3 的 RQ 下发接收 WQE，WQE 中包含接收到数据后放到哪块内存区域的信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP3 的，那么从 QP3 的 RQ 中取出 WQE1，将接收到的数据放到 WQE1 指定的内存区域。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件完成数据存放后，向 QP3 的 RQ 关联的 CQ3 产生一个 CQE，上报任务完成信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ3 中取出 WC（CQE），然后从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发送给 QP2 的，那么从 QP2 的 RQ 中取出 WQE1，将接收到的数据放到 WQE1 指定的内存区域。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件完成数据存放后，向 QP2 的 RQ 关联的 CQ2 产生一个 CQE，上报任务完成信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ2 中取出 WC（CQE），然后从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_4.webp"
+alt="2024-06-28_11_4" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="srq-的接收流程">SRQ 的接收流程&lt;/h3>
+&lt;p>而 SRQ 的接收流程有一些区别：&lt;/p>
+&lt;ol start="0">
+&lt;li>
+&lt;p>创建 SRQ1，并创建 QP2 和 QP3，都关联到 SRQ1 上。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过 Post SRQ Recv 接口，用户向 SRQ1 中下发两个接收 WQE，WQE 中包含接收到数据后放到哪块内存区域的信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP3 的，从 SRQ1 中取出第一个 WQE（现在是 WQE1），根据 WQE 内容存放收到的数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>SRQ 中的每个 WQE 是“无主的“，不关联到任何一个 QP，硬件按队列顺序依次取出 WQE 就把数据放到里面了。&lt;/p>
+&lt;/blockquote>
+&lt;ol start="4">
+&lt;li>
+&lt;p>硬件发现 QP3 的 RQ 关联的 CQ 是 CQ3，所以向其中产生一个 CQE。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ3 中取出 CQE，从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>细心地读者可能会问，用户下发 WR 时，每个 WR 都指定了一些未来用来存放数据的内存区域。但是 SRQ 是一个池子，里面每个 WQE 都指向了不同的若干段内存区域。用户收到某个 QP 对应的 CQ 中的 WC 后如何知道接收到的数据存放到哪里了呢？&lt;/p>
+&lt;p>WC 中其实有 wr_id 信息，告知用户数据放到哪个 WR（WQE）指定的内存区域了，既然 WR 是用户下发的，用户自然知道其指向的具体位置。&lt;/p>
+&lt;/blockquote>
+&lt;ol start="6">
+&lt;li>
+&lt;p>硬件收到数据&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP2 的，从 SRQ1 中取出第一个 WQE（现在是 WQE2），根据 WQE 内容存放收到的数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现 QP2 的 RQ 关联的 CQ 是 CQ2，所以向其中产生一个 CQE。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ2 中取出 CQE，从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_5.webp"
+alt="2024-06-28_11_5" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>本文首先介绍了 SRQ 的基本概念，然后是其设计初衷、相关机制和用户接口，最后对比 RQ 描述了 SRQ 的接收流程。在实际业务中，SRQ 的使用率还是蛮高的，希望读者能够深入理解。&lt;/p>
+&lt;p>就写到这里吧，感谢阅读。下一篇我将给大家介绍下 Memeory Window。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>10.2.9 SRQ 的设计思想以及相关操作&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.2.3 SRQ 和 QP 的 PD&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.8.2 关联 SRQ 的 QP 和不使用 SRQ 的 QP 的关系&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.8.5 SRQ 相关的返回 WC&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.5.2.4 异步事件&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="其他参考资料">其他参考资料&lt;/h2>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>Linux Kernel Networking - Implement and Theory. Chapter 13. Shared Receive Queue&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/259650980">&lt;cite>知乎专栏：10. RDMA 之 Completion Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1278,834 +1725,4 @@ $ cp [-r] [file] ./rootfs/
 $ sudo umount rootfs
 &lt;/code>&lt;/pre>
 &lt;h2 id="五总结">五、总结&lt;/h2>
-&lt;p>至此，我们已经成功搭建了玄铁 900 系列的工具链环境以及 xuantie-qemu 仿真环境，这为后续的开发、编译、链接以及运行和调试基于玄铁 900 系列芯片的 RISC-V 应用程序奠定了基础。&lt;/p></description></item><item><title>OpenMP 简介</title><link>https://cuterwrite.top/p/openmp-intro/</link><pubDate>Mon, 19 Feb 2024 01:36:00 +0000</pubDate><guid>https://cuterwrite.top/p/openmp-intro/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp" alt="Featured image of post OpenMP 简介" />&lt;h1 id="openmp-简介">OpenMP 简介&lt;/h1>
-&lt;h2 id="简介">简介&lt;/h2>
-&lt;h3 id="什么是-openmp">什么是 OpenMP？&lt;/h3>
-&lt;p>OpenMP（Open Multi-Processing）是一种广泛应用的多线程并行编程模型，它为共享内存系统上的并行计算提供了丰富的指令集和 API。起源于 1997 年，OpenMP 由多个领先硬件和软件供应商共同制定标准，旨在简化并行程序的设计与实现过程，以充分利用现代多核处理器的计算能力。&lt;/p>
-&lt;p>OpenMP 支持多种编程语言，包括 C、C++ 以及 Fortran 等，并通过在源代码中插入特定的编译指示（pragma），使得开发者能够轻松地将串行代码转化为高效的并行代码。其主要优势在于其简洁性和易用性，允许程序员使用熟悉的编程语言和开发环境，同时提供良好的可移植性和扩展性。&lt;/p>
-&lt;p>OpenMP 由非营利性组织管理，由多家软硬件厂家参与，包括 Arm，IBM，Intel，AMD，NVIDIA，Cray，Oracle 等。&lt;/p>
-&lt;h3 id="历史版本">历史版本&lt;/h3>
-&lt;ul>
-&lt;li>在 &lt;a class="link" href="https://www.openmp.org/" target="_blank" rel="noopener" >官网页面
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-可以查询到 OpenMP 的历史版本和发布日期。&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>版本&lt;/th>
-&lt;th>发布日期&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>Fortran 1.0&lt;/td>
-&lt;td>October 1997&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>C/C++ 1.0&lt;/td>
-&lt;td>October 1998&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>C/C++ 2.0&lt;/td>
-&lt;td>March 2002&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 2.5&lt;/td>
-&lt;td>May 2005&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 3.0&lt;/td>
-&lt;td>May 2008&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 3.1&lt;/td>
-&lt;td>July 2011&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 4.0&lt;/td>
-&lt;td>July 2013&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 4.5&lt;/td>
-&lt;td>November 2015&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 5.0&lt;/td>
-&lt;td>November 2018&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 5.1&lt;/td>
-&lt;td>November 2020&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>OpenMP 5.2&lt;/td>
-&lt;td>November 2021&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="基础知识">基础知识&lt;/h2>
-&lt;h3 id="技术框架">技术框架&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/openmp-arch-2024-02-20.webp"
-alt="openmp-arch-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>OpenMP 技术框架&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;p>&lt;strong>OpenMP Runtime Library&lt;/strong> 是 OpenMP 规范中定义的一组函数和运行时支持结构，它是 OpenMP 并行编程框架的关键组成部分。这个库在编译器的支持下与用户程序链接，在程序执行时负责管理线程的创建、同步、调度以及数据共享等任务。它实现了 OpenMP 编译指导所指示的所有并行化机制。&lt;/p>
-&lt;p>&lt;strong>OpenMP Runtime Library&lt;/strong> 包括了如下功能：&lt;/p>
-&lt;ul>
-&lt;li>线程管理（创建、销毁、同步）
-= 工作共享（动态工作分配给各个线程）
-= 任务调度
-= 同步原语（如 barriers, locks, atomic operations）
-= 动态调整线程数量&lt;/li>
-&lt;li>内存模型支持（数据环境变量、private, shared, reduction 变量等）&lt;/li>
-&lt;/ul>
-&lt;p>&lt;strong>Compiler Directives&lt;/strong> 编译指导是以 &lt;code>#pragma omp&lt;/code> 开头的预处理器指令，程序员在源代码中插入这些指令来指导编译器如何将串行程序转换为并行程序。例如，使用 &lt;code>#pragma omp parallel&lt;/code> 指令定义一个并行区域，编译器会在此区域内生成多线程执行逻辑。&lt;/p>
-&lt;p>&lt;strong>Environment Variables&lt;/strong> 环境变量是 OpenMP 运行时库的一部分，它们用于控制运行时行为，例如线程数量、调度策略等。&lt;/p>
-&lt;p>&lt;strong>OpenMP Library&lt;/strong> 是一组函数库，包括了一些用于线程同步、原子操作、锁、并行循环等的函数。这些函数可以在用户程序中直接调用，以实现更细粒度的并行化。&lt;/p>
-&lt;p>总的来说，OpenMP 技术框架包括了编译器指导、运行时库、环境变量和函数库等多个组成部分，它们共同构成了一个完整的并行编程环境，共同协作以支持在共享内存系统上的并行编程。&lt;/p>
-&lt;h3 id="执行模型fork-join-model">执行模型：Fork-Join Model&lt;/h3>
-&lt;p>OpenMP 的执行模型采用的是 Fork-Join 机制，这是一种用于并行编程中的同步原语模型。在该模型下，程序执行遵循以下步骤：&lt;/p>
-&lt;ol>
-&lt;li>
-&lt;p>&lt;strong>Fork（派生）阶段&lt;/strong>： 程序开始时以单个主线程执行，当遇到 OpenMP 编译指导（pragma）指示的并行区域时，主线程会通过 Runtime Library 创建一个或多个工作线程（worker threads）。这些工作线程是对主线程的派生，每个线程负责执行并行区域内的部分任务。并行区域可以是循环、段（sections）、单一任务或其他可并行化的代码块。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>Parallel Execution（并行执行）阶段&lt;/strong>： 创建出的工作线程独立并发地执行分配给它们的任务，并且能够访问共享的数据结构。OpenMP 提供了一套丰富的指令来管理数据的同步和通信，确保在多线程环境下的正确性和一致性。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>Join（合并）阶段&lt;/strong>： 当所有工作线程完成其在并行区域内的任务后，它们会自动或者通过显式同步指令（如 &lt;code>omp barrier&lt;/code> ）汇聚到 join 点。在此阶段，所有线程等待直至所有其他线程都到达了同步点，随后 join 操作发生。这意味着主线程和其他工作线程重新同步，恢复为串行执行模式或继续执行后续的非并行代码。&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;strong>Synchronization and Data Consistency（同步与数据一致性）&lt;/strong>： Fork-Join 模型确保了在并行执行过程中，通过适当的锁机制、原子操作和同步原语保证了对共享资源的互斥访问以及数据的一致性。&lt;/p>
-&lt;/li>
-&lt;/ol>
-&lt;p>总结来说，OpenMP 的 Fork-Join 执行模型是一种基于动态线程创建和同步的并行处理框架，它允许开发者方便地将串行代码转化为并行执行的代码片段，同时简化了并行编程中常见的复杂性，如线程管理和数据同步问题。&lt;/p>
-&lt;h3 id="线程与进程">线程与进程&lt;/h3>
-&lt;ul>
-&lt;li>
-&lt;p>进程&lt;/p>
-&lt;ul>
-&lt;li>每个进程都有自己独立的地址空间&lt;/li>
-&lt;li>CPU 在进程间切换时需要进行上下文切换&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>线程&lt;/p>
-&lt;ul>
-&lt;li>一个进程下的线程共享相同的地址空间&lt;/li>
-&lt;li>CPU 在线程之间切换开销较小&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>操作系统的线程设计&lt;/p>
-&lt;ul>
-&lt;li>现代操作系统如 Linux、Windows 等都支持一个进程下有多个线程。&lt;/li>
-&lt;li>线程是操作系统调度的基本单位，进程是资源分配的基本单位。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/slide_10-2024-02-20.webp"
-alt="slide_10-2024-02-20" width="80%" loading="lazy">&lt;figcaption>
-&lt;h4>操作系统的线程设计&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;h3 id="线程的硬件调度">线程的硬件调度&lt;/h3>
-&lt;ul>
-&lt;li>&lt;strong>硬件调度机制与操作系统协同，负责将线程智能地映射至可用的 CPU 物理核心上执行。&lt;/strong>&lt;/li>
-&lt;li>因此，在多线程应用中，当活跃线程数超过了实际 CPU 物理核心的数量时，操作系统将不得不进行密集的上下文切换，以确保多个线程在有限的核心资源上交替运行，这种线程竞争过载的现象会导致整体性能瓶颈和效率下降。&lt;/li>
-&lt;li>&lt;strong>超线程技术（Hyper-Threading）&lt;/strong> 通过在单个物理 CPU 核心上虚拟化出额外的逻辑处理单元，当前通常配置为每个物理核心承载两个逻辑核心。这些逻辑核心能够并行执行独立的任务流，尽管它们共享同一物理核心的基础计算资源，如执行引擎、缓存和其他底层硬件结构。通过这种方式，超线程旨在提高资源利用率和并发处理能力，尤其是在存在大量并行任务且其对计算资源需求相对较小的情况下，可以有效提升系统的总体吞吐量。然而，在某些高度依赖单一核心性能或内存带宽的应用场景下，如部分对 CPU 敏感的游戏或特定类型的数据密集型运算，增加逻辑核心可能并不一定能带来显著的性能提升。&lt;/li>
-&lt;/ul>
-&lt;h3 id="硬件的内存模型">硬件的内存模型&lt;/h3>
-&lt;ul>
-&lt;li>在现代多核处理器体系结构中，每个 CPU 核心为了进一步提升数据访问速度，在与主存之间设计有多级缓存层次结构。最靠近 CPU 核心的是 L1 缓存，通常其后是 L2 缓存，部分高端架构还包含 L3 缓存，这些高速缓存层级存储容量逐层增大，但访问延迟逐层增加。&lt;/li>
-&lt;li>L1 和 L2 缓存通常是与特定 CPU 核心紧密耦合且私有的，这意味着每个核心拥有自己的独立缓存空间，以降低数据访问冲突并提高缓存命中率。L1 缓存由于距离计算单元最近，其访问速度最快，但容量最小；而 L2 缓存作为 L1 缓存的有效补充，具有相对较大的容量。&lt;/li>
-&lt;li>为确保在多核环境中不同 CPU 核心的缓存中对共享数据的一致性，硬件和操作系统共同实现了缓存一致性协议（如 MESI 协议）。这种机制允许系统自动维护一个全局一致的数据视图，即使数据在多个核心的缓存中存在副本也能保证它们同步更新，这一特性在某些架构中被称作 &lt;strong>ccNUMA（cache-coherent non-uniform memory access）&lt;/strong> ，即缓存一致性非统一内存访问。&lt;/li>
-&lt;li>然而，这种缓存一致性管理也带来了一些挑战，其中之一就是“伪共享”(False Sharing)问题。当不同的线程修改位于同一缓存行内的各自独立变量时，尽管这些变量本身并无关联，但由于它们物理上相邻而被存储在同一缓存行内，因此任何针对其中一个变量的写操作都会导致整个缓存行失效并在所有核心间重新同步。这会引发不必要的缓存无效化与重新填充操作，从而显著降低性能。解决伪共享问题通常需要精心设计数据布局或利用缓存行对齐等技术手段来避免无关数据之间的争用。&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20170115165700476-2024-02-20.webp"
-alt="20170115165700476-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>典型的现代 CPU 内存结构&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;h3 id="线程亲和性和线程绑定">线程亲和性和线程绑定&lt;/h3>
-&lt;ul>
-&lt;li>线程亲和性（Thread Affinity）是指操作系统或应用程序控制特定线程与处理器核心之间关联的能力。在多核或多处理器系统中，线程亲和性允许程序员或调度器决定将某个线程固定在特定的 CPU 核心上运行，而不是让操作系统自由地在所有可用的核心间进行动态调度。这种机制有助于减少上下文切换开销，提高缓存命中率，并且对于需要保持数据局部性的并行计算任务特别有益。&lt;/li>
-&lt;li>线程绑定（Thread Pinning）是实现线程亲和性的具体技术手段，它指明了将特定线程与特定硬件资源（如 CPU 核心或 NUMA 节点）之间的强制关联。通过线程绑定，可以确保指定的线程始终在其分配的核心上执行，避免被操作系统迁移到其他核心，从而优化性能、减少延迟并解决伪共享等问题。在 OpenMP 等并行编程模型中，可以通过相关的环境变量或编译指导来设置线程绑定策略，以适应不同的并行计算需求和硬件特性。&lt;/li>
-&lt;li>同一个插槽上的 CPU 对 L3 缓存的访问延迟是一致的，但不同插槽上的 CPU 对 L3 缓存的访问延迟是不一致的。因此，线程绑定的目的是为了减少线程在不同 CPU 之间的迁移，从而减少访存延迟。&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/u=237293070,3563798054&amp;amp;fm=253&amp;amp;app=138&amp;amp;f=JPEG-2024-02-20.webp"
-alt="u=237293070,3563798054&amp;amp;fm=253&amp;amp;app=138&amp;amp;f=JPEG-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>线程亲和性和线程绑定&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;ul>
-&lt;li>OpenMP 支持控制线程的绑定
-&lt;ul>
-&lt;li>环境变量 &lt;code>OMP_PROC_BIND&lt;/code> 或从句 &lt;code>proc_bind(master|close|spread)&lt;/code> 控制线程绑定与否，以及线程对于绑定单元（称为 place）分布&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h2 id="openmp-编程">OpenMP 编程&lt;/h2>
-&lt;h3 id="安装">安装&lt;/h3>
-&lt;p>对于 Linux 系统，GCC 是常用的编译器，现代版本的 GCC 一般已默认支持 OpenMP。例如在 Ubuntu 20.04 LTS 上，可以通过以下命令安装含有 OpenMP 的 build-essential 包：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ sudo apt-get update
-$ sudo apt-get install -y build-essential
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>查看 OpenMP 版本&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">$ echo |cpp -fopenmp -dM |grep -i open
-#define _OPENMP 201511
-&lt;/code>&lt;/pre>
-&lt;h3 id="编译使用">编译使用&lt;/h3>
-&lt;ul>
-&lt;li>直接在编译语句中添加 &lt;code>-fopenmp&lt;/code> 选项即可开启 OpenMP 支持。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">g++ -O2 -std=c++17 -fopenmp hello.cpp -o hello
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>如果使用 CMake 构建项目, 加入 &lt;code>-Wunknown-pragmas&lt;/code> 选项可以在编译时报告未处理的 &lt;code>#pragma&lt;/code> 指令。&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-cmake">find_package(OpenMP REQUIRED)
-add_compile_options(-Wunknown-pragmas)
-add_executable(hello hello.cpp)
-target_link_libraries(hello PRIVATE OpenMP::OpenMP_CXX)
-&lt;/code>&lt;/pre>
-&lt;h3 id="hello-world">Hello World!&lt;/h3>
-&lt;ul>
-&lt;li>第一个 OpenMP 程序&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">#include &amp;lt;omp.h&amp;gt;
-#include &amp;lt;stdio.h&amp;gt;
-int main() {
-#pragma omp parallel num_threads(8)
-{
-int id = omp_get_thread_num();
-int num_threads = omp_get_num_threads();
-printf(&amp;quot;Hello World from thread %d of %d \n&amp;quot;, id, num_threads);
-}
-return 0;
-}
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>运行结果&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">$ gcc -fopenmp hello.c -o hello
-$ ./hello
-Hello World from thread 7 of 8
-Hello World from thread 6 of 8
-Hello World from thread 0 of 8
-Hello World from thread 3 of 8
-Hello World from thread 1 of 8
-Hello World from thread 2 of 8
-Hello World from thread 5 of 8
-Hello World from thread 4 of 8
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>同一类 openmp 制导语句称为一种构造(construct)&lt;/li>
-&lt;li>形式为 &lt;code>#pragma omp &amp;lt;directive name&amp;gt; &amp;lt;clause&amp;gt;&lt;/code>&lt;/li>
-&lt;li>使用 &lt;code>{}&lt;/code> 包裹的代码块称为并行区域(parallel region)&lt;/li>
-&lt;/ul>
-&lt;h3 id="线程数设置">线程数设置&lt;/h3>
-&lt;ul>
-&lt;li>优先级由低到高
-&lt;ul>
-&lt;li>什么都不做，系统选择运行线程数&lt;/li>
-&lt;li>设置环境变量 &lt;code>export OMP_NUM_THREADS=4&lt;/code>&lt;/li>
-&lt;li>代码中使用库函数 &lt;code>void omp_set_num_threads(int)&lt;/code>&lt;/li>
-&lt;li>通过制导语句 &lt;code>num_threads(4)&lt;/code>&lt;/li>
-&lt;li>if 从句判断串行还是并行执行&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="常用库函数">常用库函数&lt;/h3>
-&lt;ul>
-&lt;li>设置并行区运行线程数：&lt;code>void omp_set_num_threads(int)&lt;/code>&lt;/li>
-&lt;li>获取并行区运行线程数：&lt;code>int omp_get_num_threads()&lt;/code>&lt;/li>
-&lt;li>获取当前线程编号：&lt;code>int omp_get_thread_num()&lt;/code>&lt;/li>
-&lt;li>获得 OpenMP Wall Clock 时间（单位：秒）：&lt;code>double omp_get_wtime()&lt;/code>&lt;/li>
-&lt;li>获得时间精度：&lt;code>double omp_get_wtick()&lt;/code>&lt;/li>
-&lt;/ul>
-&lt;h3 id="parallel-构造">Parallel 构造&lt;/h3>
-&lt;p>&lt;strong>支持的从句&lt;/strong>&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>if(scalar_expression)&lt;/code>：如果 &lt;code>scalar_expression&lt;/code> 为真，则并行执行，否则串行执行。&lt;/li>
-&lt;li>&lt;code>num_threads(integer_expression)&lt;/code>：指定并行区域中的线程数。&lt;/li>
-&lt;li>&lt;code>default(shared|none)&lt;/code>：指定变量的默认共享性。
-&lt;ul>
-&lt;li>&lt;code>shared&lt;/code>：所有变量默认为共享。&lt;/li>
-&lt;li>&lt;code>none&lt;/code>：无默认变量类型，每个变量都需要显式声明共享或私有。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;code>shared(list)&lt;/code>：指定共享变量列表。
-&lt;ul>
-&lt;li>共享变量在内存中只有一份，所有线程都可以访问。&lt;/li>
-&lt;li>请保证共享变量访问不会冲突。&lt;/li>
-&lt;li>不特别指定并行区变量默认为 &lt;strong>shared&lt;/strong>。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;code>private(list)&lt;/code>：指定私有变量列表。
-&lt;ul>
-&lt;li>私有变量在每个线程中都有一份独立的拷贝。&lt;/li>
-&lt;li>变量需要 &lt;strong>重新初始化&lt;/strong>。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;code>firstprivate(list)&lt;/code>：指定首次私有变量列表。
-&lt;ul>
-&lt;li>同 &lt;code>private&lt;/code>&lt;/li>
-&lt;li>对变量根据主线程中的数据进行初始化。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 1： no clause、private、firstprivate&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-c">int results[4];
-int cnt;
-cnt = 1;
-#pragma omp parallel num_threads(4)
-{
-int tid = omp_get_thread_num();
-for (int i = 0; i &amp;lt; 4; i++) {
-cnt += 1;
-}
-results[tid] = cnt;
-}
-printf(&amp;quot;no clause: &amp;quot;);
-for (int i = 0; i &amp;lt; 4; i++) {
-printf(&amp;quot;%d &amp;quot;, results[i]);
-}
-printf(&amp;quot;\n&amp;quot;);
-cnt = 1;
-#pragma omp parallel num_threads(4) private(cnt)
-{
-int tid = omp_get_thread_num();
-for (int i = 0; i &amp;lt; 4; i++) {
-cnt += 1;
-}
-results[tid] = cnt;
-}
-printf(&amp;quot;private(not init): &amp;quot;);
-for (int i = 0; i &amp;lt; 4; i++) {
-printf(&amp;quot;%d &amp;quot;, results[i]);
-}
-printf(&amp;quot;\n&amp;quot;);
-cnt = 1;
-#pragma omp parallel num_threads(4) firstprivate(cnt)
-{
-int tid = omp_get_thread_num();
-for (int i = 0; i &amp;lt; 4; i++) {
-cnt += 1;
-}
-results[tid] = cnt;
-}
-printf(&amp;quot;firstprivate: &amp;quot;);
-for (int i = 0; i &amp;lt; 4; i++) {
-printf(&amp;quot;%d &amp;quot;, results[i]);
-}
-printf(&amp;quot;\n&amp;quot;);
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>打印结果&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">no clause: 5 9 13 17
-private(not init): 4 1572916964 1572916964 1572916964
-firstprivate: 5 5 5 5
-&lt;/code>&lt;/pre>
-&lt;h3 id="for-构造">For 构造&lt;/h3>
-&lt;ul>
-&lt;li>最常用的并行化构造之一&lt;/li>
-&lt;/ul>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 2：并行化 for 循环&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-c">#pragma omp parallel num_threads(8)
-{
-int tid = omp_get_thread_num();
-int num_threads = omp_get_num_threads();
-#pragma omp for
-for (int i = 0; i &amp;lt; num_threads; i++) {
-#pragma omp ordered
-printf(&amp;quot;Hello from thread %d of %d \n&amp;quot;, tid, num_threads);
-}
-}
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>打印结果&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">Hello from thread 0 of 8
-Hello from thread 1 of 8
-Hello from thread 2 of 8
-Hello from thread 3 of 8
-Hello from thread 4 of 8
-Hello from thread 5 of 8
-Hello from thread 6 of 8
-Hello from thread 7 of 8
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>在并行区内对 for 循环进行线程划分，且 for 循环满足格式要求
-&lt;ul>
-&lt;li>init-expr:需要是 &lt;code>var=lb&lt;/code> 形式，类型也有限制&lt;/li>
-&lt;li>test-expr:限制为 &lt;code>var relational-opb&lt;/code> 或者 &lt;code>b relational-op var&lt;/code>&lt;/li>
-&lt;li>incr-expr:仅限加减法&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="parallel-for-构造">Parallel for 构造&lt;/h3>
-&lt;ul>
-&lt;li>常常将 &lt;code>parallel&lt;/code> 和 &lt;code>for&lt;/code> 结合使用，合并为 &lt;code>parallel for&lt;/code> 制导语句&lt;/li>
-&lt;/ul>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th>&lt;/th>
-&lt;th>parallel&lt;/th>
-&lt;th>for   &lt;/th>
-&lt;th>parallel for&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td>if&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>num_threads&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>default&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>copyin&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>private&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>firstprivate&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>shared&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>reduction&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>lastprivate&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>schedule&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>ordered&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>collapse&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td>nowait&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;td>✅&lt;/td>
-&lt;td>❌&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;ul>
-&lt;li>
-&lt;p>&lt;code>lastprivate(list)&lt;/code>&lt;/p>
-&lt;ul>
-&lt;li>同 &lt;code>private&lt;/code>&lt;/li>
-&lt;li>执行完 for 循环后，将最后一个线程的值赋给主线程的变量。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>nowait&lt;/code>：取消代码块结束时的栅栏同步(barrier)&lt;/p>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>collapse(n)&lt;/code>：应用于 n 重循环，合并(展开)循环&lt;/p>
-&lt;ul>
-&lt;li>注意循环之间是否有数据依赖&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>ordered&lt;/code>：声明有潜在的顺序执行部分&lt;/p>
-&lt;ul>
-&lt;li>使用 &lt;code>#pragma omp ordered&lt;/code> 标记顺序执行代码(搭配使用)&lt;/li>
-&lt;li>ordered 区内的语句任意时刻仅由最多一个线程执行&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>
-&lt;p>&lt;code>shedule(type[,chunk])&lt;/code>&lt;/p>
-&lt;ul>
-&lt;li>&lt;code>type&lt;/code>：指定循环迭代的调度策略
-&lt;ul>
-&lt;li>&lt;code>static&lt;/code>：静态调度，chunk 大小固定（默认 n/p ）&lt;/li>
-&lt;li>&lt;code>dynamic&lt;/code>：动态调度，chunk 大小固定（默认为 1）&lt;/li>
-&lt;li>&lt;code>guided&lt;/code>：引导调度，chunk 大小动态调整&lt;/li>
-&lt;li>&lt;code>runtime&lt;/code>：由系统环境变量 &lt;code>OMP_SCHEDULE&lt;/code> 指定&lt;/li>
-&lt;li>&lt;code>auto&lt;/code>：自动调度&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;code>chunk&lt;/code>：指定每个线程获取的迭代次数&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="特殊的数据从句reduction">特殊的数据从句：Reduction&lt;/h3>
-&lt;p>在 OpenMP 中，reduction 是一种并行编程技术，用于解决多线程环境下的数据竞争问题，特别是在计算全局变量的累加或类似操作时。当多个线程需要同时修改同一个共享变量，并且这些修改可以通过某种二元运算符（如加法、乘法等）将所有线程的结果合并成一个最终结果时，可以使用 &lt;code>reduction&lt;/code> 子句。&lt;/p>
-&lt;p>具体来说，reducton 的执行过程为：&lt;/p>
-&lt;ul>
-&lt;li>fork 线程并分配任务&lt;/li>
-&lt;li>每一个线程定义一个私有变量 &lt;code>omp_priv&lt;/code>
-&lt;ul>
-&lt;li>同 &lt;code>private&lt;/code>。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>各个线程执行计算&lt;/li>
-&lt;li>所有 &lt;code>omp_priv&lt;/code> 和 &lt;code>omp_in&lt;/code> 一起顺序进行 reduction，写回原变量。&lt;/li>
-&lt;/ul>
-&lt;p>相比之下，&lt;strong>atomic&lt;/strong> 是 OpenMP 提供的另一种同步机制，它确保对单个内存位置的访问在多线程环境中是原子性的，即一次只允许一个线程对该内存位置进行读取或写入操作。通过 &lt;code>#pragma omp atomic&lt;/code> 指令，可以保证一条简单的赋值语句（或某些特定类型的读改写操作）在并发环境下不会发生数据竞争。&lt;/p>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 3：Reduction&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-c">int sum = 0;
-double start = omp_get_wtime();
-#pragma omp parallel for num_threads(8) reduction(+ : sum)
-for (int i = 0; i &amp;lt; 100000; i++) {
-sum += i;
-}
-printf(&amp;quot;sum = %d\n&amp;quot;, sum);
-printf(&amp;quot;Reduction time: %.5lf s\n&amp;quot;, omp_get_wtime() - start);
-// no reduction
-sum = 0;
-start = omp_get_wtime();
-#pragma omp parallel for num_threads(8)
-for (int i = 0; i &amp;lt; 100000; i++) {
-#pragma omp atomic
-sum += i;
-}
-printf(&amp;quot;sum = %d\n&amp;quot;, sum);
-printf(&amp;quot;Atomic time: %.5lf s\n&amp;quot;, omp_get_wtime() - start);
-return 0;
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>打印结果&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">sum = 704982704
-Reduction time: 0.00062 s
-sum = 704982704
-Atomic time: 0.01021 s
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>两者结果相同，但是 reduction 的执行时间更短，这是因为 reduction 通过为每个线程分配一个私有副本，线程可以在其私有空间内自由地执行归约操作，而不需要在更新全局结果时与其他线程争夺锁资源，加上高效的数据合并方法等。&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/reduction-omp-2024-02-20.webp"
-alt="reduction-omp-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>OpenMP reducton operation&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;h3 id="同步构造">同步构造&lt;/h3>
-&lt;h4 id="sections-构造">Sections 构造&lt;/h4>
-&lt;ul>
-&lt;li>将并行区的代码块划分为多个 section 分配执行。&lt;/li>
-&lt;li>可以搭配 parallel 合成为 parallel sections 构造。&lt;/li>
-&lt;li>每个 section 由一个线程执行
-&lt;ul>
-&lt;li>线程数大于 section 数目：部分线程空闲&lt;/li>
-&lt;li>线程数小于 section 数目：部分线程分配多个 section&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>示例代码：&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-c">#pragma omp sections
-{
-#pragma omp section
-method1();
-#pragma omp section
-method2();
-}
-&lt;/code>&lt;/pre>
-&lt;h4 id="barrier-构造">Barrier 构造&lt;/h4>
-&lt;ul>
-&lt;li>在特定位置进行栅栏同步&lt;/li>
-&lt;li>在存在数据依赖的情况下，可以使用 barrier 保证数据的一致性&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Barrier-2024-02-20.webp"
-alt="Barrier-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>Barrier 同步示意图&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;h4 id="single-构造">Single 构造&lt;/h4>
-&lt;ul>
-&lt;li>用于标记只有一个线程执行的代码块，带有隐式的 barrier 同步，可以使用 nowait 取消隐式的 barrier 同步。&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/omp-single-2024-02-20.webp"
-alt="omp-single-2024-02-20" width="70%" loading="lazy">&lt;figcaption>
-&lt;h4>pragma single&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;h4 id="atomic-构造">Atomic 构造&lt;/h4>
-&lt;ul>
-&lt;li>用于保证对共享变量的原子操作，避免数据竞争。&lt;/li>
-&lt;/ul>
-&lt;h3 id="false-sharing">False Sharing&lt;/h3>
-&lt;ul>
-&lt;li>伪共享简单来说就是指多个线程同时访问同一缓存行的不同部分，导致缓存行的无效化和重新填充，从而降低了程序的性能。&lt;/li>
-&lt;li>不同核心对同一 Cache line 的同时读写会造成严重的冲突，导致改级缓存失效。&lt;/li>
-&lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/false-sharing-2024-02-20.webp"
-alt="false-sharing-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>False Sharing 问题&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;ul>
-&lt;li>在 OpenMP 中，解决伪共享的方法主要有：
-&lt;ul>
-&lt;li>&lt;strong>数据结构对齐&lt;/strong> ：通过使用编译器提供的对齐指令或关键字确保相关变量分别处于不同的缓存行中。例如，在 C++中可以使用 &lt;code>alignas&lt;/code> 关键字来指定变量的内存对齐方式，确保每个线程的数据独立位于不同的缓存行。&lt;/li>
-&lt;li>&lt;strong>增大缓存行之间的间距&lt;/strong> ：在相邻变量之间插入足够的填充空间，使得它们不会出现在同一个缓存行内。&lt;/li>
-&lt;li>&lt;strong>避免无意义的竞争&lt;/strong> ：设计算法和数据结构以减少不必要的共享数据访问。如果可能，尽量让线程操作各自独立的数据段。&lt;/li>
-&lt;li>&lt;strong>自定义内存分配&lt;/strong> ：使用特殊的内存分配函数，确保分配的连续内存区域对齐到缓存行边界，这样分配给不同线程的数据就不会落在同一缓存行上。&lt;/li>
-&lt;li>在某些情况下，可以利用特定平台提供的硬件特性或者编译器支持的扩展，比如 Intel 的 &lt;code>__declspec(align(#))&lt;/code> 属性（对于 MSVC）或者 &lt;code>__attribute__((aligned(#)))&lt;/code>（对于 GCC/Clang）。&lt;/li>
-&lt;li>也可以通过控制变量的作用域或者利用动态创建私有副本等技术来间接避免伪共享问题。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="任务构造">任务构造&lt;/h3>
-&lt;ul>
-&lt;li>除了 Fork-Join 模型外，OpenMP 还支持任务并行模型，通过 &lt;code>task&lt;/code> 制导语句来实现。&lt;/li>
-&lt;li>即动态地管理线程池和任务池，线程池中的线程可以动态地获取任务池中的任务进行执行，从而实现任务的并行执行。&lt;/li>
-&lt;/ul>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 4：任务并行&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-c">#include &amp;lt;iostream&amp;gt;
-#include &amp;lt;omp.h&amp;gt;
-#include &amp;lt;unistd.h&amp;gt;
-#include &amp;lt;iomanip&amp;gt;
-void big_task(int i) {
-sleep(10);
-}
-void small_task(int i) {
-sleep(1);
-}
-int main() {
-int ntasks = 8;
-double start = omp_get_wtime();
-#pragma omp parallel
-{
-#pragma omp single
-{
-std::cout &amp;lt;&amp;lt; &amp;quot;Task 0 Created&amp;quot; &amp;lt;&amp;lt; std::endl;
-#pragma omp task
-big_task(0);
-std::cout &amp;lt;&amp;lt; &amp;quot;Task 1 Created&amp;quot; &amp;lt;&amp;lt; std::endl;
-#pragma omp task
-big_task(1);
-for (int i = 2; i &amp;lt; ntasks; i++) {
-std::cout &amp;lt;&amp;lt; &amp;quot;Task &amp;quot; &amp;lt;&amp;lt; i &amp;lt;&amp;lt; &amp;quot; Created&amp;quot; &amp;lt;&amp;lt; std::endl;
-#pragma omp task
-small_task(i);
-}
-}
-#pragma omp taskwait
-}
-std::cout &amp;lt;&amp;lt; &amp;quot;All tasks finished&amp;quot; &amp;lt;&amp;lt; std::endl;
-std::cout &amp;lt;&amp;lt; &amp;quot;Time: &amp;quot; &amp;lt;&amp;lt; std::fixed &amp;lt;&amp;lt; std::setprecision(2) &amp;lt;&amp;lt; omp_get_wtime() - start &amp;lt;&amp;lt; &amp;quot;s&amp;quot; &amp;lt;&amp;lt; std::endl;
-return 0;
-}
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>运行结果&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">$ g++ -fopenmp task.cpp -o task
-$ ./task
-Task 0 Created
-Task 1 Created
-Task 2 Created
-Task 3 Created
-Task 4 Created
-Task 5 Created
-Task 6 Created
-Task 7 Created
-All tasks finished
-Time: 10.00s
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>这段代码中，我们使用了 &lt;code>#pragma omp task&lt;/code> 制导语句来创建任务，任务的执行由线程池中的线程动态获取并执行。在任务创建后，我们使用 &lt;code>#pragma omp taskwait&lt;/code> 来等待所有任务执行完毕。达到了一个异步执行的效果。&lt;/li>
-&lt;/ul>
-&lt;h3 id="向量化simd-构造">向量化：SIMD 构造&lt;/h3>
-&lt;ul>
-&lt;li>SIMD（Single Instruction, Multiple Data）是一种并行计算模式，它通过一条指令同时对多个数据进行操作，从而实现高效的数据并行计算。&lt;/li>
-&lt;li>在 OpenMP 中，可以使用 &lt;code>#pragma omp simd&lt;/code> 制导语句来实现向量化并行计算。
-&lt;ul>
-&lt;li>&lt;code>aligned&lt;/code> 用于列出内存对齐的指针&lt;/li>
-&lt;li>&lt;code>safelen&lt;/code> 用于标记循环展开时的数据依赖&lt;/li>
-&lt;li>&lt;code>linear&lt;/code> 用于标记循环变量的线性关系&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>编译器例如 gcc 也自带向量化功能，一般使用以下编译选项
-&lt;ul>
-&lt;li>-O3&lt;/li>
-&lt;li>-ffast-math&lt;/li>
-&lt;li>-fivopts&lt;/li>
-&lt;li>-march=native&lt;/li>
-&lt;li>-fopt-info-vec&lt;/li>
-&lt;li>-fopt-info-vec-missed&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul></description></item><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">RDMA 基本元素&lt;/h1>
-&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
-&lt;blockquote>
-&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/141267386">&lt;cite>知乎专栏：3. RDMA 基本元素&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
-&lt;p>RDMA 技术中经常使用缩略语，很容易让刚接触的人一头雾水，本篇的目的是讲解 RDMA 中最基本的元素及其含义。&lt;/p>
-&lt;p>我将常见的缩略语对照表写在前面，阅读的时候如果忘记了可以翻到前面查阅。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
-alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;h2 id="wq">WQ&lt;/h2>
-&lt;p>Work Queue 简称 WQ，是 RDMA 技术中最重要的概念之一。WQ 是一个储存工作请求的队列，为了讲清楚 WQ 是什么，我们先介绍这个队列中的元素 WQE（Work Queue Element，工作队列元素）。&lt;/p>
-&lt;h3 id="wqe">WQE&lt;/h3>
-&lt;p>WQE 可以认为是一种“任务说明”，这个工作请求是软件下发给硬件的，这份说明中包含了软件所希望硬件去做的任务以及有关这个任务的详细信息。比如，某一份任务是这样的：“我想把位于地址 0x12345678 的长度为 10 字节的数据发送给对面的节点”，硬件接到任务之后，就会通过 DMA 去内存中取数据，组装数据包，然后发送。&lt;/p>
-&lt;p>WQE 的含义应该比较明确了，那么我们最开始提到的 WQ 是什么呢？它就是用来存放“任务书”的“文件夹”，WQ 里面可以容纳很多 WQE。有数据结构基础的读者应该都了解，队列是一种先进先出的数据结构，在计算机系统中非常常见，我们可以用下图表示上文中描述的 WQ 和 WQE 的关系：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
-alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>WQ 这个队列总是由软件向其中增加 WQE（入队），硬件从中取出 WQE，这就是软件给硬件“下发任务”的过程。为什么用队列而不是栈？因为进行“存”和“取“操作的分别是软件和硬件，并且需要保证用户的请求按照顺序被处理在 RDMA 技术中，所有的通信请求都要按照上图这种方式告知硬件，这种方式常被称为“Post”。&lt;/p>
-&lt;h3 id="qp">QP&lt;/h3>
-&lt;p>Queue Pair 简称 QP，就是“一对”WQ 的意思。&lt;/p>
-&lt;h3 id="sq-和-rq">SQ 和 RQ&lt;/h3>
-&lt;p>任何通信过程都要有收发两端，QP 就是一个发送工作队列和一个接受工作队列的组合，这两个队列分别称为 SQ（Send Queue）和 RQ（Receive Queue）。我们再把上面的图丰富一下，左边是发送端，右边是接收端：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
-alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>WQ 怎么不见了？SQ 和 RQ 都是 WQ，WQ 只是表示一种可以存储 WQE 的单元，SQ 和 RQ 才是实例。&lt;/p>
-&lt;p>SQ 专门用来存放发送任务，RQ 专门用来存放接收任务。在一次 SEND-RECV 流程中，发送端需要把表示一次发送任务的 WQE 放到 SQ 里面。同样的，接收端软件需要给硬件下发一个表示接收任务的 WQE，这样硬件才知道收到数据之后放到内存中的哪个位置。上文我们提到的 Post 操作，对于 SQ 来说称为 Post Send，对于 RQ 来说称为 Post Receive。&lt;/p>
-&lt;p>需要注意的是，在 RDMA 技术中&lt;strong>通信的基本单元是 QP&lt;/strong>，而不是节点。如下图所示，对于每个节点来说，每个进程都可以使用若干个 QP，而每个本地 QP 可以“关联”一个远端的 QP。我们用“节点 A 给节点 B 发送数据”并不足以完整的描述一次 RDMA 通信，而应该是类似于“节点 A 上的 QP3 给节点 C 上的 QP4 发送数据”。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03.webp"
-alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>每个节点的每个 QP 都有一个唯一的编号，称为 QPN（Queue Pair Number），通过 QPN 可以唯一确定一个节点上的 QP。&lt;/p>
-&lt;h3 id="srq">SRQ&lt;/h3>
-&lt;p>Shared Receive Queue 简称 SRQ，意为共享接收队列。概念很好理解，就是一种几个 QP 共享同一个 RQ 时，我们称其为 SRQ。以后我们会了解到，使用 RQ 的情况要远远小于使用 SQ，而每个队列都是要消耗内存资源的。当我们需要使用大量的 QP 时，可以通过 SRQ 来节省内存。如下图所示，QP2~QP4 一起使用同一个 RQ：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
-alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;h2 id="cq">CQ&lt;/h2>
-&lt;p>Completion Queue 简称 CQ，意为完成队列。跟 WQ 一样，我们先介绍 CQ 这个队列当中的元素——CQE（Completion Queue Element）。可以认为 CQE 跟 WQE 是相反的概念，如果 WQE 是软件下发给硬件的“任务书”的话，那么 CQE 就是硬件完成任务之后返回给软件的“任务报告”。CQE 中描述了某个任务是被正确无误的执行，还是遇到了错误，如果遇到了错误，那么错误的原因是什么。&lt;/p>
-&lt;p>而 CQ 就是承载 CQE 的容器——一个先进先出的队列。我们把表示 WQ 和 WQE 关系的图倒过来画，就得到了 CQ 和 CQE 的关系：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
-alt="v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>每个 CQE 都包含某个 WQE 的完成信息，他们的关系如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03.webp"
-alt="v2-701fa8eacb10c90c45b0241c75254a01_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>下面我们把 CQ 和 WQ（QP）放在一起，看一下一次 SEND-RECV 操作中，软硬件的互动（图中序号顺序不表示实际时序）：&lt;/p>
-&lt;blockquote>
-&lt;p>2022/5/23：下图及后面的列表顺序有修改，将原来第 2 条的“接收端硬件从 RQ 中拿到任务书，准备接收数据”移动到“接收端收到数据，进行校验后回复 ACK 报文给发送端”之后，并且修改了描述，现在为第 6 条。&lt;/p>
-&lt;p>这里我犯了错误的点是 RQ 和 SQ 不同，是一个“被动接收”的过程，只有收到 Send 报文（或者带立即数的 Write 报文）时硬件才会消耗 RQ WQE。感谢 @连接改变世界 的指正。&lt;/p>
-&lt;/blockquote>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03.webp"
-alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;ol>
-&lt;li>接收端 APP 以 WQE 的形式下发一次 RECV 任务到 RQ。&lt;/li>
-&lt;li>发送端 APP 以 WQE 的形式下发一次 SEND 任务到 SQ。&lt;/li>
-&lt;li>发送端硬件从 SQ 中拿到任务书，从内存中拿到待发送数据，组装数据包。&lt;/li>
-&lt;li>发送端网卡将数据包通过物理链路发送给接收端网卡。&lt;/li>
-&lt;li>接收端收到数据，进行校验后回复 ACK 报文给发送端。&lt;/li>
-&lt;li>接收端硬件从 RQ 中取出一个任务书（WQE）。&lt;/li>
-&lt;li>接收端硬件将数据放到 WQE 中指定的位置，然后生成“任务报告”CQE，放置到 CQ 中。&lt;/li>
-&lt;li>接收端 APP 取得任务完成信息。&lt;/li>
-&lt;li>发送端网卡收到 ACK 后，生成 CQE，放置到 CQ 中。&lt;/li>
-&lt;li>发送端 APP 取得任务完成信息。&lt;/li>
-&lt;/ol>
-&lt;div class="notice notice-note" >
-&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>NOTE: 需要注意的一点是，上图中的例子是可靠服务类型的交互流程，如果是不可靠服务，那么不会有步骤 5 的 ACK 回复，而且步骤 9 以及之后的步骤会在步骤 5 之后立即触发。关于服务类型以及可靠与不可靠，我们将在《RDMA 基本服务类型》一文中讲解。&lt;/p>&lt;/div>
-&lt;p>至此，通过 WQ 和 CQ 这两种媒介，两端软硬件共同完成了一次收发过程。&lt;/p>
-&lt;h2 id="wr-和-wc">WR 和 WC&lt;/h2>
-&lt;p>说完了几个 Queue 之后，其实还有两个文章开头提到的概念没有解释，那就是 WR 和 WC（不是 Water Closet 的缩写）。&lt;/p>
-&lt;p>WR 全称为 Work Request，意为工作请求；WC 全称 Work Completion，意为工作完成。这两者其实是 WQE 和 CQE 在用户层的“映射”。因为 APP 是通过调用协议栈接口来完成 RDMA 通信的，WQE 和 CQE 本身并不对用户可见，是驱动中的概念。用户真正通过 API 下发的是 WR，收到的是 WC。&lt;/p>
-&lt;p>WR/WC 和 WQE/CQE 是相同的概念在不同层次的实体，他们都是“任务书”和“任务报告”。于是我们把前文的两个图又加了点内容：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
-alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;h2 id="代码示例">代码示例&lt;/h2>
-&lt;p>最后，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过这个 QP 来发送一次数据。这是一个非常简单的例子，只是为了让读者对上文中的概念有一个直观的认识。&lt;/p>
-&lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
-int main() {
-struct ibv_context *ctx;
-struct ibv_pd *pd;
-struct ibv_cq *cq;
-struct ibv_qp *qp;
-struct ibv_mr *mr;
-struct ibv_sge sge;
-struct ibv_send_wr wr;
-struct ibv_send_wr *bad_wr;
-struct ibv_wc wc;
-ctx = ibv_open_device();
-pd = ibv_alloc_pd(ctx);
-cq = ibv_create_cq(ctx, 100, NULL, NULL, 0);
-qp = ibv_create_qp(pd, NULL, NULL);
-mr = ibv_reg_mr(pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_WRITE);
-sge.addr = (uintptr_t)buf;
-sge.length = size;
-sge.lkey = mr-&amp;gt;lkey;
-wr.wr_id = 1;
-wr.sg_list = &amp;amp;sge;
-wr.num_sge = 1;
-wr.opcode = IBV_WR_SEND;
-wr.send_flags = IBV_SEND_SIGNALED;
-wr.next = NULL;
-ibv_post_send(qp, &amp;amp;wr, &amp;amp;bad_wr);
-ibv_poll_cq(cq, 1, &amp;amp;wc);
-return 0;
-}
-&lt;/code>&lt;/pre>
-&lt;h2 id="总结">总结&lt;/h2>
-&lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
-alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
-&lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
-&lt;h2 id="参考文献">参考文献&lt;/h2>
-&lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item></channel></rss>
+&lt;p>至此，我们已经成功搭建了玄铁 900 系列的工具链环境以及 xuantie-qemu 仿真环境，这为后续的开发、编译、链接以及运行和调试基于玄铁 900 系列芯片的 RISC-V 应用程序奠定了基础。&lt;/p></description></item></channel></rss>

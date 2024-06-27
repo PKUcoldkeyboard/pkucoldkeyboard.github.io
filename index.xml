@@ -1,4 +1,451 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cuterwrite's Blog</title><link>https://cuterwrite.top/</link><description>Recent content on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:11:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Cuterwrite's Blog</title><link>https://cuterwrite.top/</link><description>Recent content on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">RDMA 之 Memory Window&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/353590347">&lt;cite>知乎专栏：14. RDMA 之 Memory Window&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>&lt;strong>本文是“RDMA 杂谈”专栏文章的第 14 篇，欢迎转载，转载请注明出处&lt;/strong>&lt;/p>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+一文中介绍过 Memory Region，它是一片由用户注册的特殊的内存区域：一方面其中的内容不会被换页到硬盘中，另一方面 RDMA 网卡中记录了它的地址转换关系，使得硬件拿到用户指定在 WR 中的虚拟地址之后找到对应的物理地址。&lt;/p>
+&lt;p>本文我们来讲解 Memory Window 的概念，它是一种基于 Memory Region 的、更灵活的内存管理单元。除了 MW 的概念之外，本文也会更详细的介绍一些 RDMA 领域的内存相关概念，比如 L_Key/R_Key 等。本文配合 &lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+阅读效果更佳，建议先读者温习一下。&lt;/p>
+&lt;h2 id="memory-window-是什么">Memory Window 是什么&lt;/h2>
+&lt;p>Memory Window 简称 MW，中文就翻译成内存窗口吧。是一种由用户申请的，用于让远端节点访问本端内存区域的 RDMA 资源。每个 MW 都会绑定（称为 bind）在一个已经注册的 MR 上，但是它相比于 MR 可以提供更灵活的权限控制。MW 可以粗略理解为是 MR 的子集，一个 MR 上可以划分出很多 MW，每个 MW 都可以设置自己的权限。MW 和 MR 的关系如下图所示：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_1.webp"
+alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
+&lt;h4>MR 与 MW 的关系&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="内存的访问权限控制">内存的访问权限控制&lt;/h2>
+&lt;p>为了后文说明为何设计 MW，我们先来把 MR 和 MW 都涉及的权限控制讲解一下。&lt;/p>
+&lt;h3 id="mrmw-的权限配置">MR/MW 的权限配置&lt;/h3>
+&lt;p>这里的权限，指的是本端/对端节点，对于本端内存的读/写权限，它们两两组合形成了四种权限：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>本端&lt;/th>
+&lt;th>对端&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>读&lt;/td>
+&lt;td>Local Read&lt;/td>
+&lt;td>Remote Read&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>写&lt;/td>
+&lt;td>Local Write&lt;/td>
+&lt;td>Remote Write&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>除了这四种权限之外，还有 Atomic 权限等，不在本文讨论范围内。&lt;/p>
+&lt;p>上表中这四种权限中最低的是本地读（Local Read），是用户必须赋予 MR/MW 的权限，因为如果一块内存本地的用户都无法访问的话，那就失去意义了；另外还有个限制，如果某个 MR 需要配置远端写（Remote Write）或者还没介绍的远端原子操作权限（Remote Atomic），那么也一定要配置本地写（Local Write）权限。在此约束之下，每个 MR 或者 MW 都可以按需配置权限，比如我们注册的一个 MR 需要允许远端节点写入数据，而不允许读，那么我们就打开 Remote Write 权限，关闭 Remote Read 权限。这样 HCA（网卡）收到对端发起的对这个 MR 范围内的某个地址的 WRITE 请求之后，就可以予以放行；而 HCA 收到对端对这个 MR 的 READ 操作时，就会拒绝这个请求，并返回错误信息给对端。&lt;/p>
+&lt;h3 id="memory-key">Memory Key&lt;/h3>
+&lt;p>上述的访问权限配置，并不能杜绝恶意用户对于本地或者远端内存的访问。比如某个节点给了一块内存区域的 Remote Write 权限，那么岂不是任意远端节点（进程）只要传入了合法的地址信息，都可以对这片区域进行写入了？因此，IB 规范设计了 Memory Key，简单理解它就是访问 MR 的钥匙机制，只有持有正确的钥匙，才能打开 MR/MW 的大门。&lt;/p>
+&lt;p>Key 是一串数字，由两部分组成：24bit 的 Index 以及 8bit 的 Key：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_2.webp"
+alt="2024-06-28_12_2" width="60%" loading="lazy">&lt;figcaption>
+&lt;h4>L_Key/R_Key 的组成&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>其中，Index 用于 HCA 快速索引到本地的虚拟-物理地址转换表等 MR 相关的信息，而 Key 用于校验整个字段的合法性，以防止未授权的用户任意传递 Index。&lt;/p>
+&lt;p>Memory Key 按照用途分为两种，Local Key 和 Remote Key：&lt;/p>
+&lt;h4 id="l_key">L_Key&lt;/h4>
+&lt;p>即 Local Key，关联到一个 MR 上，用于 HCA 访问本端内存。当本端的某个进程试图使用一个已经注册的 MR 的内存时，HCA 会校验其传递的 L_Key。并且利用 L_Key 中的索引查找地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-shared-receive-queue/" >【RDMA 之 Shared Receive Queue】
+&lt;/a>
+一文中描述过 sge，sge 由起始地址、长度和秘钥组成。用户在填写 WR 时，如果需要 HCA 访问本端内存，那么就需要通过一个 sge 的链表（sgl）来描述内存块，这里 sge 的秘钥填的就是 L_Key，也就是下图中的 key1 和 key3，他们分别是 MR1 的 L_Key 和 MR2 的 L_Key。如果没有 L_Key，那么任何一个本地用户进程都可以指挥硬件访问其他本地用户注册的 MR 的内容，硬件也难以高效的将虚拟地址翻译成物理地址。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_3.webp"
+alt="2024-06-28_12_3" width="50%" loading="lazy">&lt;figcaption>
+&lt;h4>L_Key 的作用&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="r_key">R_Key&lt;/h4>
+&lt;p>即 Remote Key，关联到一个 MR 或者 MW 上，用于远端节点访问本端内存。当远端节点试图访问本端的内存时，一方面本端的 HCA 会校验 R_Key 是否合法，另一方面会利用 R_Key 中的索引查地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
+&lt;p>凡是 RDMA 操作（即 Write/Read/Atomic），用户都要在 WR 中携带远端内存区域的 R_Key。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_4.webp"
+alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
+&lt;h4>R_Key 的作用&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>IB 规范通过上述两种机制，来确保 MR 可以按照用户的期望被正确且安全的访问。我们用一个比喻来总结下 MR/MW 权限控制相关的内容：&lt;/p>
+&lt;p>A 给自己的房间（MR）配了两把钥匙（Memory Key），一把留作自用（L_Key），另一把钥匙（R_Key）邮寄（可以是任何通信方式）给了 B。B 可以在 A 不在家的时候（本端 CPU 不感知远端节点对本地内存的 RDMA 操作），通过钥匙（R_Key）打开门。打开门之后，可能 B 只能隔着玻璃查看房间的摆设（A 只给了这个 MR 远程读权限），或者进入房间内发现漆黑一片什么也看不到，但是可以向房间里放物品（A 只给了这个 MR 远程写权限），当然也有可能没有玻璃也开了灯（同时给了远程读写权限）。&lt;/p>
+&lt;h2 id="为什么要有-mw">为什么要有 MW&lt;/h2>
+&lt;p>简而言之，设计 MW 的目的就是想更灵活的控制内存的远程访问权限。&lt;/p>
+&lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
+&lt;/a>
+一文中我们介绍过用户注册 MR 的过程，需要从用户态陷入内核态，调用内核提供的函数 pin 住内存（防止换页），然后制作虚拟-物理地址映射表并下发给硬件。&lt;/p>
+&lt;p>因为 MR 是由内核管理的，如果用户想修改一个已经存在的 MR 的信息，比如我想收回某个 MR 的远端写权限，只保留远端读权限；或者想要使一个之前已经授权给远端节点的 R_Key 失效，那么用户需要通过重注册 MR（Reregister MR）接口来进行修改，该接口等价于先取消注册 MR（Deregister MR），然后注册 MR（Register MR）。&lt;strong>上述流程需要陷入内核态来完成，而这个过程是耗时较长的&lt;/strong>。&lt;/p>
+&lt;p>不同于需要通过控制路径修改权限的 MR，&lt;strong>MW 在创建好之后，可以通过数据路径（即通过用户态直接下发 WR 到硬件的方式）动态的绑定到一个已经注册的 MR 上，并同时设置或者更改其访问权限，这个过程的速度远远超过重新注册 MR 的过程&lt;/strong>。&lt;/p>
+&lt;p>那么现在为了使一片内存能够被远端节点进行 RDMA WRITE/READ 操作，我们就拥有了注册 MR 以及注册 MW 然后绑定到一个已注册的 MR 两种方式，它们都会产生一个 R_Key 来提供给远端节点。前一种方式准备阶段的步骤简单，但是不够灵活，一旦注册之后修改起来会比较麻烦；后一种方式相比前一种多了注册 MW 和绑定 MW 到 MR 两种操作，但是可以方便迅速的控制远端访问权限。&lt;/p>
+&lt;h2 id="mw-和-mr-权限的关系">MW 和 MR 权限的关系&lt;/h2>
+&lt;p>也许有的读者会想到，MR 申请时配置了自己的权限，MW 绑定到 MR 时也会配置自己的权限，这两者的权限是什么关系呢？IB 规范在 10.6.7.2.2 节有专门介绍：&lt;/p>
+&lt;blockquote>
+&lt;p>When binding a Memory Window, a Consumer can request any combination of remote access rights for the Window. However, if the associated Region does not have local write access enabled and the Consumer requests remote write or remote atomic access for the Window, the Channel Interface must return an error either at bind time or access time.&lt;/p>
+&lt;/blockquote>
+&lt;p>总结来说，&lt;strong>如果想要给 MW 配置远程写或者远程原子操作（Atomic）权限，那么它绑定到的 MR 必须有本地写权限，其他情况下两者权限互不干扰&lt;/strong>：远端用户用 MW，就要遵循 MW 的权限配置；远端用户用 MR，就要遵循 MR 的权限配置。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;p>老样子，用户接口时我们按照控制路径和数据路径来分类：&lt;/p>
+&lt;h3 id="控制路径">控制路径&lt;/h3>
+&lt;p>MW 支持增、删和查，不能直接修改：&lt;/p>
+&lt;h4 id="创建allocate-mw">创建——Allocate MW&lt;/h4>
+&lt;p>申请 MW，主要是创建 MW 相关的软件结构和让硬件做好准备，用户需要指定后文中介绍的 MW 的类型。这个接口会产生一个 Memory Window 的句柄，用户以后可以用这个句柄指代这个 MW。&lt;/p>
+&lt;p>注意此时 MW 没有绑定到 MR 上，处于不可从远端访问的状态。&lt;/p>
+&lt;h4 id="删除deallocate-mw">删除——Deallocate MW&lt;/h4>
+&lt;p>取消注册 MW。很好理解，就是销毁相关资源。&lt;/p>
+&lt;h4 id="查询query-mw">查询——Query MW&lt;/h4>
+&lt;p>查询 MW 的信息，包括 R_Key 及其状态、MW 类型以及 PD 等。&lt;/p>
+&lt;p>需要再次强调的是，虽然这个 Verbs 在 IB 规范中有描述，但是并没有在 RDMA 软件栈中实现相关的 API。类似情况的 Verbs 接口还有不少，RDMA 软件栈以实用为原则，没有用户需求的接口一般都没有实现。&lt;/p>
+&lt;h3 id="数据路径">数据路径&lt;/h3>
+&lt;p>MW 在数据路径有一套独特的接口，分为 Bind 和 Invalidate 两类：&lt;/p>
+&lt;h4 id="绑定bind">绑定——Bind&lt;/h4>
+&lt;p>Bind(ing)意为“绑定”，指的是将一个 MW“关联”到一个已经注册的 MR 的指定范围上，并配置一定的读写权限。绑定的结果会产生一个 R_key，用户可以把这个 R_Key 传递给远端节点用于远程访问。注意一个 MW 可以被多次绑定，一个 MR 上也可以绑定多个 MW。如果一个 MR 还有被绑定的 MW，那么这个 MR 是不能被取消注册的。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_5.webp"
+alt="2024-06-28_12_5" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Bind 的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Bind 有两种方式，一种是调用 Post Send 接口下发 Bind MW WR，一种是调用 Bind MW 接口。&lt;/p>
+&lt;ul>
+&lt;li>Post Send Bind MW WR&lt;/li>
+&lt;/ul>
+&lt;p>前文我们讲过，相比于 MR，MW 最大的优势就是可以从数据路径快速的配置权限。Post Send Bind MW WR 操作，指的就是用户通过 post send 接口（比如 ibv_post_send()）下发一个 WR 到 SQ 中，这个 WR 的操作类型（比如 SEND/RDMA WRITE/RDMA READ）被指定为 BIND MW，此外 WR 中还携带有权限和要绑定到的 MR 的范围信息。与其他 WR 不同，下发 Bind MW 的 WR 之后，硬件并不会发送任何数据包，而是将 MW 绑定到了指定 MR 上。&lt;/p>
+&lt;p>这种方式仅适用于后文介绍的 Type 2 的 MW。&lt;/p>
+&lt;ul>
+&lt;li>Bind MW&lt;/li>
+&lt;/ul>
+&lt;p>虽然这是一个独立的接口，但是实际是在 Post Send Bind MW WR 外面又封装了一层。用户传入 MW 绑定的相关信息，包括权限及要绑定的 MR 的信息，驱动程序负责组装和下发 WR 到硬件中。该接口成功后，会将新生成的 R_Key 返回给用户。&lt;/p>
+&lt;p>这种方式仅适用于后文介绍的 Type 1 的 MW。&lt;/p>
+&lt;p>上述两种操作的关系是这样的：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_6.webp"
+alt="2024-06-28_12_6" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>两种 Bind 操作的关系&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="无效化invalidate">无效化——Invalidate&lt;/h4>
+&lt;p>Invalidate 意为无效化，指的是用户通过下发一个带有 Invalidate 操作码的 WR 到硬件而使一个 R_Key 无效的操作。&lt;/p>
+&lt;p>&lt;strong>需要强调的是，Invalidate 操作的对象是 R_Key 而不是 MW 本身，即 Invalidate 之后的效果是：远端用户无法再使用这个 R_Key 访问对应的 MW，而 MW 资源仍然存在，以后仍然可以生成新的 R_Key 给远端使用。&lt;/strong>&lt;/p>
+&lt;p>Invalidate 操作只能用于下文介绍的 Type 2 的 MW。&lt;/p>
+&lt;p>按照 Invalidate 操作的发起方不同，又可以进一步分成两种：&lt;/p>
+&lt;ul>
+&lt;li>Local Invalidate&lt;/li>
+&lt;/ul>
+&lt;p>本地无效操作。上层用户如果想在不回收 MW 资源的情况下，收回某个远端的用户的 R_Key 的权限。那么就可以下发一个 Local Invalidate 操作到 SQ 中，硬件收到之后会对相应的 MR 的配置进行修改。成功执行之后，如果持有这个 R_Key 的远端用户想要对 MW 进行 RDMA 操作，将会被本地的硬件拒绝并返回错误。&lt;/p>
+&lt;p>因为是本地操作，所以硬件收到这个 WR 之后也不会发送消息到链路上。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_7.webp"
+alt="2024-06-28_12_7" width="60%" loading="lazy">&lt;figcaption>
+&lt;h4>Local Invalidate 操作的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Remote Invalidate&lt;/li>
+&lt;/ul>
+&lt;p>远端无效操作。当一个远端用户不再使用一个 R_Key 之后，可以主动发送消息，让本端回收这个 R_Key。远端用户下发一个带有此操作码的 WR 到 SQ 中，其硬件收到后，将会组装一个报文并发送到本端。本端硬件收到远端的 Remote Invalidate 操作之后，将会把对应的 R_Key 置为不可用状态。同 Local Invalidate 一样，此后对端将无法使用这个 R_Key 对对应的 MW 进行 RDMA 操作。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_8.webp"
+alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Remote Invalidate 操作的软硬件交互&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="mw-的类型">MW 的类型&lt;/h2>
+&lt;p>根据实现和应用场景的不同，IB 规范对 MW 进行了分类：&lt;/p>
+&lt;h3 id="type-1">Type 1&lt;/h3>
+&lt;p>Type 1 的 MW 通过 PD 和一个 QP 关联，不会绑定到一个 QP 上，所以也不会影响销毁同一个 PD 下的 QP。&lt;/p>
+&lt;p>Type 1 的 MW 的 R_Key 的 key 域段由驱动和硬件掌握，这里“掌握”的意思是，由驱动和硬件分配 key，而不是上层用户。这也是前文中说 Type 1 的 MW 不能被执行 Invalidate 操作的原因。如果 Type 1 MW 的用户想要使一个 R_Key 失效，那么重新通过 Bind MW 接口绑定一次这个 MW，硬件或者驱动就回自动分配一个新的 R_Key 的 key 域段，原有的 R_Key 也就失效了。&lt;/p>
+&lt;p>此外，如果用户暂时想要使一个 MW 不再绑定到任何 MR，但是又想保留相关的资源而不是销毁这个 MW，那么可以通过调用 Bind MW 接口，并将 MW 长度设置为 0 来实现。&lt;/p>
+&lt;p>IB 规范允许多个 Type 1 MW 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
+&lt;h3 id="type-2">Type 2&lt;/h3>
+&lt;p>Type 2 的 MW 赋予了用户更大的自由度，其 R_Key 的 key 域段由用户掌握，即用户想怎么分配就怎么分配。前文已经讲过，用户通过 Post Send Bind MW WR 操作来进行绑定，这个过程并不会返回 R_Key。用户必须记住 Allocate MW 时的 index，并且和其选择的 8 bit key 组成 R_Key 并发送给对端。&lt;/p>
+&lt;p>用户可以通过前文介绍过的 Invalidate 操作来使一个 R_Key 无效，如果想要分配一个新的 R_Key 到 MW 上，必须先通过 Invalidate 操作无效之前的 R_Key。&lt;/p>
+&lt;p>与 Type 1 不同，Type 2 的 MW 不支持 0 长度的绑定。&lt;/p>
+&lt;p>IB 规范同样也允许多个 Type 2 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
+&lt;p>此外，根据绑定关系不同，Type 2 还可以分为两种实现方式，它们的差异仅在于和 QP 的绑定关系上。&lt;/p>
+&lt;h4 id="type-2a">Type 2A&lt;/h4>
+&lt;p>通过 QPN 和一个 QP 关联，也就是说远端访问这个 MW 范围内的内存时候，除了 R_Key 之外，还必须指定正确的 QPN。如果一个 QP 上还有绑定的 Type 2A 的 MW，那么这个 QP 不可以被销毁。&lt;/p>
+&lt;h4 id="type-2b">Type 2B&lt;/h4>
+&lt;p>通过 QPN 和 PD 与一个 QP 关联，比 Type 2A 多了个 PD 的校验，即远端通过 RDMA 操作访问 MW 的内存时，除了 QPN 要正确之外，其指定的本端 QP 的 PD 要与绑定这个 MW 时的 PD 相同。另外，与 Type 2A 不同，QP 如果还有 Type 2B MW 绑定关系时是可以被销毁的。&lt;/p>
+&lt;p>这里 IB 规范中原有的介绍就比较分散，我们来简单总结一下几种 MW 的异同：&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>Type 1&lt;/th>
+&lt;th>Type 2A&lt;/th>
+&lt;th>Type 2B&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>关联关系&lt;/td>
+&lt;td>PD&lt;/td>
+&lt;td>QP&lt;/td>
+&lt;td>PD + QP&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>R_Key 的 key 域归属&lt;/td>
+&lt;td>驱动+硬件&lt;/td>
+&lt;td>用户&lt;/td>
+&lt;td>用户&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>绑定方式&lt;/td>
+&lt;td>Bind MW 绑定后之前的 R_Key 自动失效&lt;/td>
+&lt;td>Post Send Bind MWWR 绑定前需要先使之前的 R_Key 无效化&lt;/td>
+&lt;td>Post Send Bind MWWR 绑定前需要先使之前的 R_Key 无效化&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>是否支持零长度&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>否&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>是否支持 Invalidate&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>是&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>关联的 QP 是否可以被销毁&lt;/td>
+&lt;td>-&lt;/td>
+&lt;td>否&lt;/td>
+&lt;td>是&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>此外，IB 规范中对上述几种类型还有如下描述：HCA 必须实现 Type 1 的 MW，另外可以仅选择实现 Type 2A 和 2B 中的一种。Type 1 和 Type 2 的 MW 可以同时关联到同一个 MR 上。因为我了解到的应用程序中使用 MW 的情况不多，所以具体在什么场景下应该使用哪种 MW 也说不出所以然来，如果读者有对这方面的了解欢迎一起交流。&lt;/p>
+&lt;p>好了，MW 就讲到这里，到此为止 RDMA 技术中常见的资源就都介绍完了。&lt;/p>
+&lt;p>鉴于一般支持 RDMA 的设备都比较昂贵，下一篇我将介绍如何通过软件模拟设备的方式——即 Soft-RoCE 进行一些编程实验。&lt;/p>
+&lt;h2 id="ib-规范相关章节">IB 规范相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>3.5.3 Memory Keys 介绍&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>9.4.1.1 Invalidate 操作&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.6.7 权限管理&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.2.10.9~12 相关 Verbs 介绍&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考文档">参考文档&lt;/h2>
+&lt;p>[1] IB Specification Vol 1-Release-1.4&lt;/p>
+&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA 之 Shared Receive Queue</title><link>https://cuterwrite.top/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA 之 Shared Receive Queue" />&lt;h1 id="rdma-之-shared-receive-queue">RDMA 之 Shared Receive Queue&lt;/h1>
+&lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
+&lt;blockquote>
+&lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/279904125">&lt;cite>知乎专栏：11. RDMA 之 Shared Receive Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
+&lt;p>我们曾在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【3. RDMA 基本元素】
+&lt;/a>
+中简单介绍了 SRQ 的概念，本文将带大家了解更多关于 SRQ 的细节。&lt;/p>
+&lt;h2 id="基本概念">基本概念&lt;/h2>
+&lt;h3 id="什么是-srq">什么是 SRQ&lt;/h3>
+&lt;p>全称为 Shared Receive Queue，直译为共享接收队列。我们知道，RDMA 通信的基本单位是 QP，每个 QP 都由一个发送队列 SQ 和接收队列 RQ 组成。&lt;/p>
+&lt;p>SRQ 是 IB 协议为了给接收端节省资源而设计的。我们可以把一个 RQ 共享给所有关联的 QP 使用，这个公用的 RQ 就称为 SRQ。当与其关联的 QP 想要下发接收 WQE 时，都填写到这个 SRQ 中。然后每当硬件接收到数据后，就根据 SRQ 中的下一个 WQE 的内容把数据存放到指定位置。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_1.webp"
+alt="2024-06-28_11_1" width="80%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="为什么要用-srq">为什么要用 SRQ&lt;/h3>
+&lt;p>通常情况下，我们向 SQ 中下任务的数量要远远超过向 RQ 中下发任务的数量。为什么呢？请先回忆一下哪些操作类型会用到 SQ，哪些又会用到 RQ。&lt;/p>
+&lt;p>SEND/WRITE/READ 都需要通信发起方向 SQ 中下发一个 WR，而只有和 SEND 配合的 RECV 操作才需要通信响应方下发 WR 到 RQ 中（带立即数的 Write 操作也会消耗 Receive WR，我们还没讲到）。而我们又知道，SEND-RECV 这一对操作通常都是用于传递控制信息，WRITE 和 READ 才是进行大量远端内存读写操作时的主角，所以自然 SQ 的使用率是远远高于 RQ 的。&lt;/p>
+&lt;p>每个队列都是有实体的，占用着内存以及网卡的片上存储空间。在商用场景下，QP 的数量是可能达到十万级甚至更高的，对内存容量提出了很高的要求，内存都是白花花的银子买的，SRQ 就是 IB 协议为了节省用户的内存而设计的一种机制。&lt;/p>
+&lt;p>来看一下协议中对为什么要使用 SRQ 的官方解释（10.2.9.1 章节）：&lt;/p>
+&lt;blockquote>
+&lt;p>Without SRQ, an RC, UC or UD Consumer must post the number of receive WRs necessary to handle incoming receives on a given QP. If the Consumer cannot predict the incoming rate on a given QP, because, for example, the connection has a bursty nature, the Consumer must either: post a sufficient number of RQ WRs to handle the highest incoming rate for each connection, or, for RC, let message flow control cause the remote sender to back off until local Consumer posts more WRs.&lt;/p>
+&lt;p>• Posting sufficient WRs on each QP to hold the possible incoming rate, wastes WQEs, and the associated Data Segments, when the Receive Queue is inactive. Furthermore, the HCA doesn’t provide a way of reclaiming these WQEs for use on other connections.&lt;/p>
+&lt;p>• Letting the RC message flow control cause the remote sender to back off can add unnecessary latencies, specially if the local Consumer is unaware that the RQ is starving.&lt;/p>
+&lt;/blockquote>
+&lt;p>简单来说，就是没有 SRQ 的情况下，因为 RC/UC/UD 的接收方不知道对端什么时候会发送过来多少数据，所以必须做好最坏的打算，做好突发性收到大量数据的准备，也就是向 RQ 中下发足量的接收 WQE；另外 RC 服务类型可以利用流控机制来反压发送方，也就是告诉对端”我这边 RQ WQE 不够了“，这样发送端就会暂时放缓或停止发送数据。&lt;/p>
+&lt;p>但是正如我们前文所说，第一种方法由于是为最坏情况准备的，大部分时候有大量的 RQ WQE 处于空闲状态未被使用，这对内存是一种极大地浪费；第二种方法虽然不用下发那么多 RQ WQE 了，但是流控是有代价的，即会增加通信时延。&lt;/p>
+&lt;p>而 SRQ 通过允许很多 QP 共享接收 WQE（以及用于存放数据的内存空间）来解决了上面的问题。当任何一个 QP 收到消息后，硬件会从 SRQ 中取出一个 WQE，根据其内容存放接收到的数据，然后硬件通过 Completion Queue 来返回接收任务的完成信息给对应的上层用户。&lt;/p>
+&lt;p>我们来看一下使用 SRQ 比使用普通的 RQ 可以节省多少内存&lt;sup id="fnref:1">&lt;a href="#fn:1" class="footnote-ref" role="doc-noteref">1&lt;/a>&lt;/sup>：&lt;/p>
+&lt;p>假设接受数据的节点上有 N 对 QP，并且每个 QP 都可能在随机的时间收到连续的 M 个消息（每个消息都需要消耗一个 RQ 中的 WQE），&lt;/p>
+&lt;ul>
+&lt;li>如果不使用 SRQ 的话，用户一共需要下发 N * M 个 RQ WQE。&lt;/li>
+&lt;li>如果使用 SRQ 的话，用户只需要下发 K * M 个 RQ WQE，而 K 远小于 N。&lt;/li>
+&lt;/ul>
+&lt;p>这个 K 是可以由用户根据业务来配置的，如果存在大量的并发接收的情况，那么就把 K 设置大一点，否则 K 设置成个位数就足够应付一般的情况了。&lt;/p>
+&lt;p>我们一共节省了 (N - K) * M 个 RQ WQE，RQ WQE 本身其实不是很大，大约在几个 KB 的样子，看起来好像占不了多少内存。但是如前文所说，实际上节省的还有用于&lt;strong>存放数据的内存空间&lt;/strong>，这可是很大一块内存了，我们用图来说明：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_2.webp"
+alt="2024-06-28_11_2" width="80%" loading="lazy">
+&lt;/figure>
+&lt;p>上图中的 SRQ 中有两个 RQ WQE，我们看一下 RQ WQE 的内容，它们是由数个 sge（Scatter/Gather Element）组成的，每个 sge 由一个内存地址，长度和秘钥组成。有了起始地址和长度，sge 就可以指向一块连续的内存区域，那么多个 sge 就可以表示多个彼此离散的连续内存块，我们称多个 sge 为 sgl（Scatter/Gather List）。sge 在 IB 软件协议栈中随处可见（其实在整个 Linux 都很常见），可以用非常少的空间表示非常大的内存区域，IB 的用户都使用 sge 来指定发送和接收区域的。&lt;/p>
+&lt;p>可以简单估算下每个 sge 可以指向多大的内存区域，length 是一个 32bit 的无符号整型，可以表示 4GB 的空间。假设一个 RQ WQE 最大可以存放 256 个 sge，那么一个 RQ WQE 一共就是 1TB。当然实际上不可能这么大，这里只是想直观的告诉读者 RQ WQE 背后可能占用着多大的内存空间。&lt;/p>
+&lt;h3 id="srqc">SRQC&lt;/h3>
+&lt;p>即 SRQ Context。同 QPC 一样，SRQC 是用来告知硬件跟 SRQ 有关的属性的，包括深度、WQE 大小等信息，本文不再赘述了。&lt;/p>
+&lt;h3 id="srqn">SRQN&lt;/h3>
+&lt;p>即 SRQ Number。同 QP 一样，每个节点中可能存在多个 SRQ，为了标识和区分这些 SRQ，每个 SRQ 都有一个序号，称为 SRQN。&lt;/p>
+&lt;h3 id="srq-的-pd">SRQ 的 PD&lt;/h3>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-protection-domain/" >【7. RDMA 之 Protection Domain】
+&lt;/a>
+中介绍过 Protection Domain 的概念，它用来隔离不同的 RDMA 资源。每个 SRQ 都必须指定一个自己的 PD，可以跟自己关联的 QP 的 PD 相同，也可以不同；SRQ 之间也可以使用相同的 PD。&lt;/p>
+&lt;p>如果在使用 SRQ 的时候，收到了数据包，那么只有在要访问的 MR 和 SRQ 处于同一个 PD 下，才会正常接收这个数据包，否则会产生立即错误。&lt;/p>
+&lt;h2 id="异步事件">异步事件&lt;/h2>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-completion-queue/" >【10. RDMA 之 Completion Queue】
+&lt;/a>
+一文中介绍过，IB 协议根据错误的上报方式将错误类型分为立即错误，完成错误和异步错误。其中的异步错误类似于中断/事件，所以我们有时候也称其为异步事件。每个 HCA 都会注册一个事件处理函数专门用来处理异步事件，收到异步事件后，驱动程序会对其进行必要的处理和进一步上报给用户。&lt;/p>
+&lt;p>关于 SRQ 有一个特殊的异步事件，用来及时通知上层用户 SRQ 的状态，即 SRQ Limit Reached 事件。&lt;/p>
+&lt;h3 id="srq-limit">SRQ Limit&lt;/h3>
+&lt;p>SRQ 可以设置一个水线/阈值，当队列中剩余的 WQE 数量小于水线时，这个 SRQ 会就上报一个异步事件。提醒用户“队列中的 WQE 快用完了，请下发更多 WQE 以防没有地方接收新的数据”。这个水线/阈值就被称为 SRQ Limit，这个上报的事件就被称为 SRQ Limit Reached。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_3.webp"
+alt="2024-06-28_11_3" width="30%" loading="lazy">
+&lt;/figure>
+&lt;p>因为 SRQ 是多个 QP 共享的，所以如果深度比较小的情况下，很有可能突然里面的 WQE 就用完了。所以协议设计了这种机制，来保证用户能够及时干预 WQE 不够的情况。&lt;/p>
+&lt;p>上报异步事件之后，SRQ Limit 的值会被硬件重新设置为 0（应该是为了防止一直上报异步事件给上层）。当然用户可以不使用这个机制，只需要将 SRQ Limit 的值设为 0 即可。&lt;/p>
+&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;p>还是老四样——“增、删、改、查”：&lt;/p>
+&lt;ul>
+&lt;li>创建——Create SRQ&lt;/li>
+&lt;/ul>
+&lt;p>创建 SRQ 的时候，跟 QP 一样会申请所有 SRQ 相关的软硬件资源，比如驱动程序会申请 SRQN，申请 SRQC 的空间并向其中填写配置。创建 SRQ 时还必须指定每个 SRQ 的深度（能存放多少 WQE）以及每个 WQE 的最大 sge 数量。&lt;/p>
+&lt;ul>
+&lt;li>销毁——Destroy SRQ&lt;/li>
+&lt;/ul>
+&lt;p>销毁 SRQ 的所有相关软硬件资源。&lt;/p>
+&lt;ul>
+&lt;li>修改——Modify SRQ&lt;/li>
+&lt;/ul>
+&lt;p>除了 SRQ 深度等属性外，SRQ Limit 的值也是通过这个接口设置的。因为每次产生 SRQ Limit Reached 事件之后，水线的值都会被清零，所以每次都需要用户调用 Modify SRQ 重新设置水线。&lt;/p>
+&lt;ul>
+&lt;li>查询——Query SRQ&lt;/li>
+&lt;/ul>
+&lt;p>通常是用来查询水线的配置的。&lt;/p>
+&lt;h3 id="数据面">数据面&lt;/h3>
+&lt;h3 id="post-srq-receive">Post SRQ Receive&lt;/h3>
+&lt;p>跟 Post Receive 一样，就是向 SRQ 中下发接收 WQE，里面包含了作为接收缓冲区的内存块的信息。需要注意的是，&lt;strong>主语是 SRQ，与 QP 没有任何关系&lt;/strong>，现在用户是不关心这个 SRQ 被哪些 QP 关联的。&lt;/p>
+&lt;h2 id="srq-和-rq-的区别">SRQ 和 RQ 的区别&lt;/h2>
+&lt;p>从功能上来说，SRQ 和 RQ 一样都是用来储存接收任务书的，但是由于 SRQ 的共享性，所以其和 RQ 有一些差异。&lt;/p>
+&lt;h3 id="状态机">状态机&lt;/h3>
+&lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-queue-pair/" >【9. RDMA 之 Queue Pair】
+&lt;/a>
+中介绍过，QP 有着复杂的状态机，不同的状态下 QP 的收发能力存在差异。而 SRQ 只有非错误和错误两种状态：&lt;/p>
+&lt;p>无论是哪种状态下，用户都可以向 SRQ 中下发 WQE，但是在错误状态下，相关联的 QP 不能从这个 SRQ 中获得收到的数据。另外在错误状态下，用户也无法查询和修改 SRQ 的属性。&lt;/p>
+&lt;p>QP 处于错误状态时，可以通过 Modify QP 来使其回到 RESET 状态，但是对 SRQ 来说，只能通过销毁它来退出错误状态。&lt;/p>
+&lt;h3 id="接收流程">接收流程&lt;/h3>
+&lt;p>对于一个 QP 来说，RQ 和 SRQ 不能同时使用，两者需选其一，如果对一个已经关联 SRQ 的 QP 的 RQ 下发 WQE，那么会返回一个立即错误。&lt;/p>
+&lt;p>下面我们来对比看一下 SRQ 和 RQ 的接收流程。本小结的内容是本文的重点，相信读者看过之后，就对 SRQ 的机制有比较完整的了解了。&lt;/p>
+&lt;h3 id="rq-的接收流程">RQ 的接收流程&lt;/h3>
+&lt;p>首先，我们重温一下普通 RQ 的接收流程（结合发送端的完整流程请阅读 &lt;a class="link" href="https://cuterwrite.top/p/rdma-op/" >【4. RDMA 操作类型】
+&lt;/a>
+）一文）：&lt;/p>
+&lt;ol start="0">
+&lt;li>
+&lt;p>创建 QP。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过 Post Recv 接口，用户分别向 QP2 和 QP3 的 RQ 下发接收 WQE，WQE 中包含接收到数据后放到哪块内存区域的信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP3 的，那么从 QP3 的 RQ 中取出 WQE1，将接收到的数据放到 WQE1 指定的内存区域。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件完成数据存放后，向 QP3 的 RQ 关联的 CQ3 产生一个 CQE，上报任务完成信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ3 中取出 WC（CQE），然后从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发送给 QP2 的，那么从 QP2 的 RQ 中取出 WQE1，将接收到的数据放到 WQE1 指定的内存区域。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件完成数据存放后，向 QP2 的 RQ 关联的 CQ2 产生一个 CQE，上报任务完成信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ2 中取出 WC（CQE），然后从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_4.webp"
+alt="2024-06-28_11_4" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="srq-的接收流程">SRQ 的接收流程&lt;/h3>
+&lt;p>而 SRQ 的接收流程有一些区别：&lt;/p>
+&lt;ol start="0">
+&lt;li>
+&lt;p>创建 SRQ1，并创建 QP2 和 QP3，都关联到 SRQ1 上。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>通过 Post SRQ Recv 接口，用户向 SRQ1 中下发两个接收 WQE，WQE 中包含接收到数据后放到哪块内存区域的信息。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件收到数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP3 的，从 SRQ1 中取出第一个 WQE（现在是 WQE1），根据 WQE 内容存放收到的数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>SRQ 中的每个 WQE 是“无主的“，不关联到任何一个 QP，硬件按队列顺序依次取出 WQE 就把数据放到里面了。&lt;/p>
+&lt;/blockquote>
+&lt;ol start="4">
+&lt;li>
+&lt;p>硬件发现 QP3 的 RQ 关联的 CQ 是 CQ3，所以向其中产生一个 CQE。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ3 中取出 CQE，从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;blockquote>
+&lt;p>细心地读者可能会问，用户下发 WR 时，每个 WR 都指定了一些未来用来存放数据的内存区域。但是 SRQ 是一个池子，里面每个 WQE 都指向了不同的若干段内存区域。用户收到某个 QP 对应的 CQ 中的 WC 后如何知道接收到的数据存放到哪里了呢？&lt;/p>
+&lt;p>WC 中其实有 wr_id 信息，告知用户数据放到哪个 WR（WQE）指定的内存区域了，既然 WR 是用户下发的，用户自然知道其指向的具体位置。&lt;/p>
+&lt;/blockquote>
+&lt;ol start="6">
+&lt;li>
+&lt;p>硬件收到数据&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现是发给 QP2 的，从 SRQ1 中取出第一个 WQE（现在是 WQE2），根据 WQE 内容存放收到的数据。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>硬件发现 QP2 的 RQ 关联的 CQ 是 CQ2，所以向其中产生一个 CQE。&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>用户从 CQ2 中取出 CQE，从指定内存区域取走数据。&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_5.webp"
+alt="2024-06-28_11_5" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h2 id="总结">总结&lt;/h2>
+&lt;p>本文首先介绍了 SRQ 的基本概念，然后是其设计初衷、相关机制和用户接口，最后对比 RQ 描述了 SRQ 的接收流程。在实际业务中，SRQ 的使用率还是蛮高的，希望读者能够深入理解。&lt;/p>
+&lt;p>就写到这里吧，感谢阅读。下一篇我将给大家介绍下 Memeory Window。&lt;/p>
+&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>10.2.9 SRQ 的设计思想以及相关操作&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.2.3 SRQ 和 QP 的 PD&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.8.2 关联 SRQ 的 QP 和不使用 SRQ 的 QP 的关系&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>10.8.5 SRQ 相关的返回 WC&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>11.5.2.4 异步事件&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="其他参考资料">其他参考资料&lt;/h2>
+&lt;div class="footnotes" role="doc-endnotes">
+&lt;hr>
+&lt;ol>
+&lt;li id="fn:1">
+&lt;p>Linux Kernel Networking - Implement and Theory. Chapter 13. Shared Receive Queue&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;/div></description></item><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/259650980">&lt;cite>知乎专栏：10. RDMA 之 Completion Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1395,11 +1842,11 @@ fill="currentColor">
 &lt;/a>
 项目搭建自己的私有镜像仓库。&lt;/p>
 &lt;a href="https://github.com/dqzboy/Docker-Proxy" target="_blank" class="card-github fetch-waiting no-styling"
-repo="dqzboy/Docker-Proxy" id="repo-NzPyKIPCLsDw3fIr-card">
+repo="dqzboy/Docker-Proxy" id="repo-VSoalKoHOElGvQ46-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-NzPyKIPCLsDw3fIr-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">dqzboy&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1407,43 +1854,43 @@ repo="dqzboy/Docker-Proxy" id="repo-NzPyKIPCLsDw3fIr-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-NzPyKIPCLsDw3fIr-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-NzPyKIPCLsDw3fIr-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-NzPyKIPCLsDw3fIr-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-NzPyKIPCLsDw3fIr-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-NzPyKIPCLsDw3fIr-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-VSoalKoHOElGvQ46-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-NzPyKIPCLsDw3fIr-script" type="text/javascript" defer>
+&lt;script id="repo-VSoalKoHOElGvQ46-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/dqzboy\/Docker-Proxy', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-NzPyKIPCLsDw3fIr-description').innerText = data.description.replace(
+document.getElementById('repo-VSoalKoHOElGvQ46-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-NzPyKIPCLsDw3fIr-language').innerText = data.language;
-document.getElementById('repo-NzPyKIPCLsDw3fIr-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-VSoalKoHOElGvQ46-language').innerText = data.language;
+document.getElementById('repo-VSoalKoHOElGvQ46-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-NzPyKIPCLsDw3fIr-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-VSoalKoHOElGvQ46-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-NzPyKIPCLsDw3fIr-avatar');
+const avatarEl = document.getElementById('repo-VSoalKoHOElGvQ46-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-NzPyKIPCLsDw3fIr-license').innerText = data.license.spdx_id
+document.getElementById('repo-VSoalKoHOElGvQ46-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-NzPyKIPCLsDw3fIr-license').classList.add = "no-license"
+document.getElementById('repo-VSoalKoHOElGvQ46-license').classList.add = "no-license"
 };
-document.getElementById('repo-NzPyKIPCLsDw3fIr-card').classList.remove("fetch-waiting");
+document.getElementById('repo-VSoalKoHOElGvQ46-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for dqzboy\/Docker-Proxy.")
 }).catch(err => {
-const c = document.getElementById('repo-NzPyKIPCLsDw3fIr-card');
+const c = document.getElementById('repo-VSoalKoHOElGvQ46-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for dqzboy\/Docker-Proxy.")
 })
@@ -1605,544 +2052,4 @@ uint32_t lkey = mr-&amp;gt;lkey;
 uint32_t rkey = mr-&amp;gt;rkey;
 // 省略其它代码...
 }
-&lt;/code>&lt;/pre></description></item><item><title>记录：安装 Intel® OneAPI-2024.0</title><link>https://cuterwrite.top/p/intel-oneapi/</link><pubDate>Fri, 08 Mar 2024 14:39:00 +0000</pubDate><guid>https://cuterwrite.top/p/intel-oneapi/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_62cf8bae89f60c3522eb45af53a53f4b195413-2024-03-09.webp" alt="Featured image of post 记录：安装 Intel® OneAPI-2024.0" />&lt;h1 id="记录安装-intel-oneapi-20240">记录：安装 Intel® OneAPI-2024.0&lt;/h1>
-&lt;p>Intel one API 由两个部分组成，前者为基础 Base Toolkit ，后者必须依赖前者，Intel one API HPC Toolkit，也就是要前后依次安装。&lt;/p>
-&lt;h2 id="base-toolkit">Base Toolkit&lt;/h2>
-&lt;p>Base Toolkit 是 Intel 的一个 API 基础工具包包括以下库和其他库&lt;/p>
-&lt;pre>&lt;code class="language-text">Intel® oneAPI DPC++/C++ Compiler
-Intel® DPC++ Compatibility Tool
-Intel® oneAPI DPC++ Library
-Intel® oneAPI Math Kernel Library
-Intel® oneAPI Threading Building Blocks
-Intel® oneAPI Collective Communications Library
-Intel® oneAPI Data Analytics Library
-Intel® oneAPI Deep Neural Networks Library
-Intel® Integrated Performance Primitives
-Intel® VTune™ Profiler
-Intel® Advisor
-Intel® Distribution for GDB*
-Intel® Distribution for Python* (separate download required)
-Intel® FPGA Add-on for oneAPI Base Toolkit (separate download required)
-&lt;/code>&lt;/pre>
-&lt;h3 id="base-toolkit-安装">Base Toolkit 安装&lt;/h3>
-&lt;ol>
-&lt;li>下载安装包&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/163da6e4-56eb-4948-aba3-debcec61c064/l_BaseKit_p_2024.0.1.46_offline.sh
-&lt;/code>&lt;/pre>
-&lt;ol start="2">
-&lt;li>安装&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">$ chmod +x l_BaseKit_p_2024.0.1.46_offline.sh
-$ sudo ./l_BaseKit_p_2024.0.1.46_offline.sh
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>如果自定义安装在用户目录，就不需要 root 权限&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code>./l_BaseKit_p_2024.0.1.46_offline.sh
-&lt;/code>&lt;/pre>
-&lt;p>然后将启动一个图形安装界面，继续操作：&lt;/p>
-&lt;p>&lt;strong>（1）选择 Accept &amp;amp; customize&lt;/strong>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Accepet-2024-03-09.png"
-alt="OneAPI-Accepet-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>&lt;strong>（2）选择安装的组件&lt;/strong>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-2-2024-03-09.png"
-alt="OneAPI-Select-2-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>&lt;strong>（3）选择安装的路径&lt;/strong>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-3-2024-03-09.png"
-alt="OneAPI-Select-3-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>&lt;strong>（4）选择 Next&lt;/strong>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-4-2024-03-09.png"
-alt="OneAPI-Select-4-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>&lt;strong>（5）选择 2 然后开始安装&lt;/strong>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/OneAPI-Select-5-2024-03-09.png"
-alt="OneAPI-Select-5-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;/p>
-&lt;p>接下来等待安装完成即可。&lt;/p>
-&lt;h2 id="hpc-toolkit">HPC Toolkit&lt;/h2>
-&lt;p>运行基于 Base Toolkit ，这个必须作为后者安装&lt;/p>
-&lt;pre>&lt;code class="language-text">Intel® Fortran Compiler
-Intel® Fortran Compiler Classic
-Intel® Inspector
-Intel® MPI Library
-Intel® Trace Analyzer and Collector
-&lt;/code>&lt;/pre>
-&lt;h3 id="hpc-toolkit-安装">HPC Toolkit 安装&lt;/h3>
-&lt;ol>
-&lt;li>下载安装包&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">$ wget https://registrationcenter-download.intel.com/akdlm/IRC_NAS/67c08c98-f311-4068-8b85-15d79c4f277a/l_HPCKit_p_2024.0.1.38_offline.sh
-&lt;/code>&lt;/pre>
-&lt;ol start="2">
-&lt;li>安装&lt;/li>
-&lt;/ol>
-&lt;pre>&lt;code class="language-bash">$ chmod +x l_HPCKit_p_2024.0.1.38_offline.sh
-$ sudo ./l_HPCKit_p_2024.0.1.38_offline.sh
-&lt;/code>&lt;/pre>
-&lt;ul>
-&lt;li>如果自定义安装在用户目录，就不需要 root 权限&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code>./l_HPCKit_p_2024.0.1.38_offline.sh
-&lt;/code>&lt;/pre>
-&lt;p>必须安装的库文件： Intel® MPI Library Intel® Fortran Compiler (Beta) &amp;amp; Intel® Fortran Compiler Classic Intel® oneAPI DPC++/C++ Compiler &amp;amp; Intel® C++ Compiler Classic&lt;/p>
-&lt;p>安装过程与 Base Toolkit 类似，不再赘述。&lt;/p>
-&lt;h2 id="环境配置">环境配置&lt;/h2>
-&lt;p>安装完成后，需要配置环境变量，以便在终端中使用 Intel® oneAPI 工具。&lt;/p>
-&lt;p>在 HPC 环境中，使用 &lt;code>modulefile&lt;/code> 来管理环境变量，可以使用 &lt;code>module&lt;/code> 命令来加载环境变量。&lt;/p>
-&lt;p>以下是参考的 &lt;code>modulefile&lt;/code> 文件，可以根据自己的安装路径进行修改。&lt;/p>
-&lt;pre>&lt;code class="language-modulefile">#%Module1.0#####################################################################
-##
-## modules modulefile
-##
-proc ModulesHelp { } {
-global version prefix
-puts stderr &amp;quot;\tmodules - loads the modules software &amp;amp; application environment&amp;quot;
-puts stderr &amp;quot;\n\tThis adds $prefix/* to several of the&amp;quot;
-puts stderr &amp;quot;\tenvironment variables.&amp;quot;
-puts stderr &amp;quot;\n\tVersion $version\n&amp;quot;
-}
-module-whatis &amp;quot;loads intel/oneapi2024.0&amp;quot;
-# for Tcl script use only
-set version oneapi2024.0
-set prefix /opt/software/intel/oneapi2024.0
-conflict intel
-prepend-path TBBROOT ${prefix}/tbb/2021.11/env/..
-prepend-path DAALROOT ${prefix}/cdal/2024.0
-prepend-path DPCT_BUNDLE_ROOT ${prefix}/dpcpp-ct/2024.0
-prepend-path INSPECTOR_2023_DIR ${prefix}/inspector/2024.0
-prepend-path ONEAPI_ROOT ${prefix}
-prepend-path PKG_CONFIG_PATH ${prefix}/vtune/2024.0/include/pkgconfig/lib64:${prefix}/tbb/2021.11/env/../lib/pkgconfig:${prefix}/mpi/2021.11/lib/pkgconfig:${prefix}/mkl/2024.0/lib/pkgconfig:${prefix}/ippcp/2021.9/lib/pkgconfig:${prefix}/inspector/2024.0/include/pkgconfig/lib64:${prefix}/dpl/2022.3/lib/pkgconfig:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/../lib/pkgconfig:${prefix}/cdal/2024.0/lib/pkgconfig:${prefix}/compiler/2024.0/lib/pkgconfig:${prefix}/ccl/2021.11/lib/pkgconfig:${prefix}/advisor/2024.0/include/pkgconfig/lib64:
-#prepend-path PKG_CONFIG_PATH ${prefix}/vtune/2024.0/include/pkgconfig/lib64:${prefix}/tbb/2021.11/env/../lib/pkgconfig:${prefix}/mkl/2024.0/lib/pkgconfig:${prefix}/ippcp/2021.9/lib/pkgconfig:${prefix}/inspector/2024.0/include/pkgconfig/lib64:${prefix}/dpl/2022.3/lib/pkgconfig:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/../lib/pkgconfig:${prefix}/cdal/2024.0/lib/pkgconfig:${prefix}/compiler/2024.0/lib/pkgconfig:${prefix}/ccl/2021.11/lib/pkgconfig:${prefix}/advisor/2024.0/include/pkgconfig/lib64:
-prepend-path VT_MPI impi4
-prepend-path ACL_BOARD_VENDOR_PATH /opt/Intel/OpenCLFPGA/oneAPI/Boards
-prepend-path FPGA_VARS_DIR ${prefix}/compiler/2024.0/lib/oclfpga
-prepend-path CCL_ROOT ${prefix}/ccl/2021.11
-prepend-path VT_ADD_LIBS &amp;quot;-ldwarf -lelf -lvtunwind -lm -lpthread&amp;quot;
-prepend-path I_MPI_ROOT ${prefix}/mpi/2021.11
-prepend-path FI_PROVIDER_PATH ${prefix}/mpi/2021.11//libfabric/lib/prov:/usr/lib/x86_64-linux-gnu/libfabric
-prepend-path DNNLROOT ${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp
-prepend-path DIAGUTIL_PATH ${prefix}/vtune/2024.0/sys_check/vtune_sys_check.py:${prefix}/dpcpp-ct/2024.0/sys_check/sys_check.sh:${prefix}/debugger/2024.0/sys_check/debugger_sys_check.py:${prefix}/compiler/2024.0/sys_check/sys_check.sh:${prefix}/advisor/2024.0/sys_check/advisor_sys_check.py:
-prepend-path CCL_CONFIGURATION cpu_gpu_dpcpp
-prepend-path DPL_ROOT ${prefix}/dpl/2022.3
-prepend-path MANPATH ${prefix}/mpi/2021.11/man:${prefix}/itac/2022.0/man:${prefix}/debugger/2024.0/documentation/man:${prefix}/compiler/2024.0/documentation/en/man/common:::
-#prepend-path MANPATH ${prefix}/itac/2022.0/man:${prefix}/debugger/2024.0/documentation/man:${prefix}/compiler/2024.0/documentation/en/man/common:::
-prepend-path GDB_INFO ${prefix}/debugger/2024.0/documentation/info/
-prepend-path SETVARS_COMPLETED 1
-prepend-path APM ${prefix}/advisor/2024.0/perfmodels
-prepend-path CMAKE_PREFIX_PATH ${prefix}/tbb/2021.11/env/..:${prefix}/ipp/2021.10/lib/cmake/ipp:${prefix}/ipp/2021.10/lib/cmake/ipp:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/../lib/cmake:${prefix}/cdal/2024.0:${prefix}/compiler/2024.0/IntelDPCPP:${prefix}/ccl/2021.11/lib/cmake/oneCCL
-prepend-path VTUNE_PROFILER_2023_DIR ${prefix}/vtune/2024.0
-prepend-path CMPLR_ROOT ${prefix}/compiler/2024.0
-prepend-path ADVISOR_2023_DIR ${prefix}/advisor/2024.0
-prepend-path FPGA_VARS_ARGS &amp;quot;&amp;quot;
-prepend-path INFOPATH ${prefix}/debugger/2024.0/gdb/intel64/lib
-prepend-path IPPROOT ${prefix}/ipp/2021.10
-prepend-path IPP_TARGET_ARCH intel64
-prepend-path PYTHONPATH ${prefix}/advisor/2024.0/pythonapi
-prepend-path VT_ROOT ${prefix}/itac/2022.0
-prepend-path DALROOT ${prefix}/cdal/2024.0
-prepend-path LIBRARY_PATH ${prefix}/tbb/2021.11/env/../lib/intel64/gcc4.8:${prefix}/mpi/2021.11//libfabric/lib:${prefix}/mpi/2021.11//lib/release:${prefix}/mpi/2021.11//lib:${prefix}/mkl/2024.0/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/ippcp/2021.9/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/lib:${prefix}/cdal/2024.0/lib/intel64:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/compiler/2024.0/lib:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp
-#prepend-path LIBRARY_PATH ${prefix}/tbb/2021.11/env/../lib/intel64/gcc4.8:${prefix}/mkl/2024.0/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/ippcp/2021.9/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/lib:${prefix}/cdal/2024.0/lib/intel64:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/compiler/2024.0/lib:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp
-prepend-path DAL_MAJOR_BINARY 1
-prepend-path IPPCRYPTOROOT ${prefix}/ippcp/2021.9
-prepend-path IPPCP_TARGET_ARCH intel64
-prepend-path OCL_ICD_FILENAMES libintelocl_emu.so:libalteracl.so:${prefix}/compiler/2024.0/lib/x64/libintelocl.so
-prepend-path CLASSPATH ${prefix}/mpi/2021.11//lib/mpi.jar:${prefix}/cdal/2024.0/lib/onedal.jar
-#prepend-path CLASSPATH ${prefix}/cdal/2024.0/lib/onedal.jar
-prepend-path INTELFPGAOCLSDKROOT ${prefix}/compiler/2024.0/lib/oclfpga
-prepend-path LD_LIBRARY_PATH ${prefix}/tbb/2021.11/env/../lib/intel64/gcc4.8:${prefix}/mpi/2021.11//libfabric/lib:${prefix}/mpi/2021.11//lib/release:${prefix}/mpi/2021.11//lib:${prefix}/mkl/2024.0/lib/intel64:${prefix}/itac/2022.0/slib:${prefix}/ipp/2021.10/lib/intel64:${prefix}/ippcp/2021.9/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/lib:${prefix}/debugger/2024.0/gdb/intel64/lib:${prefix}/debugger/2024.0/libipt/intel64/lib:${prefix}/debugger/2024.0/dep/lib:${prefix}/cdal/2024.0/lib/intel64:${prefix}/compiler/2024.0/lib:${prefix}/compiler/2024.0/lib/x64:${prefix}/compiler/2024.0/lib/oclfpga/host/linux64/lib:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp
-#prepend-path LD_LIBRARY_PATH ${prefix}/tbb/2021.11/env/../lib/intel64/gcc4.8:${prefix}/mkl/2024.0/lib/intel64:${prefix}/itac/2022.0/slib:${prefix}/ipp/2021.10/lib/intel64:${prefix}/ippcp/2021.9/lib/intel64:${prefix}/ipp/2021.10/lib/intel64:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/lib:${prefix}/debugger/2024.0/gdb/intel64/lib:${prefix}/debugger/2024.0/libipt/intel64/lib:${prefix}/debugger/2024.0/dep/lib:${prefix}/cdal/2024.0/lib/intel64:${prefix}/compiler/2024.0/lib:${prefix}/compiler/2024.0/lib/x64:${prefix}/compiler/2024.0/lib/oclfpga/host/linux64/lib:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp:${prefix}/compiler/2024.0/compiler/lib/intel64_lin:${prefix}/ccl/2021.11/lib/cpu_gpu_dpcpp
-prepend-path VT_LIB_DIR ${prefix}/itac/2022.0/lib
-prepend-path VTUNE_PROFILER_DIR ${prefix}/vtune/2024.0
-prepend-path VT_SLIB_DIR ${prefix}/itac/2022.0/slib
-prepend-path MKLROOT ${prefix}/mkl/2024.0
-prepend-path DAL_MINOR_BINARY 1
-prepend-path NLSPATH ${prefix}/mkl/2024.0/lib/intel64/locale/%l_%t/%N:${prefix}/compiler/2024.0/compiler/lib/intel64_lin/locale/%l_%t/%N
-prepend-path PATH ${prefix}/vtune/2024.0/bin64:${prefix}/mpi/2021.11//libfabric/bin:${prefix}/mpi/2021.11//bin:${prefix}/mkl/2024.0/bin/intel64:${prefix}/itac/2022.0/bin:${prefix}/inspector/2024.0/bin64:${prefix}/dpcpp-ct/2024.0/bin:${prefix}/dev-utilities/2024.0/bin:${prefix}/debugger/2024.0/gdb/intel64/bin:${prefix}/compiler/2024.0/lib/oclfpga/bin:${prefix}/compiler/2024.0/bin/intel64:${prefix}/compiler/2024.0/bin:${prefix}/advisor/2024.0/bin64
-#prepend-path PATH ${prefix}/vtune/2024.0/bin64:${prefix}/mkl/2024.0/bin/intel64:${prefix}/itac/2022.0/bin:${prefix}/inspector/2024.0/bin64:${prefix}/dpcpp-ct/2024.0/bin:${prefix}/dev-utilities/2024.0/bin:${prefix}/debugger/2024.0/gdb/intel64/bin:${prefix}/compiler/2024.0/lib/oclfpga/bin:${prefix}/compiler/2024.0/bin/intel64:${prefix}/compiler/2024.0/bin:${prefix}/advisor/2024.0/bin64
-prepend-path INTEL_PYTHONHOME ${prefix}/debugger/2024.0/dep
-prepend-path INTEL_LICENSE_FILE /opt/intel/licenses:/root/intel/licenses
-prepend-path CPATH ${prefix}/tbb/2021.11/env/../include:${prefix}/mpi/2021.11//include:${prefix}/mkl/2024.0/include:${prefix}/ipp/2021.10/include:${prefix}/ippcp/2021.9/include:${prefix}/ipp/2021.10/include:${prefix}/dpl/2022.3/linux/include:${prefix}/dpcpp-ct/2024.0/include:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/include:${prefix}/dev-utilities/2024.0/include:${prefix}/cdal/2024.0/include:${prefix}/compiler/2024.0/lib/oclfpga/include:${prefix}/ccl/2021.11/include/cpu_gpu_dpcpp
-#prepend-path CPATH ${prefix}/tbb/2021.11/env/../include:${prefix}/mkl/2024.0/include:${prefix}/ipp/2021.10/include:${prefix}/ippcp/2021.9/include:${prefix}/ipp/2021.10/include:${prefix}/dpl/2022.3/linux/include:${prefix}/dpcpp-ct/2024.0/include:${prefix}/dnnl/2024.0/cpu_dpcpp_gpu_dpcpp/include:${prefix}/dev-utilities/2024.0/include:${prefix}/cdal/2024.0/include:${prefix}/compiler/2024.0/lib/oclfpga/include:${prefix}/ccl/2021.11/include/cpu_gpu_dpcpp
-&lt;/code>&lt;/pre>
-&lt;h2 id="运行测试">运行测试&lt;/h2>
-&lt;p>通过 &lt;code>module load&lt;/code> 命令加载环境变量&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ module load intel/oneapi2024.0
-&lt;/code>&lt;/pre>
-&lt;p>测试是否安装成功&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ icx -v
-&lt;/code>&lt;/pre>
-&lt;p>如果输出版本信息，则安装成功。&lt;/p>
-&lt;pre>&lt;code class="language-bash">Intel(R) oneAPI DPC++/C++ Compiler 2024.0.2 (2024.0.2.20231213)
-Target: x86_64-unknown-linux-gnu
-Thread model: posix
-InstalledDir: /opt/software/intel/oneapi2024.0/compiler/2024.0/bin/compiler
-Configuration file: /opt/software/intel/oneapi2024.0/compiler/2024.0/bin/compiler/../icx.cfg
-Found candidate GCC installation: /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-Selected GCC installation: /opt/rh/devtoolset-11/root/usr/lib/gcc/x86_64-redhat-linux/11
-Candidate multilib: .;@m64
-Candidate multilib: 32;@m32
-Selected multilib: .;@m64
-&lt;/code>&lt;/pre>
-&lt;p>继续测试 MPI&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ mpirun --version
-&lt;/code>&lt;/pre>
-&lt;p>如果输出版本信息，则安装成功。&lt;/p>
-&lt;pre>&lt;code class="language-bash">Intel(R) MPI Library for Linux* OS, Version 2021.11 Build 20231005 (id: 74c4a23)
-Copyright 2003-2023, Intel Corporation.
-&lt;/code>&lt;/pre>
-&lt;h2 id="icx-说明">icx 说明&lt;/h2>
-&lt;blockquote>
-&lt;p>&lt;strong>Intel® oneAPI DPC++/C++ Compiler (icx)&lt;/strong> is Intel nextgen compiler based on Clang /LLVM technology plus Intel proprietary optimizations and code generation.&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Intel®, &lt;/span>&lt;a href="https://www.intel.cn/content/www/cn/zh/developer/articles/technical/adoption-of-llvm-complete-icx.html">&lt;cite>Intel® C/C&amp;#43;&amp;#43; Compilers Complete Adoption of LLVM&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
-&lt;p>icx 是基于 Clang /LLVM 技术的 Intel 下一代编译器，加上 Intel 专有的优化和代码生成。&lt;/p>
-&lt;p>LLVM 帮助实现了为英特尔架构提供更加优秀的 C/C++编译器这一目标。最新的英特尔 C/C++编译器使用 LLVM 架构，可提供更快的编译时间、更好的优化、增强的标准支持以及对 GPU 和 FPGA 负载转移（offloading）的支持。&lt;/p>
-&lt;h3 id="采用-llvm-的好处">采用 LLVM 的好处&lt;/h3>
-&lt;p>LLVM 开源项目是模块化和可重用的编译器和一系列工具链技术的集合，整个项目支持多种处理器架构和编程语言。Clang 开源项目提供了一个 C/C++前端，为 LLVM 项目支持了最新的语言标准。包括 Clang 在内，LLVM 是由一个庞大且非常活跃的开发社区维护的。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09.webp"
-alt="v2-7ac93f64b283ba0b5c5371b7cd524210_1440w-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>采用 LLVM 的好处有很多，第一条要说的是更快的构建时间。众所周知，Clang 是很快的！我们使用英特尔 oneAPI 2021.3 工具包中的英特尔 C/C++编译器时，测得构建时间减少了 14％。除了减少构建时间外，采用 Clang 使我们可以从社区支持最新 C++语言标准的一系列成果中受益，并贡献成果来反哺社区。&lt;/p>
-&lt;p>英特尔为开源项目提供贡献和支持的历史颇为悠久，其中向 LLVM 做出贡献就有十年时间了。我们今天的主动合作行为包括了优化报告补充、扩大的浮点模型支持，以及向量增强。英特尔直接对 LLVM 项目做出贡献，也有一个临时区域（英特尔 LLVM 技术项目），针对 SYCL 支持。&lt;/p>
-&lt;p>在英特尔架构上，英特尔 C/C++编译器预期能提供比基础 Clang+LLVM 编译器更高的性能。接下来英特尔 C/C++编译器都会是采用了 LLVM 开源基础架构的版本（icx）。我们会继续之前的长期努力，持续为 Clang 和 LLVM 项目做出贡献，包括为它们提供优化。并非所有的优化技术都会被上游采纳，有时是因为它们太新了，有时因为它们过于针对英特尔架构。这是可以预料的，并且与其他已经采用 LLVM 的编译器是同样的情况。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09.webp"
-alt="v2-1a1672571e4a8a60c335e5abe38ee86b_1440w-2024-03-09" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>英特尔 C/C++编译器一直都在提供最优秀的性能。经典版本的英特尔 C/C++编译器取得了对 GCC 18％的优势，而基于 LLVM 的英特尔 C/C++编译器取得了 41％的优势。&lt;/p></description></item><item><title>笔记：Pure - 改进消息传递以更好地利用节点内的共享内存</title><link>https://cuterwrite.top/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/p/pure/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post 笔记：Pure - 改进消息传递以更好地利用节点内的共享内存" />&lt;h1 id="笔记pure-改进消息传递以更好地利用节点内的共享内存">笔记：Pure: 改进消息传递以更好地利用节点内的共享内存&lt;/h1>
-&lt;h2 id="引用出处">引用出处&lt;/h2>
-&lt;p>James Psota and Armando Solar-Lezama. 2024. Pure: Evolving Message Passing To Better Leverage Shared Memory Within Nodes. In Proceedings of the 29th ACM SIGPLAN Annual Symposium on Principles and Practice of Parallel Programming (&lt;strong>PPoPP &amp;lsquo;24&lt;/strong>). Association for Computing Machinery, New York, NY, USA, 133–146. &lt;a class="link" href="https://doi.org/10.1145/3627535.3638503" target="_blank" rel="noopener" >https://doi.org/10.1145/3627535.3638503
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-&lt;/p>
-&lt;h2 id="关键词">关键词&lt;/h2>
-&lt;ul>
-&lt;li>并行编程模型&lt;/li>
-&lt;li>分布式运行时系统&lt;/li>
-&lt;li>基于任务的并行模型&lt;/li>
-&lt;li>并发数据结构&lt;/li>
-&lt;li>无锁数据结构&lt;/li>
-&lt;/ul>
-&lt;h2 id="摘要">摘要&lt;/h2>
-&lt;p>Pure 是一种新的编程模型和运行时系统，旨在在基于消息传递接口（增强使用任务利用空闲核心能力）的环境中充分利用节点内部的共享内存。Pure 通过两种方式利用共享内存：(1) 允许 rank 在等待消息到达时从彼此那里窃取工作；(2) 利用高效无锁的数据结构实现节点内各进程间高性能的消息传递和集合操作。研究者通过 micro benchmark 测试评估了 Pure 的关键消息传递和集合特性，并展示了在 CoMD 分子动力学和 miniAMR 自适应网格细化应用中，当扩展到 4096 个 rank 时，Pure 可实现高达 &lt;strong>2.1x&lt;/strong> 的应用加速。&lt;/p>
-&lt;h2 id="1-引言">1. 引言&lt;/h2>
-&lt;p>在过去的几十年里，高性能计算领域经历了从大型向量计算机到由单处理器构成的集群的转变，这些集群通过网络互连。MPI 成为了分布式内存系统上并行编程的事实标准。随着硬件的进步，多核集群的出现使得节点内的核心能够共享内存并通过网络进行通信，这促使社区不断寻求新的范式，以更有效地利用现代集群资源。目前主要的策略有两种：一种是维持统一的 MPI 编程方法，通过改进 MPI 运行时系统来更好地利用共享内存；另一种是采用 MPI+X 等混合编程模式，在节点内部采用共享内存并行性，而在节点之间继续使用 MPI。&lt;strong>然而，这些方法要么可能受到 MPI 标准对接口行为规定的限制，无法最大化性能；要么给程序员带来了管理两种编程模型的挑战&lt;/strong>。&lt;/p>
-&lt;p>社区已经尝试了许多其他方法，其中包括 &lt;strong>PGAS&lt;/strong> 模型，它提供了一种集群范围内的共享内存抽象，以及 &lt;strong>Legion 、Chapel&lt;/strong> 和 &lt;strong>X10&lt;/strong> 等隐式并行编程语言，这些语言提供了高级抽象，并尝试自动高效地协调应用程序。尽管取得了一定的进展，许多现代 HPC 应用仍然依赖于 MPI。&lt;strong>MPC&lt;/strong> 和 &lt;strong>AMPI&lt;/strong> 也尝试通过将线程作为 MPI Rank 来利用内部的共享内存，以提高性能。&lt;/p>
-&lt;p>然而，仅使用 MPI 的方法往往比混合编程方法表现更佳。这可能是因为接口的局限性和无法充分利用节点内的共享内存，导致 MPI 未能充分发挥其潜在性能。因此，本文提出的 Pure 系统基于 MPI-everywhere 方法构建，打破了一些 MPI 的传统假设，更有效地利用了共享内存，同时避免了对现有程序进行重大重构的需求。Pure 采用了与 MPI 类似的编程模型，从而能够利用 HPC 社区现有的 MPI 知识和应用程序基础。&lt;/p>
-&lt;p>Pure 的设计灵感源自 MPI，其核心编程模型是基于消息传递的，并可选择性地整合任务并行性。与 MPI 不同，Pure 摒弃了使用进程级别的 rank 和对旧版语言的支持限制，转而采用线程作为 rank 的实现，而非传统的进程。这种转变使得 Pure 能够高效地采用轻量级的无锁同步机制，实现同一节点内各线程间的协调。利用这种线程化的 rank 架构，Pure 构建了高效的节点内集体操作功能，并通过无锁算法来优化这些操作的性能。此外，Pure 支持将应用程序中的一部分并行代码块以标准的 C++ lambda 表达式的形式运行，这些表达式能够被当前拥有 rank 的线程以及其他空闲的 rank 自动且并发地执行，而这一切的操作都由 Pure Runtime 运行时系统自动进行调度。&lt;/p>
-&lt;p>论文提出的优化策略涵盖了以下几点：&lt;/p>
-&lt;ul>
-&lt;li>一种无锁消息传递方法，适用于小消息和大数据消息的传输。&lt;/li>
-&lt;li>无锁数据结构，用于高效实现集合通信算法。&lt;/li>
-&lt;li>一个无锁任务调度器，允许空闲线程高效地从其他线程中“窃取”工作负载。&lt;/li>
-&lt;/ul>
-&lt;p>作者采用了标准的 C++ 库来确保 Pure 的广泛兼容性，并证明了 Pure 相较于经过高度优化的 MPI 基准测试，在性能上有显著提升。此外，作者还展示了 Pure 编程模型在语义上与 MPI 非常相似，这意味着从现有应用程序迁移到 Pure 是直接且简便的，这一点通过源码到源码的转换工具 mpi2pure 得到了进一步的证明。总体而言，论文的主要贡献可以总结为以下几点：&lt;/p>
-&lt;ol>
-&lt;li>提出了一种新的编程模型和运行时系统，该系统有效地结合了消息传递和任务并行性，并且利用了标准 C++ 的特性来实现。&lt;/li>
-&lt;li>展示了现代 C++ 如何支持更加灵活的并行运行时系统接口。&lt;/li>
-&lt;li>描述了一个设计精良的无锁、多线程和分布式运行时系统，该系统在节点内部相比 MPI 显示出了显著的速度提升。&lt;/li>
-&lt;li>证明了通过仅对现有的 MPI 应用程序进行最小的源代码修改，就能在 micro benchmark 测试和三个实际应用中实现与最先进的 MPI 实现相比的显著性能提升。&lt;/li>
-&lt;/ol>
-&lt;h2 id="2-pure-使用示例">2. Pure 使用示例&lt;/h2>
-&lt;p>本节通过一个简单的 1-D Stencil 算法示例来阐释 Pure 的使用方法。该示例虽然简单，但能够清晰展示 Pure 的核心概念及其与 MPI 的相似之处，为开发者编写更复杂的应用程序奠定了基础。&lt;/p>
-&lt;p>在 MPI 版本的实现代码 &lt;code>rand_stencil_mpi&lt;/code> 中，计算工作主要集中在函数 &lt;code>random_work&lt;/code> 中执行。简单来说，&lt;code>rand_stencil_mpi&lt;/code> 函数首先会进入一个循环，迭代次数为 &lt;code>iters&lt;/code> ，在数组 &lt;code>a&lt;/code> 的每个元素上计算 &lt;code>random_work&lt;/code> 。值得注意的是，&lt;code>random_work&lt;/code> 执行的时间长度是可变且未知的，因此会引入负载不平衡。此外，&lt;code>random_work&lt;/code> 不会修改数组 &lt;code>a&lt;/code> 的内容，而是接着通过对相邻元素求平均值更新数组 &lt;code>a&lt;/code> 。最后，程序利用 &lt;code>MPI_Send&lt;/code> 和 &lt;code>MPI_Recv&lt;/code> 交换 &lt;code>temp&lt;/code> 数组的首尾元素，以便计算数组 &lt;code>a&lt;/code> 的首尾元素。由于 &lt;code>random_work&lt;/code> 所需时间长短不一，某些处理单元会提前完成任务，有时会在等待发送方较慢的 &lt;code>MPI_Recv&lt;/code> 调用时陷入阻塞状态。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1D_stencil-2024-03-14.webp"
-alt="1D_stencil-2024-03-14" width="auto" loading="lazy">
-&lt;/figure>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 1：1-D Stencil with Random Work, MPI Version&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-cpp">void rand_stencil_mpi(double* const a, size_t arr_sz, size_t iters, int my_rank,
-int n_ranks) {
-double temp[arr_sz];
-for (auto it = 0; it &amp;lt; iters; ++it) {
-for (auto i = 0; i &amp;lt; arr_sz; ++i) {
-temp[i] = random_work(a[i]);
-}
-for (auto i = 1; i &amp;lt; arr_sz - 1; ++i) {
-a[i] = (temp[i - 1] + temp[i] + temp[i + 1]) / 3.0;
-}
-if (my_rank &amp;gt; 0) {
-MPI_Send(&amp;amp;temp[0], 1, MPI_DOUBLE, my_rank - 1, 0, MPI_COMM_WORLD);
-double neighbor_hi_val;
-MPI_Recv(&amp;amp;neighbor_hi_val, 1, MPI_DOUBLE, my_rank - 1, 0, MPI_COMM_WORLD,
-MPI_STATUS_IGNORE);
-a[0] = (neighbor_hi_val + temp[0] + temp[1]) / 3.0;
-} // ends if not first rank
-if (my_rank &amp;lt; n_ranks - 1) {
-MPI_Send(&amp;amp;temp[arr_sz - 1], 1, MPI_DOUBLE, my_rank + 1, 0,
-MPI_COMM_WORLD);
-double neighbor_lo_val;
-MPI_Recv(&amp;amp;neighbor_lo_val, 1, MPI_DOUBLE, my_rank + 1, 0, MPI_COMM_WORLD,
-MPI_STATUS_IGNORE);
-a[arr_sz - 1] =
-(temp[arr_sz - 2] + temp[arr_sz - 1] + neighbor_lo_val) / 3.0;
-} // ends if not last rank
-} // ends for all iterations
-}
-&lt;/code>&lt;/pre>
-&lt;p>示例 2 则展示了实现同样功能的 Pure 版本。其中存在一些关键差异。首先，消息调用函数接口不同，使用的是相应的 Pure 消息传递函数 &lt;code>pure_send_msg&lt;/code> 和 &lt;code>pure_recv_msg&lt;/code> ，而非 MPI 调用，但参数实质上与 MPI 对应函数基本相同。Pure 的消息传递语义类似于 MPI：发送端缓冲区被复制到接收端缓冲区。实现区别主要在于：Pure 在&lt;strong>节点内部采用了轻量级的消息传递方法&lt;/strong>，从而在节点内的消息传递比 MPI 的延迟更低。&lt;/p>
-&lt;div class="notice notice-info" >
-&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>示例 2：Pure 版本&lt;/p>&lt;/div>
-&lt;pre>&lt;code class="language-cpp">void rand_stencil_pure(double* a, const int arr_sz, const int n_iter,
-const int my_rank, const int n_ranks) {
-double temp[arr_sz];
-PureTask rand_work_task = [a, temp, arr_sz, my_rank](
-chunk_id_t start_chunk, chunk_id_t end_chunk,
-std::optinal&amp;lt;void&amp;gt; cont_params) {
-auto [min_idx, max_idx] =
-pure_aligned_idx_range&amp;lt;double&amp;gt;(arr_sz, start_chunk, end_chunk);
-for (auto i = min_idx; i &amp;lt; max_idx; i++) {
-temp[i] = random_work(a[i]);
-}
-}; // ends definding the Pure Task for rand_work_task
-for (auto it = 0; it &amp;lt; n_iter; it++) {
-rand_work_task.execute(); // execute all chunks of rank_work_task
-for (auto i = 1; i &amp;lt; arr_sz - 1; ++i) {
-a[i] = (temp[i - 1] + temp[i] + temp[i + 1]) / 3.0;
-}
-if (my_rank &amp;gt; 0) {
-pure_send_msg(&amp;amp;temp[0], 1, MPI_DOUBLE, my_rank - 1, 0, PURE_COMM_WORLD);
-double neighbor_hi_val;
-pure_recv_msg(&amp;amp;neighbor_hi_val, 1, MPI_DOUBLE, my_rank - 1, 0,
-PURE_COMM_WORLD);
-a[0] = (neighbor_hi_val + temp[0] + temp[1]) / 3.0;
-} // ends if not first rank
-if (my_rank &amp;lt; n_ranks - 1) {
-pure_send_msg(&amp;amp;temp[arr_sz - 1], 1, MPI_DOUBLE, my_rank + 1, 0,
-PURE_COMM_WORLD);
-double neighbor_lo_val;
-pure_recv_msg(&amp;amp;neighbor_lo_val, 1, MPI_DOUBLE, my_rank + 1, 0,
-PURE_COMM_WORLD);
-a[arr_sz - 1] =
-(temp[arr_sz - 2] + temp[arr_sz - 1] + neighbor_lo_val) / 3.0;
-} // ends if not last rank
-} // ends definding the Pure Task for rand_work_task
-}
-&lt;/code>&lt;/pre>
-&lt;p>更重要的差异在于 Pure 中增加的 &lt;strong>Pure Task&lt;/strong> ，用带有一组特定参数定义的 lambda 表达式，其利用 lambda 的捕获参数特性，允许外部于 lambda 体内的变量以值或引用形式被捕获并在 lambda 执行时使用。Pure Task 可以被视为由 Pure Runtime 运行时系统负责执行应用程序代码片段，可以通过多线程并发执行。因此，Pure 任务应结构化为类似数据并行的形式。此外，Pure Task 需要由程序员保证线程安全。&lt;/p>
-&lt;p>在以上 Pure 实现中，程序员可以利用 chunk ranges 来描述并发性。这些子范围或 chunk 是通过 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> 参数传递给 Pure Task 的，而它们是由 Pure Runtime 运行时系统提供。Pure Runtime 运行时系统负责确保所有工作顺利完成。由于可能涉及到不同的多个线程，Pure Runtime 运行时系统会通过追踪哪些 chunk 已分配和完成来实现这一点。&lt;/p>
-&lt;p>其次，程序员需要将 Pure Runtime 运行时系统提供的 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> 参数映射到与应用计算相关的具体内容上。在这里，代码使用了 &lt;code>pure_aligned_idx_range&lt;/code> 辅助函数将其转化为循环索引子范围。这个辅助函数考虑到了缓存行，所以有利于避免伪共享问题。&lt;/p>
-&lt;p>由于 random_work 可能导致负载分布不均，某些 rank 可能会在等待消息时处于空闲状态。Pure 的任务调度器会自动利用这些空闲的 rank，以执行同一节点内其他待处理的 Pure 任务块。以下图中在同一节点内的三个 rank 为例：&lt;strong>rank 0&lt;/strong> 正在执行一个被划分为 6 个 chunks 的 Pure Task，而 &lt;strong>rank 1&lt;/strong> 和 &lt;strong>rank 2&lt;/strong> 因为接收消息而阻塞。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/timeline-2024-03-14.png"
-alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>示例 Pure 代码的时间线示意图&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;p>从图中可以清晰地看到以下执行流程：&lt;/p>
-&lt;ul>
-&lt;li>rank 0 开始处理第一个 chunk（chunk 0） 。&lt;/li>
-&lt;li>同时，rank 1 窃取并行执行第二个 chunk（chunk 1）。&lt;/li>
-&lt;li>任务调度器随后为 rank 0 分配第三个 chunk（chunk 2），为 rank 1 分配第四个 chunk（chunk 3）。&lt;/li>
-&lt;li>rank 2 尝试窃取一个任务，并成功执行第五个 chunk（chunk 4）。由于 &lt;code>random_work&lt;/code> 的执行随机性，chunk 2 和 chunk 4 可能是耗时较长的任务。&lt;/li>
-&lt;li>rank 0 完成 chunk 5 的处理，这是一个较小的任务块，它在 rank 2 完成 chunk 4 之前就已经结束了。&lt;/li>
-&lt;li>任务调度器确保在所有 chunks 完成之前，rank 0 不会结束执行。实际上，rank 0 要等到 chunk 4 完成后才能继续。&lt;/li>
-&lt;li>在 rank 1 和 rank 2 等待消息的过程中，它们会尝试从其他任何可用的 rank 中窃取更多的 chunks。&lt;/li>
-&lt;li>得益于 lambda 表达式的变量捕获功能，不同 rank 之间可以高效地共享上下文信息。&lt;/li>
-&lt;/ul>
-&lt;p>实验结果显示，在单节点上配置 32 个 rank 的 Pure 版本因为更快的消息传递和 Pure Task 的并行执行，相比于 MPI 版本，Pure 版本实现了 10% 的性能提升。在负载分布不均的情境下，Pure 的加速比甚至超过了 200%。这些性能提升的程度虽然受到负载不平衡的影响，但在实际应用场景中，Pure 仍展现出了显著的性能改进。这归功于 Pure Runtime 运行时系统的能力，它能够自动检测并高效利用未被充分利用的计算资源。&lt;/p>
-&lt;h2 id="3-编程模型">3. 编程模型&lt;/h2>
-&lt;p>Pure 的编程模型核心是“消息传递结合可选的任务并行性”。在语义上，Pure 的消息传递和集合通信操作与 MPI 等同，差异主要体现在语法上的一些细节。&lt;/p>
-&lt;p>尽管 Pure 在节点内部采用线程，但其 rank 命名空间在整个集群中保持非层级结构。在 Pure 程序的执行周期内，rank 的数量保持不变。&lt;/p>
-&lt;p>Pure 应用程序采用 C++ 编写，并通过 SPMD（单程序多数据）模式运行，实现了内部的多线程化。在同一个节点上，所有的 rank 都是通过内核线程实现的。&lt;/p>
-&lt;p>&lt;strong>需要注意的是，Pure 应用程序并不支持全局变量&lt;/strong>。因此，开发者应当移除全局变量或者使用 &lt;code>thread_local&lt;/code> 关键字来限制变量的作用域，确保线程之间的安全性。&lt;/p>
-&lt;p>对于存在负载不均衡问题的应用程序，开发者可以在满足以下特定条件的程序部分使用 Pure Task：&lt;/p>
-&lt;ol>
-&lt;li>计算密集型的热点区域。&lt;/li>
-&lt;li>可以并发执行的任务。&lt;/li>
-&lt;/ol>
-&lt;h3 id="消息传递和集合通信操作">消息传递和集合通信操作&lt;/h3>
-&lt;p>在 Pure 中，&lt;code>pure_send_msg&lt;/code> 和 &lt;code>pure_recv_msg&lt;/code> 函数在功能上与 MPI 的 &lt;code>MPI_Send&lt;/code> 和 &lt;code>MPI_Recv&lt;/code> 相对应，同时 Pure 也提供了相应的非阻塞版本。&lt;/p>
-&lt;p>Pure Runtime 运行时系统确保所有消息都会被送达，并且按照发送的顺序进行交付。Pure 还实现了一系列的集合通信操作，包括：&lt;/p>
-&lt;ul>
-&lt;li>Reduce&lt;/li>
-&lt;li>All-Reduce&lt;/li>
-&lt;li>Barrier&lt;/li>
-&lt;li>Broadcast&lt;/li>
-&lt;/ul>
-&lt;p>此外，Pure 引入了通信子（communication subgroup）的概念，允许开发者通过 &lt;code>pure_comm_split&lt;/code> 函数将一个通信子集进一步细分为更小的子集。&lt;/p>
-&lt;p>为了使用 Pure，应用程序需要采用现代 C++ 标准进行编写，推荐使用 &lt;code>std=c++11&lt;/code> 或更高版本进行编译。Pure 提供了一个基于 Make 的构建系统，它会自动配置合适的编译器选项，并链接到 Pure Runtime 运行时系统（libpure），同时定义了一系列用于调试和性能分析的 target。&lt;/p>
-&lt;h3 id="pure-task">Pure Task&lt;/h3>
-&lt;p>Pure Task 允许开发者定义应用程序中的计算部分，并将其分解为可并行执行的 chunks。这些 chunks 可以由 Pure Runtime 运行时系统自动并发执行。&lt;/p>
-&lt;p>然而，Pure Task 不是必需的，只有在任务可以划分为多个小块，并且这样做有助于缓解负载不均衡问题时，才推荐使用 Pure Task。&lt;/p>
-&lt;p>Pure Task 通过 C++ Lambda 表达式实现，并在拥有该任务的 rank 调用 &lt;code>execute&lt;/code> 方法时同步执行。每个 rank 同一时间只能执行一个 Pure Task。Lambda 表达式的变量捕获功能使得不同 rank 在执行不同 chunks 时能够高效共享上下文信息。通常，一个 Pure Task 在应用程序的运行过程中会被定义一次，然后在每个时间步或其他迭代中多次执行。&lt;/p>
-&lt;p>定义 Pure Task 时，需要指定 chunk 的数量和额外的应用程序参数。任务之间应避免相互依赖，不过因为它们会在 &lt;code>execute&lt;/code> 调用期间完全执行，所以它们不会与任务外部的代码发生冲突。&lt;/p>
-&lt;p>Pure Task 包含一个 &lt;code>execute&lt;/code> 方法，该方法接受一个 &lt;code>optional&amp;lt;void*&amp;gt;&lt;/code> 类型的参数 &lt;code>per_exe_args&lt;/code> ，用于每次执行任务时传递额外的参数。这在任务主体的输入值在连续执行中发生变化时非常有用。例如，开发者可以将指向局部结构体的指针传递给 &lt;code>execute&lt;/code> 方法。&lt;/p>
-&lt;p>Pure Task 的前两个参数 &lt;code>start_chunk&lt;/code> 和 &lt;code>end_chunk&lt;/code> 是无符号整数，用于指定要执行的 chunk 范围。这些 chunk 由 Pure Runtime 运行时系统分配，确保每个 chunk 只被执行一次，即使它们可能并发执行。&lt;/p>
-&lt;p>Pure Task 使用 chunk 范围为调度器提供了灵活性，允许一次性分配多个 chunks。chunks 的数量由 Pure 任务调度器决定，但不会超过在 Makefile 文件中预定义的 &lt;code>PURE_MAX_TASK_CHUNKS&lt;/code> 。&lt;/p>
-&lt;p>目前，Pure Task 的接口需要手动将 chunk 编号映射到数组索引，这在处理多维数组时可能比较繁琐。因此，未来的工作目标是扩展接口，提供类似于 TBB 的 &lt;code>parallel_for&lt;/code> 那样更简洁、更高级的接口。&lt;/p>
-&lt;p>最后，开发者需要确保 Pure Task 内部的实现是线程安全的，以避免同一任务的多个并发执行的 chunks 之间的相互竞争。例如，在 CoMD 分子动力学 Benchmark 中，需要处理多个线程同时写入同一内存位置的问题，这时可以使用 &lt;code>std::atomic&lt;/code> 数组来替代普通 &lt;code>int&lt;/code> 数组。&lt;/p>
-&lt;h2 id="4-运行时系统">4. 运行时系统&lt;/h2>
-&lt;p>Pure 运行时系统是一个多线程和分布式运行时的动态库，用于支持 Pure 应用程序的开发。开发者在使用时需要包含 &lt;code>pure.h&lt;/code> 头文件，并使用 C++17 标准进行编译，同时链接到 &lt;code>libpure&lt;/code> 库。Pure 运行时系统能够自动地在计算和通信操作之间寻找并利用重叠执行的机会，尤其是在通信延迟较高的情况下。&lt;/p>
-&lt;p>Pure 运行时系统的主要职能包括：&lt;/p>
-&lt;ul>
-&lt;li>初始化并配置必要的进程和线程，启动应用程序。&lt;/li>
-&lt;li>管理节点内部的 rank 间通信和集合操作。&lt;/li>
-&lt;li>管理内部的内存缓冲区和数据结构。&lt;/li>
-&lt;li>如果应用程序中定义了 Pure Task，运行时系统还需负责这些任务的调度和执行。&lt;/li>
-&lt;/ul>
-&lt;h3 id="rank-初始化与映射">Rank 初始化与映射&lt;/h3>
-&lt;p>Pure 中的 rank 实现为 MPI 进程的内核线程。在多节点应用中，Pure 运行 MPI 来处理跨节点通信，而在单节点应用中则不使用 MPI，尽管如此，Pure 应用程序并不直接调用 MPI 函数。通过 Makefile 配置，Pure 程序可以在一个节点或 NUMA 节点上启动一个 MPI 进程，并根据每个节点或 NUMA 节点的核心数来创建相应数量的线程。对于应用程序开发者而言，他们只需了解非层次化的 rank 命名空间，而节点、线程、MPI 进程和通信延迟等底层概念都被抽象化，对开发者透明。&lt;/p>
-&lt;p>Pure 支持灵活的 rank 到节点的映射策略，并且默认采用 SMP 风格的分配策略。同时，Pure 也支持自定义的 rank 映射，包括使用 CrayPAT 的 rank 重排文件。虽然这些硬件相关的细节对开发者来说是不可见的，但 Pure 内部会利用这些信息来优化关键功能。&lt;/p>
-&lt;p>在 Pure 应用程序启动时，不会直接执行应用程序的原始 &lt;code>main&lt;/code> 函数。相反，底层的 MPI 程序会调用 Pure 运行时系统中定义的 &lt;code>main&lt;/code> 函数，该函数负责初始化 Pure 的核心数据结构，然后创建并绑定线程，每个线程执行一个 &lt;code>original_main&lt;/code> 函数，这是从应用程序代码中的原始 &lt;code>main&lt;/code> 函数重命名而来的版本。应用程序执行完毕后，&lt;code>original_main&lt;/code> 函数返回到 Pure 运行时系统，后者负责完成 MPI 的清理和终止过程。&lt;/p>
-&lt;h3 id="spin-steal-waiting-loop-ssw-loop">Spin-Steal Waiting Loop (SSW-Loop)&lt;/h3>
-&lt;p>当 Pure 的 rank 遇到阻塞事件，如等待消息到达，它将执行一个称为 &lt;strong>自旋、窃取等待循环（SSW-Loop）&lt;/strong> 的机制，而不是简单地进入空闲状态。在此循环中，rank 会检查是否满足阻塞条件，例如是否有消息到达，如果没有，它会尝试从其他 rank 窃取任务。如果一个阻塞的 rank 能够协助其进程中正在并发执行的其他线程完成任务，它就会参与这种协助工作。&lt;/p>
-&lt;p>由于线程是绑定到特定的 CPU 的，并且每个 rank 只运行一个应用程序，Pure 选择让 rank 主动自旋等待，而不是放弃 CPU。SSW-Loop 让计算中的 rank 具有“多态性”：它既可以作为主程序的计算节点，也可以协助其他 rank 执行窃取到的任务块，然后再返回检查自身的阻塞事件。&lt;/p>
-&lt;p>Pure 遵循优先处理当前 rank 拥有的窃取任务负载的策略，坚持任务负载优先的调度原则。&lt;/p>
-&lt;p>与那些使用辅助线程来实现工作负载窃取或通信的系统不同，Pure 的特点是允许应用级别的计算节点直接进行任务窃取操作。&lt;/p>
-&lt;h3 id="实现说明">实现说明&lt;/h3>
-&lt;p>Pure 是使用 C++17 标准库编写的。Pure 运行时系统由大约 21,000 行源代码构成，而 Pure 工具则包含了约 14,000 行源代码。Pure 已在多种环境下进行测试，包括笔记本电脑和集群，其运行仅需要一个支持 C++17 的编译器、类 Unix 操作系统以及 MPI 环境。Pure 的源代码可以在 GitHub 上公开获取，链接为： &lt;a class="link" href="https://github.com/psota/pure" target="_blank" rel="noopener" >https://github.com/psota/pure
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-。&lt;/p>
-&lt;h3 id="点对点通信">点对点通信&lt;/h3>
-&lt;p>Pure 提供了阻塞和非阻塞的点对点消息传递功能，其语义与 MPI 的消息传递相一致。&lt;/p>
-&lt;p>Pure 内部采用三种不同的策略来进行消息传递，选择哪种策略取决于消息的大小以及发送方和接收方是否位于同一节点。&lt;/p>
-&lt;p>Pure 在整个程序的生命周期中分配并复用一个持久的 Channel 对象，该对象存储于运行时系统中。内部的 Channel Manager 负责将消息参数映射到合适的数据结构，并根据需要创建这些结构。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/strategy-2024-03-15.webp"
-alt="strategy-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>Pure 消息传递策略&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;ul>
-&lt;li>&lt;strong>短消息（小于 8KB）&lt;/strong>：
-&lt;ul>
-&lt;li>采用无锁循环队列（PureBufferQueue，PBQ），具有 acquire-release 内存语义。发送线程在有可用空间时将消息复制到 PBQ，接收线程则在消息准备好时将其取出。
-&lt;ul>
-&lt;li>在短消息传递中，拷贝的开销相对较小，这样可以让发送方调用返回后立即执行执行其它有用的工作。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>发送和接收线程都使用 SSW-Loop 进行等待，以尽可能地实现计算与通信的重叠执行。&lt;/li>
-&lt;li>所有消息的 slot 存储在一个连续的缓冲区中，通过指针算术确保每个 slot 与缓存行边界对齐，避免发送和接收线程之间的伪共享。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;strong>大消息（大于等于 8KB）&lt;/strong>：
-&lt;ul>
-&lt;li>类似于 PBQ 的策略，但使用直接从发送方到接收方的单次内存拷贝，灵感来自 MPI 的 rendezvous 模式。&lt;/li>
-&lt;li>使用无锁的固定大小循环缓冲区来存储接收方的接收调用参数。&lt;/li>
-&lt;li>发送方通过 SSW-Loop 等待元数据队列项，然后将消息内容直接复制到接收方的缓冲区。发送方通过在无锁队列中插入传输的字节数来通知接收方传输已完成。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>&lt;strong>跨节点消息&lt;/strong>
-&lt;ul>
-&lt;li>透明地使用 MPI 接口进行消息传递。&lt;/li>
-&lt;li>在 Pure 初始化期间，使用分布式一致性算法创建 &lt;code>thread-rank-process-node&lt;/code> 映射数据结构，将 Pure rank 映射到 MPI rank。&lt;/li>
-&lt;li>为了确保在接收节点上正确的接收线程能够接收到消息，在 &lt;code>MPI_TAG&lt;/code> 中编码发送和接收线程的 ID，解决多线程路由问题。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="集合通信">集合通信&lt;/h3>
-&lt;p>Pure 的集体通信操作在语义上与 MPI 相同，但在节点内部通过自下而上构建的数据结构来实现，这在单节点和多节点基准测试中都显示出了显著的性能提升，即使在跨节点通信时仍然依赖于 MPI 的集合操作。&lt;/p>
-&lt;p>Pure 采用一个领导者线程来协调集体通信过程，其他线程则协助进行计算并按需调用 MPI 集合函数。&lt;/p>
-&lt;ul>
-&lt;li>Pure 使用静态领导者选举方法，这比基于比较和交换的“首先进入”方法更为高效。&lt;/li>
-&lt;/ul>
-&lt;p>以下仅以 All-Reduce 为例子，其它集合通信操作思想类似。&lt;/p>
-&lt;p>对于小数据的 All-Reduce 操作，Pure 设计了名为 Sequenced Per-Thread Dropbox (SPTD) 的并发数据结构，提供了一种高效的无锁机制，用于在领导线程和其他非领导线程之间对偶同步和可选共享数据。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/SPTD-2024-03-15.webp"
-alt="SPTD-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
-&lt;h4>Sequenced Per-Thread Dropbox (SPTD)&lt;/h4>
-&lt;/figcaption>
-&lt;/figure>
-&lt;p>该方法借鉴了 flat-combinding 技术，将通信器中的线程 0 作为领导者线程。&lt;/p>
-&lt;ul>
-&lt;li>对于大小不超过 2KB 的小数组：
-&lt;ul>
-&lt;li>非领导者线程首先将数据复制到 SPTD，然后与领导者线程同步，表明输入数据已就绪（使用原子序列号而非共享原子计数器）。&lt;/li>
-&lt;li>领导者线程执行所有输入数组的逐元素 Reduce 操作。&lt;/li>
-&lt;li>每个节点的领导者线程使用 &lt;code>MPI_Allreduce&lt;/code> 对局部 Reduce 结果进行全局 Reduce。&lt;/li>
-&lt;li>领导者线程同步，非领导者线程将最终的 Reduce 结果复制到私有缓冲区。&lt;/li>
-&lt;li>所有线程在等待时执行 SSW-Loop。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>对于超过 2KB 的大数组，Reduce 计算可能成为性能瓶颈，因此需要所有线程并发执行 Reduce 计算，并通过共享内存直接从每个线程的缓冲区中读取或写入数据。
-&lt;ul>
-&lt;li>Reduce 工作被划分为大小相等的块，避免伪共享并实现向量化计算。&lt;/li>
-&lt;li>线程使用 SPTD 报告准备状态，并通过原子序列号标记计算完成。&lt;/li>
-&lt;li>领导者线程调用 &lt;code>MPI_Allreduce&lt;/code> 执行跨节点的 All-Reduce 操作，并通过另一个原子序列号传播最终结果。&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;h3 id="任务调度器">任务调度器&lt;/h3>
-&lt;p>Pure 运行时系统精心设计了一个任务调度器，它在共享内存中维护了一个名为 &lt;code>active_tasks&lt;/code> 的数组。这个数组存储了一系列原子指针，每个指针对应于一个正在执行的任务，并且为系统中的每个节点和每个 rank 分配了一个条目。这些条目最初被设置为 &lt;code>nullptr&lt;/code>，表示任务尚未分配。&lt;/p>
-&lt;p>当一个任务被创建并准备执行时，系统会为其初始化状态，并通过原子操作更新 &lt;code>active_tasks&lt;/code> 数组中相应的条目，以反映该任务已被分配。这个更新过程确保了任务的执行状态对系统中的所有线程都是可见的，从而使得任务可以被其他线程“窃取”。&lt;/p>
-&lt;p>在任务的执行过程中，拥有任务的 rank 会开始执行一系列的 chunk，这些是任务的细分工作单元。同时，其他线程会在它们的 SSL-Loop 期间不断检查 &lt;code>active_tasks&lt;/code> 数组，通过原子加载操作来寻找可执行的非空任务。&lt;/p>
-&lt;p>任务的执行是由两个原子整数 &lt;code>curr_chunk&lt;/code> 和 &lt;code>chunks_done&lt;/code> 来协调的。拥有任务的 rank（owner rank）和可能的窃取者 rank（thief ranks）都会运行相同的并发执行函数。窃取者线程会执行一个 chunk 后返回，而拥有者线程则持续执行直到所有 chunk 完成。通过使用 &lt;code>fetch_add&lt;/code> 操作，线程可以确定自己应该执行哪个 chunk，如果 &lt;code>curr_chunk&lt;/code> 的值已经超过了总的 chunk 数量，线程则会停止执行。&lt;/p>
-&lt;p>每当一个 chunk 被成功完成后，线程会原子性地增加 &lt;code>chunks_done&lt;/code> 的值。拥有者线程会更新其本地存储，以避免缓存未命中。最终，拥有者 rank 会等待，直到所有的 chunk 都执行完毕，确保任务的完整执行。&lt;/p>
-&lt;p>值得注意的是，任务的 chunk 与应用程序的 rank 是在同一硬件线程上执行的。在 Pure 应用中，每个硬件线程都被分配给一个特定的 rank。尽管目前 Pure 还没有利用硬件加速器（如 GPU）来加速任务执行，但设计者相信 Pure 的架构完全有能力支持这种加速。&lt;/p>
-&lt;p>Pure 的任务调度器提供了多种执行模式和窃取算法，以适应不同的执行需求。例如，作者实现了单 chunk 执行模式和一种引导式自调度模式，后者是一种工作划分算法，它优先分配较大的工作块，然后是较小的工作块。此外，调度器还包括 NUMA 感知窃取模式，它优先从同一 NUMA 节点上的线程窃取任务，以及一种“黏性”窃取模式，允许窃取者线程返回它们最近窃取且仍在活跃状态的任务。这些特性共同确保了任务调度的高效性和灵活性。&lt;/p>
-&lt;h2 id="评估">评估&lt;/h2>
-&lt;p>在伯克利 NERSC 的 Cori HPC 集群上进行了 Pure 的性能评估。该集群包含 2388 个节点，每个节点配置有 2 个插槽、16 个核心和 128GB 内存，通过 Cray Aires 进行节点间互联。实验配置启用了超线程，并采用 256 位向量宽度。每个节点上运行 2 个进程，共 32 个线程。评估使用 Intel 编译器，并将 Cray MPICH 作为性能基线。&lt;/p>
-&lt;h3 id="nas-dt-基准测试结果">NAS DT 基准测试结果&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/nasdt-2024-03-15.webp"
-alt="nasdt-2024-03-15" width="auto" loading="lazy">
-&lt;/figure>
-&lt;ul>
-&lt;li>仅通过优化消息传递机制，Pure 取得了 11% 至 25% 的性能加速。&lt;/li>
-&lt;li>引入 Pure Tasks 后，性能加速比提升至 1.7 倍至 2.6 倍。&lt;/li>
-&lt;li>辅助线程能小幅提高性能，不过仅限于剩余未使用的 CPU 核心才能使用。在这里，除了 80 个 rank 的情况下空闲了 24 个核心，其它情况下都充分利用了 CPU 核心。&lt;/li>
-&lt;/ul>
-&lt;h3 id="comd-和-miniamr-基准测试">CoMD 和 miniAMR 基准测试&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-2024-03-15.webp"
-alt="benchmark-pure-2024-03-15" width="auto" loading="lazy">
-&lt;/figure>
-&lt;p>-在 CoMD 分子动力学应用中，Pure 在所有 rank 数下的性能均优于仅使用 MPI 及 MPI+OpenMP 的性能，分别实现了 7% 至 25% 以及 35% 至 50% 的加速比，即使在没有负载不均衡的情况下。&lt;/p>
-&lt;ul>
-&lt;li>在 miniAMR 自适应网格细化应用中，Pure 至少实现了 20%，最多 50% 的性能加速。&lt;/li>
-&lt;/ul>
-&lt;h3 id="集合通信性能">集合通信性能&lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-msg-2024-03-15.webp"
-alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
-&lt;/figure>
-&lt;ul>
-&lt;li>Pure 在集合通信操作中的性能表现突出，这些操作的内部优化机制和数据结构设计使得 Pure 在处理大规模并行计算任务时展现出显著的效率和优势。&lt;/li>
-&lt;/ul>
-&lt;h2 id="相关工作">相关工作&lt;/h2>
-&lt;table>
-&lt;thead>
-&lt;tr>
-&lt;th style="text-align:center">类别&lt;/th>
-&lt;th style="text-align:left">相关工作&lt;/th>
-&lt;th style="text-align:left">Pure 的优势&lt;/th>
-&lt;/tr>
-&lt;/thead>
-&lt;tbody>
-&lt;tr>
-&lt;td style="text-align:center">MPI&lt;/td>
-&lt;td style="text-align:left">1. 利用多核节点内的共享内存提升性能；2. XPMEM 显著增强节点内通信效率；3. ch4 网络库优化了 MPI 的共享内存通信；4. 改进了 MPI 的集合通信算法；5. DMAPP 库针对特定集合通信进行了优化，但限制较多；6. 解决了大规模全对全集合通信的挑战；7. 单边消息 API 实现了解耦；8. 优化了数据移动与进程同步&lt;/td>
-&lt;td style="text-align:left">1. Pure 在所有集合通信和负载大小上均展现出卓越的性能；2. 提供了高级的通信计算重叠机制，超越了传统的单边消息 API&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">MPI 多线程&lt;/td>
-&lt;td style="text-align:left">1. 支持 MPI_THREAD_MULTIPLE 模式下的 rank 内多线程； 2. 多数 MPI 实现通过全局锁实现线程安全，导致性能瓶颈；3. MPI 4.0 引入 MPI+X 方法增强多线程支持；4. 引入了 MPI Fine-points 和 Endpoints 概念以支持线程&lt;/td>
-&lt;td style="text-align:left">1. Pure 重视多线程代码中的 MPI 调用，强调其重要性；2. 提供了一种统一的编程模型，简化了并行任务的引入&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">AMPI&lt;/td>
-&lt;td style="text-align:left">1. 基于 Charm++ 的 MPI 兼容库；2. 提供高级并行编程抽象；3. 通过最小化代码更改实现性能提升&lt;/td>
-&lt;td style="text-align:left">1. Pure 在实际测试中表现优于 AMIP，得益于其优化的消息传递和集合通信，以及更精细和低开销的负载均衡策略；2. 相较于 AMIP SMP 基于线程的模型，Pure 提供了更高效的并行处理&lt;/td>
-&lt;/tr>
-&lt;tr>
-&lt;td style="text-align:center">PGAS 语言和并行框架&lt;/td>
-&lt;td style="text-align:left">1. PGAS 语言提供了全局内存地址空间的抽象；2. Chapel 和 X10 扩展了 PGAS 方法，支持本地和远程异步任务；3. HPX 为现代 C++标准增加了分布式操作支持；4. Legion 作为数据中心并行编程系统；5. Kokkos, STAPL, BCL 等框架提供了应用程序与硬件间的抽象层&lt;/td>
-&lt;td style="text-align:left">1. 类似于 Pure，PGAS 模型采用 SPMD 风格，通过局部性引用提高性能；2. 这些框架虽然利用了现代 C++特性，但通常需要对现有应用程序进行大量重写，而 Pure 则提供了更为直接的优化路径&lt;/td>
-&lt;/tr>
-&lt;/tbody>
-&lt;/table>
-&lt;h2 id="总结">总结&lt;/h2>
-&lt;p>数十年来，由于其相对的简单性和性能优势，消息传递一直被视为并行编程的标准模型。然而，本文表明，消息传递与共享内存并非不可兼容。实际上，通过设计合适的库，可以在不牺牲大多数消息传递优点的前提下充分利用共享内存。&lt;/p></description></item></channel></rss>
+&lt;/code>&lt;/pre></description></item></channel></rss>
