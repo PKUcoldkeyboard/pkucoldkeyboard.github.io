@@ -1,9 +1,9 @@
-importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/6.5.1/workbox-sw.js');
 
 // 缓存版本号
-let cacheVersion = '-240619';
+let cacheVersion = '-240717';
 // 最大条目数
-const maxEntries = 100;
+const maxEntries = 80;
 
 if (workbox) {
     console.log(`Yay! Workbox is loaded 🎉`);
@@ -86,7 +86,7 @@ if (workbox) {
         new workbox.strategies.NetworkOnly({
             plugins: [
                 // 使用 background sync 插件实现后台同步
-                new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+                new workbox.backgroundSync.BackgroundSyncPlugin('uma-queue', {
                     maxRetentionTime: 12 * 60,
                 }),
             ],
@@ -121,9 +121,8 @@ if (workbox) {
 
     // 默认匹配剩下的请求
     workbox.routing.setDefaultHandler(
-        // 优先使用缓存，缓存没有则使用网络请求
         new workbox.strategies.NetworkFirst({
-            networkTimeoutSeconds: 3,
+            networkTimeoutSeconds: 10,
         })
     );
 
