@@ -1,4 +1,625 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">RDMA 之 Memory Window&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>高性能计算 on Cuterwrite's Blog</title><link>https://cuterwrite.top/categories/hpc/</link><description>Recent content in 高性能计算 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 11 Aug 2024 02:13:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/categories/hpc/index.xml" rel="self" type="application/rss+xml"/><item><title>Arm 性能优化：可伸缩向量扩展 SVE</title><link>https://cuterwrite.top/p/arm-sve-for-performance/</link><pubDate>Sun, 11 Aug 2024 02:13:00 +0000</pubDate><guid>https://cuterwrite.top/p/arm-sve-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp" alt="Featured image of post Arm 性能优化：可伸缩向量扩展 SVE" />&lt;h1 id="arm-性能优化可伸缩向量扩展-sve">Arm 性能优化：可伸缩向量扩展 SVE&lt;/h1>
+&lt;h2 id="1-sve-介绍">1. SVE 介绍&lt;/h2>
+&lt;p>继固定 128 位向量长度指令集的 Neon 架构扩展之后，Arm 设计了可伸缩向量扩展 (SVE) 作为 AArch64 的下一代 SIMD 扩展。SVE 引入可伸缩概念，允许灵活的向量长度实现，并在 CPU 实现中提供一系列可能的值。向量长度可以从最小 128 位到最大 2048 位不等，以 128 位为增量。&lt;strong>SVE 设计保证相同的应用程序可以在支持 SVE 的不同实现上运行，而无需重新编译代码&lt;/strong>。SVE 提高了该架构对高性能计算 (HPC) 和机器学习 (ML) 应用程序的适用性，这些应用程序需要非常大量的数据处理。SVE2 是 SVE 和 Neon 的超集。SVE2 允许在数据级并行中使用更多功能域。SVE2 继承了 SVE 的概念、向量寄存器和操作原理。SVE 和 SVE2 定义了 32 个可伸缩向量寄存器。芯片合作伙伴可以选择合适的向量长度设计实现，硬件可在 128 位到 2048 位之间（以 128 位为增量）变化。SVE 和 SVE2 的优势在于，只有一个向量指令集使用可伸缩变量。&lt;/p>
+&lt;p>SVE 设计理念使开发人员能够编写和构建一次软件，然后在具有各种 SVE 向量长度实现的不同 AArch64 硬件上运行相同的二进制文件。二进制文件的可移植性意味着开发人员不必知道其系统的向量长度实现。消除了重建二进制文件的需求，使软件更容易移植。除了可伸缩向量之外，SVE 和 SVE2 还包括：&lt;/p>
+&lt;ul>
+&lt;li>per-lane predication&lt;/li>
+&lt;li>Gather Load/Scatter Store&lt;/li>
+&lt;li>推测性向量化&lt;/li>
+&lt;/ul>
+&lt;p>这些特性有助于在处理大型数据集时对循环进行向量化和优化。&lt;/p>
+&lt;p>SVE2 和 SVE 的主要区别在于指令集的功能覆盖范围。SVE 专为 HPC 和 ML 应用而设计。SVE2 扩展了 SVE 指令集，使其能够加速 HPC 和 ML 以外领域的数据处理。SVE2 指令集还可以加速以下应用中使用的常见算法：&lt;/p>
+&lt;ul>
+&lt;li>计算机视觉&lt;/li>
+&lt;li>多媒体&lt;/li>
+&lt;li>LTE 基处理&lt;/li>
+&lt;li>基因组学&lt;/li>
+&lt;li>内存数据库&lt;/li>
+&lt;li>Web 服务&lt;/li>
+&lt;li>通用软件&lt;/li>
+&lt;/ul>
+&lt;p>SVE 和 SVE2 都支持收集和处理大量数据。SVE 和 SVE2 不是 Neon 指令集的扩展。相反，SVE 和 SVE2 经过重新设计，以提供比 Neon 更好的数据并行性。但是，SVE 和 SVE2 的硬件逻辑覆盖了 Neon 硬件的实现。当微架构支持 SVE 或 SVE2 时，它也支持 Neon。要使用 SVE 和 SVE2，在该微架构上运行的软件必须首先支持 Neon。&lt;/p>
+&lt;h2 id="2-sve-架构基础">2. SVE 架构基础&lt;/h2>
+&lt;p>本节介绍 SVE 和 SVE2 共享的基本架构特性。与 SVE 一样，SVE2 也基于可扩展向量。除了 Neon 提供的现有寄存器库之外，SVE 和 SVE2 还添加了以下寄存器：&lt;/p>
+&lt;ul>
+&lt;li>32 个可伸缩向量寄存器，&lt;code>Z0-Z31&lt;/code>&lt;/li>
+&lt;li>16 个可伸缩 Predicate 寄存器，&lt;code>P0-P15&lt;/code>
+&lt;ul>
+&lt;li>1 个 首故障 Predicate 寄存器，&lt;code>FFR&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>可伸缩向量系统控制寄存器, &lt;code>ZCR_ELx&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;h3 id="21-可伸缩向量寄存器">2.1 可伸缩向量寄存器&lt;/h3>
+&lt;p>可伸缩向量寄存器 &lt;code>Z0-Z31&lt;/code> 可以在微架构中实现为 128-2048 位。最低的 128 位与 Neon 的固定 128 位向量 &lt;code>V0-V31&lt;/code> 共享。&lt;/p>
+&lt;p>下图显示了可伸缩向量寄存器 &lt;code>Z0-Z31&lt;/code>：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Z-register.webp"
+alt="Z 寄存器-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>可伸缩向量寄存器 Z0-Z31&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>可伸缩向量：&lt;/p>
+&lt;ul>
+&lt;li>可以容纳 64、32、16 和 8 位元素&lt;/li>
+&lt;li>支持整数、双精度、单精度和半精度浮点元素&lt;/li>
+&lt;li>可以针对每个异常级别（EL）配置向量长度&lt;/li>
+&lt;/ul>
+&lt;h3 id="22-可伸缩-predicate-寄存器">2.2 可伸缩 Predicate 寄存器&lt;/h3>
+&lt;p>为了控制哪些活动元素参与运算，Predicate 寄存器（简称为 P 寄存器）在许多 SVE 指令中用作掩码，这也为向量运算提供了灵活性。下图显示了可伸缩 Predicate 寄存器 &lt;code>P0-P15&lt;/code> ：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Predicate-register.webp"
+alt="P 寄存器-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>可伸缩 Predicate 寄存器 P0-P15&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>P 寄存器通常用作数据操作的位掩码：&lt;/p>
+&lt;ul>
+&lt;li>每个 P 寄存器是 Z 寄存器长度的 1/8&lt;/li>
+&lt;li>&lt;code>P0-P7&lt;/code> 用于加载、存储和算术运算&lt;/li>
+&lt;li>&lt;code>P8-P15&lt;/code> 用于循环管理&lt;/li>
+&lt;li>FFR 是一个特殊的 P 寄存器，由 first-fault vector load 指令和 store 指令设置，用于指示每个元素的加载和存储操作的成功情况。FFR 旨在支持推测性内存访问，这使得在许多情况下向量化更容易和更安全。&lt;/li>
+&lt;/ul>
+&lt;h3 id="23-可伸缩向量系统控制寄存器">2.3 可伸缩向量系统控制寄存器&lt;/h3>
+&lt;p>下图展示了可伸缩向量系统控制寄存器 &lt;code>ZCR_ELx&lt;/code> ：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_ZCR_Elx.webp"
+alt="ZCR_Elx-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>可伸缩向量系统控制寄存器 ZCR_Elx&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>可伸缩向量系统控制寄存器指示 SVE 实现特性：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>ZCR_Elx.LEN&lt;/code> 字段用于当前和较低异常级别的向量长度。&lt;/li>
+&lt;li>大多数位当前保留供将来使用。&lt;/li>
+&lt;/ul>
+&lt;h3 id="24-sve-汇编语法">2.4 SVE 汇编语法&lt;/h3>
+&lt;p>SVE 汇编语法格式由操作码、目标寄存器、P 寄存器（如果指令支持 Predicate 掩码）和输入操作数组成。以下指令示例将详细说明此格式。&lt;/p>
+&lt;p>示例 1:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LDFF1D {&amp;lt;Zt&amp;gt;.D}, &amp;lt;Pg&amp;gt;/Z, [&amp;lt;Xn|SP&amp;gt;, &amp;lt;Zm&amp;gt;.D, LSL #3]
+&lt;/code>&lt;/pre>
+&lt;p>其中：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>&amp;lt;Zt&amp;gt;&lt;/code> 是 Z 寄存器, &lt;code>Z0-Z31&lt;/code>&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zt&amp;gt;&lt;/code>.D 和 &lt;code>&amp;lt;Zm&amp;gt;.D&lt;/code> 指定目标和操作数向量的元素类型，不需要指定元素的数量。&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;&lt;/code> 是 P 寄存器, &lt;code>P0-P15&lt;/code>&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;/Z&lt;/code> 是对 P 寄存器归零。&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zm&amp;gt;&lt;/code> 指定 Gather Load 地址模式的偏移量。&lt;/li>
+&lt;/ul>
+&lt;p>示例 2:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ADD &amp;lt;Zdn&amp;gt;.&amp;lt;T&amp;gt;, &amp;lt;Pg&amp;gt;/M, &amp;lt;Zdn&amp;gt;.&amp;lt;T&amp;gt;, &amp;lt;Zm&amp;gt;.&amp;lt;T&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;p>其中：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;/M&lt;/code> 是合并 P 寄存器。&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zdn&amp;gt;&lt;/code> 既是目标寄存器，也是输入操作数之一。指令语法在两个位置都显示 &lt;code>&amp;lt;Zdn&amp;gt;&lt;/code> ，是为了方便起见。在汇编编码中，为了简化，它们只被编码一次。&lt;/li>
+&lt;/ul>
+&lt;p>示例 3:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ORRS &amp;lt;Pd&amp;gt;.B, &amp;lt;Pg&amp;gt;.Z, &amp;lt;Pn&amp;gt;.B, &amp;lt;Pm&amp;gt;.B
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>S&lt;/code> 是 P 寄存器条件标志 &lt;code>NZCV&lt;/code> 的新解释。&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;&lt;/code> 控制 P 寄存器在示例操作中充当位掩码。&lt;/li>
+&lt;/ul>
+&lt;h3 id="25-sve-架构特性">2.5 SVE 架构特性&lt;/h3>
+&lt;p>SVE 包括以下关键架构特性：&lt;/p>
+&lt;ul>
+&lt;li>per-lane predication&lt;/li>
+&lt;/ul>
+&lt;p>为了允许对所选元素进行灵活的操作，SVE 引入了 16 个 P 寄存器， &lt;code>P0-P15&lt;/code> ，用于指示对向量活动通道的有效操作。例如：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ADD Z0.D, P0/M, Z0.D, Z1.D
+&lt;/code>&lt;/pre>
+&lt;p>活动元素 &lt;code>Z0&lt;/code> 和 &lt;code>Z1&lt;/code> 相加并将结果放入 &lt;code>Z0&lt;/code> 中，&lt;code>P0&lt;/code> 指示操作数的哪些元素是活动的和非活动的。&lt;code>P0&lt;/code> 后面的 &lt;strong>M&lt;/strong> 表示 Merging ，表示将非活动元素合并，因此 &lt;code>Z0&lt;/code> 的非活动元素在 &lt;code>ADD&lt;/code> 操作后将保持其初始值。如果 &lt;code>P0&lt;/code> 后面是 &lt;strong>Z&lt;/strong> ，则非活动元素将被清零，目标寄存器的非活动元素将在操作后归零。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Per-lane_Predication.webp"
+alt="Per-lane_Predication-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Per-lane predication merging&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>如果使用的是 &lt;strong>\Z&lt;/strong> ，则非活动元素将被清零，目标寄存器的非活动元素将在操作后归零。例如&lt;/p>
+&lt;pre>&lt;code class="language-armasm">CPY Z0.B, P0/Z, #0xFF
+&lt;/code>&lt;/pre>
+&lt;p>表示将有符号整数 0xFF 复制到 &lt;code>Z0&lt;/code> 的活动通道中，而非活动通道将被清零。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Per-lane_Predicate_Zeroing.webp"
+alt="Per-lane_Predicate_Zeroing-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Per-lane predication zeroing&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;div class="notice notice-note" >
+&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>并非所有指令都具有 Predicate 选项。此外，并非所有 Predicate 操作都同时具有合并和清零选项。您必须参考 &lt;a class="link" href="https://developer.arm.com/documentation/ddi0487/latest/t" target="_blank" rel="noopener" >AArch64 SVE Supplement
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+以了解每个指令的规范细节。&lt;/p>&lt;/div>
+&lt;ul>
+&lt;li>Gather Load 和 Scatter Store&lt;/li>
+&lt;/ul>
+&lt;p>SVE 中的寻址模式允许将向量用作 Gather Load 和 Scatter Store 指令中的基地址和偏移量，这使得能够访问非连续的内存位置。例如：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LD1SB Z0.S, P0/Z, [Z1.S] // 将有符号字节从由 32 位向量基地址 Z1 生成的内存地址 Gather Load 到 Z0 的活动 32 位元素中。
+LD1SB Z0.D, P0/Z, [X0, Z1.D] // 将有符号字节从由 64 位标量基地址 X0 加上 Z1.D 中的向量索引生成的内存地址 Gather Load 到 Z0 的活动元素中。
+&lt;/code>&lt;/pre>
+&lt;p>以下示例显示了加载操作 &lt;code>LD1SB Z0.S, P0/Z, [Z1.S]&lt;/code> ，其中 &lt;code>P0&lt;/code> 包含所有真元素，&lt;code>Z1&lt;/code> 包含分散的地址。加载后，&lt;code>Z0.S&lt;/code> 的每个元素的低位字节将用从分散内存位置获取的数据更新。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_gather-load_and_scatter_store_example.webp"
+alt="gather-load_and_scatter_store_example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Gather-load 与 Scatter-store 示例&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>P 寄存器驱动的循环控制和管理&lt;/li>
+&lt;/ul>
+&lt;p>作为 SVE 的一项关键特性，P 寄存器不仅可以灵活地控制向量运算的各个元素，还可以实现 P 寄存器驱动的循环控制。P 寄存器驱动的循环控制和管理使循环控制高效且灵活。此功能通过在 P 寄存器中注册活动和非活动元素索引，消除了处理部分向量的额外循环头和尾的开销。P 寄存器驱动的循环控制和管理意味着，在接下来的循环迭代中，只有活动元素才会执行预期的操作。例如：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">WHILEL0 P0.S, x8, x9 // 在 P0 中生成一个谓词，从最低编号的元素开始，当第一个无符号标量操作数 X8 的递增值小于第二个标量操作数 X9 时为真，之后为假，直到最高编号的元素。
+B.FIRST Loop_start // B.FIRST（等效于 B.MI）或 B.NFRST（等效于 B.PL）通常用于根据上述指令测试结果进行分支，判断 P0 的第一个元素是真还是假，作为循环的结束或继续条件。
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Predicate-driver_loop_control_and_management_example.webp"
+alt="Predicate-driver_loop_control_and_management_example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>P 寄存器驱动的循环控制和管理示例&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>用于软件管理推测的向量分区&lt;/li>
+&lt;/ul>
+&lt;p>推测性加载可能会给传统向量的内存读取带来挑战，&lt;strong>如果在读取过程中某些元素发生错误，则难以逆转加载操作并跟踪哪些元素加载失败&lt;/strong>。Neon 不允许推测性加载。为了允许对向量进行推测性加载（例如 LDRFF），SVE 引入了 first-fault vector load 指令。为了允许向量访问跨越无效页面，SVE 还引入了 FFR 寄存器。&lt;strong>使用 first-fault vector load 指令加载到 SVE 向量时，FFR 寄存器会更新每个元素的加载成功或失败结果&lt;/strong>。当发生加载错误时，FFR 会立即注册相应的元素，将其余元素注册为 0 或 false，并且不会触发异常。通常，RDFFR 指令用于读取 FFR 状态。当第一个元素为假时，RDFFR 指令结束迭代。如果第一个元素为真，RDFFR 指令继续迭代。FFR 的长度与 P 向量相同。可以使用 SETFFR 指令初始化该值。以下示例使用 LDFF1D 从内存中读取数据，FFR 会相应地更新：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LDFF1D Z0.D, P0/Z, [Z1.D, #0] // 使用首个故障行为将双字从由向量基地址 Z1 加 0 生成的内存地址收集加载到 Z0 的活动元素中。非活动元素不会读取设备内存或发出故障信号，并在目标向量中设置为零。从有效内存成功加载将 FFR 中的对应元素设置为真。首个故障加载将 FFR 中的对应元素和其余元素设置为假或 0。
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Vector-partioning-for-software-managed-speculation-example.webp"
+alt="Vector-partioning-for-software-managed-speculation-example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>用于软件管理推测的向量分区示例&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>扩展的浮点和水平规约&lt;/li>
+&lt;/ul>
+&lt;p>为了允许在向量中进行高效的归约操作，并满足对精度的不同要求，SVE 增强了浮点和水平归约操作。这些指令可能具有顺序（从低到高）或基于树（成对）的浮点归约顺序，其中操作顺序可能会导致不同的舍入结果。这些操作需要在可重复性和性能之间进行权衡。例如：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">FADDA D0, P0/M, D1, Z2.D // 从源头向量的低位到高位元素进行浮点加严格顺序归约，将结果累积到 SIMD&amp;amp;FP 标量寄存器中。该示例指令将 D1 与 Z2.D 的所有活动元素相加，并将结果存储到标量寄存器 D0 中。向量元素按从低到高的顺序严格处理，标量源 D1 提供初始值。源向量中的非活动元素将被忽略。而 FADDV 将执行递归成对归约，并将结果存储到标量寄存器中。
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Extended_Floating-poing-and-horizontal-reductions-example.webp"
+alt="Extended_Floating-poing-and-horizontal-reductions-example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>扩展的浮点和水平规约示例&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="3-sve2-新增特性">3. SVE2 新增特性&lt;/h2>
+&lt;p>本节介绍 SVE2 为 Arm AArch64 架构新增的特性。为了实现可伸缩的性能，SVE2 基于 SVE 构建，允许向量实现高达 2048 位。&lt;/p>
+&lt;p>在 SVE2 中，添加了许多复制 Neon 中现有指令的指令，包括：&lt;/p>
+&lt;ul>
+&lt;li>转换后的 Neon 整数运算，例如，带符号绝对差累加 (SAB) 和带符号减半加法 (SHADD)。&lt;/li>
+&lt;li>转换后的 Neon 扩展、缩小和成对运算，例如，无符号长加法 - 底部 (UADDLB) 和无符号长加法 - 顶部 (UADDLT)。&lt;/li>
+&lt;/ul>
+&lt;p>元素处理顺序发生了变化。SVE2 对交错的偶数和奇数元素进行处理，而 Neon 对窄或宽操作的低半部分和高半部分元素进行处理。下图说明了 Neon 和 SVE2 处理之间的区别：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_transformed_neon_widen_narraow_pairwise_operations.webp"
+alt="transformed_neon_widen_narraow_pairwise_operations-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>转换后的 Neon 窄或宽操作对比&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>复数操作，例如带旋转的复整数乘加 (CMLA)。&lt;/li>
+&lt;li>多精度运算，用于大整数运算和密码学，例如，带进位长加法 - 底部 (ADCLB)、带进位长加法 - 顶部 (ADCLT) 以及 SM4 加密和解密 (SM4E)。&lt;/li>
+&lt;/ul>
+&lt;p>为了向后兼容，最新架构中需要 Neon 和 VFP。虽然 SVE2 包含 SVE 和 Neon 的一些功能，但 SVE2 并不排除 Neon 在芯片上的存在。&lt;/p>
+&lt;p>SVE2 支持针对 HPC 市场以外的新兴应用进行优化，例如，在机器学习 (ML)（UDOT 指令）、计算机视觉（TBL 和 TBX 指令）、基带网络（CADD 和 CMLA 指令）、基因组学（BDEP 和 BEXT 指令）和服务器（MATCH 和 NMATCH 指令）中。&lt;/p>
+&lt;p>SVE2 增强了通用处理器大量数据操作的整体性能，而无需其他片外加速器。&lt;/p>
+&lt;h2 id="4-使用-sve-编程">4. 使用 SVE 编程&lt;/h2>
+&lt;p>本节介绍支持 SVE2 应用程序开发的软件工具和库。本节还介绍了如何为支持 SVE2 的目标开发应用程序，在支持 SVE2 的硬件上运行该应用程序，以及在任何 Armv8-A 硬件上模拟该应用程序。&lt;/p>
+&lt;h3 id="41-软件和库支持">4.1 软件和库支持&lt;/h3>
+&lt;p>要构建 SVE 或 SVE2 应用程序，你必须选择支持 SVE 和 SVE2 功能的编译器。&lt;/p>
+&lt;ul>
+&lt;li>GNU 工具 8.0+ 版本支持 SVE。&lt;/li>
+&lt;li>&lt;a class="link" href="https://developer.arm.com/tools-and-software/server-and-hpc/compile/arm-compiler-for-linux" target="_blank" rel="noopener" >Arm Compiler for Linux
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+18.0+ 版本支持 SVE，20.0+ 版本支持 SVE 和 SVE2。&lt;/li>
+&lt;li>GNU 和 Arm Compiler for Linux 编译器都支持优化 C/C++/Fortran 代码。&lt;/li>
+&lt;li>LLVM（开源 Clang）5 及更高版本包括对 SVE 的支持，9 及更高版本包括对 SVE2 的支持。要了解 LLVM 工具的每个版本支持哪些 SVE 或 SVE2 功能，请参阅 &lt;a class="link" href="https://developer.arm.com/tools-and-software/open-source-software/developer-tools/llvm-toolchain/sve-support" target="_blank" rel="noopener" >LLVM 工具链 SVE 支持页面
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+。&lt;/li>
+&lt;/ul>
+&lt;p>&lt;a class="link" href="https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Libraries" target="_blank" rel="noopener" >Arm Performance Libraries
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+针对数学例程进行了高度优化，可以链接到你的应用程序。Arm Performance Libraries 19.3+ 版本支持 SVE 的数学库。&lt;/p>
+&lt;p>Arm Compiler for Linux 是 Arm Allinea Studio 的一部分，包含 Arm C/C++ 编译器、Arm Fortran 编译器和 Arm Performance Libraries。&lt;/p>
+&lt;h3 id="42-如何使用-sve2-编程">4.2 如何使用 SVE2 编程&lt;/h3>
+&lt;p>编写或生成 SVE 和 SVE2 代码的方法有多种。在本小节中，我们将探讨其中的一些方法。&lt;/p>
+&lt;p>要编写或生成 SVE 和 SVE2 代码，你可以：&lt;/p>
+&lt;ul>
+&lt;li>编写 SVE 汇编代码&lt;/li>
+&lt;li>使用 SVE 内部函数编程&lt;/li>
+&lt;li>自动向量化&lt;/li>
+&lt;li>使用 SVE 优化库&lt;/li>
+&lt;/ul>
+&lt;p>让我们更详细地了解这四种选择。&lt;/p>
+&lt;h4 id="421-编写-sve-汇编代码">4.2.1 编写 SVE 汇编代码&lt;/h4>
+&lt;p>你可以将 SVE 指令作为内联汇编编写到 C/C++ 代码中，或者作为完整的函数编写到汇编源代码中。例如：&lt;/p>
+&lt;pre>&lt;code class="language-armasm"> .globl subtract_arrays // -- Begin function
+.p2align 2
+.type subtract_arrays, @function
+subtract_arrays: // @subtract_arrays
+.cfi_startproc
+// %bb.0:
+orr w9, wzr, #0x400
+mov x8, xzr
+whilelo p0.s, xzr, x9
+.LBB0_1: // =&amp;gt;This Inner Loop Header: Depth=1
+ld1w { z0.s }, p0/z, [x1, x8, lsl #2]
+ld1w { z1.s }, p0/z, [x2, x8, lsl #2]
+sub z0.s, z0.s, z1.s
+st1w { z0.s }, p0, [x0, x8, lsl #2]
+incw x8
+whilelo p0.s, x8, x9
+b.mi .LBB0_1
+// %bb.2:
+ret
+.Lfunc_end0:
+.size subtract_arrays, .Lfunc_end0-subtract_arrays
+.cfi_endproc
+&lt;/code>&lt;/pre>
+&lt;p>如果你混合使用高级语言和汇编语言编写的函数，则必须熟悉针对 SVE 更新的&lt;a class="link" href="https://developer.arm.com/documentation/ihi0036/latest/" target="_blank" rel="noopener" >应用程序二进制接口 (ABI)
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+标准。&lt;a class="link" href="https://developer.arm.com/documentation/ihi0055/latest" target="_blank" rel="noopener" >Arm 架构过程调用标准 (AAPCS)
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+指定了数据类型和寄存器分配，并且与汇编编程最相关。AAPCS 要求：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>Z0-Z7&lt;/code> 和 &lt;code>P0-P3 &lt;/code>用于传递可伸缩向量参数和结果。&lt;/li>
+&lt;li>&lt;code>Z8-Z15&lt;/code> 和 &lt;code>P4-P15&lt;/code> 是被调用者保存的。&lt;/li>
+&lt;li>所有其他向量寄存器（&lt;code>Z16-Z31&lt;/code>）都可能被被调用函数破坏，调用函数负责在需要时备份和恢复它们。&lt;/li>
+&lt;/ul>
+&lt;h4 id="422-使用-sve-instruction-函数intrinsics">4.2.2 使用 SVE instruction 函数（Intrinsics）&lt;/h4>
+&lt;p>SVE 内部函数是由编译器支持的函数，可以替换为相应的指令。程序员可以直接在 C 和 C++ 等高级语言中调用指令函数。SVE 的 ACLE（Arm C 语言扩展）定义了哪些 SVE 指令函数可用、它们的参数以及它们的功能。支持 ACLE 的编译器可以在编译期间将内部函数替换为映射的 SVE 指令。要使用 ACLE 内部函数，你必须包含头文件 &lt;code>arm_sve.h&lt;/code>，其中包含可在 C/C++ 中使用的向量类型和指令函数（针对 SVE）列表。每种数据类型都描述了向量中元素的大小和数据类型：&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>svint8_t svuint8_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint16_t svuint16_t svfloat16_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint32_t svuint32_t svfloat32_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint64_t svuint64_t svfloat64_t&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>例如，&lt;code>svint64_t&lt;/code> 表示 64 位有符号整数向量，&lt;code>svfloat16_t&lt;/code> 表示半精度浮点数向量。&lt;/p>
+&lt;p>以下示例 C 代码已使用 SVE 内部函数进行了手动优化：&lt;/p>
+&lt;pre>&lt;code class="language-c">// intrinsic_example.c
+#include &amp;lt;arm_sve.h&amp;gt;
+svuint64_t uaddlb_array(svuint32_t Zs1, svuint32_t Zs2)
+{
+// widening add of even elements
+svuint64_t result = svaddlb(Zs1, Zs2);
+return result;
+}
+&lt;/code>&lt;/pre>
+&lt;p>包含 &lt;code>arm_sve.h&lt;/code> 头文件的源代码可以使用 SVE 向量类型，就像数据类型可以用于变量声明和函数参数一样。要使用 Arm C/C++ 编译器编译代码并以支持 SVE 的 Armv8-A 架构为目标，请使用：&lt;/p>
+&lt;pre>&lt;code class="language-bash">armclang -O3 -S -march=armv8-a+sve2 -o intrinsic_example.s intrinsic_example.c
+&lt;/code>&lt;/pre>
+&lt;p>此命令生成以下汇编代码：&lt;/p>
+&lt;pre>&lt;code class="language-armasm">// instrinsic_example.s
+uaddlb_array: // @uaddlb_array
+.cfi_startproc
+// %bb.0:
+uaddlb z0.d, z0.s, z1.s
+ret
+&lt;/code>&lt;/pre>
+&lt;h4 id="423-自动向量化">4.2.3 自动向量化&lt;/h4>
+&lt;p>C/C++/Fortran 编译器（例如，适用于 Arm 平台的原生 &lt;a class="link" href="https://developer.arm.com/tools-and-software/server-and-hpc/compile/arm-compiler-for-linux" target="_blank" rel="noopener" >Arm Compiler for Linux
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+和 GNU 编译器）支持使用 SVE 或 SVE2 指令对 C、C++ 和 Fortran 循环进行向量化。要生成 SVE 或 SVE2 代码，请选择适当的编译器选项。例如，使用 armclang 启用 SVE2 优化的一个选项是 &lt;code>-march=armv8-a+sve2&lt;/code> 。如果要使用 SVE 版本的库，请将 &lt;code>-march=armv8-a+sve2&lt;/code> 与 &lt;code>-armpl=sve&lt;/code> 结合使用。&lt;/p>
+&lt;h4 id="424-使用-svesve2-优化库">4.2.4 使用 SVE/SVE2 优化库&lt;/h4>
+&lt;p>使用针对 SVE/SVE2 高度优化的库，例如 &lt;a class="link" href="https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Libraries" target="_blank" rel="noopener" >Arm Performance Libraries
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+和 Arm Compute Libraries。Arm Performance Libraries 包含针对 BLAS、LAPACK、FFT、稀疏线性代数和 libamath 优化的数学函数的高度优化实现。要能够链接任何 Arm Performance Libraries 函数，您必须安装 Arm Allinea Studio 并在代码中包含 armpl.h。要使用 Arm Compiler for Linux 和 Arm Performance Libraries 构建应用程序，您必须在命令行中指定 &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> 。如果您使用 GNU 工具，则必须使用 &lt;code>-L&amp;lt;armpl_install_dir&amp;gt;/lib&lt;/code> 将 Arm Performance Libraries 安装路径包含在链接器命令行中，并指定与 Arm Compiler for Linux &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> 选项等效的 GNU 选项，即 &lt;code>-larmpl_lp64&lt;/code> 。有关更多信息，请参阅 Arm Performance Libraries 入门指南。&lt;/p>
+&lt;h3 id="43-如何运行-svesve2-程序">4.3 如何运行 SVE/SVE2 程序&lt;/h3>
+&lt;p>如果您无法访问 SVE 硬件，则可以使用模型或仿真器来运行代码。你可以选择以下几种模型和仿真器：&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>QEMU&lt;/strong>： 交叉编译和原生模型，支持在具有 SVE 的 Arm AArch64 平台上进行建模。&lt;/li>
+&lt;li>&lt;strong>Fast Models&lt;/strong>： 跨平台模型，支持在基于 x86 的主机上运行的具有 SVE 的 Arm AArch64 平台进行建模。支持 SVE2 的 架构包络模型 AEM 只对主要合作伙伴可用。&lt;/li>
+&lt;li>&lt;strong>Arm Instruction Emulator (ArmIE)&lt;/strong>： 直接在 Arm 平台上运行。支持 SVE，并从 19.2+ 版本开始支持 SVE2。&lt;/li>
+&lt;/ul>
+&lt;h2 id="5-acle-intrinsics">5. ACLE Intrinsics&lt;/h2>
+&lt;h3 id="51-acle-简介">5.1 ACLE 简介&lt;/h3>
+&lt;p>ACLE (Arm C 语言扩展) 是在 C 和 C++ 代码中利用内部函数和其他特性来支持 Arm 的功能。&lt;/p>
+&lt;ul>
+&lt;li>ACLE (ARM C 语言扩展) 通过特定于 Arm 的特性扩展了 C/C++ 语言。
+&lt;ul>
+&lt;li>预定义宏：&lt;code>__ARM_ARCH_ISA_A64&lt;/code> 、 &lt;code>__ARM_BIG_ENDIAN&lt;/code> 等。&lt;/li>
+&lt;li>内部函数：&lt;code>__clz(uint32_t x)&lt;/code> 、 &lt;code>__cls(uint32_t x)&lt;/code> 等。&lt;/li>
+&lt;li>数据类型：SVE、NEON 和 FP16 数据类型。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>用于 SVE 的 ACLE 支持使用 ACLE 进行可变长度向量 (VLA) 编程。
+&lt;ul>
+&lt;li>几乎每个 SVE 指令都有一个对应的内部函数。&lt;/li>
+&lt;li>数据类型用于表示 SVE 内部函数所使用的无大小向量。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>适用于以下用户的场景：
+&lt;ul>
+&lt;li>希望手动调整 SVE 代码的用户。&lt;/li>
+&lt;li>希望适配或手动优化应用程序和库的用户。&lt;/li>
+&lt;li>需要对 Arm 目标进行底层访问的用户。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="52-如何使用-acle">5.2 如何使用 ACLE&lt;/h3>
+&lt;ul>
+&lt;li>引入头文件
+&lt;ul>
+&lt;li>&lt;code>arm_acle.h&lt;/code> ：核心 ACLE&lt;/li>
+&lt;li>&lt;code>arm_fp16.h&lt;/code> ：添加 FP16 数据类型。
+&lt;ul>
+&lt;li>目标平台需支持 FP16，即 &lt;code>march=armv8-a+fp16&lt;/code>。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>arm_neon.h&lt;/code> ：添加 NEON Intrinsics 和数据类型。
+&lt;ul>
+&lt;li>目标平台需支持 NEON，即 &lt;code>march=armv8-a+simd&lt;/code>。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>arm_sve.h&lt;/code> ：添加 SVE Intrinsics 和数据类型。
+&lt;ul>
+&lt;li>目标平台需支持 SVE，即 &lt;code>march=armv8-a+sve&lt;/code>。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="53-sve-acle">5.3 SVE ACLE&lt;/h3>
+&lt;ul>
+&lt;li>首先需要做的是引入头文件&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;arm_sve.h&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>VLA 数据类型
+&lt;ul>
+&lt;li>&lt;code>svfloat64_t&lt;/code>, &lt;code>svfloat16_t&lt;/code>, &lt;code>svuint32_t&lt;/code> 等。&lt;/li>
+&lt;li>命名规则：&lt;code>sv&amp;lt;datatype&amp;gt;&amp;lt;datasize&amp;gt;_t&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Predication
+&lt;ul>
+&lt;li>合并：&lt;code>_m&lt;/code>&lt;/li>
+&lt;li>置零：&lt;code>_z&lt;/code>&lt;/li>
+&lt;li>不确定：&lt;code>_x&lt;/code>&lt;/li>
+&lt;li>P 寄存器的数据类型：&lt;code>svbool_t&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>使用泛型做函数重载，比如函数 &lt;code>svadd&lt;/code> 会根据参数类型自动选择对应的函数。&lt;/li>
+&lt;li>函数命名规则：&lt;code>svbase[disambiguator][type0][type1]...[predication]&lt;/code>
+&lt;ul>
+&lt;li>base 指的是基本操作，比如 &lt;code>add&lt;/code>、&lt;code>mul&lt;/code>、&lt;code>sub&lt;/code> 等。&lt;/li>
+&lt;li>disambiguator 用于区分相同基本操作的不同变体。&lt;/li>
+&lt;li>typeN 指定了向量和 P 寄存器的类型。&lt;/li>
+&lt;li>predication 指定了非活动元素的处理方式。&lt;/li>
+&lt;li>例如： &lt;code>svfloat64_t svld1_f64&lt;/code>, &lt;code>svbool_t svwhilelt_b8&lt;/code>, &lt;code>svuint32_t svmla_u32_z&lt;/code>, &lt;code>svuint32_t svmla_u32_m&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="54-sve-常用-intrinsics">5.4 SVE 常用 Intrinsics&lt;/h3>
+&lt;ul>
+&lt;li>Predicate
+&lt;ul>
+&lt;li>Predicate 是一个 bool 类型的向量，用于控制计算过程中向量中对应位置是否参与运算&lt;/li>
+&lt;li>&lt;code>svbool_t pg = svwhilelt_b32(i, num)&lt;/code> 产生 (i, i + 1, i + 2, &amp;hellip;, i + vl - 1) &amp;lt; num 的 predicate&lt;/li>
+&lt;li>&lt;code>svbool_t pg = svptrue_b32()&lt;/code> 产生一个全为 true 的 predicate&lt;/li>
+&lt;li>其中，b32 对应处理 32 位数据（int/float），此外还有 b8, b16, b64 对应的 intrinsic&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>内存数据存取
+&lt;ul>
+&lt;li>&lt;code>svld1(pg, *base)&lt;/code>： 从地址 base 中加载连续向量。&lt;/li>
+&lt;li>&lt;code>svst1(pg, *base, vec)&lt;/code>： 将向量 vec 存储到地址 base 中。&lt;/li>
+&lt;li>&lt;code>svld1_gather_index(pg, *base, vec_index)&lt;/code>： 从地址 base 中加载向量索引对应的数据。&lt;/li>
+&lt;li>&lt;code>svst1_scatter_index(pg, *base, vec_index, vec)&lt;/code>： 将向量 vec 中数据存储到向量索引对应的位置。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>基础计算
+&lt;ul>
+&lt;li>&lt;code>svadd_z(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_m(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_x(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_x(pg, sv_vec1, x)&lt;/code>&lt;/li>
+&lt;li>其中，&lt;code>_z&lt;/code> 表示将 pg 为 false 的位置置零，&lt;code>_m&lt;/code> 表示保留原值，&lt;code>_x&lt;/code> 表示不确定（什么值都有可能）。&lt;/li>
+&lt;li>第二个操作数可以为标量数据。&lt;/li>
+&lt;li>&lt;code>svmul&lt;/code>, &lt;code>svsub&lt;/code>, &lt;code>svsubr&lt;/code>, &lt;code>svdiv&lt;/code>, &lt;code>svdivr&lt;/code>：其中，&lt;code>svsubr&lt;/code> 相比 &lt;code>svsub&lt;/code> 交换了减数与被减数的位置。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>其它
+&lt;ul>
+&lt;li>&lt;code>svdup_f64(double x)&lt;/code>： 生成一个所有元素都为 x 的向量。&lt;/li>
+&lt;li>&lt;code>svcntd()&lt;/code>：返回 64-bit 数据的向量长度：&lt;code>svcntb&lt;/code> 对应 8 位， &lt;code>svcnth&lt;/code> 对应 16 位，&lt;code>svcntw&lt;/code> 对应 32 位。&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="55-sve-结构体-intrinsics">5.5 SVE 结构体 Intrinsics&lt;/h3>
+&lt;p>对应结构体数据，SVE 提供了一些特殊的 Intrinsics，比如：&lt;code>svld3&lt;/code>, &lt;code>svget3&lt;/code>, &lt;code>svset3&lt;/code>, &lt;code>svst3&lt;/code> 等。这些 Intrinsics 用于处理结构体数据。&lt;/p>
+&lt;p>例如，对于粒子结构体：&lt;/p>
+&lt;pre>&lt;code class="language-c">typedef struct {
+float x;
+float y;
+float z;
+} Particle;
+&lt;/code>&lt;/pre>
+&lt;p>可以使用 &lt;code>svld3&lt;/code> 加载结构体中全部的数据为 3 个向量的组，然后使用 &lt;code>svget3&lt;/code> 从 3 个向量的组中提取一个向量, index 的值为 0, 1, 2 分别对应 x, y, z。&lt;/p>
+&lt;pre>&lt;code class="language-c">Particle *ps;
+float factor = 2.2;
+// 初始化部分省略
+for (int i = 0; i &amp;lt; num; i += svcntw()) {
+svbool_t pg = svwhilelt_b32(i, num);
+svfloat32x3_t sv_ps = svld3(pg, (float32_t *)&amp;amp;ps[i]);
+svfloat32_t sv_ps_x = svget3(sv_ps, 0);
+svfloat32_t sv_ps_y = svget3(sv_ps, 1);
+// 执行计算
+sv_ps_x = svmul_x(pg, sv_ps_x, factor);
+sv_ps_y = svmul_x(pg, sv_ps_y, factor);
+//保存结果
+sv_ps = svset3(sv_ps, 0, sv_ps_x);
+sv_ps = svset3(sv_ps, 1, sv_ps_y);
+svst3(pg, (float32_t *)&amp;amp;ps[i], sv_ps);
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svld3(pg, *base)&lt;/code>： 加载结构体中全部的数据为 3 个向量的组；其中，base 是 3 个元素结构体数组的地址。&lt;/li>
+&lt;li>&lt;code>svget3(tuple, index)&lt;/code>： 从 3 个向量的组中提取一个向量；index 的值为 0、1 或 2。&lt;/li>
+&lt;li>&lt;code>svset3(tuple, index, vec)&lt;/code>： 设置 3 个向量的组中的一个向量；index 的值为 0、1 或 2。&lt;/li>
+&lt;li>&lt;code>svst3(pg, *base, vec)&lt;/code>： 将 3 个向量的组存储到结构体中；其中，base 是 3 个元素结构体数组的地址。&lt;/li>
+&lt;/ul>
+&lt;h3 id="56-sve-条件选择">5.6 SVE 条件选择&lt;/h3>
+&lt;p>SVE 中提供了 &lt;code>svcmplt&lt;/code>、&lt;code>svcompact&lt;/code>、&lt;code>svcntp_b32&lt;/code> 等方法，可以根据条件选择保留向量中的元素。&lt;/p>
+&lt;p>例如，对于无向量化的代码：&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; num; i++) {
+float tmp = provided[i];
+if (tmp &amp;lt; mark) {
+selected[count++] = tmp;
+if (count &amp;gt;= maxSize) {
+break;
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>该代码的作用是从 provided 数组中选择小于 mark 的元素，存储到 selected 数组中，直到 selected 数组满。&lt;/p>
+&lt;p>用 SVE Intrinsic 改写：&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; num; i += svcntw()) {
+svbool_t pg = svwhilelt_b32(i, num);
+svfloat32_t sv_tmp = svld1(pg, &amp;amp;provided[i]);
+svbool_t pg_sel = svcmplt(pg, sv_tmp, mark);
+sv_tmp = svcompact(pg_sel, sv_tmp);
+svst1(pg, &amp;amp;selected[count], sv_tmp);
+count += svcntp_b32(pg, pg_sel);
+if (count &amp;gt;= maxSize) {
+break;
+}
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svcmplt(pg, vec1, vec2)&lt;/code> ：比较两个向量的大小，返回一个 predicate，表示 vec1 中小于 vec2 的位置。&lt;/li>
+&lt;li>&lt;code>svcompact(pg, sv_tmp)&lt;/code> ：压缩向量，将 pg 为 active 的数据按序移动到向量低位，其余位置置零。&lt;/li>
+&lt;li>&lt;code>svcntp_b32(pg, pg2)&lt;/code> ：返回 pg2 中 active 的元素个数&lt;/li>
+&lt;li>这段代码先将 provided 数组中的数据加载到 sv_tmp 中，然后使用 &lt;code>svcmplt&lt;/code> 生成一个 predicate，表示小于 mark 的位置。接着使用 &lt;code>svcompact&lt;/code> 压缩 sv_tmp，得到小于 mark 的数据，再通过 &lt;code>svst1&lt;/code> 存储到 selected 数组中。最后，使用 &lt;code>svcntp_b32&lt;/code> 统计 active 的元素个数，更新 count。&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_compact.webp"
+alt="compact-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>svcompact 示意图（256-bit 向量）&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>由于进行了 compact 操作，所以 selected 数组从 count 位置连续存储新的小于 mark 的数据，剩下的位置被置零。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_svst1.webp"
+alt="svst1-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>svst1 示意图（256-bit 向量）&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="57-sve-向量化循环交织">5.7 SVE 向量化循环交织&lt;/h3>
+&lt;p>SVE Intrinsic 实现的向量化循环交织，相比编译器自动向量化能大大减少读取向量的次数。&lt;/p>
+&lt;p>例如，对于无向量化的代码：&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int j = offset; j &amp;lt; outerLen - offset; j++) {
+int m2index = (j - offset) * innerLen;
+int m1index = m2index + innerLen;
+int m0index = m1index + innerLen;
+int p1index = m0index + innerLen;
+int p2index = p1index + innerLen;
+for (int i = 0; i &amp;lt; innerLen; i++) {
+res[m0index + i] = m2factor * field[m2index + i] +
+m1factor * field[m1index + i] +
+m0factor * field[m0index + i] +
+p1factor * field[p1index + i] +
+p2factor * field[p2index + i];
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>编译器对该代码进行自动向量化后，每次迭代需读取五次不同向量的数据，效率较低。&lt;/p>
+&lt;p>用 SVE Intrinsic 改写：&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; innerLen; i += svcntd()) {
+svbool_t pg = svwhilelt_b32(i, innerLen);
+int dataIndex = i;
+svfloat64_t jm2Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jm1Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jm0Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jp1Field = svld1(pg, &amp;amp;field[dataIndex]);
+for (int j = offset; j &amp;lt; outerLen - offset; j += 1) {
+svfloat64_t jp2Field = svld1(pg, &amp;amp;field[(j + offset) * innerLen + i]);
+svfloat64_t svRes = svmul_x(pg, jm2Field, m2factor);
+svRes = svmad_x(pg, jm1Field, m1factor, svRes);
+svRes = svmad_x(pg, jm0Field, m0factor, svRes);
+svRes = svmad_x(pg, jp1Field, p1factor, svRes);
+svRes = svmad_x(pg, jp2Field, p2factor, svRes);
+svst1(pg, &amp;amp;res[j * innerLen + 1], svRes);
+jm2Field = jm1Field;
+jm1Field = jm0Field;
+jm0Field = jp1Field;
+jp1Field = jp2Field;
+}
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svmad_x(pg, vec1, vec2, vec3)&lt;/code> ：计算 vec1 * vec2 + vec3，返回一个向量。&lt;/li>
+&lt;li>这段代码每次迭代只需读取一个向量，大大减少向量读取的次数。&lt;/li>
+&lt;/ul>
+&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a class="link" href="https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/102340_0001_02_en_introduction-to-sve2.pdf?revision=b208e56b-6569-4ae2-b6f3-cd7d5d1ecac3" target="_blank" rel="noopener" >Introduction to SVE2
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;li>&lt;a class="link" href="https://www.stonybrook.edu/commcms/ookami/support/_docs/5%20-%20Advanced%20SVE.pdf" target="_blank" rel="noopener" >SVE Deep Dive
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;li>&lt;a class="link" href="https://arm-software.github.io/acle/main/acle.html" target="_blank" rel="noopener" >Arm C Language Extensions
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;/ol></description></item><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">RDMA 之 Memory Window&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/353590347">&lt;cite>知乎专栏：14. RDMA 之 Memory Window&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1211,518 +1832,4 @@ return 0;
 }
 &lt;/code>&lt;/pre>
 &lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>搭建玄铁 900 系列工具链与 xuantie-qemu 环境</title><link>https://cuterwrite.top/p/thead-tools/</link><pubDate>Tue, 20 Feb 2024 01:51:00 +0000</pubDate><guid>https://cuterwrite.top/p/thead-tools/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" alt="Featured image of post 搭建玄铁 900 系列工具链与 xuantie-qemu 环境" />&lt;h1 id="搭建玄铁-900-系列工具链与-xuantie-qemu-环境">搭建玄铁 900 系列工具链与 xuantie-qemu 环境&lt;/h1>
-&lt;h2 id="一搭建平台">一、搭建平台&lt;/h2>
-&lt;ul>
-&lt;li>Linux 发行版：CentOS Linux release 7.6.1810 (Core)&lt;/li>
-&lt;li>内核版本：3.10.0-957.el7.x86_64&lt;/li>
-&lt;/ul>
-&lt;pre>&lt;code class="language-bash">$ cat /etc/centos-release
-CentOS Linux release 7.6.1810 (Core)
-$ uname -r
-3.10.0-957.el7.x86_64
-&lt;/code>&lt;/pre>
-&lt;h2 id="二搭建玄铁-900-系列工具链环境">二、搭建玄铁 900 系列工具链环境&lt;/h2>
-&lt;h3 id="1-下载玄铁-900-系列工具链">1. 下载玄铁 900 系列工具链&lt;/h3>
-&lt;p>首先，我们需要下载适用于 RISC-V 架构的 Xuantie GNU 工具链。前往&lt;a class="link" href="https://www.xrvm.cn/" target="_blank" rel="noopener" >玄铁官网
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-获取最新版本的预编译包，并根据你的操作系统进行安装。在 Linux 系统中，通常解压后通过添加 &lt;code>bin&lt;/code> 路径到 &lt;code>$PATH&lt;/code> 环境变量即可。&lt;/p>
-&lt;p>工具链安装包由于执行平台和目标程序平台的不同分为不同的版本，如 Xuantie-&lt;em>-elf-&lt;/em>-x86_64-V*-.tar.gz 是 64 位 linux 平台的 riscv 裸程序工具链套件。具体分类如下：&lt;/p>
-&lt;ul>
-&lt;li>根据执行平台
-&lt;ul>
-&lt;li>x86_64：64 位 linux 平台&lt;/li>
-&lt;li>i386：32 位 linux 平台&lt;/li>
-&lt;li>mingw：Windows Mingw 平台&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;li>根据目标程序平台
-&lt;ul>
-&lt;li>elf：裸程序编译套件&lt;/li>
-&lt;li>linux：linux 应用程序编译套件&lt;/li>
-&lt;/ul>
-&lt;/li>
-&lt;/ul>
-&lt;p>这里我们下载最新的版本为 2.8.1 的适用于 64 位 linux 平台的 linux 应用程序编译套件，即 Xuantie-900-gcc-linux-5.10.4-glibc-x86_64 。&lt;/p>
-&lt;pre>&lt;code class="language-bash">wget https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1705395627867/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
-tar -xzvf Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
-sudo mv Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115 /opt
-export PATH=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115/bin:$PATH
-&lt;/code>&lt;/pre>
-&lt;h3 id="2-验证工具链安装">2. 验证工具链安装&lt;/h3>
-&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -v
-Using built-in specs.
-COLLECT_GCC=riscv64-unknown-linux-gnu-gcc
-COLLECT_LTO_WRAPPER=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/bin/../libexec/gcc/riscv64-unknown-linux-gnu/10.4.0/lto-wrapper
-Target: riscv64-unknown-linux-gnu
-Configured with: /mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc/configure --target=riscv64-unknown-linux-gnu --with-gmp=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpfr=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpc=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libexpat-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libmpfr-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-pkgversion='Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018' CXXFLAGS='-g -O2 -DTHEAD_VERSION_NUMBER=2.8.0 ' --prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0 --with-sysroot=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/sysroot --with-system-zlib --enable-shared --enable-tls --enable-languages=c,c++,fortran --disable-libmudflap --disable-libssp --disable-libquadmath --enable-libsanitizer --disable-nls --disable-bootstrap --src=https://cuterwrite.top/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc --enable-multilib --with-abi=lp64d --with-arch=rv64gc_zfh_xtheadc 'CFLAGS_FOR_TARGET=-O2 -mcmodel=medany' 'CXXFLAGS_FOR_TARGET=-O2 -mcmodel=medany'
-Thread model: posix
-Supported LTO compression algorithms: zlib
-gcc version 10.4.0 (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018)
-&lt;/code>&lt;/pre>
-&lt;p>可以看到输出了 gcc 的版本信息，说明工具链安装成功。&lt;/p>
-&lt;h2 id="三搭建-xuantie-qemu-环境">三、搭建 xuantie-qemu 环境&lt;/h2>
-&lt;h3 id="1-前提条件">1. 前提条件&lt;/h3>
-&lt;p>在安装 xuantie-qemu 之前，需要确保系统含有以下工具或库。&lt;/p>
-&lt;ul>
-&lt;li>gcc 编译器&lt;/li>
-&lt;li>automake&lt;/li>
-&lt;li>autoconf&lt;/li>
-&lt;li>libtool&lt;/li>
-&lt;li>glib2 库&lt;/li>
-&lt;li>其它&amp;hellip;..&lt;/li>
-&lt;/ul>
-&lt;p>通过以下命令安装上述工具或库。&lt;/p>
-&lt;pre>&lt;code class="language-bash">sudo yum update -y
-sudo yum install -y autoconf automake libtool make gcc gcc-c++ gawk bison flex texinfo gperf patchutils bc \
-zlib-devel mpfr-devel gmp-devel curl-devel expat-devel git \
-glib2-devel libfdt-devel pixman-devel ncurses-devel ncurses-compat-libs
-&lt;/code>&lt;/pre>
-&lt;p>如果是 Ubuntu/Dedian 系统，可以使用以下命令安装。&lt;/p>
-&lt;pre>&lt;code class="language-bash">sudo apt-get update
-sudo apt-get install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev \
-gawk build-essential bison flex texinfo gperf libtool patchutils bc \
-zlib1g-dev libexpat-dev git \
-libglib2.0-dev libfdt-dev libpixman-1-dev \
-libncurses5-dev libncursesw5-dev
-&lt;/code>&lt;/pre>
-&lt;h3 id="2-下载并安装-xuantie-qemu">2. 下载并安装 xuantie-qemu&lt;/h3>
-&lt;p>访问 &lt;a class="link" href="https://github.com/T-head-Semi/qemu.git" target="_blank" rel="noopener" >Xuantie QEMU 官方仓库
-&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
-xmlns="http://www.w3.org/2000/svg">
-&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
-&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
-fill="currentColor">
-&lt;/svg>&lt;/span>
-&lt;/a>
-，获取适用于玄铁 900 系列芯片的 xuantie-qemu 源代码，然后按照常规步骤编译安装：&lt;/p>
-&lt;pre>&lt;code class="language-bash">git clone https://github.com/T-head-Semi/qemu.git
-git checkout xuantie-qemu-6.1.0
-&lt;/code>&lt;/pre>
-&lt;h3 id="3-编译安装-xuantie-qemu">3. 编译安装 xuantie-qemu&lt;/h3>
-&lt;pre>&lt;code class="language-bash">cd qemu
-mkdir build
-cd build
-../configure --target-list=riscv64-softmmu,riscv64-linux-user --prefix=/opt/qemu/6.1.0-xuantie
-make -j $(nproc)
-sudo make install
-export PATH=/opt/qemu/6.1.0-xuantie/bin:$PATH
-&lt;/code>&lt;/pre>
-&lt;h3 id="4-验证-xuantie-qemu-安装">4. 验证 xuantie-qemu 安装&lt;/h3>
-&lt;p>安装完毕后如果执行如下命令后能够查看到 qemu 的具体版本，则说明安装成功&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ qemu-riscv64 --version
-qemu-riscv64 version 6.0.94 (v6.1.0-12-g03813c9)
-Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
-&lt;/code>&lt;/pre>
-&lt;p>编写一段 C 语言程序，如下所示：&lt;/p>
-&lt;pre>&lt;code class="language-c">#include &amp;lt;stdio.h&amp;gt;
-int main() {
-printf(&amp;quot;Hello RISC-V \n&amp;quot;);
-return 0;
-}
-&lt;/code>&lt;/pre>
-&lt;p>使用 Xuantie 900 系列工具链编译该程序，并使用用户模式的 xuantie-qemu 运行程序。&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -static -o hello hello.c
-$ qemu-riscv64 ./hello
-Hello RISC-V
-&lt;/code>&lt;/pre>
-&lt;p>再写一段 RVV 向量化的 C 语言程序，如下所示：&lt;/p>
-&lt;details>
-&lt;summary>&lt;strong>RVV 向量化 C 语言程序&lt;/strong>&lt;/summary>
-&lt;pre>&lt;code class="language-c">#include &amp;lt;riscv_vector.h&amp;gt;
-#include &amp;lt;stdio.h&amp;gt;
-#define N 15
-float vsum(float* v, int n) {
-vfloat32m1_t vs, vv, vtmp;
-float s = 0.0;
-int i;
-int vlmax;
-vlmax = vsetvlmax_e32m1();
-printf(&amp;quot;vlmax:%d\n&amp;quot;, vlmax);
-vs = vfmv_v_f_f32m1(0.0, vlmax);
-vtmp = vfmv_v_f_f32m1(0.0, vlmax);
-for (i = 0; i &amp;lt; n - vlmax; i += vlmax) {
-vv = vle32_v_f32m1(&amp;amp;v[i], vlmax);
-vtmp = vfadd_vv_f32m1(vtmp, vv, vlmax);
-}
-vs = vfredusum_vs_f32m1_f32m1(vs, vtmp, vs, vlmax);
-s = vfmv_f_s_f32m1_f32(vs);
-for (; i &amp;lt; n; i++) {
-s += v[i];
-}
-return s;
-}
-float vsum1(float* v, int n) {
-vfloat32m1_t vs, vv;
-float s;
-int i;
-int vl, vlmax;
-vlmax = vsetvlmax_e32m1();
-vs = vfmv_v_f_f32m1(0.0, vlmax);
-for (i = 0; n &amp;gt; 0; i += vl, n -= vl) {
-vl = vsetvl_e32m1(n);
-printf(&amp;quot;vl:%d\n&amp;quot;, vl);
-vv = vle32_v_f32m1(&amp;amp;v[i], vl);
-vs = vfredusum_vs_f32m1_f32m1(vs, vv, vs, vl);
-}
-s = vfmv_f_s_f32m1_f32(vs);
-return s;
-}
-float vsum2(float* v, int n) {
-vfloat32m2_t vv;
-vfloat32m1_t vs;
-float s;
-int i;
-int vl, vlmax;
-vlmax = vsetvlmax_e32m1();
-vs = vfmv_v_f_f32m1(0.0, vlmax);
-for (i = 0; n &amp;gt; 0; i += vl, n -= vl) {
-vl = vsetvl_e32m2(n);
-printf(&amp;quot;vl:%d\n&amp;quot;, vl);
-vv = vle32_v_f32m2(&amp;amp;v[i], vl);
-vs = vfredusum_vs_f32m2_f32m1(vs, vv, vs, vl);
-}
-s = vfmv_f_s_f32m1_f32(vs);
-return s;
-}
-int main() {
-int i;
-float v[N], sum = 0.0;
-printf(&amp;quot;Hello RISC-V!\n&amp;quot;);
-for (i = 0; i &amp;lt; N; i++) {
-v[i] = i;
-}
-sum = vsum(v, N);
-printf(&amp;quot;%f\n&amp;quot;, sum);
-return 0;
-}
-&lt;/code>&lt;/pre>
-&lt;/details>
-&lt;p>编译并运行该程序（这时需要指定 &lt;code>-cpu&lt;/code> ，否则会报非法指定的异常，即 Illegal instruction (core dumped)）：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -static -O3 -march=rv64imafdcv0p7_zfh_xtheadc -o test_vec test_vec.c
-$ qemu-riscv64 -cpu c920 ./test_vec
-Hello RISC-V!
-vlmax:4
-105.000000
-&lt;/code>&lt;/pre>
-&lt;h2 id="四在-qemu-上运行-risc-v-64-位-linux-系统">四、在 QEMU 上运行 RISC-V 64 位 Linux 系统&lt;/h2>
-&lt;h3 id="1-制作内核">1. 制作内核&lt;/h3>
-&lt;h4 id="11-下载内核源码">1.1 下载内核源码&lt;/h4>
-&lt;pre>&lt;code class="language-bash">$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.10.42.tar.gz
-$ tar -xzvf linux-5.10.42.tar.gz
-&lt;/code>&lt;/pre>
-&lt;p>下载后进入内核源码目录&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ cd linux-5.10.42
-&lt;/code>&lt;/pre>
-&lt;h4 id="12-配置和编译内核">1.2 配置和编译内核&lt;/h4>
-&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
-$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
-...
-AR drivers/built-in.a
-GEN .version
-CHK include/generated/compile.h
-LD vmlinux.o
-MODPOST vmlinux.symvers
-MODINFO modules.builtin.modinfo
-GEN modules.builtin
-LD .tmp_vmlinux.kallsyms1
-KSYMS .tmp_vmlinux.kallsyms1.S
-AS .tmp_vmlinux.kallsyms1.S
-LD .tmp_vmlinux.kallsyms2
-KSYMS .tmp_vmlinux.kallsyms2.S
-AS .tmp_vmlinux.kallsyms2.S
-LD vmlinux
-SYSMAP System.map
-MODPOST modules-only.symvers
-GEN Module.symvers
-CC [M] fs/efivarfs/efivarfs.mod.o
-OBJCOPY arch/riscv/boot/Image
-GZIP arch/riscv/boot/Image.gz
-LD [M] fs/efivarfs/efivarfs.ko
-Kernel: arch/riscv/boot/Image.gz is ready
-&lt;/code>&lt;/pre>
-&lt;h3 id="2-制作-rootfs">2. 制作 rootfs&lt;/h3>
-&lt;h4 id="21-下载-busybox-源码">2.1 下载 busybox 源码&lt;/h4>
-&lt;pre>&lt;code class="language-bash">$ wget https://busybox.net/downloads/busybox-1.33.1.tar.bz2
-&lt;/code>&lt;/pre>
-&lt;p>下载完后进入 busybox 源码目录&lt;/p>
-&lt;pre>&lt;code class="language-bash">cd busybox-1.33.1
-&lt;/code>&lt;/pre>
-&lt;h4 id="22-配置-busybox">2.2 配置 busybox&lt;/h4>
-&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
-$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
-&lt;/code>&lt;/pre>
-&lt;p>打开配置菜单后进入第一行的 &amp;ldquo;Settings&amp;rdquo;，在 &amp;ldquo;Build Options&amp;rdquo; 节中，选中 “Build static binary (no shared libs)”，设置好后退出保存配置。&lt;/p>
-&lt;p>检查 &lt;code>.config&lt;/code> 文件中是否有 &lt;code>CONFIG_STATIC=y&lt;/code> ，如果没有则手动添加。&lt;/p>
-&lt;h4 id="23-编译和安装-busybox">2.3 编译和安装 busybox&lt;/h4>
-&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
-$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- install
-&lt;/code>&lt;/pre>
-&lt;p>此时源码目录 busyboxsource 下会新出现一个 &lt;code>_install&lt;/code> 目录 ，可以看到生成的东西。&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ ls _install
-bin linuxrc sbin usr
-&lt;/code>&lt;/pre>
-&lt;p>进入 &lt;code>_install&lt;/code> 目录，创建以下目录&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ cd _install
-$ mkdir proc sys dev etc etc/init.d
-$ ls
-bin dev etc linuxrc proc sbin sys usr
-&lt;/code>&lt;/pre>
-&lt;p>然后另外再新建一个最简单的 init 的 RC 文件：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ cd etc/init.d/
-$ touch rcS
-$ vim rcS
-&lt;/code>&lt;/pre>
-&lt;p>编辑该文件内容为：&lt;/p>
-&lt;pre>&lt;code class="language-bash">#!/bin/sh
-mount -t proc none /proc
-mount -t sysfs none /sys
-/sbin/mdev -s
-&lt;/code>&lt;/pre>
-&lt;p>然后修改 rcS 文件权限，加上可执行权限&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ chmod +x rcS
-&lt;/code>&lt;/pre>
-&lt;h4 id="24-制作文件系统">2.4 制作文件系统&lt;/h4>
-&lt;p>继续在 &lt;code>_install&lt;/code> 目录下执行如下命令：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ find -print0 | cpio -0oH newc | gzip -9 &amp;gt; ../rootfs.img
-3276 blocks
-&lt;/code>&lt;/pre>
-&lt;h3 id="3-启动运行">3. 启动运行&lt;/h3>
-&lt;p>创建一个新的目录，将编译好的内核 &lt;code>Image&lt;/code> 和制作好的 &lt;code>rootfs.img&lt;/code> 移动到该目录下。&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ mkdir riscv64-linux
-$ cd riscv64-linux
-$ cp ../linux-5.10.42/arch/riscv/boot/Image .
-$ cp ../busybox-1.33.1/rootfs.img .
-&lt;/code>&lt;/pre>
-&lt;p>执行如下命令：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ qemu-system-riscv64 \
--nographic -machine virt \
--kernel Image \
--initrd rootfs.img \
--append &amp;quot;root=/dev/ram rdinit=/sbin/init&amp;quot;
-&lt;/code>&lt;/pre>
-&lt;p>将显示 Linux Kernel 启动流程：&lt;/p>
-&lt;details>
-&lt;summary>&lt;strong>点击展开&lt;/strong>&lt;/summary>
-&lt;pre>&lt;code class="language-bash">OpenSBI v0.9
-____ _____ ____ _____
-/ __ \ / ____| _ \_ _|
-| | | |_ __ ___ _ __ | (___ | |_) || |
-| | | | '_ \ / _ \ '_ \ \___ \| _ &amp;lt; | |
-| |__| | |_) | __/ | | |____) | |_) || |_
-\____/| .__/ \___|_| |_|_____/|____/_____|
-| |
-|_|
-Platform Name : riscv-virtio,qemu
-Platform Features : timer,mfdeleg
-Platform HART Count : 1
-Firmware Base : 0x80000000
-Firmware Size : 100 KB
-Runtime SBI Version : 0.2
-Domain0 Name : root
-Domain0 Boot HART : 0
-Domain0 HARTs : 0*
-Domain0 Region00 : 0x0000000080000000-0x000000008001ffff ()
-Domain0 Region01 : 0x0000000000000000-0xffffffffffffffff (R,W,X)
-Domain0 Next Address : 0x0000000080200000
-Domain0 Next Arg1 : 0x0000000087000000
-Domain0 Next Mode : S-mode
-Domain0 SysReset : yes
-Boot HART ID : 0
-Boot HART Domain : root
-Boot HART ISA : rv64imafdcvsu
-Boot HART Features : scounteren,mcounteren,time
-Boot HART PMP Count : 16
-Boot HART PMP Granularity : 4
-Boot HART PMP Address Bits: 54
-Boot HART MHPM Count : 0
-Boot HART MHPM Count : 0
-Boot HART MIDELEG : 0x0000000000000222
-Boot HART MEDELEG : 0x000000000000b109
-[ 0.000000] Linux version 5.10.42 (root@centos) (riscv64-unknown-linux-gnu-gcc (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018) 10.4.0, GNU ld (GNU Binutils) 2.35) #1 SMP Wed Feb 21 02:07:46 CST 2024
-[ 0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
-[ 0.000000] efi: UEFI not found.
-[ 0.000000] Initial ramdisk at: 0x(____ptrval____) (1085440 bytes)
-[ 0.000000] Zone ranges:
-[ 0.000000] DMA32 [mem 0x0000000080200000-0x0000000087ffffff]
-[ 0.000000] Normal empty
-[ 0.000000] Movable zone start for each node
-[ 0.000000] Early memory node ranges
-[ 0.000000] node 0: [mem 0x0000000080200000-0x0000000087ffffff]
-[ 0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x0000000087ffffff]
-[ 0.000000] software IO TLB: Cannot allocate buffer
-[ 0.000000] SBI specification v0.2 detected
-[ 0.000000] SBI implementation ID=0x1 Version=0x9
-[ 0.000000] SBI v0.2 TIME extension detected
-[ 0.000000] SBI v0.2 IPI extension detected
-[ 0.000000] SBI v0.2 RFENCE extension detected
-[ 0.000000] SBI v0.2 HSM extension detected
-[ 0.000000] riscv: ISA extensions acdfimsuv
-[ 0.000000] riscv: ELF capabilities acdfim
-[ 0.000000] percpu: Embedded 17 pages/cpu s32360 r8192 d29080 u69632
-[ 0.000000] Built 1 zonelists, mobility grouping on. Total pages: 31815
-[ 0.000000] Kernel command line: root=/dev/ram rdinit=/sbin/init
-[ 0.000000] Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
-[ 0.000000] Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
-[ 0.000000] Sorting __ex_table...
-[ 0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
-[ 0.000000] Memory: 108240K/129024K available (7084K kernel code, 3993K rwdata, 4096K rodata, 223K init, 342K bss, 20784K reserved, 0K cma-reserved)
-[ 0.000000] Virtual kernel memory layout:
-[ 0.000000] fixmap : 0xffffffcefee00000 - 0xffffffceff000000 (2048 kB)
-[ 0.000000] pci io : 0xffffffceff000000 - 0xffffffcf00000000 ( 16 MB)
-[ 0.000000] vmemmap : 0xffffffcf00000000 - 0xffffffcfffffffff (4095 MB)
-[ 0.000000] vmalloc : 0xffffffd000000000 - 0xffffffdfffffffff (65535 MB)
-[ 0.000000] lowmem : 0xffffffe000000000 - 0xffffffe007e00000 ( 126 MB)
-[ 0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
-[ 0.000000] rcu: Hierarchical RCU implementation.
-[ 0.000000] rcu: RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
-[ 0.000000] rcu: RCU debug extended QS entry/exit.
-[ 0.000000] Tracing variant of Tasks RCU enabled.
-[ 0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
-[ 0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
-[ 0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
-[ 0.000000] riscv-intc: 64 local interrupts mapped
-[ 0.000000] plic: plic@c000000: mapped 53 interrupts with 1 handlers for 2 contexts.
-[ 0.000000] random: get_random_bytes called from start_kernel+0x31a/0x48c with crng_init=0
-[ 0.000000] riscv_timer_init_dt: Registering clocksource cpuid [0] hartid [0]
-[ 0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
-[ 0.000150] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
-[ 0.003557] Console: colour dummy device 80x25
-[ 0.008887] printk: console [tty0] enabled
-[ 0.012368] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
-[ 0.012666] pid_max: default: 32768 minimum: 301
-[ 0.014227] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
-[ 0.014306] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
-[ 0.040922] rcu: Hierarchical SRCU implementation.
-[ 0.042741] EFI services will not be available.
-[ 0.044926] smp: Bringing up secondary CPUs ...
-[ 0.045062] smp: Brought up 1 node, 1 CPU
-[ 0.054128] devtmpfs: initialized
-[ 0.061463] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
-[ 0.061753] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
-[ 0.067460] NET: Registered protocol family 16
-[ 0.131233] vgaarb: loaded
-[ 0.132530] SCSI subsystem initialized
-[ 0.134485] usbcore: registered new interface driver usbfs
-[ 0.134834] usbcore: registered new interface driver hub
-[ 0.135035] usbcore: registered new device driver usb
-[ 0.150024] clocksource: Switched to clocksource riscv_clocksource
-[ 0.167109] NET: Registered protocol family 2
-[ 0.168330] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
-[ 0.172076] tcp_listen_portaddr_hash hash table entries: 128 (order: 0, 5120 bytes, linear)
-[ 0.172242] TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
-[ 0.172480] TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
-[ 0.172690] TCP: Hash tables configured (established 1024 bind 1024)
-[ 0.173861] UDP hash table entries: 256 (order: 2, 24576 bytes, linear)
-[ 0.174481] UDP-Lite hash table entries: 256 (order: 2, 24576 bytes, linear)
-[ 0.175963] NET: Registered protocol family 1
-[ 0.179024] RPC: Registered named UNIX socket transport module.
-[ 0.179111] RPC: Registered udp transport module.
-[ 0.179150] RPC: Registered tcp transport module.
-[ 0.179186] RPC: Registered tcp NFSv4.1 backchannel transport module.
-[ 0.179332] PCI: CLS 0 bytes, default 64
-[ 0.182716] Unpacking initramfs...
-[ 0.263706] Freeing initrd memory: 1056K
-[ 0.265678] workingset: timestamp_bits=62 max_order=15 bucket_order=0
-[ 0.281052] NFS: Registering the id_resolver key type
-[ 0.282003] Key type id_resolver registered
-[ 0.282074] Key type id_legacy registered
-[ 0.282505] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
-[ 0.282631] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
-[ 0.283481] 9p: Installing v9fs 9p2000 file system support
-[ 0.284918] NET: Registered protocol family 38
-[ 0.285416] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
-[ 0.285593] io scheduler mq-deadline registered
-[ 0.285692] io scheduler kyber registered
-[ 0.295484] pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
-[ 0.296336] pci-host-generic 30000000.pci: IO 0x0003000000..0x000300ffff -&amp;gt; 0x0000000000
-[ 0.296861] pci-host-generic 30000000.pci: MEM 0x0040000000..0x007fffffff -&amp;gt; 0x0040000000
-[ 0.296961] pci-host-generic 30000000.pci: MEM 0x0400000000..0x07ffffffff -&amp;gt; 0x0400000000
-[ 0.299940] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-ff]
-[ 0.301083] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
-[ 0.301328] pci_bus 0000:00: root bus resource [bus 00-ff]
-[ 0.301486] pci_bus 0000:00: root bus resource [io 0x0000-0xffff]
-[ 0.301528] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
-[ 0.301568] pci_bus 0000:00: root bus resource [mem 0x400000000-0x7ffffffff]
-[ 0.302864] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000
-[ 0.377412] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-[ 0.389894] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 2, base_baud = 230400) is a 16550A
-[ 0.428017] printk: console [ttyS0] enabled
-[ 0.430410] [drm] radeon kernel modesetting enabled.
-[ 0.457312] loop: module loaded
-[ 0.460726] libphy: Fixed MDIO Bus: probed
-[ 0.464996] e1000e: Intel(R) PRO/1000 Network Driver
-[ 0.465383] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
-[ 0.466272] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-[ 0.466724] ehci-pci: EHCI PCI platform driver
-[ 0.467203] ehci-platform: EHCI generic platform driver
-[ 0.467683] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
-[ 0.468129] ohci-pci: OHCI PCI platform driver
-[ 0.468593] ohci-platform: OHCI generic platform driver
-[ 0.469968] usbcore: registered new interface driver uas
-[ 0.470477] usbcore: registered new interface driver usb-storage
-[ 0.471603] mousedev: PS/2 mouse device common for all mice
-[ 0.475055] goldfish_rtc 101000.rtc: registered as rtc0
-[ 0.476070] goldfish_rtc 101000.rtc: setting system clock to 2024-02-20T19:37:51 UTC (1708457871)
-[ 0.478889] syscon-poweroff soc:poweroff: pm_power_off already claimed (____ptrval____) sbi_shutdown
-[ 0.479494] syscon-poweroff: probe of soc:poweroff failed with error -16
-[ 0.480977] usbcore: registered new interface driver usbhid
-[ 0.481324] usbhid: USB HID core driver
-[ 0.483516] NET: Registered protocol family 10
-[ 0.491589] Segment Routing with IPv6
-[ 0.492256] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
-[ 0.495528] NET: Registered protocol family 17
-[ 0.497086] 9pnet: Installing 9P2000 support
-[ 0.497667] Key type dns_resolver registered
-[ 0.498706] debug_vm_pgtable: [debug_vm_pgtable ]: Validating architecture page table helpers
-[ 0.533266] Freeing unused kernel memory: 220K
-[ 0.539682] Run /sbin/init as init process
-Please press Enter to activate this console.
-&lt;/code>&lt;/pre>
-&lt;/details>
-&lt;p>见到 &lt;code>&amp;quot;Please press Enter to activate this console.&amp;quot;&lt;/code> 提示后直接回车，无需密码就进入系统了。&lt;/p>
-&lt;p>执行几个常用命令测试一下，都能正常工作：&lt;/p>
-&lt;pre>&lt;code class="language-bash">/ # ls
-bin etc proc sbin usr
-dev linuxrc root sys
-/ # pwd
-/
-/ # cd bin
-/bin #
-/ # ls
-arch dumpkmap kill netstat setarch
-ash echo link nice setpriv
-base32 ed linux32 nuke setserial
-base64 egrep linux64 pidof sh
-busybox false ln ping sleep
-cat fatattr login ping6 stat
-chattr fdflush ls pipe_progress stty
-chgrp fgrep lsattr printenv su
-chmod fsync lzop ps sync
-chown getopt makemime pwd tar
-conspy grep mkdir reformime touch
-cp gunzip mknod resume true
-cpio gzip mktemp rev umount
-cttyhack hostname more rm uname
-date hush mount rmdir usleep
-dd ionice mountpoint rpm vi
-df iostat mpstat run-parts watch
-dmesg ipcalc mt scriptreplay zcat
-dnsdomainname kbd_mode mv sed
-/bin #
-&lt;/code>&lt;/pre>
-&lt;p>退出 QEMU 的方法是按下 &lt;code>Ctrl + A&lt;/code> ，松开后再按下 &lt;code>x&lt;/code> 键即可退出 QEMU 。&lt;/p>
-&lt;p>如果想要往 QEMU 里面传输文件，可以使用挂载的方式，如下所示：&lt;/p>
-&lt;pre>&lt;code class="language-bash">$ mkdir rootfs
-$ sudo mount -o loop rootfs.img rootfs
-$ cp [-r] [file] ./rootfs/
-$ sudo umount rootfs
-&lt;/code>&lt;/pre>
-&lt;h2 id="五总结">五、总结&lt;/h2>
-&lt;p>至此，我们已经成功搭建了玄铁 900 系列的工具链环境以及 xuantie-qemu 仿真环境，这为后续的开发、编译、链接以及运行和调试基于玄铁 900 系列芯片的 RISC-V 应用程序奠定了基础。&lt;/p></description></item></channel></rss>
+&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item></channel></rss>

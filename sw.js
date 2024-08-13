@@ -1,12 +1,31 @@
 importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/6.5.1/workbox-sw.js');
 
 // 缓存版本号
-let cacheVersion = '-240717';
+let cacheVersion = '-240812';
 // 最大条目数
 const maxEntries = 80;
 
 if (workbox) {
     console.log(`Yay! Workbox is loaded 🎉`);
+    // Precache
+    workbox.precaching.precacheAndRoute(
+        [
+            { url: '/index.html', revision: cacheVersion },
+            { url: '/sitemap.xml', revision: cacheVersion },
+            { url: '/manifest.json', revision: cacheVersion },
+            { url: '/favicon.ico', revision: cacheVersion },
+            { url: '/index.xml', revision: cacheVersion },
+            { url: '/robots.txt', revision: cacheVersion },
+            { url: '/index.json', revision: cacheVersion },
+            { url: '/404.html', revision: cacheVersion },
+            { url: '/maskable_icon.png', revision: cacheVersion },
+            { url: '/192.png', revision: cacheVersion },
+            { url: '/512.png', revision: cacheVersion },
+            { url: '/js/prism.js', revision: cacheVersion },
+            { url: '/ts/main.js', revision: cacheVersion },
+            { url: '/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png', revision: cacheVersion },
+        ]
+    );
     // 评论缓存
     workbox.routing.registerRoute(
         new RegExp('^https://comment\.cuterwrite\.top'),
