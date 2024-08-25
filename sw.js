@@ -1,7 +1,7 @@
-importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/6.5.1/workbox-sw.js');
+importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
 
 // 缓存版本号
-let cacheVersion = '-240817';
+let cacheVersion = '-240821';
 // 最大条目数
 const maxEntries = 80;
 
