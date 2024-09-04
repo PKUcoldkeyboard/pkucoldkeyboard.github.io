@@ -1,4 +1,4 @@
-importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+importScripts('https://libs.jshub.com/workbox-sw/7.1.0/workbox-sw.js');
 
 // 缓存版本号
 let cacheVersion = '-240821';
@@ -76,9 +76,9 @@ if (workbox) {
             ],
         })
     );
-    // 缓存 bootcdn、unpkg、jsdelivr 等公共库，用正则匹配
+    // 缓存 unpkg、jsdelivr、jshub 等公共库，用正则匹配
     workbox.routing.registerRoute(
-        new RegExp('^https://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+        new RegExp('^https://(?:unpkg\.com|cdn\.jsdelivr\.net|libs\.jshub\.com)'),
         new workbox.strategies.CacheFirst({
             cacheName: 'cdn' + cacheVersion,
             fetchOptions: {
