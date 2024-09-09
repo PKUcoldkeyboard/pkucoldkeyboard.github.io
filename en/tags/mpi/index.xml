@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>MPI on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/mpi/</link><description>Recent content in MPI on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 01 Feb 2024 01:01:01 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/mpi/index.xml" rel="self" type="application/rss+xml"/><item><title>Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide</title><link>https://cuterwrite.top/en/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide" />&lt;h1 id="compile-and-install-ucx-1150-and-openmpi-500-a-comprehensive-guide">Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide&lt;/h1>
+&lt;h2 id="1-environment-preparation">1. Environment Preparation&lt;/h2>
+&lt;p>First, please ensure that your system meets the following basic requirements:&lt;/p>
+&lt;ol>
+&lt;li>Operating System: Supports Linux (such as Ubuntu 20.04 LTS) or other Unix-like operating systems.&lt;/li>
+&lt;li>Development Toolkit: Install the necessary build tools and libraries, such as &lt;code>build-essential&lt;/code>, &lt;code>libnuma-dev&lt;/code>, &lt;code>pkg-config&lt;/code>, etc.&lt;/li>
+&lt;li>Kernel version: For optimal performance, it is recommended to use the latest stable version of the kernel.&lt;/li>
+&lt;li>Hardware environment or virtual environment that requires RDMA support.&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">sudo apt-get update
+sudo apt-get install -y build-essential libnuma-dev pkg-config
+&lt;/code>&lt;/pre>
+&lt;h2 id="2-compile-and-install-ucx-1150">2. Compile and Install UCX 1.15.0&lt;/h2>
+&lt;ol>
+&lt;li>Download the UCX source package:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">wget https://github.com/openucx/ucx/releases/download/v1.15.0/ucx-1.15.0.tar.gz
+tar -xzvf ucx-1.15.0.tar.gz
+cd ucx-1.15.0
+&lt;/code>&lt;/pre>
+&lt;ol start="2">
+&lt;li>Configure UCX compile options:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
+../configure --prefix=/root/software/ucx/1.5.0
+&lt;/code>&lt;/pre>
+&lt;p>You can add more configuration options according to actual needs, such as specifying a specific network card type or enabling specific features.&lt;/p>
+&lt;ol start="3">
+&lt;li>Compile and install:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">make -j 8
+make install
+&lt;/code>&lt;/pre>
+&lt;ol start="4">
+&lt;li>UCX Architecture Description&lt;/li>
+&lt;/ol>
+&lt;ul>
+&lt;li>The architecture of UCX 1.15.0 is shown in the figure below:&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Architecture-2024-02-03.webp"
+alt="Architecture-2024-02-03" width="auto" loading="lazy">
+&lt;/figure>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Component&lt;/th>
+&lt;th>Role&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>Implements advanced abstractions, such as tag matching, streams, connection negotiation and establishment, multi-track, and handling different types of memory.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCT&lt;/td>
+&lt;td>Transport&lt;/td>
+&lt;td>Implements low-level communication primitives, such as active messages, remote memory access, and atomic operations.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCM&lt;/td>
+&lt;td>Memory&lt;/td>
+&lt;td>A collection of general data structures, algorithms, and system utilities.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>Intercept memory allocation and release events used by memory registration cache.&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="3-compile-and-install-openmpi-500">3. Compile and Install OpenMPI 5.0.0&lt;/h2>
+&lt;ol>
+&lt;li>Download the OpenMPI source package:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0.tar.gz
+tar -xzvf openmpi-5.0.0.tar.gz
+cd openmpi-5.0.0
+&lt;/code>&lt;/pre>
+&lt;ol start="2">
+&lt;li>Configure OpenMPI compile options, specifying the use of UCX as the transport layer:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
+../configure --without-hcoll \
+--enable-python-bindings \
+--enable-mpirun-prefix-by-default \
+--prefix=/root/software/openmpi/5.0.0-ucx-1.15.0 \
+--with-ucx=/root/software/ucx/1.15.0 \
+--enable-mca-no-build=btl-uct
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;ul>
+&lt;li>For OpenMPI 4.0 and later versions, there may be compilation errors with the &lt;code>btl_uct&lt;/code> component. This component is not important for using UCX; therefore, it can be disabled with &lt;code>--enable-mca-no-build=btl-uct&lt;/code>:&lt;/li>
+&lt;li>The &lt;code>--enable-python-bindings&lt;/code> option is used to enable Python bindings.&lt;/li>
+&lt;li>The &lt;code>--enable-mpirun-prefix-by-default&lt;/code> option is used to automatically add the &lt;code>--prefix&lt;/code> option when starting an MPI program with &lt;code>mpirun&lt;/code>.&lt;/li>
+&lt;li>The &lt;code>--without-hcoll&lt;/code> option is used to disable the HCOLL component. If not set during compilation, it will report errors &lt;code>cannot find -lnuma&lt;/code> and &lt;code>cannot find -ludev&lt;/code>.&lt;/li>
+&lt;/ul>&lt;/div>
+&lt;p>The final configuration options are as follows:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ompi-config-2024-02-03.webp"
+alt="ompi-config-2024-02-03" width="auto" loading="lazy">
+&lt;/figure>
+&lt;ol start="3">
+&lt;li>Compile and install:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">make -j 8
+make install
+&lt;/code>&lt;/pre>
+&lt;h2 id="4-verify-installation-and-set-environment-variables">4. Verify Installation and Set Environment Variables&lt;/h2>
+&lt;p>After installation, you can verify whether UCX and OpenMPI have been successfully integrated by running a simple MPI program:&lt;/p>
+&lt;pre>&lt;code class="language-bash">mpirun -np 2 --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
+&lt;/code>&lt;/pre>
+&lt;p>(If running as root, you need to add the &lt;code>--allow-run-as-root&lt;/code> option. If there is an RDMA device, you can set &lt;code>-x UCX_NET_DEVICES&lt;/code>)&lt;/p>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>If you need to use it with &lt;code>Slurm&lt;/code>, you can refer to &lt;a class="link" href="https://github.com/open-mpi/ompi/blob/v5.0.x/docs/launching-apps/slurm.rst" target="_blank" rel="noopener" >Launching with Slurm
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+.&lt;/p>
+&lt;p>One way is to first allocate resources through &lt;code>salloc&lt;/code>, and then run the &lt;code>mpirun&lt;/code> command on the allocated resources. At this time, &lt;code>--hostfile&lt;/code>, &lt;code>--host&lt;/code>, &lt;code>-n&lt;/code>, etc. do not need to be set, for example:&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-bash">salloc -n 2
+mpirun --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
+&lt;/code>&lt;/pre>
+&lt;p>If everything is normal, you will see the output of the two hostnames. For convenience, you can add the OpenMPI bin directory and others to the system PATH environment variable:&lt;/p>
+&lt;pre>&lt;code class="language-bash">vim ~/.bashrc
+export PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/bin:$PATH
+export LD_LIBRARY_PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/lib:$LD_LIBRARY_PATH
+export CPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/include:$CPATH
+export MANPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/share/man:$MANPATH
+source ~/.bashrc
+&lt;/code>&lt;/pre>
+&lt;h2 id="5-ucx-performance-testing">5. UCX Performance Testing&lt;/h2>
+&lt;p>Sender:&lt;/p>
+&lt;pre>&lt;code class="language-bash">ucx_perftest -c 0 -d mlx5_0:1
+&lt;/code>&lt;/pre>
+&lt;p>Recipient:&lt;/p>
+&lt;pre>&lt;code class="language-bash">ucx_perftest -c 1 -d mlx5_0:1 &amp;lt;server_hostname&amp;gt; -t tag_lat
+&lt;/code>&lt;/pre>
+&lt;p>In summary, through the above steps, we have successfully compiled and installed UCX 1.15.0 and OpenMPI 5.0.0 from the source code, and integrated them into an efficient and stable high-performance computing environment. In practical applications, you can further optimize the configuration according to specific needs to achieve better performance.&lt;/p></description></item></channel></rss>

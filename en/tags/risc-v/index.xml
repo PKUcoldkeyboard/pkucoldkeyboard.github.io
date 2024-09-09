@@ -1,0 +1,512 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>RISC-V on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/risc-v/</link><description>Recent content in RISC-V on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 20 Feb 2024 01:51:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/risc-v/index.xml" rel="self" type="application/rss+xml"/><item><title>Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment</title><link>https://cuterwrite.top/en/p/thead-tools/</link><pubDate>Tue, 20 Feb 2024 01:51:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/thead-tools/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp" alt="Featured image of post Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment" />&lt;h1 id="set-up-xuantie-900-series-toolchain-and-xuantie-qemu-environment">Set up Xuantie 900 series toolchain and xuantie-qemu environment&lt;/h1>
+&lt;h2 id="1-build-the-platform">1. Build the platform&lt;/h2>
+&lt;ul>
+&lt;li>Linux distribution: CentOS Linux release 7.6.1810 (Core)&lt;/li>
+&lt;li>Kernel version: 3.10.0-957.el7.x86_64&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">$ cat /etc/centos-release
+CentOS Linux release 7.6.1810 (Core)
+$ uname -r
+3.10.0-957.el7.x86_64
+&lt;/code>&lt;/pre>
+&lt;h2 id="2-set-up-the-xuantie-900-series-toolchain-environment">2. Set up the XuanTie 900 series toolchain environment&lt;/h2>
+&lt;h3 id="1-download-xuantie-900-series-toolchain">1. Download Xuantie 900 series toolchain&lt;/h3>
+&lt;p>First, we need to download the Xuantie GNU toolchain for the RISC-V architecture. Go to the &lt;a class="link" href="https://www.xrvm.cn/" target="_blank" rel="noopener" >Xuantie official website
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+to get the latest version of the precompiled package and install it according to your operating system. On Linux systems, it is usually sufficient to add the &lt;code>bin&lt;/code> path to the &lt;code>$PATH&lt;/code> environment variable after extraction.&lt;/p>
+&lt;p>The toolchain installation package is divided into different versions due to the differences between the execution platform and the target program platform. For example, Xuantie-&lt;em>-elf-&lt;/em>-x86_64-V*-.tar.gz is a RISC-V bare program toolchain suite for the 64-bit Linux platform. The specific classifications are as follows:&lt;/p>
+&lt;ul>
+&lt;li>According to the execution platform&lt;/li>
+&lt;li>x86_64: 64-bit Linux platform&lt;/li>
+&lt;li>i386: 32-bit Linux platform
+&lt;ul>
+&lt;li>mingw: Windows Mingw platform&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>According to the target program platform&lt;/li>
+&lt;li>elf: Bare program compilation suite&lt;/li>
+&lt;li>linux: linux application compilation suite&lt;/li>
+&lt;/ul>
+&lt;p>Here we download the latest version 2.8.1 of the Linux application compilation suite for the 64-bit Linux platform, namely Xuantie-900-gcc-linux-5.10.4-glibc-x86_64.&lt;/p>
+&lt;pre>&lt;code class="language-bash">wget https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1705395627867/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+tar -xzvf Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+sudo mv Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115 /opt
+export PATH=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115/bin:$PATH
+&lt;/code>&lt;/pre>
+&lt;h3 id="2-verify-toolchain-installation">2. Verify toolchain installation&lt;/h3>
+&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -v
+Using built-in specs.
+COLLECT_GCC=riscv64-unknown-linux-gnu-gcc
+COLLECT_LTO_WRAPPER=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/bin/../libexec/gcc/riscv64-unknown-linux-gnu/10.4.0/lto-wrapper
+Target: riscv64-unknown-linux-gnu
+Configured with: /mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc/configure --target=riscv64-unknown-linux-gnu --with-gmp=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpfr=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpc=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libexpat-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libmpfr-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-pkgversion='Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018' CXXFLAGS='-g -O2 -DTHEAD_VERSION_NUMBER=2.8.0 ' --prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0 --with-sysroot=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/sysroot --with-system-zlib --enable-shared --enable-tls --enable-languages=c,c++,fortran --disable-libmudflap --disable-libssp --disable-libquadmath --enable-libsanitizer --disable-nls --disable-bootstrap --src=https://cuterwrite.top/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc --enable-multilib --with-abi=lp64d --with-arch=rv64gc_zfh_xtheadc 'CFLAGS_FOR_TARGET=-O2 -mcmodel=medany' 'CXXFLAGS_FOR_TARGET=-O2 -mcmodel=medany'
+Thread model: posix
+Supported LTO compression algorithms: zlib
+gcc version 10.4.0 (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018)
+&lt;/code>&lt;/pre>
+&lt;p>You can see the output of the gcc version information, indicating that the toolchain was installed successfully.&lt;/p>
+&lt;h2 id="3-set-up-the-xuantie-qemu-environment">3. Set up the xuantie-qemu environment&lt;/h2>
+&lt;h3 id="1-prerequisites">1. Prerequisites&lt;/h3>
+&lt;p>Before installing xuantie-qemu, you need to ensure that the system contains the following tools or libraries.&lt;/p>
+&lt;ul>
+&lt;li>gcc compiler&lt;/li>
+&lt;li>automake&lt;/li>
+&lt;li>autoconf&lt;/li>
+&lt;li>libtool&lt;/li>
+&lt;li>glib2 library&lt;/li>
+&lt;li>Others&amp;hellip;..&lt;/li>
+&lt;/ul>
+&lt;p>Install the above tools or libraries using the following command.&lt;/p>
+&lt;pre>&lt;code class="language-bash">sudo yum update -y
+sudo yum install -y autoconf automake libtool make gcc gcc-c++ gawk bison flex texinfo gperf patchutils bc \
+zlib-devel mpfr-devel gmp-devel curl-devel expat-devel git \
+glib2-devel libfdt-devel pixman-devel ncurses-devel ncurses-compat-libs
+&lt;/code>&lt;/pre>
+&lt;p>If it is an Ubuntu/Debian system, you can use the following command to install.&lt;/p>
+&lt;pre>&lt;code class="language-bash">sudo apt-get update
+sudo apt-get install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev \
+gawk build-essential bison flex texinfo gperf libtool patchutils bc \
+zlib1g-dev libexpat-dev git \
+libglib2.0-dev libfdt-dev libpixman-1-dev \
+libncurses5-dev libncursesw5-dev
+&lt;/code>&lt;/pre>
+&lt;h3 id="2-download-and-install-xuantie-qemu">2. Download and install xuantie-qemu&lt;/h3>
+&lt;p>Visit the &lt;a class="link" href="https://github.com/T-head-Semi/qemu.git" target="_blank" rel="noopener" >Xuantie QEMU official repository
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+to obtain the xuantie-qemu source code suitable for the Xuantie 900 series chips, and then follow the usual steps to compile and install:&lt;/p>
+&lt;pre>&lt;code class="language-bash">git clone https://github.com/T-head-Semi/qemu.git
+git checkout xuantie-qemu-6.1.0
+&lt;/code>&lt;/pre>
+&lt;h3 id="3-compile-and-install-xuantie-qemu">3. Compile and install xuantie-qemu&lt;/h3>
+&lt;pre>&lt;code class="language-bash">cd qemu
+mkdir build
+cd build
+../configure --target-list=riscv64-softmmu,riscv64-linux-user --prefix=/opt/qemu/6.1.0-xuantie
+make -j $(nproc)
+sudo make install
+export PATH=/opt/qemu/6.1.0-xuantie/bin:$PATH
+&lt;/code>&lt;/pre>
+&lt;h3 id="4-verify-xuantie-qemu-installation">4. Verify xuantie-qemu installation&lt;/h3>
+&lt;p>After the installation is complete, if you can view the specific version of qemu by executing the following command, it means the installation was successful.&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ qemu-riscv64 --version
+qemu-riscv64 version 6.0.94 (v6.1.0-12-g03813c9)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+&lt;/code>&lt;/pre>
+&lt;p>Write a C language program as follows:&lt;/p>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;stdio.h&amp;gt;
+int main() {
+printf(&amp;quot;Hello RISC-V \n&amp;quot;);
+return 0;
+}
+&lt;/code>&lt;/pre>
+&lt;p>Compile the program using the Xuantie 900 series toolchain and run the program using xuantie-qemu in user mode.&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -static -o hello hello.c
+$ qemu-riscv64 ./hello
+Hello RISC-V
+&lt;/code>&lt;/pre>
+&lt;p>Write another C language program with RVV vectorization, as follows:&lt;/p>
+&lt;details>
+&lt;summary>&lt;strong>RVV Vectorization of C Language Program&lt;/strong>&lt;/summary>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;riscv_vector.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#define N 15
+float vsum(float* v, int n) {
+vfloat32m1_t vs, vv, vtmp;
+float s = 0.0;
+int i;
+int vlmax;
+vlmax = vsetvlmax_e32m1();
+printf(&amp;quot;vlmax:%d\n&amp;quot;, vlmax);
+vs = vfmv_v_f_f32m1(0.0, vlmax);
+vtmp = vfmv_v_f_f32m1(0.0, vlmax);
+for (i = 0; i &amp;lt; n - vlmax; i += vlmax) {
+vv = vle32_v_f32m1(&amp;amp;v[i], vlmax);
+vtmp = vfadd_vv_f32m1(vtmp, vv, vlmax);
+}
+vs = vfredusum_vs_f32m1_f32m1(vs, vtmp, vs, vlmax);
+s = vfmv_f_s_f32m1_f32(vs);
+for (; i &amp;lt; n; i++) {
+s += v[i];
+}
+return s;
+}
+float vsum1(float* v, int n) {
+vfloat32m1_t vs, vv;
+float s;
+int i;
+int vl, vlmax;
+vlmax = vsetvlmax_e32m1();
+vs = vfmv_v_f_f32m1(0.0, vlmax);
+for (i = 0; n &amp;gt; 0; i += vl, n -= vl) {
+vl = vsetvl_e32m1(n);
+printf(&amp;quot;vl:%d\n&amp;quot;, vl);
+vv = vle32_v_f32m1(&amp;amp;v[i], vl);
+vs = vfredusum_vs_f32m1_f32m1(vs, vv, vs, vl);
+}
+s = vfmv_f_s_f32m1_f32(vs);
+return s;
+}
+float vsum2(float* v, int n) {
+vfloat32m2_t vv;
+vfloat32m1_t vs;
+float s;
+int i;
+int vl, vlmax;
+vlmax = vsetvlmax_e32m1();
+vs = vfmv_v_f_f32m1(0.0, vlmax);
+for (i = 0; n &amp;gt; 0; i += vl, n -= vl) {
+vl = vsetvl_e32m2(n);
+printf(&amp;quot;vl:%d\n&amp;quot;, vl);
+vv = vle32_v_f32m2(&amp;amp;v[i], vl);
+vs = vfredusum_vs_f32m2_f32m1(vs, vv, vs, vl);
+}
+s = vfmv_f_s_f32m1_f32(vs);
+return s;
+}
+int main() {
+int i;
+float v[N], sum = 0.0;
+printf(&amp;quot;Hello RISC-V!\n&amp;quot;);
+for (i = 0; i &amp;lt; N; i++) {
+v[i] = i;
+}
+sum = vsum(v, N);
+printf(&amp;quot;%f\n&amp;quot;, sum);
+return 0;
+}
+&lt;/code>&lt;/pre>
+&lt;/details>
+&lt;p>Compile and run the program (at this time you need to specify &lt;code>-cpu&lt;/code>, otherwise it will report an illegal instruction exception, i.e., Illegal instruction (core dumped)):&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ riscv64-unknown-linux-gnu-gcc -static -O3 -march=rv64imafdcv0p7_zfh_xtheadc -o test_vec test_vec.c
+$ qemu-riscv64 -cpu c920 ./test_vec
+Hello RISC-V!
+vlmax:4
+105.000000
+&lt;/code>&lt;/pre>
+&lt;h2 id="4-running-risc-v-64-bit-linux-system-on-qemu">4. Running RISC-V 64-bit Linux System on QEMU&lt;/h2>
+&lt;h3 id="1-make-kernel">1. Make kernel&lt;/h3>
+&lt;h4 id="11-download-the-kernel-source-code">1.1 Download the kernel source code&lt;/h4>
+&lt;pre>&lt;code class="language-bash">$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.10.42.tar.gz
+$ tar -xzvf linux-5.10.42.tar.gz
+&lt;/code>&lt;/pre>
+&lt;p>After downloading, enter the kernel source directory&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ cd linux-5.10.42
+&lt;/code>&lt;/pre>
+&lt;h4 id="12-configure-and-compile-the-kernel">1.2 Configure and Compile the Kernel&lt;/h4>
+&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+...
+AR drivers/built-in.a
+GEN .version
+CHK include/generated/compile.h
+LD vmlinux.o
+MODPOST vmlinux.symvers
+MODINFO modules.builtin.modinfo
+GEN modules.builtin
+LD .tmp_vmlinux.kallsyms1
+KSYMS .tmp_vmlinux.kallsyms1.S
+AS .tmp_vmlinux.kallsyms1.S
+LD .tmp_vmlinux.kallsyms2
+KSYMS .tmp_vmlinux.kallsyms2.S
+AS .tmp_vmlinux.kallsyms2.S
+LD vmlinux
+SYSMAP System.map
+MODPOST modules-only.symvers
+GEN Module.symvers
+CC [M] fs/efivarfs/efivarfs.mod.o
+OBJCOPY arch/riscv/boot/Image
+GZIP arch/riscv/boot/Image.gz
+LD [M] fs/efivarfs/efivarfs.ko
+Kernel: arch/riscv/boot/Image.gz is ready
+&lt;/code>&lt;/pre>
+&lt;h3 id="2-create-rootfs">2. Create rootfs&lt;/h3>
+&lt;h4 id="21-download-busybox-source-code">2.1 Download busybox source code&lt;/h4>
+&lt;pre>&lt;code class="language-bash">$ wget https://busybox.net/downloads/busybox-1.33.1.tar.bz2
+&lt;/code>&lt;/pre>
+&lt;p>After downloading, enter the busybox source code directory&lt;/p>
+&lt;pre>&lt;code class="language-bash">cd busybox-1.33.1
+&lt;/code>&lt;/pre>
+&lt;h4 id="22-configure-busybox">2.2 Configure busybox&lt;/h4>
+&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
+&lt;/code>&lt;/pre>
+&lt;p>After opening the configuration menu, go to the first line &amp;ldquo;Settings&amp;rdquo;, in the &amp;ldquo;Build Options&amp;rdquo; section, select &amp;ldquo;Build static binary (no shared libs)&amp;rdquo;, then exit and save the configuration.&lt;/p>
+&lt;p>Check if &lt;code>CONFIG_STATIC=y&lt;/code> is in the &lt;code>.config&lt;/code> file, if not, add it manually.&lt;/p>
+&lt;h4 id="23-compile-and-install-busybox">2.3 Compile and Install busybox&lt;/h4>
+&lt;pre>&lt;code class="language-bash">$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- install
+&lt;/code>&lt;/pre>
+&lt;p>At this point, a new &lt;code>_install&lt;/code> directory will appear under the source directory busyboxsource, where you can see the generated items.&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ ls _install
+bin linuxrc sbin usr
+&lt;/code>&lt;/pre>
+&lt;p>Enter the &lt;code>_install&lt;/code> directory and create the following directories&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ cd _install
+$ mkdir proc sys dev etc etc/init.d
+$ ls
+bin dev etc linuxrc proc sbin sys usr
+&lt;/code>&lt;/pre>
+&lt;p>Then create another simplest init RC file:&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ cd etc/init.d/
+$ touch rcS
+$ vim rcS
+&lt;/code>&lt;/pre>
+&lt;p>Edit the file content to:&lt;/p>
+&lt;pre>&lt;code class="language-bash">#!/bin/sh
+mount -t proc none /proc
+mount -t sysfs none /sys
+/sbin/mdev -s
+&lt;/code>&lt;/pre>
+&lt;p>Then modify the rcS file permissions to add executable permissions.&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ chmod +x rcS
+&lt;/code>&lt;/pre>
+&lt;h4 id="24-create-file-system">2.4 Create File System&lt;/h4>
+&lt;p>Continue executing the following command in the &lt;code>_install&lt;/code> directory:&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ find -print0 | cpio -0oH newc | gzip -9 &amp;gt; ../rootfs.img
+3276 blocks
+&lt;/code>&lt;/pre>
+&lt;h3 id="3-start-running">3. Start running&lt;/h3>
+&lt;p>Create a new directory and move the compiled kernel &lt;code>Image&lt;/code> and the prepared &lt;code>rootfs.img&lt;/code> to that directory.&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ mkdir riscv64-linux
+$ cd riscv64-linux
+$ cp ../linux-5.10.42/arch/riscv/boot/Image .
+$ cp ../busybox-1.33.1/rootfs.img .
+&lt;/code>&lt;/pre>
+&lt;p>Execute the following command:&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ qemu-system-riscv64 \
+-nographic -machine virt \
+-kernel Image \
+-initrd rootfs.img \
+-append &amp;quot;root=/dev/ram rdinit=/sbin/init&amp;quot;
+&lt;/code>&lt;/pre>
+&lt;p>Show the Linux Kernel boot process:&lt;/p>
+&lt;details>
+&lt;summary>&lt;strong>Click to expand&lt;/strong>&lt;/summary>
+&lt;pre>&lt;code class="language-bash">OpenSBI v0.9
+____ _____ ____ _____
+/ __ \ / ____| _ \_ _|
+| | | |_ __ ___ _ __ | (___ | |_) || |
+| | | | '_ \ / _ \ '_ \ \___ \| _ &amp;lt; | |
+| |__| | |_) | __/ | | |____) | |_) || |_
+\____/| .__/ \___|_| |_|_____/|____/_____|
+| |
+|_|
+Platform Name : riscv-virtio,qemu
+Platform Features : timer,mfdeleg
+Platform HART Count : 1
+Firmware Base : 0x80000000
+Firmware Size : 100 KB
+Runtime SBI Version : 0.2
+Domain0 Name : root
+Domain0 Boot HART : 0
+Domain0 HARTs : 0*
+Domain0 Region00 : 0x0000000080000000-0x000000008001ffff ()
+Domain0 Region01 : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address : 0x0000000080200000
+Domain0 Next Arg1 : 0x0000000087000000
+Domain0 Next Mode : S-mode
+Domain0 SysReset : yes
+Boot HART ID : 0
+Boot HART Domain : root
+Boot HART ISA : rv64imafdcvsu
+Boot HART Features : scounteren,mcounteren,time
+Boot HART PMP Count : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count : 0
+Boot HART MHPM Count : 0
+Boot HART MIDELEG : 0x0000000000000222
+Boot HART MEDELEG : 0x000000000000b109
+[ 0.000000] Linux version 5.10.42 (root@centos) (riscv64-unknown-linux-gnu-gcc (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018) 10.4.0, GNU ld (GNU Binutils) 2.35) #1 SMP Wed Feb 21 02:07:46 CST 2024
+[ 0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[ 0.000000] efi: UEFI not found.
+[ 0.000000] Initial ramdisk at: 0x(____ptrval____) (1085440 bytes)
+[ 0.000000] Zone ranges:
+[ 0.000000] DMA32 [mem 0x0000000080200000-0x0000000087ffffff]
+[ 0.000000] Normal empty
+[ 0.000000] Movable zone start for each node
+[ 0.000000] Early memory node ranges
+[ 0.000000] node 0: [mem 0x0000000080200000-0x0000000087ffffff]
+[ 0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x0000000087ffffff]
+[ 0.000000] software IO TLB: Cannot allocate buffer
+[ 0.000000] SBI specification v0.2 detected
+[ 0.000000] SBI implementation ID=0x1 Version=0x9
+[ 0.000000] SBI v0.2 TIME extension detected
+[ 0.000000] SBI v0.2 IPI extension detected
+[ 0.000000] SBI v0.2 RFENCE extension detected
+[ 0.000000] SBI v0.2 HSM extension detected
+[ 0.000000] riscv: ISA extensions acdfimsuv
+[ 0.000000] riscv: ELF capabilities acdfim
+[ 0.000000] percpu: Embedded 17 pages/cpu s32360 r8192 d29080 u69632
+[ 0.000000] Built 1 zonelists, mobility grouping on. Total pages: 31815
+[ 0.000000] Kernel command line: root=/dev/ram rdinit=/sbin/init
+[ 0.000000] Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[ 0.000000] Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[ 0.000000] Sorting __ex_table...
+[ 0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[ 0.000000] Memory: 108240K/129024K available (7084K kernel code, 3993K rwdata, 4096K rodata, 223K init, 342K bss, 20784K reserved, 0K cma-reserved)
+[ 0.000000] Virtual kernel memory layout:
+[ 0.000000] fixmap : 0xffffffcefee00000 - 0xffffffceff000000 (2048 kB)
+[ 0.000000] pci io : 0xffffffceff000000 - 0xffffffcf00000000 ( 16 MB)
+[ 0.000000] vmemmap : 0xffffffcf00000000 - 0xffffffcfffffffff (4095 MB)
+[ 0.000000] vmalloc : 0xffffffd000000000 - 0xffffffdfffffffff (65535 MB)
+[ 0.000000] lowmem : 0xffffffe000000000 - 0xffffffe007e00000 ( 126 MB)
+[ 0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[ 0.000000] rcu: Hierarchical RCU implementation.
+[ 0.000000] rcu: RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
+[ 0.000000] rcu: RCU debug extended QS entry/exit.
+[ 0.000000] Tracing variant of Tasks RCU enabled.
+[ 0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[ 0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[ 0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[ 0.000000] riscv-intc: 64 local interrupts mapped
+[ 0.000000] plic: plic@c000000: mapped 53 interrupts with 1 handlers for 2 contexts.
+[ 0.000000] random: get_random_bytes called from start_kernel+0x31a/0x48c with crng_init=0
+[ 0.000000] riscv_timer_init_dt: Registering clocksource cpuid [0] hartid [0]
+[ 0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[ 0.000150] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
+[ 0.003557] Console: colour dummy device 80x25
+[ 0.008887] printk: console [tty0] enabled
+[ 0.012368] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
+[ 0.012666] pid_max: default: 32768 minimum: 301
+[ 0.014227] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[ 0.014306] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[ 0.040922] rcu: Hierarchical SRCU implementation.
+[ 0.042741] EFI services will not be available.
+[ 0.044926] smp: Bringing up secondary CPUs ...
+[ 0.045062] smp: Brought up 1 node, 1 CPU
+[ 0.054128] devtmpfs: initialized
+[ 0.061463] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[ 0.061753] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+[ 0.067460] NET: Registered protocol family 16
+[ 0.131233] vgaarb: loaded
+[ 0.132530] SCSI subsystem initialized
+[ 0.134485] usbcore: registered new interface driver usbfs
+[ 0.134834] usbcore: registered new interface driver hub
+[ 0.135035] usbcore: registered new device driver usb
+[ 0.150024] clocksource: Switched to clocksource riscv_clocksource
+[ 0.167109] NET: Registered protocol family 2
+[ 0.168330] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[ 0.172076] tcp_listen_portaddr_hash hash table entries: 128 (order: 0, 5120 bytes, linear)
+[ 0.172242] TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[ 0.172480] TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
+[ 0.172690] TCP: Hash tables configured (established 1024 bind 1024)
+[ 0.173861] UDP hash table entries: 256 (order: 2, 24576 bytes, linear)
+[ 0.174481] UDP-Lite hash table entries: 256 (order: 2, 24576 bytes, linear)
+[ 0.175963] NET: Registered protocol family 1
+[ 0.179024] RPC: Registered named UNIX socket transport module.
+[ 0.179111] RPC: Registered udp transport module.
+[ 0.179150] RPC: Registered tcp transport module.
+[ 0.179186] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[ 0.179332] PCI: CLS 0 bytes, default 64
+[ 0.182716] Unpacking initramfs...
+[ 0.263706] Freeing initrd memory: 1056K
+[ 0.265678] workingset: timestamp_bits=62 max_order=15 bucket_order=0
+[ 0.281052] NFS: Registering the id_resolver key type
+[ 0.282003] Key type id_resolver registered
+[ 0.282074] Key type id_legacy registered
+[ 0.282505] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[ 0.282631] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+[ 0.283481] 9p: Installing v9fs 9p2000 file system support
+[ 0.284918] NET: Registered protocol family 38
+[ 0.285416] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+[ 0.285593] io scheduler mq-deadline registered
+[ 0.285692] io scheduler kyber registered
+[ 0.295484] pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
+[ 0.296336] pci-host-generic 30000000.pci: IO 0x0003000000..0x000300ffff -&amp;gt; 0x0000000000
+[ 0.296861] pci-host-generic 30000000.pci: MEM 0x0040000000..0x007fffffff -&amp;gt; 0x0040000000
+[ 0.296961] pci-host-generic 30000000.pci: MEM 0x0400000000..0x07ffffffff -&amp;gt; 0x0400000000
+[ 0.299940] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-ff]
+[ 0.301083] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
+[ 0.301328] pci_bus 0000:00: root bus resource [bus 00-ff]
+[ 0.301486] pci_bus 0000:00: root bus resource [io 0x0000-0xffff]
+[ 0.301528] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
+[ 0.301568] pci_bus 0000:00: root bus resource [mem 0x400000000-0x7ffffffff]
+[ 0.302864] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000
+[ 0.377412] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[ 0.389894] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 2, base_baud = 230400) is a 16550A
+[ 0.428017] printk: console [ttyS0] enabled
+[ 0.430410] [drm] radeon kernel modesetting enabled.
+[ 0.457312] loop: module loaded
+[ 0.460726] libphy: Fixed MDIO Bus: probed
+[ 0.464996] e1000e: Intel(R) PRO/1000 Network Driver
+[ 0.465383] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+[ 0.466272] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[ 0.466724] ehci-pci: EHCI PCI platform driver
+[ 0.467203] ehci-platform: EHCI generic platform driver
+[ 0.467683] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[ 0.468129] ohci-pci: OHCI PCI platform driver
+[ 0.468593] ohci-platform: OHCI generic platform driver
+[ 0.469968] usbcore: registered new interface driver uas
+[ 0.470477] usbcore: registered new interface driver usb-storage
+[ 0.471603] mousedev: PS/2 mouse device common for all mice
+[ 0.475055] goldfish_rtc 101000.rtc: registered as rtc0
+[ 0.476070] goldfish_rtc 101000.rtc: setting system clock to 2024-02-20T19:37:51 UTC (1708457871)
+[ 0.478889] syscon-poweroff soc:poweroff: pm_power_off already claimed (____ptrval____) sbi_shutdown
+[ 0.479494] syscon-poweroff: probe of soc:poweroff failed with error -16
+[ 0.480977] usbcore: registered new interface driver usbhid
+[ 0.481324] usbhid: USB HID core driver
+[ 0.483516] NET: Registered protocol family 10
+[ 0.491589] Segment Routing with IPv6
+[ 0.492256] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[ 0.495528] NET: Registered protocol family 17
+[ 0.497086] 9pnet: Installing 9P2000 support
+[ 0.497667] Key type dns_resolver registered
+[ 0.498706] debug_vm_pgtable: [debug_vm_pgtable ]: Validating architecture page table helpers
+[ 0.533266] Freeing unused kernel memory: 220K
+[ 0.539682] Run /sbin/init as init process
+Please press Enter to activate this console.
+&lt;/code>&lt;/pre>
+&lt;/details>
+&lt;p>After seeing the prompt &lt;code>&amp;quot;Please press Enter to activate this console.&amp;quot;&lt;/code>, just press Enter to enter the system without a password.&lt;/p>
+&lt;p>Execute several common commands to test, all can work normally:&lt;/p>
+&lt;pre>&lt;code class="language-bash">/ # ls
+bin etc proc sbin usr
+dev linuxrc root sys
+/ # pwd
+/
+/ # cd bin
+/bin #
+/ # ls
+arch dumpkmap kill netstat setarch
+ash echo link nice setpriv
+base32 ed linux32 nuke setserial
+base64 egrep linux64 pidof sh
+busybox false ln ping sleep
+cat fatattr login ping6 stat
+chattr fdflush ls pipe_progress stty
+chgrp fgrep lsattr printenv su
+chmod fsync lzop ps sync
+chown getopt makemime pwd tar
+conspy grep mkdir reformime touch
+cp gunzip mknod resume true
+cpio gzip mktemp rev umount
+cttyhack hostname more rm uname
+date hush mount rmdir usleep
+dd ionice mountpoint rpm vi
+df iostat mpstat run-parts watch
+dmesg ipcalc mt scriptreplay zcat
+dnsdomainname kbd_mode mv sed
+/bin #
+&lt;/code>&lt;/pre>
+&lt;p>To exit QEMU, press &lt;code>Ctrl + A&lt;/code>, release it, and then press the &lt;code>x&lt;/code> key to exit QEMU.&lt;/p>
+&lt;p>If you want to transfer files into QEMU, you can use the mount method, as shown below:&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ mkdir rootfs
+$ sudo mount -o loop rootfs.img rootfs
+$ cp [-r] [file] ./rootfs/
+$ sudo umount rootfs
+&lt;/code>&lt;/pre>
+&lt;h2 id="5-summary">5. Summary&lt;/h2>
+&lt;p>At this point, we have successfully set up the toolchain environment for the XuanTie 900 series and the xuantie-qemu simulation environment, which lays the foundation for subsequent development, compilation, linking, running, and debugging of RISC-V applications based on the XuanTie 900 series chips.&lt;/p></description></item></channel></rss>

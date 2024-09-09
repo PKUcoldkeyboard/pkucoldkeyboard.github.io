@@ -1,0 +1,2063 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Parallel Computing on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/parallel-computing/</link><description>Recent content in Parallel Computing on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 13 Aug 2024 22:44:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/parallel-computing/index.xml" rel="self" type="application/rss+xml"/><item><title>Arm Matrix Acceleration: Scalable Matrix Extension SME</title><link>https://cuterwrite.top/en/p/arm-sme-for-performance/</link><pubDate>Tue, 13 Aug 2024 22:44:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sme-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_117622407_p0_master1200.webp" alt="Featured image of post Arm Matrix Acceleration: Scalable Matrix Extension SME" />&lt;h1 id="arm-matrix-acceleration-scalable-matrix-extension-sme">Arm Matrix Acceleration: Scalable Matrix Extension SME&lt;/h1>
+&lt;h2 id="1-sme-introduction">1. SME Introduction&lt;/h2>
+&lt;p>Scalable Matrix Extension SME is built on the basis of Scalable Vector Extensions (SVE and SVE2) and adds the capability to efficiently handle matrices. The main features include:&lt;/p>
+&lt;ul>
+&lt;li>Calculate the SVE vector&amp;rsquo;s outer product&lt;/li>
+&lt;li>Matrix tile storage&lt;/li>
+&lt;li>Loading, storing, inserting, and extracting tile vectors (including dynamic transposition)&lt;/li>
+&lt;li>Streaming SVE mode&lt;/li>
+&lt;/ul>
+&lt;p>The table below summarizes the main features of SME, SVE, and SVE2:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>SME&lt;/th>
+&lt;th>SVE&lt;/th>
+&lt;th>SVE2&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>Streaming SVE Mode&lt;/td>
+&lt;td>NEON DSP++&lt;/td>
+&lt;td>Scalable Vector&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>Dynamic Matrix Transpose&lt;/td>
+&lt;td>Multi-Precision Arithmetic&lt;/td>
+&lt;td>Per-Lane Predication&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>Vector Cross Product&lt;/td>
+&lt;td>Match Detection and Histogram&lt;/td>
+&lt;td>Gather-load and Scatter-store&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>Load, store, insert, and extract matrix vectors&lt;/td>
+&lt;td>Non-temporal scatter/gather&lt;/td>
+&lt;td>Predict vectorization&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>Bitwise Permute&lt;/td>
+&lt;td>ML Extension (FP16 + DOT)&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>&lt;/td>
+&lt;td>AE, SHA3, SM4, Crypto&lt;/td>
+&lt;td>V8.6 BF16, FP and Int8 support&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>SME has defined the following new features:&lt;/p>
+&lt;ul>
+&lt;li>New architecture state, can be used to store two-dimensional matrix tile&lt;/li>
+&lt;li>Streaming SVE mode, supports SVE2 instructions where the execution vector length matches the tile length.&lt;/li>
+&lt;li>New instruction to accumulate (or decrement) the outer product of two vectors into a matrix tile.&lt;/li>
+&lt;li>New load, store, and move instructions: Vectors can be written to a row or column of a matrix tile, or a row or column of a matrix tile can be read into a vector.&lt;/li>
+&lt;/ul>
+&lt;p>Similar to SVE2, SME is also an extension that supports scalable vector length, enabling vector length agnosticism (VLA), per-lane predication, predication-driven loop control, and management functions.&lt;/p>
+&lt;h2 id="2-streaming-sve-mode">2. Streaming SVE mode&lt;/h2>
+&lt;p>SME introduced the Streaming SVE mode, which implements a subset of the SVE2 instruction set and adds new SME-specific instructions.&lt;/p>
+&lt;p>Streaming SVE mode supports high-throughput streaming data processing for large datasets, and streaming data usually has simple loop control flow and limited conditionality.&lt;/p>
+&lt;p>In Non-streaming SVE mode, the complete SVE2 instruction set is supported, typically handling complex data structures and complex judgments.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_3443.webp"
+alt="Streaming SVE Mode and Non-streaming SVE Mode" width="80%" loading="lazy">&lt;figcaption>
+&lt;h4>Streaming SVE Mode and Non-streaming SVE Mode&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Most SME instructions are only available in Streaming SVE mode. The streaming vector length (SVL) in Streaming SVE mode may differ from the non-streaming vector length (NSVL).&lt;/p>
+&lt;p>The expectation is: SVL should be longer than or equal to NSVL, that is, SVL &amp;gt;= NSVL. For example, the length of NSVL can be 128-bit, while the length of SVL can be 512-bit.&lt;/p>
+&lt;p>The SVL of SME can be 128-bit, 256-bit, 512-bit, 1024-bit, or 2048-bit. SVL needs to be a power of 2, and NSVL needs to be a multiple of 128.&lt;/p>
+&lt;p>Similar to SVE2, the software can control the &lt;code>SMCR_ELx.LEN&lt;/code> register bit to set the effective SVL length that EL1, EL2, EL3 want to use (it can be set shorter than the SVL supported by the hardware).&lt;/p>
+&lt;p>For more information on the Streaming SVE mode, refer to section B1.4.6 of the Arm Architecture Reference Manual (A-profile architecture).&lt;/p>
+&lt;h2 id="3-switch-between-non-streaming-and-streaming-sve-modes">3. Switch between Non-streaming and Streaming SVE modes&lt;/h2>
+&lt;p>If the CPU hardware implementation supports both Streaming SVE mode of SME and Non-streaming SVE mode of SVE2, applications can dynamically switch between these two operation modes based on their needs.&lt;/p>
+&lt;p>Provide an independent operating mode for SME, allowing CPU hardware implementations to offer different vector lengths for the same application. For example, a CPU hardware implementation can choose to support a longer Streaming SVE mode vector length and optimize the hardware for stream operations suitable for high throughput.&lt;/p>
+&lt;p>Applications can easily switch dynamically between Streaming SVE mode and Non-streaming SVE mode. The &lt;code>PSTATE.{SM, ZA}&lt;/code> bits introduced by SME can enable and disable Streaming SVE mode and SME ZA storage:&lt;/p>
+&lt;ul>
+&lt;li>SM: Enable and disable Streaming SVE mode&lt;/li>
+&lt;li>ZA: Enable and disable ZA storage access&lt;/li>
+&lt;/ul>
+&lt;p>You can use the &lt;code>MSR/MRS&lt;/code> instructions to operate the Streaming Vector Control Register (SVCR) to set and read the &lt;code>PSTATE.{SM, ZA}&lt;/code> bits, with specific operations as follows:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>MSR SVCRSM, #&amp;lt;imm&amp;gt; MSR SVCRSM, #&lt;/code>&lt;/li>
+&lt;li>&lt;code>MSR SVCRZA, #&amp;lt;imm&amp;gt;&lt;/code>&lt;/li>
+&lt;li>&lt;code>MSR SVCRSMZA, #&amp;lt;imm&amp;gt;&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>The SMSTART instruction is an alias for the &lt;code>MSR&lt;/code> instruction that sets &lt;code>PSTATE.SM&lt;/code> and &lt;code>PSTATE.ZA&lt;/code>.&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>SMSTART&lt;/code>: Simultaneously enable Streaming SVE mode and ZA storage access&lt;/li>
+&lt;li>&lt;code>SMSTART SM&lt;/code>: Enable Streaming SVE mode&lt;/li>
+&lt;li>&lt;code>SMSTART ZA&lt;/code>: Enable ZA storage access&lt;/li>
+&lt;/ul>
+&lt;p>The SMSTOP instruction is an alias for the &lt;code>MSR&lt;/code> instruction that clears &lt;code>PSTATE.SM&lt;/code> and &lt;code>PSTATE.ZA&lt;/code>.&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>SMSTOP&lt;/code>: Simultaneously disable Streaming SVE mode and ZA storage access&lt;/li>
+&lt;li>&lt;code>SMSTOP SM&lt;/code>: Disable Streaming SVE mode&lt;/li>
+&lt;li>&lt;code>SMSTOP ZA&lt;/code>: Disable ZA storage access&lt;/li>
+&lt;/ul>
+&lt;p>The diagram below shows how the application switches between Streaming SVE mode and Non-streaming SVE mode:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_Scalable_Matrix_p1.webp"
+alt="Application switching Streaming SVE mode and Non-streaming SVE mode" width="50%" loading="lazy">&lt;figcaption>
+&lt;h4>Application switching Streaming SVE mode and Non-streaming SVE mode&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>For more information on switching between Streaming SVE mode and Non-Streaming SVE mode using SMSTART and SMSTOP, please refer to sections C6.2.327 and C6.2.328 of the Arm Architecture Reference Manual on A-profile architecture.&lt;/p>
+&lt;h2 id="4-sme-architecture-status">4. SME Architecture Status&lt;/h2>
+&lt;p>Similar to SVE2, in Streaming SVE mode, it has &lt;code>Z0-Z31&lt;/code> vector registers and &lt;code>P0-P15&lt;/code> predicate registers.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_4130_ARM2799_3_Scalable_Matrix_p1.webp"
+alt="Streaming mode registers" width="70%" loading="lazy">
+&lt;/figure>
+&lt;p>The lowest numbered SVE vector register &lt;code>Zn&lt;/code> also holds fixed-length &lt;code>Vn&lt;/code>, &lt;code>Qn&lt;/code>, &lt;code>Dn&lt;/code>, &lt;code>Sn&lt;/code>, &lt;code>Hn&lt;/code>, and &lt;code>Bn&lt;/code> registers.&lt;/p>
+&lt;p>When entering Streaming SVE mode (&lt;code>PSTATE.SM&lt;/code> changes from 0 to 1) or exiting Streaming SVE mode (&lt;code>PSTATE.SM&lt;/code> changes from 1 to 0), all these registers will be zeroed.&lt;/p>
+&lt;p>Most non-streaming SVE2 instructions can be used in Streaming SVE mode, but &lt;strong>may use different vector lengths&lt;/strong> (streaming mode uses VSL length, non-streaming mode uses NVSL length). The &lt;code>RDSVL&lt;/code> instruction can be used to read the current effective vector length VL.&lt;/p>
+&lt;pre>&lt;code class="language-armasm">// Read multiple of Streaming SVE vector register size to Xd
+RDSVL &amp;lt;Xd&amp;gt;, #&amp;lt;imm&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Because SME supports Vector Length Agnostic (VLA), in Streaming SVE mode, software rarely needs to explicitly read the SVL vector length. In Non-streaming SVE mode, the RDSVL instruction is usually used to determine the value of SVL.&lt;/p>&lt;/div>
+&lt;h2 id="5-za-array">5. ZA array&lt;/h2>
+&lt;p>The newly introduced ZA (Z Array, ZA Storage) in SME is a two-dimensional (2D) square array with a size of SVL x SVL. It is called Z Array because the length of its rows and columns is consistent with the Zn registers in Streaming SVE mode.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_4314_ARM2799_4_Scalable_Matrix_p1.webp"
+alt="ZA array" width="50%" loading="lazy">&lt;figcaption>
+&lt;h4>ZA array&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>For example: If the vector length in Streaming SVE mode is 256-bit, i.e., the length of the Zn register is 256-bit, then the size of ZA is 256-bit x 256-bit.&lt;/p>
+&lt;p>The ZA array can be accessed in the following way:&lt;/p>
+&lt;ul>
+&lt;li>ZA array vector access&lt;/li>
+&lt;li>ZA tiles&lt;/li>
+&lt;li>ZA tile slices&lt;/li>
+&lt;/ul>
+&lt;h3 id="51-za-array-vector-access">5.1 ZA array vector access&lt;/h3>
+&lt;p>A row of the ZA array can be accessed as a vector of SVL length, and this vector can contain elements with data type lengths of 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit, such as 32-bit fp32 floating-point numbers.&lt;/p>
+&lt;pre>&lt;code class="language-c">ZA.B[N], ZA.H[N], ZA.S[N], ZA.D[N], ZA.Q[N]
+&lt;/code>&lt;/pre>
+&lt;p>Among them, &lt;code>B, H, S, D, Q&lt;/code> represent 8-bit, 16-bit, 32-bit, 64-bit, 128-bit, respectively.&lt;/p>
+&lt;p>The number of ZA array vectors is the same as the number of bytes in SVL. For example, if SLV is 256-bit, then the number of ZA array vectors is 32, and the range of N is from 0 to 31.&lt;/p>
+&lt;p>To support context switching, SME introduces new &lt;code>LDR&lt;/code> and &lt;code>STR&lt;/code> instructions for loading and storing a ZA array vector from memory.&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LDR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
+STR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
+&lt;/code>&lt;/pre>
+&lt;h3 id="52-za-tiles">5.2 ZA tiles&lt;/h3>
+&lt;p>ZA tile is a square two-dimensional submatrix within ZA. The width of a ZA tile is always SVL, which is the same as the width of the ZA array.&lt;/p>
+&lt;p>How many usable ZA tiles ZA can be divided into is determined by the size of the data type of the elements:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Element Data Type Size&lt;/th>
+&lt;th>Tile Quantity&lt;/th>
+&lt;th>Tile Name&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>8-bit&lt;/td>
+&lt;td>1&lt;/td>
+&lt;td>ZA0.B&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>16-bit&lt;/td>
+&lt;td>2&lt;/td>
+&lt;td>ZA0.H-ZA1.H&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>32-bit&lt;/td>
+&lt;td>4&lt;/td>
+&lt;td>ZA0.S-ZA3.S&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>64-bit&lt;/td>
+&lt;td>8&lt;/td>
+&lt;td>ZA0.D-ZA7.D&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>128-bit&lt;/td>
+&lt;td>16&lt;/td>
+&lt;td>ZA0.Q-ZA15.Q&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>When the element data type is 8-bit, ZA can only be accessed as a ZA tile (ZA0.B).&lt;/li>
+&lt;li>When the element data type is 16-bit, ZA can be accessed as 2 ZA tiles (ZA0.H and ZA1.H).&lt;/li>
+&lt;li>When the element data type is 32-bit, ZA can be accessed as 4 ZA tiles (ZA0.S to ZA3.S).&lt;/li>
+&lt;li>When the element data type is 64-bit, ZA can be accessed as 8 ZA tiles (ZA0.D to ZA7.D).&lt;/li>
+&lt;li>When the element data type is 128-bit, ZA can be accessed as 16 ZA tiles (ZA0.Q to ZA15.Q).&lt;/li>
+&lt;/ul>
+&lt;p>For example, if SVL is 256-bit and the element data type size is 8-bit, then ZA can be considered as ZA0.B, or it can be seen as 32 vectors (32 rows, each row size is 32 x 8-bit, i.e., 32 elements per row).&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_ZA0B.webp"
+alt="ZA0.B" width="50%" loading="lazy">
+&lt;/figure>
+&lt;p>If SVL is 256-bit and the element data type size is 16-bit, then ZA can be considered as 2 ZA tiles (ZA0.H and ZA1.H), with each tile considered as 16 vectors (16 rows, each row size is 16 x 16-bit, i.e., 16 elements per row).&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_ZA0H_ZA1H.webp"
+alt="ZA0.H and ZA1.H" width="40%" loading="lazy">
+&lt;/figure>
+&lt;p>The advantage of doing this is to fully utilize ZA storage. In practical applications, for example, when the SVL is 256-bit, the element data type size is 32-bit, and the size of ZA is 256-bit x 256-bit, &lt;strong>to perform an outer product operation on vectors in two Z registers&lt;/strong>, the outer product result is a 2D array of 8 x 8 floating-point numbers. This outer product only requires 1/4 of the storage space of ZA. By dividing ZA into 4 ZA tiles, ZA storage can be fully utilized.&lt;/p>
+&lt;h3 id="53-za-tile-slices">5.3 ZA tile slices&lt;/h3>
+&lt;p>A ZA tile can be accessed as a whole or in the form of individual ZA tile slices.&lt;/p>
+&lt;p>When accessed as a whole, instructions can be accessed using the name of the tile:&lt;/p>
+&lt;pre>&lt;code class="language-text">ZA0.B, ZA0.H-ZA1.H, ZA0.S-ZA3.S, ZA0.D-ZA7.D or ZA0.Q-ZA15.Q
+&lt;/code>&lt;/pre>
+&lt;p>A ZA tile slice is a one-dimensional array composed of &lt;strong>continuous elements in the horizontal or vertical direction of its ZA tile&lt;/strong>, that is, a row or a column in the ZA tile.&lt;/p>
+&lt;p>Accessing a vector of a ZA tile is reading and writing a ZA tile slice:&lt;/p>
+&lt;ul>
+&lt;li>Horizontal or vertical ZA tile slice access is indicated by the &lt;code>H&lt;/code> or &lt;code>V&lt;/code> suffix following the ZA tile name.&lt;/li>
+&lt;li>A specific ZA tile slice is represented by an index, indicated by the slice index &lt;code>[N]&lt;/code> following the ZA tile name.&lt;/li>
+&lt;/ul>
+&lt;p>For example, if the SVL is 128 bits and the element data type size is 8-bit, then its horizontal and vertical ZA tile slice can be represented as shown in the figure below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_6724_ARM2799_7_Scalable_Matrix_p1.webp"
+alt="ZA tile slices" width="50%" loading="lazy">
+&lt;/figure>
+&lt;p>For example, if the SVL is 128 bits and the element data type size is 16-bit, then its horizontal and vertical ZA tile slice can be represented as shown in the figure below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_6888_ARM2799_8_Scalable_Matrix_p1.webp"
+alt="ZA tile slices" width="50%" loading="lazy">
+&lt;/figure>
+&lt;p>In order to improve the efficiency of hardware access to ZA tile and ZA tile slices, the ZA tile slices of a ZA tile are interleaved.&lt;/p>
+&lt;p>The image below shows an example of this interleaved arrangement. In this example, SVL is 256 bits, and the element data type size is 16 bits. This means that ZA can be viewed as two ZA tiles (ZA0H and ZA1H) and has interleaved horizontal tile slices:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_4885_SME_interleave.webp"
+alt="ZA tile slices" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>The figure below shows a mixed view of the horizontal and vertical ZA tile slice sizes for different element data types:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_7673_SME_V_H.webp"
+alt="ZA tile slices" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>The left columns show the different processing methods for each row of the ZA memory.&lt;/p>
+&lt;p>Set SIZE as the size of vector elements, where SIZE is 1, 2, 4, 8, 16, representing data types B, H, S, D, or Q, respectively.&lt;/p>
+&lt;p>Set NUM_OF_ELEMENTS as the number of elements in the vector, i.e., bytes_of(SVL)/SIZE.&lt;/p>
+&lt;p>Horizontal tile slice, &lt;code>ZAnH.&amp;lt;B|H|S|D|Q&amp;gt;[m]&lt;/code> accesses a vector that contains a whole row (m x SIZE + n) in ZA storage. The vector contains elements of data type B, H, S, D, or Q.&lt;/p>
+&lt;p>Vertical tile slice, &lt;code>ZAnV.&amp;lt;B|H|S|D|Q&amp;gt;[m] &lt;/code> accesses a vector that contains the entire column (m x SIZE) in ZA storage. This vector contains elements of data type B, H, S, D, or Q.&lt;/p>
+&lt;p>&lt;code>ZAnV.[m]&lt;/code> accesses a vector containing column (m x SIZE) and row elements (i x SIZE + n), where i ranges from 0 to NUM_OF_ELEMENTS-1. This vector contains elements of data types B, H, S, D, or Q.&lt;/p>
+&lt;p>Be careful with overlapping when applying mixed element data type sizes and horizontal and vertical tile slices.&lt;/p>
+&lt;p>For more information on ZA Array, ZA array vectors, tile, and tile slices, refer to sections B1.4.8 to B1.4.12 of the Arm Architecture Reference Manual for the A-profile architecture.&lt;/p>
+&lt;h2 id="6-instructions-supported-in-steaming-sve-mode">6. Instructions supported in Steaming SVE mode&lt;/h2>
+&lt;p>Some instructions have limitations in Streaming SVE mode:&lt;/p>
+&lt;ul>
+&lt;li>Some SVE/SVE2 instructions become illegal to execute
+&lt;ul>
+&lt;li>Gather-load and Scatter-store instructions&lt;/li>
+&lt;li>Use the SVE2 instruction of the First Fault register&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Most NEON instructions become UNDEFINED&lt;/li>
+&lt;/ul>
+&lt;p>For more information about instructions affected by the Streaming SVE mode, please refer to the document &amp;ldquo;Arm Architecture Reference Manual.&amp;rdquo;&lt;/p>
+&lt;p>SME has added several new instructions, including:&lt;/p>
+&lt;ul>
+&lt;li>Matrix outer product and accumulate or subtract instructions, including FMOPA, UMOPA, and BFMOPA.
+&lt;ul>
+&lt;li>SVE2 vector registers (Z0-Z31) serve as the row and column inputs for outer product operations.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>ZA storage stores the output results of the two-dimensional matrix tile.&lt;/li>
+&lt;li>Instructions for performing addition operations with the SVE2 Z vector and the rows or columns of ZA&lt;/li>
+&lt;li>Instruction for clearing ZA tiles&lt;/li>
+&lt;li>Added some instructions that can be used in both Streaming and Non-streaming modes.&lt;/li>
+&lt;/ul>
+&lt;h2 id="7-sme-directive">7. SME Directive&lt;/h2>
+&lt;p>The main SME commands for operating ZA storage include:&lt;/p>
+&lt;ul>
+&lt;li>Calculate the cross product of two vectors, and then accumulate or decrement, and place the result into an instruction of a ZA tile.&lt;/li>
+&lt;li>Instructions to store or load SVE vectors (Z registers) into or from rows or columns of the ZA tile&lt;/li>
+&lt;li>In the horizontal or vertical direction, an SVE vector and ZA tile addition instruction&lt;/li>
+&lt;li>An instruction to add a multiple of the vector length in Streaming SVE mode to a scalar register&lt;/li>
+&lt;/ul>
+&lt;h3 id="71-outer-product-and-accumulate-or-subtract-instructions">7.1 Outer Product and Accumulate or Subtract Instructions&lt;/h3>
+&lt;p>In order to help understand outer product and accumulate or subtract instructions, let&amp;rsquo;s see how to use the outer product operation to perform matrix multiplication.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_2313_Picture1_png-1280x960.webp"
+alt="Outer product" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>Calculating the outer product of two vectors a and b will yield a result matrix C containing the outer product:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_1665_Picture2_png-1280x960.webp"
+alt="Outer product" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>Now consider the matrix multiplication operation of two matrices a and b:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_8117_Picture3_png-1280x960.webp"
+alt="Matrix multiplication" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>This matrix multiplication can be achieved by calculating two outer product operations and accumulating the two resulting matrices (which is the commonly used handwritten calculation method), as shown in the diagram below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_3731_Picture4_png-1280x960.webp"
+alt="Matrix multiplication with outer product" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>SME introduced efficient outer product and accumulate or subtract instructions for the following data types:&lt;/p>
+&lt;ul>
+&lt;li>8-bit, 16-bit integers&lt;/li>
+&lt;li>FP16, BF16, FP32, and FP64 floating point numbers&lt;/li>
+&lt;/ul>
+&lt;p>These instructions calculate the outer product of two vectors in two Z vector registers (Zn and Zm), accumulate or subtract the resulting array with the existing data in a ZA tile (ZAda), and store the result in the same ZA tile (ZAda). Each source vector is independently predicated by the corresponding control predicate registers (Pn and Pm).&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Output Array&lt;/th>
+&lt;th>Input Vector&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;th>Example&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>INT32&lt;/td>
+&lt;td>INT8, INT8&lt;/td>
+&lt;td>Store the sum of the outer products of four INT8s into each INT32 element&lt;/td>
+&lt;td>SMOPA or SMOPS or UMOPA or UMOPS: Signed or unsigned integer outer product sum, and accumulate or subtract. For example: &lt;code>UMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.B, &amp;lt;Zm&amp;gt;.B&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>INT32&lt;/td>
+&lt;td>INT16, INT16&lt;/td>
+&lt;td>Store the sum of the outer product of two INT16 in each INT32 element&lt;/td>
+&lt;td>SMOPA or SMOPS or UMOPA or UMOPS: Signed or unsigned integer outer product sum, and accumulate or subtract. For example: &lt;code>UMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.H, &amp;lt;Zm&amp;gt;.H&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>INT64&lt;/td>
+&lt;td>INT16, INT16&lt;/td>
+&lt;td>If FEAT_SME_I16I64 is implemented, the sum of the outer products of four INT16s is stored in each INT64 element&lt;/td>
+&lt;td>SMOPA or SMOPS or UMOPA or UMOPS: signed or unsigned integer outer product sum, and accumulate or subtract. For example: &lt;code>UMOPS &amp;lt;ZAda&amp;gt;.D, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.H, &amp;lt;Zm&amp;gt;.H&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP32&lt;/td>
+&lt;td>BF16, BF16&lt;/td>
+&lt;td>Store the sum of two BF16 outer products into each FP32 element&lt;/td>
+&lt;td>BFMOPA or BFMOPS: BFloat16 outer product sum, with accumulation or subtraction. For example: &lt;code>BFMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.H, &amp;lt;Zm&amp;gt;.H&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP32&lt;/td>
+&lt;td>FP16, FP16&lt;/td>
+&lt;td>Store the sum of two FP16 outer products into each FP32 element&lt;/td>
+&lt;td>FMOPA or FMOPS: Half-precision floating-point outer product sum, and accumulate or subtract. For example: &lt;code>FMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.H, &amp;lt;Zm&amp;gt;.H&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP32&lt;/td>
+&lt;td>FP32, FP32&lt;/td>
+&lt;td>Simple FP32 outer product&lt;/td>
+&lt;td>FMOPA or FMOPS: Floating-point outer product and accumulate or subtract. For example: &lt;code>FMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.S, &amp;lt;Zm&amp;gt;.S&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP64&lt;/td>
+&lt;td>FP64, FP64&lt;/td>
+&lt;td>If FEAT_SME_F64F64 is implemented, perform a simple FP64 outer product&lt;/td>
+&lt;td>FMOPA or FMOPS: Floating point outer product and accumulate or subtract. For example: &lt;code>FMOPS &amp;lt;ZAda&amp;gt;.D, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.D, &amp;lt;Zm&amp;gt;.D&lt;/code>&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h4 id="711-fp32-fp64-outer-product-and-accumulate-or-subtract-instructions">7.1.1 FP32, FP64 outer product and accumulate or subtract instructions&lt;/h4>
+&lt;p>Instructions where the input vectors and output arrays have the same data type (FP32, FP64) are relatively simple.&lt;/p>
+&lt;p>The following example demonstrates FP32 type outer product with accumulation or subtraction instructions.&lt;/p>
+&lt;pre>&lt;code class="language-armasm">FMOPA &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.S, &amp;lt;Zm&amp;gt;.S
+FMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.S, &amp;lt;Zm&amp;gt;.S
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_3613751670-667e5f923c64.webp"
+alt="FMOPA and FMOPS" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>In this example, assuming the SVL vector length is 128, &lt;code>Zn.S&lt;/code> and &lt;code>Zm.S&lt;/code> contain vectors composed of 4 FP32 numbers, this instruction calculates the outer product of &lt;code>Zn.S&lt;/code> and &lt;code>Zm.S&lt;/code>, the result of the outer product is the gray matrix in the figure, then accumulates or subtracts this outer product result with the existing values in the ZA tile &lt;code>ZAda.S&lt;/code>, and stores the result in the same ZA tile.&lt;/p>
+&lt;h4 id="712-fp16-bf16-int16-int8-i16i64-type-outer-product-and-accumulate-or-subtract-instructions">7.1.2 FP16, BF16, INT16, INT8, I16I64 type outer product and accumulate or subtract instructions&lt;/h4>
+&lt;p>Because these instructions will expand the data type of the calculation results, these operations are not as straightforward as the previous FP32 and FP64 type instructions.&lt;/p>
+&lt;ul>
+&lt;li>BF16 instruction calculates the outer product of two BF16s, expands the result type to FP32, and then destructively adds or subtracts the result with the target tile.&lt;/li>
+&lt;li>INT8 instructions compute the sum of the outer product of four INT8s, expanding the result type to INT32, and then perform destructive addition or subtraction of the result with the target tile.&lt;/li>
+&lt;li>INT16 instruction calculates the outer product sum of two INT16s, expands the result type to INT32, and then performs a destructive add or subtract with the target tile.&lt;/li>
+&lt;li>FP16 instructions calculate the sum of the outer product of two FP16s, expand the result type to FP32, and then perform destructive addition or subtraction of the result with the target tile.&lt;/li>
+&lt;li>If FEAT_SME_I16I64 is implemented, the I16I64 instruction calculates the sum of the outer products of four INT16s, expands the result type to INT64, and then destructively adds or subtracts the result with the target tile.&lt;/li>
+&lt;/ul>
+&lt;p>The following example demonstrates the operation of the INT8 UMOPA instruction with an SVL vector length of 128:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">UMOPA &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.B, &amp;lt;Zm&amp;gt;.B
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_1030_Picture6_png-1280x960.webp"
+alt="INT8 UMOPA" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>Each input register (&lt;code>Zn.B&lt;/code>, &lt;code>Zm.B&lt;/code>) is treated as a matrix containing 4x4 elements, which can be seen as blocks composed of 4 consecutive elements (as marked by the red lines in the diagram) that have been transposed.&lt;/p>
+&lt;p>In this example, because the SVL vector length is 128-bit:&lt;/p>
+&lt;ul>
+&lt;li>The first source vector &lt;code>Zn.B&lt;/code> contains a 4x4 submatrix of unsigned 8-bit integers.&lt;/li>
+&lt;li>The second source vector &lt;code>Zm.B&lt;/code>, contains a 4x4 submatrix of unsigned 8-bit integers.&lt;/li>
+&lt;li>UMOPA instruction calculates the sum of the 4x4 expanded 32-bit integer outer product, then destructively accumulates the integers in the target tile (ZAda).&lt;/li>
+&lt;/ul>
+&lt;p>More generally, the UMOPA instruction multiplies submatrices from the first source vector with submatrices from the second source vector. Each source vector contains a submatrix of unsigned 8-bit integers of size (SVL/32) x 4. The resulting (SVL/32) x (SVL/32) expanded 32-bit integer outer product is then destructively added to a 32-bit integer target tile.&lt;/p>
+&lt;p>The following example demonstrates the operation of a BF16 BFMOPA with an SVL of 128-bit:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">BFMOPA &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.H, &amp;lt;Zm&amp;gt;.H
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_6545_Picture7_png-1280x960.webp"
+alt="BF16 BFMOPA" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>In this example, because the SVL vector length is 128-bit:&lt;/p>
+&lt;ul>
+&lt;li>The first source vector &lt;code>Zn.H&lt;/code>, contains a 4x2 submatrix of BF16 integers, which is expanded into single-precision floating-point numbers.&lt;/li>
+&lt;li>The second source vector &lt;code>Zm.H&lt;/code>, contains a 2x4 submatrix of a BF16 integer, which is expanded into a single-precision floating-point number.&lt;/li>
+&lt;li>BMOPA instruction calculates the sum of a 4x4 single-precision outer product, and then destructively accumulates it with the single-precision floating-point numbers in the target tile (ZAda).&lt;/li>
+&lt;/ul>
+&lt;p>More generally speaking, the BFMOPA instruction expands the type of the (SVL/32) x2 BF16 submatrix stored in the first source vector to single precision, expands the type of the 2x (SVL/32) BF16 submatrix stored in the second source vector to single precision, and multiplies these two submatrices. Then, the resulting (SVL/32) x (SVL/32) single-precision outer product is destructively added to a single-precision target tile.&lt;/p>
+&lt;p>The following table shows the number of MACs (Multiply-Accumulate) for the corresponding data type performed by an outer product and accumulate or subtract instruction for several data types and SVL lengths:&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>128-bit&lt;/th>
+&lt;th>256-bit&lt;/th>
+&lt;th>512-bit&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>FP32&lt;/td>
+&lt;td>16&lt;/td>
+&lt;td>64&lt;/td>
+&lt;td>256&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP64&lt;/td>
+&lt;td>4&lt;/td>
+&lt;td>16&lt;/td>
+&lt;td>64&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>INT8&lt;/td>
+&lt;td>64&lt;/td>
+&lt;td>256&lt;/td>
+&lt;td>1024&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>INT16&lt;/td>
+&lt;td>32&lt;/td>
+&lt;td>128&lt;/td>
+&lt;td>512&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>BF16&lt;/td>
+&lt;td>32&lt;/td>
+&lt;td>128&lt;/td>
+&lt;td>512&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>FP16&lt;/td>
+&lt;td>32&lt;/td>
+&lt;td>128&lt;/td>
+&lt;td>512&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h3 id="72-sme-instructions-with-predication">7.2 SME Instructions with Predication&lt;/h3>
+&lt;p>Each source vector can be independently predicated by its corresponding control predicate register:&lt;/p>
+&lt;ul>
+&lt;li>Outer product and accumulate or subtract instructions use Pn/M and Pn/M (without /Z form): Inactive source elements are treated as having a value of 0.&lt;/li>
+&lt;li>Slice move command uses Pg/M: The Inactive elements in the target slice remain unchanged.&lt;/li>
+&lt;li>Tile slice load instruction uses Pg/Z: Inactive elements in the target tile slice are set to 0.&lt;/li>
+&lt;li>Tile slice store instruction uses Pg: Inactive elements that will not be written to memory.&lt;/li>
+&lt;/ul>
+&lt;p>Predication makes it easier to handle cases where the dimensions of the matrix are not a multiple of SVL.&lt;/p>
+&lt;p>For example, the instructions in the image below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_2656_Picture12_png-600x0.webp"
+alt="SME prediction" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>The input vector &lt;code>Z0&lt;/code> is predicated by &lt;code>P0&lt;/code>, &lt;code>Z1&lt;/code> is predicated by &lt;code>P1&lt;/code>.&lt;/p>
+&lt;p>In this example:&lt;/p>
+&lt;ul>
+&lt;li>SVL vector length is 512-bit.&lt;/li>
+&lt;li>The Z register contains a vector of 16 FP32 numbers.&lt;/li>
+&lt;li>The last two elements in &lt;code>P0&lt;/code> are inactive.&lt;/li>
+&lt;li>The last element in &lt;code>P1&lt;/code> is inactive.&lt;/li>
+&lt;/ul>
+&lt;p>This instruction updates (16-2) x (16-1) FP32 elements in &lt;code>ZA0.S&lt;/code>, because &lt;code>Pn/M&lt;/code> is used, the remaining elements in &lt;code>ZA0.S&lt;/code> remain unchanged.&lt;/p>
+&lt;p>The figure below shows more examples of predicated outer products with accumulation or subtraction. The underlined text in the figure indicates the parts of the calculation affected by inactive predicate elements.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_2072_Picture14_png-1280x960.webp"
+alt="SME prediction FMOPA" width="auto" loading="lazy">
+&lt;/figure>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_3513_Picture16_png-1280x960.webp"
+alt="SME prediction UMOPA" width="auto" loading="lazy">
+&lt;/figure>
+&lt;h3 id="73-za-tile-and-addition-operation-with-a-z-vector">7.3 ZA tile and addition operation with a Z vector&lt;/h3>
+&lt;p>SME includes instructions to add a vector to the rows or columns of a ZA tile, and these instructions also support predication.&lt;/p>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Instruction&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>ADDHA&lt;/td>
+&lt;td>Add the source vector to each horizontal slice of the ZA tile&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>ADDVA&lt;/td>
+&lt;td>Add the source vector to each vertical slice of the ZA tile&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;p>For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ADDHA ZA0.S, P0/M, P1/M, Z1.S
+&lt;/code>&lt;/pre>
+&lt;p>Will perform the following actions:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_ARM2799_9_Scalable_Matrix_p2_png-1200x0.webp"
+alt="SME ADDHA" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>This ADDHA instruction adds each element of the source vector Z1 to the corresponding active element of each horizontal slice of the ZA0.S tile.&lt;/p>
+&lt;p>Elements in a Tile are predicated by a pair of governing predicates. An element in a horizontal slice can be considered active under the following conditions:&lt;/p>
+&lt;ul>
+&lt;li>It is TRUE for the element corresponding to the second governing predicate, and&lt;/li>
+&lt;li>It corresponds to TRUE at the row number of the first governing predicate&amp;rsquo;s horizontal slice, and the inactive elements in the target tile remain unchanged.&lt;/li>
+&lt;/ul>
+&lt;h3 id="74-tile-load-store-move-instructions">7.4 Tile load, store, move instructions&lt;/h3>
+&lt;p>SME tile load, store, move instructions can:&lt;/p>
+&lt;ul>
+&lt;li>Read data from memory and place it into a row or column of the ZA tile&lt;/li>
+&lt;li>Write the row or column of the ZA tile into memory&lt;/li>
+&lt;li>Move the row of the ZA tile to the SVE Z vector register&lt;/li>
+&lt;li>Move the SVE Z vector register to a ZA tile row or column&lt;/li>
+&lt;/ul>
+&lt;h4 id="741-tile-slice-load-and-store-instructions">7.4.1 Tile slice load and store instructions&lt;/h4>
+&lt;p>The LD1B, LD1H, LD1S, LD1D, and LD1Q instructions load consecutive memory values into a ZA tile slice with 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit elements, respectively.&lt;/p>
+&lt;p>The ST1B, ST1H, ST1S, ST1D, and ST1Q instructions store a ZA tile slice containing 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit elements, respectively, into contiguous memory.&lt;/p>
+&lt;p>These instructions also support predication, for example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LD1B ZA0H.B[W0, #imm], P0/Z, [X1, X2]
+&lt;/code>&lt;/pre>
+&lt;p>This LD1B instruction performs a predicated continuous byte read, reading data from memory at address (X1+X2) into the horizontal tile slice in ZA0 at row number (W0+imm). Inactive elements in the target tile slice are set to 0.&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ST1H ZA1V.H[W0, #imm], P2, [X1, X2, LSL #1]
+&lt;/code>&lt;/pre>
+&lt;p>This ST1H instruction executes a predicated continuous halfword store operation, storing the vertical tile slice in ZA1 with the column number (W0+imm) to the memory address (X1+X2*2), and elements that are inactive in the tile slice are not written to memory.&lt;/p>
+&lt;h4 id="742-tile-slice-move-instruction">7.4.2 Tile slice move instruction&lt;/h4>
+&lt;p>The MOV instruction (alias for the MOVA instruction) moves the value of a Z vector register to a ZA tile slice, or moves the value from a ZA tile slice to a Z vector register. This instruction operates on a single horizontal or vertical tile slice of a ZA tile with a specified element size. The row number/column number of the slice is specified by the slice&amp;rsquo;s retrieval register plus an immediate offset. Inactive elements in the target slice remain unchanged.&lt;/p>
+&lt;p>For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">MOV ZA0H.B[W0, #imm], P0/M, Z0.B
+&lt;/code>&lt;/pre>
+&lt;p>Or&lt;/p>
+&lt;pre>&lt;code class="language-armasm">MOVA ZA0H.B[W0, #imm], P0/M, Z0.B
+&lt;/code>&lt;/pre>
+&lt;p>This instruction moves the values in vector register &lt;code>Z0.B&lt;/code> to the horizontal ZA tile slice &lt;code>ZA0H.B[W0,#imm]&lt;/code>, using &lt;code>P0&lt;/code> as the predication register. Inactive elements in the target tile slice remain unchanged.&lt;/p>
+&lt;h3 id="75-za-array-vector-loadstore-instructions">7.5 ZA array vector load/store instructions&lt;/h3>
+&lt;p>SME LDR instruction reads data from memory into a ZA array vector, SME STR instruction stores the values from a ZA array vector into memory.
+These instructions do not have predication functionality. They are primarily for saving/restoring ZA storage during software context switching. SME LDR/STR instructions can also be used in Non-streaming SVE mode when PSTATE.ZA is enabled.
+For example, the ZA array vector in the following STR instruction is specified by a vector selection register Wv (scalar register W) plus an optional immediate number (Wv+Imm). The address for accessing memory is: a scalar register as the base, plus the same optional immediate offset multiplied by the current vector length in bytes.&lt;/p>
+&lt;pre>&lt;code class="language-armasm">STR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
+&lt;/code>&lt;/pre>
+&lt;h3 id="76-za-tile-clear-instruction">7.6 ZA tile clear instruction&lt;/h3>
+&lt;p>SME ZERO instruction can clear a group of 64-bit ZA tile:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ZERO { &amp;lt;mask&amp;gt;}
+&lt;/code>&lt;/pre>
+&lt;p>The ZERO instruction can zero out up to 8 ZA tiles named &lt;code>ZA0.D&lt;/code> to &lt;code>ZA8.D&lt;/code>. The tiles to be zeroed are specified by the mask in the instruction, while the remaining tiles remain unchanged.&lt;/p>
+&lt;p>This instruction can also be used in Non-streaming SVE mode when &lt;code>PSTATE.ZA&lt;/code> is enabled.&lt;/p>
+&lt;p>If you want to clear the entire ZA array, you can use an instruction alias, &lt;code>ZERO {ZA}&lt;/code>.&lt;/p>
+&lt;h3 id="77-new-sve2-instructions">7.7 New SVE2 Instructions&lt;/h3>
+&lt;p>The SME architecture extension has added some new SVE2 instructions, which can also be used in PE that implements SVE2 when in Non-streaming SVE mode. These instructions include:&lt;/p>
+&lt;ul>
+&lt;li>Select a predicate register or an all-false Predicate select instruction&lt;/li>
+&lt;li>Reverse 64-bit double word element instruction&lt;/li>
+&lt;li>Signed/Unsigned clamp to smaller/larger value vector instructions&lt;/li>
+&lt;/ul>
+&lt;p>The following introduces the Predicate select instruction.&lt;/p>
+&lt;h4 id="771-psel-instruction">7.7.1 PSEL Instruction&lt;/h4>
+&lt;p>PSEL instruction selects a predicate register or all-false to the target predicate register, as follows:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">PSEL &amp;lt;Pd&amp;gt;, &amp;lt;Pn&amp;gt;, &amp;lt;Pm&amp;gt;.&amp;lt;T&amp;gt;[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;]
+&lt;/code>&lt;/pre>
+&lt;p>If the element specified in the second source predicate register (Pm) is True, this instruction places the content of the first source predicate register (Pn) into the destination predicate register (Pd), otherwise, it sets the value of the destination predicate register to all false.
+For example, the following instruction, assuming the value of W12 is 0:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">PSEL P0, P1, P2.B[W12, #0]
+&lt;/code>&lt;/pre>
+&lt;p>The [0]th element of the second source predicate register [W12+0] is False, so the target register P0 is set to all 0 (all-false), as shown in the figure below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_4401_Picture10_png-1280x960.webp"
+alt="SME PSEL" width="auto" loading="lazy">
+&lt;/figure>
+&lt;p>Now look at the following instruction, still assuming the value of W12 is 0, but this time the immediate offset is 1:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">PSEL P0, P1, P2.B[W12, #1]
+&lt;/code>&lt;/pre>
+&lt;p>The [1] element of the second source predicate register [W12+1] is True, therefore select the value of the first source predicate register to the destination register P0, as shown in the diagram below:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_0116_Picture11_png-1280x960.webp"
+alt="SME PSEL" width="auto" loading="lazy">
+&lt;/figure>
+&lt;h2 id="references">References&lt;/h2>
+&lt;ul>
+&lt;li>&lt;a class="link" href="https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/arm-scalable-matrix-extension-introduction" target="_blank" rel="noopener" >Arm Scalable Matrix Extension (SME) Introduction
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;li>&lt;a class="link" href="https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/arm-scalable-matrix-extension-introduction-p2" target="_blank" rel="noopener" >Arm Scalable Matrix Extension (SME) Instructions
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;/ul></description></item><item><title>Arm Performance Optimization: Scalable Vector Extension SVE</title><link>https://cuterwrite.top/en/p/arm-sve-for-performance/</link><pubDate>Sun, 11 Aug 2024 02:13:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sve-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp" alt="Featured image of post Arm Performance Optimization: Scalable Vector Extension SVE" />&lt;h1 id="arm-performance-optimization-scalable-vector-extension-sve">ARM Performance Optimization: Scalable Vector Extension SVE&lt;/h1>
+&lt;h2 id="1-sve-introduction">1. SVE Introduction&lt;/h2>
+&lt;p>After the Neon architecture extension with a fixed 128-bit vector length instruction set, Arm designed the Scalable Vector Extension (SVE) as the next-generation SIMD extension for AArch64. SVE introduces the scalable concept, allowing flexible vector length implementations and providing a range of possible values in CPU implementations. The vector length can vary from a minimum of 128 bits to a maximum of 2048 bits, in increments of 128 bits. &lt;strong>The SVE design ensures that the same application can run on different SVE-supporting implementations without recompiling the code&lt;/strong>. SVE enhances the architecture&amp;rsquo;s applicability to high-performance computing (HPC) and machine learning (ML) applications, which require very large amounts of data processing. SVE2 is a superset of SVE and Neon. SVE2 allows the use of more functional domains in data-level parallelism. SVE2 inherits the concepts, vector registers, and operation principles of SVE. SVE and SVE2 define 32 scalable vector registers. Chip partners can choose an appropriate vector length design implementation, with hardware varying between 128 bits and 2048 bits (in increments of 128 bits). The advantage of SVE and SVE2 is that only one vector instruction set uses scalable variables.&lt;/p>
+&lt;p>The SVE design philosophy allows developers to write and build software once, and then run the same binary on different AArch64 hardware with various SVE vector length implementations. The portability of the binary means developers do not need to know the vector length implementation of their system. This eliminates the need to rebuild the binary, making the software easier to port. In addition to scalable vectors, SVE and SVE2 also include:&lt;/p>
+&lt;ul>
+&lt;li>per-lane predication&lt;/li>
+&lt;li>Gather Load/Scatter Store&lt;/li>
+&lt;li>Speculative Vectorization&lt;/li>
+&lt;/ul>
+&lt;p>These features help vectorize and optimize loops when dealing with large datasets.&lt;/p>
+&lt;p>The main difference between SVE2 and SVE lies in the functional coverage of the instruction set. SVE is specifically designed for HPC and ML applications. SVE2 extends the SVE instruction set to enable accelerated data processing in areas beyond HPC and ML. The SVE2 instruction set can also accelerate common algorithms used in the following applications:&lt;/p>
+&lt;ul>
+&lt;li>Computer Vision&lt;/li>
+&lt;li>Multimedia&lt;/li>
+&lt;li>LTE Basic Processing&lt;/li>
+&lt;li>Genomics&lt;/li>
+&lt;li>In-memory database&lt;/li>
+&lt;li>Web Service&lt;/li>
+&lt;li>General software&lt;/li>
+&lt;/ul>
+&lt;p>SVE and SVE2 both support collecting and processing large amounts of data. SVE and SVE2 are not extensions of the Neon instruction set. Instead, SVE and SVE2 are redesigned to offer better data parallelism than Neon. However, the hardware logic of SVE and SVE2 covers the implementation of Neon hardware. When a microarchitecture supports SVE or SVE2, it also supports Neon. To use SVE and SVE2, the software running on that microarchitecture must first support Neon.&lt;/p>
+&lt;h2 id="2-sve-architecture-basics">2. SVE Architecture Basics&lt;/h2>
+&lt;p>This section introduces the basic architectural features shared by SVE and SVE2. Like SVE, SVE2 is also based on scalable vectors. In addition to the existing register file provided by Neon, SVE and SVE2 add the following registers:&lt;/p>
+&lt;ul>
+&lt;li>32 scalable vector registers, &lt;code>Z0-Z31&lt;/code>&lt;/li>
+&lt;li>16 scalable Predicate registers, &lt;code>P0-P15&lt;/code>
+&lt;ul>
+&lt;li>1 First Fault Predicate register, &lt;code>FFR&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Scalable Vector System Control Register, &lt;code>ZCR_ELx&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;h3 id="21-scalable-vector-registers">2.1 Scalable Vector Registers&lt;/h3>
+&lt;p>Scalable vector registers &lt;code>Z0-Z31&lt;/code> can be implemented in microarchitecture as 128-2048 bits. The lowest 128 bits are shared with Neon&amp;rsquo;s fixed 128-bit vectors &lt;code>V0-V31&lt;/code>.&lt;/p>
+&lt;p>The image below shows scalable vector registers &lt;code>Z0-Z31&lt;/code>:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Z-register.webp"
+alt="Z Registers-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Scalable Vector Registers Z0-Z31&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Scalable Vector:&lt;/p>
+&lt;ul>
+&lt;li>Can accommodate 64, 32, 16, and 8-bit elements&lt;/li>
+&lt;li>Supports integer, double precision, single precision, and half precision floating-point elements&lt;/li>
+&lt;li>The vector length can be configured for each exception level (EL)&lt;/li>
+&lt;/ul>
+&lt;h3 id="22-scalable-predicate-register">2.2 Scalable Predicate Register&lt;/h3>
+&lt;p>In order to control which active elements participate in operations, Predicate registers (abbreviated as P registers) are used as masks in many SVE instructions, which also provides flexibility for vector operations. The figure below shows the scalable Predicate registers &lt;code>P0-P15&lt;/code>:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Predicate-register.webp"
+alt="P Register-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Scalable Predicate Registers P0-P15&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>The P register is typically used as a bitmask for data manipulation:&lt;/p>
+&lt;ul>
+&lt;li>Each P register is 1/8 the length of a Z register&lt;/li>
+&lt;li>&lt;code>P0-P7&lt;/code> are used for loading, storing, and arithmetic operations&lt;/li>
+&lt;li>&lt;code>P8-P15&lt;/code> used for loop management&lt;/li>
+&lt;li>FFR is a special P register set by the first-fault vector load and store instructions, used to indicate the success of load and store operations for each element. FFR is designed to support speculative memory access, making vectorization easier and safer in many cases.&lt;/li>
+&lt;/ul>
+&lt;h3 id="23-scalable-vector-system-control-register">2.3 Scalable Vector System Control Register&lt;/h3>
+&lt;p>The figure below shows the Scalable Vector System Control Register &lt;code>ZCR_ELx&lt;/code>:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_ZCR_Elx.webp"
+alt="ZCR_Elx-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Scalable Vector System Control Register ZCR_Elx&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Scalable Vector System Control Register indicates SVE implementation features:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>ZCR_Elx.LEN&lt;/code> field is used for the vector length of the current and lower anomaly levels.&lt;/li>
+&lt;li>Most bits are currently reserved for future use.&lt;/li>
+&lt;/ul>
+&lt;h3 id="24-sve-assembly-syntax">2.4 SVE Assembly Syntax&lt;/h3>
+&lt;p>The SVE assembly syntax format consists of an opcode, destination register, P register (if the instruction supports a Predicate mask), and input operands. The following instruction example will detail this format.&lt;/p>
+&lt;p>Example 1:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LDFF1D {&amp;lt;Zt&amp;gt;.D}, &amp;lt;Pg&amp;gt;/Z, [&amp;lt;Xn|SP&amp;gt;, &amp;lt;Zm&amp;gt;.D, LSL #3]
+&lt;/code>&lt;/pre>
+&lt;p>Among them:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>&amp;lt;Zt&amp;gt;&lt;/code> is the Z register, &lt;code>Z0-Z31&lt;/code>&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zt&amp;gt;&lt;/code>.D and &lt;code>&amp;lt;Zm&amp;gt;&lt;/code>.D specify the element type of the target and operand vectors, without needing to specify the number of elements.&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;&lt;/code> is the P register, &lt;code>P0-P15&lt;/code>&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;/Z&lt;/code> is to zero the P register.&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zm&amp;gt;&lt;/code> specifies the offset for the Gather Load address mode.&lt;/li>
+&lt;/ul>
+&lt;p>Example 2:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ADD &amp;lt;Zdn&amp;gt;.&amp;lt;T&amp;gt;, &amp;lt;Pg&amp;gt;/M, &amp;lt;Zdn&amp;gt;.&amp;lt;T&amp;gt;, &amp;lt;Zm&amp;gt;.&amp;lt;T&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;p>Among them:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;/M&lt;/code> is the merge P register.&lt;/li>
+&lt;li>&lt;code>&amp;lt;Zdn&amp;gt;&lt;/code> is both the destination register and one of the input operands. The instruction syntax shows &lt;code>&amp;lt;Zdn&amp;gt;&lt;/code> in both places for convenience. In the assembly encoding, for simplification, they are only encoded once.&lt;/li>
+&lt;/ul>
+&lt;p>Example 3:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ORRS &amp;lt;Pd&amp;gt;.B, &amp;lt;Pg&amp;gt;.Z, &amp;lt;Pn&amp;gt;.B, &amp;lt;Pm&amp;gt;.B
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>S&lt;/code> is the new interpretation of the P register condition flags &lt;code>NZCV&lt;/code>.&lt;/li>
+&lt;li>&lt;code>&amp;lt;Pg&amp;gt;&lt;/code> controls the P register to act as a bitmask in the example operation.&lt;/li>
+&lt;/ul>
+&lt;h3 id="25-sve-architecture-features">2.5 SVE Architecture Features&lt;/h3>
+&lt;p>SVE includes the following key architectural features:&lt;/p>
+&lt;ul>
+&lt;li>per-lane predication&lt;/li>
+&lt;/ul>
+&lt;p>In order to allow flexible operations on selected elements, SVE introduces 16 P registers, &lt;code>P0-P15&lt;/code>, to indicate valid operations on vector active channels. For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">ADD Z0.D, P0/M, Z0.D, Z1.D
+&lt;/code>&lt;/pre>
+&lt;p>Add the active elements &lt;code>Z0&lt;/code> and &lt;code>Z1&lt;/code> and place the result in &lt;code>Z0&lt;/code>. &lt;code>P0&lt;/code> indicates which elements of the operands are active and inactive. The &lt;strong>M&lt;/strong> following &lt;code>P0&lt;/code> stands for Merging, meaning the inactive elements of &lt;code>Z0&lt;/code> will retain their initial values after the &lt;code>ADD&lt;/code> operation. If &lt;strong>Z&lt;/strong> follows &lt;code>P0&lt;/code>, the inactive elements will be zeroed, and the inactive elements of the destination register will be zeroed after the operation.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Per-lane_Predication.webp"
+alt="Per-lane_Predication-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Per-lane predication merging&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>If &lt;strong>\Z&lt;/strong> is used, the inactive elements will be zeroed, and the inactive elements of the target register will be zeroed after the operation. For example&lt;/p>
+&lt;pre>&lt;code class="language-armasm">CPY Z0.B, P0/Z, #0xFF
+&lt;/code>&lt;/pre>
+&lt;p>Indicates that the signed integer 0xFF will be copied to the active channel of &lt;code>Z0&lt;/code>, while the inactive channels will be cleared.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Per-lane_Predicate_Zeroing.webp"
+alt="Per-lane_Predicate_Zeroing-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Per-lane predication zeroing&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;div class="notice notice-note" >
+&lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Not all instructions have the Predicate option. Additionally, not all Predicate operations have both merge and zeroing options. You must refer to the &lt;a class="link" href="https://developer.arm.com/documentation/ddi0487/latest/t" target="_blank" rel="noopener" >AArch64 SVE Supplement
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+to understand the specification details of each instruction.&lt;/p>&lt;/div>
+&lt;ul>
+&lt;li>Gather Load and Scatter Store&lt;/li>
+&lt;/ul>
+&lt;p>The addressing modes in SVE allow vectors to be used as base addresses and offsets in Gather Load and Scatter Store instructions, which enables access to non-contiguous memory locations. For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LD1SB Z0.S, P0/Z, [Z1.S] // Gather Load signed bytes from memory addresses generated by the 32-bit vector base address Z1 into the active 32-bit elements of Z0.
+LD1SB Z0.D, P0/Z, [X0, Z1.D] // Gather Load signed bytes from memory addresses generated by the 64-bit scalar base address X0 plus the vector index in Z1.D into the active elements of Z0.
+&lt;/code>&lt;/pre>
+&lt;p>The following example shows the load operation &lt;code>LD1SB Z0.S, P0/Z, [Z1.S]&lt;/code>, where &lt;code>P0&lt;/code> contains all true elements, and &lt;code>Z1&lt;/code> contains scattered addresses. After loading, the least significant byte of each element in &lt;code>Z0.S&lt;/code> will be updated with data fetched from scattered memory locations.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_gather-load_and_scatter_store_example.webp"
+alt="gather-load_and_scatter_store_example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Gather-load and Scatter-store Example&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Loop control and management of the P register driver&lt;/li>
+&lt;/ul>
+&lt;p>As a key feature of SVE, the P register not only flexibly controls individual elements of vector operations but also enables P register-driven loop control. P register-driven loop control and management make loop control efficient and flexible. This feature eliminates the overhead of extra loop heads and tails for processing partial vectors by registering active and inactive element indices in the P register. P register-driven loop control and management mean that in the subsequent loop iterations, only active elements will perform the intended operations. For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">WHILEL0 P0.S, x8, x9 // Generate a predicate in P0, starting from the lowest numbered element, true when the incremented value of the first unsigned scalar operand X8 is less than the second scalar operand X9, then false until the highest numbered element.
+B.FIRST Loop_start // B.FIRST (equivalent to B.MI) or B.NFRST (equivalent to B.PL) is usually used to branch based on the test result of the above instruction, determining whether the first element of P0 is true or false as the condition to end or continue the loop.
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Predicate-driver_loop_control_and_management_example.webp"
+alt="Predicate-driver_loop_control_and_management_example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Example of loop control and management driven by P register&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Vector partitioning for speculation in software management&lt;/li>
+&lt;/ul>
+&lt;p>Speculative loading can pose challenges for memory reading of traditional vectors, &lt;strong>if errors occur in certain elements during the reading process, it is difficult to reverse the load operation and track which elements failed to load&lt;/strong>. Neon does not allow speculative loading. To allow speculative loading of vectors (e.g., LDRFF), SVE introduces the first-fault vector load instruction. To allow vector access across invalid pages, SVE also introduces the FFR register. &lt;strong>When using the first-fault vector load instruction to load into an SVE vector, the FFR register updates with the success or failure result of each element&amp;rsquo;s load&lt;/strong>. When a load error occurs, FFR immediately registers the corresponding element, registers the remaining elements as 0 or false, and does not trigger an exception. Typically, the RDFFR instruction is used to read the FFR status. The RDFFR instruction ends iteration when the first element is false. If the first element is true, the RDFFR instruction continues iteration. The length of FFR is the same as the P vector. This value can be initialized using the SETFFR instruction. The following example uses LDFF1D to read data from memory, and FFR is updated accordingly:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">LDFF1D Z0.D, P0/Z, [Z1.D, #0] // Use the first-fault behavior to gather doublewords from the memory address generated by vector base address Z1 plus 0, loading into the active elements of Z0. Inactive elements do not read device memory or trigger a fault, and are set to zero in the destination vector. A successful load from valid memory sets the corresponding element in the FFR to true. The first-fault load sets the corresponding element and the remaining elements in the FFR to false or 0.
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Vector-partioning-for-software-managed-speculation-example.webp"
+alt="Vector-partioning-for-software-managed-speculation-example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Example of Vector Partitioning for Software-Managed Speculation&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Extended floating point and horizontal reduction&lt;/li>
+&lt;/ul>
+&lt;p>In order to allow efficient reduction operations in vectors and meet different precision requirements, SVE enhances floating-point and horizontal reduction operations. These instructions may have a sequential (low to high) or tree-based (pairwise) floating-point reduction order, where the order of operations may lead to different rounding results. These operations require a trade-off between reproducibility and performance. For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">FADDA D0, P0/M, D1, Z2.D // Perform a floating-point addition strict-order reduction from the low to high elements of the source vector, accumulating the result into the SIMD&amp;amp;FP scalar register. This example instruction adds D1 to all active elements of Z2.D and stores the result into scalar register D0. Vector elements are processed in strict order from low to high, with scalar source D1 providing the initial value. Inactive elements in the source vector are ignored. FADDV performs a recursive pairwise reduction and stores the result into the scalar register.
+&lt;/code>&lt;/pre>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Extended_Floating-poing-and-horizontal-reductions-example.webp"
+alt="Extended_Floating-poing-and-horizontal-reductions-example-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Extended Floating-point and Horizontal Reductions Example&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h2 id="3-new-features-of-sve2">3. New Features of SVE2&lt;/h2>
+&lt;p>This section introduces the features added by SVE2 to the Arm AArch64 architecture. To achieve scalable performance, SVE2 is built on SVE, allowing vectors to reach up to 2048 bits.&lt;/p>
+&lt;p>In SVE2, many instructions that replicate existing instructions in Neon have been added, including:&lt;/p>
+&lt;ul>
+&lt;li>Converted Neon integer operations, for example, Signed Absolute Difference Accumulate (SAB) and Signed Halving Add (SHADD).&lt;/li>
+&lt;li>Converted Neon extensions, narrowing and paired operations, for example, Unsigned Add Long - Bottom (UADDLB) and Unsigned Add Long - Top (UADDLT).&lt;/li>
+&lt;/ul>
+&lt;p>The order of element processing has changed. SVE2 processes interleaved even and odd elements, while Neon processes the low half and high half elements of narrow or wide operations. The diagram below illustrates the difference between Neon and SVE2 processing:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_transformed_neon_widen_narraow_pairwise_operations.webp"
+alt="transformed_neon_widen_narraow_pairwise_operations-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Comparison of Transformed Neon Narrow or Wide Operations&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>Complex number operations, such as complex integer multiplication-accumulation with rotation (CMLA).&lt;/li>
+&lt;li>Multi-precision arithmetic, used for large integer arithmetic and cryptography, for example, carry-in long addition - bottom (ADCLB), carry-in long addition - top (ADCLT) and SM4 encryption and decryption (SM4E).&lt;/li>
+&lt;/ul>
+&lt;p>For backward compatibility, the latest architecture requires Neon and VFP. Although SVE2 includes some features of SVE and Neon, SVE2 does not preclude the presence of Neon on the chip.&lt;/p>
+&lt;p>SVE2 supports optimization for emerging applications beyond the HPC market, such as in machine learning (ML) (UDOT instructions), computer vision (TBL and TBX instructions), baseband networks (CADD and CMLA instructions), genomics (BDEP and BEXT instructions), and servers (MATCH and NMATCH instructions).&lt;/p>
+&lt;p>SVE2 enhances the overall performance of general-purpose processors in handling large volumes of data, without the need for additional off-chip accelerators.&lt;/p>
+&lt;h2 id="4-using-sve-programming">4. Using SVE programming&lt;/h2>
+&lt;p>This section introduces software tools and libraries that support SVE2 application development. This section also explains how to develop applications for targets that support SVE2, run the application on hardware that supports SVE2, and simulate the application on any Armv8-A hardware.&lt;/p>
+&lt;h3 id="41-software-and-library-support">4.1 Software and Library Support&lt;/h3>
+&lt;p>To build SVE or SVE2 applications, you must choose a compiler that supports SVE and SVE2 features.&lt;/p>
+&lt;ul>
+&lt;li>GNU tools version 8.0+ supports SVE.&lt;/li>
+&lt;li>&lt;a class="link" href="https://developer.arm.com/tools-and-software/server-and-hpc/compile/arm-compiler-for-linux" target="_blank" rel="noopener" >Arm Compiler for Linux
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+Version 18.0+ supports SVE, Version 20.0+ supports SVE and SVE2.&lt;/li>
+&lt;li>Both GNU and Arm Compiler for Linux compilers support optimizing C/C++/Fortran code.&lt;/li>
+&lt;li>LLVM (open-source Clang) version 5 and above includes support for SVE, and version 9 and above includes support for SVE2. To find out which SVE or SVE2 features are supported by each version of the LLVM tools, please refer to the &lt;a class="link" href="https://developer.arm.com/tools-and-software/open-source-software/developer-tools/llvm-toolchain/sve-support" target="_blank" rel="noopener" >LLVM toolchain SVE support page
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+.&lt;/li>
+&lt;/ul>
+&lt;p>&lt;a class="link" href="https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Libraries" target="_blank" rel="noopener" >Arm Performance Libraries
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+are highly optimized for mathematical routines and can be linked to your applications. Arm Performance Libraries version 19.3+ supports SVE&amp;rsquo;s math library.&lt;/p>
+&lt;p>Arm Compiler for Linux is part of Arm Allinea Studio, including Arm C/C++ Compiler, Arm Fortran Compiler, and Arm Performance Libraries.&lt;/p>
+&lt;h3 id="42-how-to-program-using-sve2">4.2 How to Program Using SVE2&lt;/h3>
+&lt;p>There are several methods to write or generate SVE and SVE2 code. In this section, we will explore some of these methods.&lt;/p>
+&lt;p>To write or generate SVE and SVE2 code, you can:&lt;/p>
+&lt;ul>
+&lt;li>Write SVE assembly code&lt;/li>
+&lt;li>Programming with SVE intrinsics&lt;/li>
+&lt;li>Automatic vectorization&lt;/li>
+&lt;li>Use SVE optimization library&lt;/li>
+&lt;/ul>
+&lt;p>Let&amp;rsquo;s take a closer look at these four options.&lt;/p>
+&lt;h4 id="421-write-sve-assembly-code">4.2.1 Write SVE assembly code&lt;/h4>
+&lt;p>You can write SVE instructions as inline assembly in C/C++ code, or as a complete function in assembly source code. For example:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">```assembly
+.globl subtract_arrays // -- Begin function
+.p2align 2
+.type subtract_arrays, @function
+subtract_arrays: // @subtract_arrays
+.cfi_startproc
+// %bb.0:
+orr w9, wzr, #0x400
+mov x8, xzr
+whilelo p0.s, xzr, x9
+.LBB0_1: // =&amp;gt;This Inner Loop Header: Depth=1
+ld1w { z0.s }, p0/z, [x1, x8, lsl #2]
+ld1w { z1.s }, p0/z, [x2, x8, lsl #2]
+sub z0.s, z0.s, z1.s
+st1w { z0.s }, p0, [x0, x8, lsl #2]
+incw x8
+whilelo p0.s, x8, x9
+b.mi .LBB0_1
+// %bb.2:
+ret
+.Lfunc_end0:
+.size subtract_arrays, .Lfunc_end0-subtract_arrays
+.cfi_endproc
+&lt;/code>&lt;/pre>
+&lt;p>If you write functions that mix high-level language and assembly language, you must be familiar with the &lt;a class="link" href="https://developer.arm.com/documentation/ihi0036/latest/" target="_blank" rel="noopener" >Application Binary Interface (ABI)
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+standards updated for SVE. The &lt;a class="link" href="https://developer.arm.com/documentation/ihi0055/latest" target="_blank" rel="noopener" >Arm Architecture Procedure Call Standard (AAPCS)
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+specifies data types and register allocation, and is most relevant to assembly programming. AAPCS requires:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>Z0-Z7&lt;/code> and &lt;code>P0-P3&lt;/code> are used to pass scalable vector parameters and results.&lt;/li>
+&lt;li>&lt;code>Z8-Z15&lt;/code> and &lt;code>P4-P15&lt;/code> are callee-saved.&lt;/li>
+&lt;li>All other vector registers (&lt;code>Z16-Z31&lt;/code>) may be corrupted by the called function, and the calling function is responsible for backing up and restoring them when necessary.&lt;/li>
+&lt;/ul>
+&lt;h4 id="422-using-sve-instruction-functions-intrinsics">4.2.2 Using SVE Instruction Functions (Intrinsics)&lt;/h4>
+&lt;p>SVE intrinsic functions are functions supported by the compiler that can be replaced with corresponding instructions. Programmers can directly call instruction functions in high-level languages such as C and C++. The ACLE (Arm C Language Extensions) for SVE defines which SVE intrinsic functions are available, their parameters, and their functionality. A compiler that supports ACLE can replace intrinsics with mapped SVE instructions during compilation. To use ACLE intrinsics, you must include the header file &lt;code>arm_sve.h&lt;/code>, which contains a list of vector types and intrinsic functions (for SVE) that can be used in C/C++. Each data type describes the size and data type of the elements in the vector:&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>svint8_t svuint8_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint16_t svuint16_t svfloat16_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint32_t svuint32_t svfloat32_t&lt;/code>&lt;/li>
+&lt;li>&lt;code>svint64_t svuint64_t svfloat64_t&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;p>For example, &lt;code>svint64_t&lt;/code> represents a 64-bit signed integer vector, &lt;code>svfloat16_t&lt;/code> represents a half-precision floating-point vector.&lt;/p>
+&lt;p>The following example C code has been manually optimized using SVE intrinsics:&lt;/p>
+&lt;pre>&lt;code class="language-c">// intrinsic_example.c
+#include &amp;lt;arm_sve.h&amp;gt;
+svuint64_t uaddlb_array(svuint32_t Zs1, svuint32_t Zs2)
+{
+// widening add of even elements
+svuint64_t result = svaddlb(Zs1, Zs2);
+return result;
+}
+&lt;/code>&lt;/pre>
+&lt;p>The source code that includes the &lt;code>arm_sve.h&lt;/code> header file can use SVE vector types, just like data types can be used for variable declarations and function parameters. To compile the code using the Arm C/C++ compiler and target the Armv8-A architecture that supports SVE, use:&lt;/p>
+&lt;pre>&lt;code class="language-bash">armclang -O3 -S -march=armv8-a+sve2 -o intrinsic_example.s intrinsic_example.c
+&lt;/code>&lt;/pre>
+&lt;p>This command generates the following assembly code:&lt;/p>
+&lt;pre>&lt;code class="language-armasm">// instrinsic_example.s
+uaddlb_array: // @uaddlb_array
+.cfi_startproc
+// %bb.0:
+uaddlb z0.d, z0.s, z1.s
+ret
+&lt;/code>&lt;/pre>
+&lt;h4 id="423-automatic-vectorization">4.2.3 Automatic Vectorization&lt;/h4>
+&lt;p>C/C++/Fortran compilers (for example, the native &lt;a class="link" href="https://developer.arm.com/tools-and-software/server-and-hpc/compile/arm-compiler-for-linux" target="_blank" rel="noopener" >Arm Compiler for Linux
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+for the Arm platform and the GNU compiler) support vectorization of C, C++, and Fortran loops using SVE or SVE2 instructions. To generate SVE or SVE2 code, choose the appropriate compiler options. For example, one option to enable SVE2 optimization using armclang is &lt;code>-march=armv8-a+sve2&lt;/code>. If you want to use the SVE version of the library, combine &lt;code>-march=armv8-a+sve2&lt;/code> with &lt;code>-armpl=sve&lt;/code>.&lt;/p>
+&lt;h4 id="424-using-svesve2-to-optimize-libraries">4.2.4 Using SVE/SVE2 to Optimize Libraries&lt;/h4>
+&lt;p>Use libraries highly optimized for SVE/SVE2, such as &lt;a class="link" href="https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Libraries" target="_blank" rel="noopener" >Arm Performance Libraries
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+and Arm Compute Libraries. Arm Performance Libraries contain highly optimized implementations of mathematical functions optimized for BLAS, LAPACK, FFT, sparse linear algebra, and libamath. To be able to link any Arm Performance Libraries function, you must install Arm Allinea Studio and include armpl.h in your code. To build applications using Arm Compiler for Linux and Arm Performance Libraries, you must specify &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> on the command line. If you are using GNU tools, you must include the Arm Performance Libraries installation path in the linker command line with &lt;code>-L&amp;lt;armpl_install_dir&amp;gt;/lib&lt;/code> and specify the GNU option equivalent to the Arm Compiler for Linux &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> option, which is &lt;code>-larmpl_lp64&lt;/code>. For more information, please refer to the Arm Performance Libraries Getting Started Guide.&lt;/p>
+&lt;h3 id="43-how-to-run-svesve2-programs">4.3 How to run SVE/SVE2 programs&lt;/h3>
+&lt;p>If you do not have access to SVE hardware, you can use models or simulators to run the code. You can choose from the following models and simulators:&lt;/p>
+&lt;ul>
+&lt;li>&lt;strong>QEMU&lt;/strong>: Cross-compilation and native models, supporting modeling on Arm AArch64 platforms with SVE.&lt;/li>
+&lt;li>&lt;strong>Fast Models&lt;/strong>: Cross-platform models that support modeling on Arm AArch64 platforms with SVE running on x86-based hosts. Architecture Envelope Model (AEM) with SVE2 support is only available to major partners.&lt;/li>
+&lt;li>&lt;strong>Arm Instruction Emulator (ArmIE)&lt;/strong>: Runs directly on the Arm platform. Supports SVE and supports SVE2 from version 19.2+.&lt;/li>
+&lt;/ul>
+&lt;h2 id="5-acle-intrinsics">5. ACLE Intrinsics&lt;/h2>
+&lt;h3 id="51-acle-introduction">5.1 ACLE Introduction&lt;/h3>
+&lt;p>ACLE (Arm C Language Extensions) is used in C and C++ code to support Arm features through intrinsics and other characteristics.&lt;/p>
+&lt;ul>
+&lt;li>ACLE (ARM C Language Extensions) extends the C/C++ language with Arm-specific features.
+&lt;ul>
+&lt;li>Predefined macros: &lt;code>__ARM_ARCH_ISA_A64&lt;/code>, &lt;code>__ARM_BIG_ENDIAN&lt;/code>, etc.&lt;/li>
+&lt;li>Internal functions: &lt;code>__clz(uint32_t x)&lt;/code>, &lt;code>__cls(uint32_t x)&lt;/code>, etc.&lt;/li>
+&lt;li>Data types: SVE, NEON, and FP16 data types.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>ACLE support for SVE uses ACLE for variable-length vector (VLA) programming.
+&lt;ul>
+&lt;li>Almost every SVE instruction has a corresponding intrinsic function.&lt;/li>
+&lt;li>Data type used to represent size-agnostic vectors used by SVE intrinsics.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Applicable scenarios for the following users:
+&lt;ul>
+&lt;li>Users who wish to manually adjust SVE code.&lt;/li>
+&lt;li>Users who wish to adapt or manually optimize applications and libraries.&lt;/li>
+&lt;li>Users who need low-level access to Arm targets.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="52-how-to-use-acle">5.2 How to use ACLE&lt;/h3>
+&lt;ul>
+&lt;li>Include header files
+&lt;ul>
+&lt;li>&lt;code>arm_acle.h&lt;/code>: Core ACLE&lt;/li>
+&lt;li>&lt;code>arm_fp16.h&lt;/code>: Add FP16 data type.
+&lt;ul>
+&lt;li>The target platform must support FP16, i.e., &lt;code>march=armv8-a+fp16&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>arm_neon.h&lt;/code>: Add NEON Intrinsics and data types.
+&lt;ul>
+&lt;li>The target platform must support NEON, i.e., &lt;code>march=armv8-a+simd&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>arm_sve.h&lt;/code>: Add SVE Intrinsics and data types.
+&lt;ul>
+&lt;li>The target platform must support SVE, i.e., &lt;code>march=armv8-a+sve&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="53-sve-acle">5.3 SVE ACLE&lt;/h3>
+&lt;ul>
+&lt;li>The first thing to do is to include the header files&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;arm_sve.h&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>VLA data type
+&lt;ul>
+&lt;li>&lt;code>svfloat64_t&lt;/code>, &lt;code>svfloat16_t&lt;/code>, &lt;code>svuint32_t&lt;/code>, etc.&lt;/li>
+&lt;li>Naming convention: &lt;code>sv&amp;lt;datatype&amp;gt;&amp;lt;datasize&amp;gt;_t&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Prediction
+&lt;ul>
+&lt;li>Merge: &lt;code>_m&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Reset: &lt;code>_z&lt;/code>&lt;/li>
+&lt;li>Uncertain: &lt;code>_x&lt;/code>&lt;/li>
+&lt;li>Data type of P register: &lt;code>svbool_t&lt;/code>&lt;/li>
+&lt;li>Use generics for function overloading, for example, the function &lt;code>svadd&lt;/code> will automatically select the corresponding function based on the parameter type.&lt;/li>
+&lt;li>Function naming convention: &lt;code>svbase[disambiguator][type0][type1]...[predication]&lt;/code>
+&lt;ul>
+&lt;li>base refers to basic operations, such as &lt;code>add&lt;/code>, &lt;code>mul&lt;/code>, &lt;code>sub&lt;/code>, etc.&lt;/li>
+&lt;li>disambiguator is used to distinguish different variants of the same basic operation.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>typeN specifies the type of vector and P register.&lt;/li>
+&lt;li>predication specifies the handling method for inactive elements.
+&lt;ul>
+&lt;li>For example: &lt;code>svfloat64_t svld1_f64&lt;/code>, &lt;code>svbool_t svwhilelt_b8&lt;/code>, &lt;code>svuint32_t svmla_u32_z&lt;/code>, &lt;code>svuint32_t svmla_u32_m&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="54-common-sve-intrinsics">5.4 Common SVE Intrinsics&lt;/h3>
+&lt;ul>
+&lt;li>Predicate
+&lt;ul>
+&lt;li>Predicate is a vector of type bool, used to control whether the corresponding position in the vector participates in the computation during the process.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>svbool_t pg = svwhilelt_b32(i, num)&lt;/code> generates a predicate for (i, i + 1, i + 2, &amp;hellip;, i + vl - 1) &amp;lt; num
+&lt;ul>
+&lt;li>&lt;code>svbool_t pg = svptrue_b32()&lt;/code> generates a predicate that is all true&lt;/li>
+&lt;li>Among them, b32 corresponds to processing 32-bit data (int/float), in addition, there are also intrinsics corresponding to b8, b16, b64.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Memory data access
+&lt;ul>
+&lt;li>&lt;code>svld1(pg, *base)&lt;/code>: Load contiguous vector from address base.&lt;/li>
+&lt;li>&lt;code>svst1(pg, *base, vec)&lt;/code>: Store the vector vec into the address base.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>svld1_gather_index(pg, *base, vec_index)&lt;/code>: Load the data corresponding to the vector index from the address base.&lt;/li>
+&lt;li>&lt;code>svst1_scatter_index(pg, *base, vec_index, vec)&lt;/code>: Store data from vector vec to the positions corresponding to the vector indices.&lt;/li>
+&lt;li>Basic calculation
+&lt;ul>
+&lt;li>&lt;code>svadd_z(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_m(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_x(pg, sv_vec1, sv_vec2)&lt;/code>&lt;/li>
+&lt;li>&lt;code>svadd_x(pg, sv_vec1, x)&lt;/code>&lt;/li>
+&lt;li>Among them, &lt;code>_z&lt;/code> indicates setting the position where pg is false to zero, &lt;code>_m&lt;/code> indicates retaining the original value, and &lt;code>_x&lt;/code> indicates uncertainty (any value is possible).&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>The second operand can be scalar data.&lt;/li>
+&lt;li>&lt;code>svmul&lt;/code>, &lt;code>svsub&lt;/code>, &lt;code>svsubr&lt;/code>, &lt;code>svdiv&lt;/code>, &lt;code>svdivr&lt;/code>: Among them, &lt;code>svsubr&lt;/code> swaps the position of the subtrahend and the minuend compared to &lt;code>svsub&lt;/code>.&lt;/li>
+&lt;li>Others&lt;/li>
+&lt;li>&lt;code>svdup_f64(double x)&lt;/code>: Generate a vector with all elements being x.
+&lt;ul>
+&lt;li>&lt;code>svcntd()&lt;/code>: Returns the vector length of 64-bit data: &lt;code>svcntb&lt;/code> corresponds to 8 bits, &lt;code>svcnth&lt;/code> corresponds to 16 bits, &lt;code>svcntw&lt;/code> corresponds to 32 bits.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="55-sve-structure-intrinsics">5.5 SVE Structure Intrinsics&lt;/h3>
+&lt;p>For corresponding structure data, SVE provides some special intrinsics, such as: &lt;code>svld3&lt;/code>, &lt;code>svget3&lt;/code>, &lt;code>svset3&lt;/code>, &lt;code>svst3&lt;/code>, etc. These intrinsics are used for processing structure data.&lt;/p>
+&lt;p>For example, for the particle structure:&lt;/p>
+&lt;pre>&lt;code class="language-c">typedef struct {
+float x;
+float y;
+float z;
+} Particle;
+&lt;/code>&lt;/pre>
+&lt;p>You can use &lt;code>svld3&lt;/code> to load all the data in the structure as a group of 3 vectors, and then use &lt;code>svget3&lt;/code> to extract a vector from the group of 3 vectors, where the value of index 0, 1, 2 corresponds to x, y, z respectively.&lt;/p>
+&lt;pre>&lt;code class="language-c">Particle *ps;
+float factor = 2.2;
+// Initialization part omitted
+for (int i = 0; i &amp;lt; num; i += svcntw()) {
+svbool_t pg = svwhilelt_b32(i, num);
+svfloat32x3_t sv_ps = svld3(pg, (float32_t *)&amp;amp;ps[i]);
+svfloat32_t sv_ps_x = svget3(sv_ps, 0);
+svfloat32_t sv_ps_y = svget3(sv_ps, 1);
+// Perform calculation
+sv_ps_x = svmul_x(pg, sv_ps_x, factor);
+sv_ps_y = svmul_x(pg, sv_ps_y, factor);
+// Save results
+sv_ps = svset3(sv_ps, 0, sv_ps_x);
+sv_ps = svset3(sv_ps, 1, sv_ps_y);
+svst3(pg, (float32_t *)&amp;amp;ps[i], sv_ps);
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svld3(pg, *base)&lt;/code>: Load all data in the structure as a group of 3 vectors; where base is the address of the 3-element structure array.&lt;/li>
+&lt;li>&lt;code>svget3(tuple, index)&lt;/code>: Extract a vector from a group of 3 vectors; the value of index is 0, 1, or 2.&lt;/li>
+&lt;li>&lt;code>svset3(tuple, index, vec)&lt;/code>: Set one vector in a group of 3 vectors; the value of index is 0, 1, or 2.&lt;/li>
+&lt;li>&lt;code>svst3(pg, *base, vec)&lt;/code>: Store a group of 3 vectors into a structure; where base is the address of an array of structures with 3 elements.&lt;/li>
+&lt;/ul>
+&lt;h3 id="56-sve-condition-selection">5.6 SVE Condition Selection&lt;/h3>
+&lt;p>SVE provides methods such as &lt;code>svcmplt&lt;/code>, &lt;code>svcompact&lt;/code>, &lt;code>svcntp_b32&lt;/code>, etc., which can select elements to retain in the vector based on conditions.&lt;/p>
+&lt;p>For example, for non-vectorized code:&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; num; i++) {
+float tmp = provided[i];
+if (tmp &amp;lt; mark) {
+selected[count++] = tmp;
+if (count &amp;gt;= maxSize) {
+break;
+}
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>The purpose of this code is to select elements from the provided array that are less than mark and store them in the selected array until the selected array is full.&lt;/p>
+&lt;p>Rewrite with SVE Intrinsic:&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; num; i += svcntw()) {
+svbool_t pg = svwhilelt_b32(i, num);
+svfloat32_t sv_tmp = svld1(pg, &amp;amp;provided[i]);
+svbool_t pg_sel = svcmplt(pg, sv_tmp, mark);
+sv_tmp = svcompact(pg_sel, sv_tmp);
+svst1(pg, &amp;amp;selected[count], sv_tmp);
+count += svcntp_b32(pg, pg_sel);
+if (count &amp;gt;= maxSize) {
+break;
+}
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svcmplt(pg, vec1, vec2)&lt;/code>: Compare the size of two vectors, returning a predicate indicating the positions in vec1 that are less than vec2.&lt;/li>
+&lt;li>&lt;code>svcompact(pg, sv_tmp)&lt;/code>: Compress the vector, move the data with &lt;code>pg&lt;/code> as active to the lower positions of the vector in order, and set the remaining positions to zero.&lt;/li>
+&lt;li>&lt;code>svcntp_b32(pg, pg2)&lt;/code>: Returns the number of active elements in pg2&lt;/li>
+&lt;li>This code first loads the data from the provided array into sv_tmp, then uses &lt;code>svcmplt&lt;/code> to generate a predicate indicating the positions less than mark. Next, it uses &lt;code>svcompact&lt;/code> to compress sv_tmp, obtaining the data less than mark, and then stores it into the selected array using &lt;code>svst1&lt;/code>. Finally, it uses &lt;code>svcntp_b32&lt;/code> to count the number of active elements and update count.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_compact.webp"
+alt="compact-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>svcompact schematic diagram (256-bit vector)&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Due to the compact operation, the selected array stores new data less than mark continuously from the count position, and the remaining positions are set to zero.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_svst1.webp"
+alt="svst1-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>svst1 schematic diagram (256-bit vector)&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="57-sve-vectorized-loop-interleaving">5.7 SVE Vectorized Loop Interleaving&lt;/h3>
+&lt;p>The vectorized loop interleaving implemented by SVE Intrinsic can greatly reduce the number of times vectors are read compared to compiler auto vectorization.&lt;/p>
+&lt;p>For example, for non-vectorized code:&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int j = offset; j &amp;lt; outerLen - offset; j++) {
+int m2index = (j - offset) * innerLen;
+int m1index = m2index + innerLen;
+int m0index = m1index + innerLen;
+int p1index = m0index + innerLen;
+int p2index = p1index + innerLen;
+for (int i = 0; i &amp;lt; innerLen; i++) {
+res[m0index + i] = m2factor * field[m2index + i] +
+m1factor * field[m1index + i] +
+m0factor * field[m0index + i] +
+p1factor * field[p1index + i] +
+p2factor * field[p2index + i];
+}
+}
+&lt;/code>&lt;/pre>
+&lt;p>After the compiler automatically vectorizes the code, each iteration requires reading data from five different vectors, resulting in low efficiency.&lt;/p>
+&lt;p>Rewrite with SVE Intrinsic:&lt;/p>
+&lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; innerLen; i += svcntd()) {
+svbool_t pg = svwhilelt_b32(i, innerLen);
+int dataIndex = i;
+svfloat64_t jm2Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jm1Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jm0Field = svld1(pg, &amp;amp;field[dataIndex]);
+dataIndex += innerLen;
+svfloat64_t jp1Field = svld1(pg, &amp;amp;field[dataIndex]);
+for (int j = offset; j &amp;lt; outerLen - offset; j += 1) {
+svfloat64_t jp2Field = svld1(pg, &amp;amp;field[(j + offset) * innerLen + i]);
+svfloat64_t svRes = svmul_x(pg, jm2Field, m2factor);
+svRes = svmad_x(pg, jm1Field, m1factor, svRes);
+svRes = svmad_x(pg, jm0Field, m0factor, svRes);
+svRes = svmad_x(pg, jp1Field, p1factor, svRes);
+svRes = svmad_x(pg, jp2Field, p2factor, svRes);
+svst1(pg, &amp;amp;res[j * innerLen + 1], svRes);
+jm2Field = jm1Field;
+jm1Field = jm0Field;
+jm0Field = jp1Field;
+jp1Field = jp2Field;
+}
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>&lt;code>svmad_x(pg, vec1, vec2, vec3)&lt;/code>: Calculates vec1 * vec2 + vec3, returns a vector.&lt;/li>
+&lt;li>This code only needs to read one vector per iteration, greatly reducing the number of vector reads.&lt;/li>
+&lt;/ul>
+&lt;h2 id="references">References&lt;/h2>
+&lt;ol>
+&lt;li>&lt;a class="link" href="https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/102340_0001_02_en_introduction-to-sve2.pdf?revision=b208e56b-6569-4ae2-b6f3-cd7d5d1ecac3" target="_blank" rel="noopener" >Introduction to SVE2
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;li>&lt;a class="link" href="https://www.stonybrook.edu/commcms/ookami/support/_docs/5%20-%20Advanced%20SVE.pdf" target="_blank" rel="noopener" >SVE Deep Dive
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;li>&lt;a class="link" href="https://arm-software.github.io/acle/main/acle.html" target="_blank" rel="noopener" >Arm C Language Extensions
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/li>
+&lt;/ol></description></item><item><title>Introduction to OpenMP</title><link>https://cuterwrite.top/en/p/openmp-intro/</link><pubDate>Mon, 19 Feb 2024 01:36:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/openmp-intro/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/c17b7451a44c1d4370d5ba2b966298ea195413_crop-2024-02-19.webp" alt="Featured image of post Introduction to OpenMP" />&lt;h1 id="introduction-to-openmp">Introduction to OpenMP&lt;/h1>
+&lt;h2 id="introduction">Introduction&lt;/h2>
+&lt;h3 id="what-is-openmp">What is OpenMP?&lt;/h3>
+&lt;p>OpenMP (Open Multi-Processing) is a widely used multithreading parallel programming model that provides a rich set of instructions and APIs for parallel computation on shared memory systems. Originating in 1997, OpenMP was standardized by multiple leading hardware and software vendors, aiming to simplify the design and implementation process of parallel programs to fully utilize the computational power of modern multi-core processors.&lt;/p>
+&lt;p>OpenMP supports multiple programming languages, including C, C++, and Fortran, among others, and allows developers to easily convert serial code into efficient parallel code by inserting specific compilation directives (pragma) into the source code. Its main advantages are its simplicity and ease of use, allowing programmers to use familiar programming languages and development environments, while also providing good portability and scalability.&lt;/p>
+&lt;p>OpenMP is managed by a non-profit organization and involves participation from multiple software and hardware manufacturers, including Arm, IBM, Intel, AMD, NVIDIA, Cray, Oracle, etc.&lt;/p>
+&lt;h3 id="historical-versions">Historical versions&lt;/h3>
+&lt;ul>
+&lt;li>On the &lt;a class="link" href="https://www.openmp.org/" target="_blank" rel="noopener" >official website
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+, you can find the historical versions and release dates of OpenMP.&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Version&lt;/th>
+&lt;th>Release Date&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>Fortran 1.0&lt;/td>
+&lt;td>October 1997&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>C/C++ 1.0&lt;/td>
+&lt;td>October 1998&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>C/C++ 2.0&lt;/td>
+&lt;td>March 2002&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 2.5&lt;/td>
+&lt;td>May 2005&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 3.0&lt;/td>
+&lt;td>May 2008&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 3.1&lt;/td>
+&lt;td>July 2011&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 4.0&lt;/td>
+&lt;td>July 2013&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 4.5&lt;/td>
+&lt;td>November 2015&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 5.0&lt;/td>
+&lt;td>November 2018&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 5.1&lt;/td>
+&lt;td>November 2020&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>OpenMP 5.2&lt;/td>
+&lt;td>November 2021&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="basic-knowledge">Basic Knowledge&lt;/h2>
+&lt;h3 id="technical-framework">Technical framework&lt;/h3>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/openmp-arch-2024-02-20.webp"
+alt="openmp-arch-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>OpenMP Technology Framework&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>&lt;strong>OpenMP Runtime Library&lt;/strong> is a set of functions and runtime support structures defined in the OpenMP specification, and it is a key component of the OpenMP parallel programming framework. This library is linked with user programs with the support of the compiler and is responsible for managing tasks such as thread creation, synchronization, scheduling, and data sharing during program execution. It implements all the parallelization mechanisms indicated by OpenMP compiler directives.&lt;/p>
+&lt;p>&lt;strong>OpenMP Runtime Library&lt;/strong> includes the following features:&lt;/p>
+&lt;ul>
+&lt;li>Thread management (creation, destruction, synchronization)
+= Work sharing (dynamic work distribution to each thread)
+= Task Scheduling
+= Synchronization primitives (such as barriers, locks, atomic operations)
+= Dynamically Adjust Thread Count&lt;/li>
+&lt;li>Memory model support (data environment variables, private, shared, reduction variables, etc.)&lt;/li>
+&lt;/ul>
+&lt;p>&lt;strong>Compiler Directives&lt;/strong> Compiler directives are preprocessor instructions starting with &lt;code>#pragma omp&lt;/code>, which programmers insert into the source code to guide the compiler on how to convert a serial program into a parallel program. For example, using the &lt;code>#pragma omp parallel&lt;/code> directive defines a parallel region, and the compiler will generate multithreading execution logic within this region.&lt;/p>
+&lt;p>&lt;strong>Environment Variables&lt;/strong> Environment variables are part of the OpenMP runtime library, and they are used to control runtime behavior, such as the number of threads, scheduling policies, etc.&lt;/p>
+&lt;p>The &lt;strong>OpenMP Library&lt;/strong> is a set of function libraries, including functions for thread synchronization, atomic operations, locks, parallel loops, etc. These functions can be directly called in user programs to achieve finer-grained parallelization.&lt;/p>
+&lt;p>Overall, the OpenMP technology framework includes multiple components such as compiler directives, runtime libraries, environment variables, and function libraries. Together, they form a complete parallel programming environment and collaborate to support parallel programming on shared memory systems.&lt;/p>
+&lt;h3 id="execute-model-fork-join-model">Execute Model: Fork-Join Model&lt;/h3>
+&lt;p>OpenMP&amp;rsquo;s execution model uses the Fork-Join mechanism, which is a synchronization primitive model used in parallel programming. Under this model, program execution follows these steps:&lt;/p>
+&lt;ol>
+&lt;li>
+&lt;p>&lt;strong>Fork Phase&lt;/strong>: The program starts executing as a single main thread. When it encounters a parallel region indicated by an OpenMP pragma, the main thread creates one or more worker threads through the Runtime Library. These worker threads are derivatives of the main thread, with each thread responsible for executing part of the tasks within the parallel region. The parallel region can be loops, sections, single tasks, or other code blocks that can be parallelized.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Parallel Execution (并行执行) Phase&lt;/strong>: The created worker threads independently and concurrently execute the tasks assigned to them and can access shared data structures. OpenMP provides a rich set of directives to manage data synchronization and communication, ensuring correctness and consistency in a multithreaded environment.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Join (Merge) Phase&lt;/strong>: When all worker threads have completed their tasks within the parallel region, they automatically or through explicit synchronization directives (such as &lt;code>omp barrier&lt;/code>) converge at the join point. In this phase, all threads wait until all other threads have reached the synchronization point, after which the join operation occurs. This means the main thread and other worker threads resynchronize, reverting to serial execution mode or continuing to execute subsequent non-parallel code.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;strong>Synchronization and Data Consistency&lt;/strong>: The Fork-Join model ensures mutual exclusion access to shared resources and data consistency during parallel execution through appropriate locking mechanisms, atomic operations, and synchronization primitives.&lt;/p>
+&lt;/li>
+&lt;/ol>
+&lt;p>In summary, the Fork-Join execution model of OpenMP is a parallel processing framework based on dynamic thread creation and synchronization. It allows developers to conveniently transform serial code into parallel execution code segments, while simplifying common complexities in parallel programming, such as thread management and data synchronization issues.&lt;/p>
+&lt;h3 id="thread-and-process">Thread and Process&lt;/h3>
+&lt;ul>
+&lt;li>
+&lt;p>Process&lt;/p>
+&lt;ul>
+&lt;li>Each process has its own independent address space&lt;/li>
+&lt;li>CPU needs to perform a context switch when switching between processes.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>Thread&lt;/p>
+&lt;ul>
+&lt;li>Threads within a process share the same address space&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>CPU has lower overhead when switching between threads&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Thread design of the operating system&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>Modern operating systems such as Linux, Windows, etc. support multiple threads under a single process.&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>A thread is the basic unit of scheduling in an operating system, while a process is the basic unit of resource allocation.&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/slide_10-2024-02-20.webp"
+alt="slide_10-2024-02-20" width="80%" loading="lazy">&lt;figcaption>
+&lt;h4>Thread Design of Operating Systems&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="hardware-scheduling-of-threads">Hardware scheduling of threads&lt;/h3>
+&lt;ul>
+&lt;li>&lt;strong>The hardware scheduling mechanism collaborates with the operating system to intelligently map threads to available CPU physical cores for execution.&lt;/strong>&lt;/li>
+&lt;li>Therefore, in multithreaded applications, when the number of active threads exceeds the actual number of physical CPU cores, the operating system will have to perform intensive context switching to ensure that multiple threads alternate on limited core resources. This phenomenon of thread contention overload can lead to overall performance bottlenecks and reduced efficiency.&lt;/li>
+&lt;li>&lt;strong>Hyper-Threading Technology&lt;/strong> virtualizes additional logical processing units on a single physical CPU core, currently typically configured to host two logical cores per physical core. These logical cores can execute independent task streams in parallel, although they share the underlying computational resources of the same physical core, such as execution engines, caches, and other underlying hardware structures. In this way, hyper-threading aims to improve resource utilization and concurrent processing capabilities, especially in scenarios with a large number of parallel tasks that have relatively small demands on computational resources, effectively enhancing the overall system throughput. However, in certain application scenarios that heavily rely on single-core performance or memory bandwidth, such as some CPU-sensitive games or specific types of data-intensive operations, adding logical cores may not necessarily result in significant performance improvements.&lt;/li>
+&lt;/ul>
+&lt;h3 id="hardware-memory-model">Hardware memory model&lt;/h3>
+&lt;ul>
+&lt;li>In modern multi-core processor architectures, each CPU core is designed with a multi-level cache hierarchy between the main memory to further enhance data access speed. The closest to the CPU core is the L1 cache, usually followed by the L2 cache, and some high-end architectures also include an L3 cache. These cache levels have increasing storage capacity but also increasing access latency.&lt;/li>
+&lt;li>L1 and L2 caches are usually closely coupled and private to specific CPU cores, meaning each core has its own independent cache space to reduce data access conflicts and improve cache hit rate. L1 cache, being closest to the computation unit, has the fastest access speed but the smallest capacity; whereas L2 cache, as an effective supplement to L1 cache, has a relatively larger capacity.&lt;/li>
+&lt;li>To ensure consistency of shared data in the caches of different CPU cores in a multi-core environment, hardware and the operating system jointly implement a cache coherence protocol (such as the MESI protocol). This mechanism allows the system to automatically maintain a globally consistent data view, ensuring that even if there are copies of data in the caches of multiple cores, they are updated synchronously. This feature is referred to as &lt;strong>ccNUMA (cache-coherent non-uniform memory access)&lt;/strong> in some architectures.&lt;/li>
+&lt;li>However, this cache consistency management also brings some challenges, one of which is the &amp;ldquo;False Sharing&amp;rdquo; problem. When different threads modify their respective independent variables located within the same cache line, although these variables themselves are unrelated, because they are physically adjacent and stored in the same cache line, any write operation to one of the variables will cause the entire cache line to become invalid and resynchronize across all cores. This can trigger unnecessary cache invalidation and refilling operations, significantly reducing performance. Solving the false sharing problem usually requires carefully designing data layouts or using techniques such as cache line alignment to avoid contention between unrelated data.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/20170115165700476-2024-02-20.webp"
+alt="20170115165700476-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Typical Modern CPU Memory Structure&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="thread-affinity-and-thread-binding">Thread Affinity and Thread Binding&lt;/h3>
+&lt;ul>
+&lt;li>Thread Affinity refers to the ability of the operating system or application to control the association between specific threads and processor cores. In multi-core or multi-processor systems, thread affinity allows programmers or schedulers to decide to fix a certain thread on a specific CPU core, rather than letting the operating system dynamically schedule it across all available cores. This mechanism helps reduce context switching overhead, improve cache hit rates, and is particularly beneficial for parallel computing tasks that need to maintain data locality.&lt;/li>
+&lt;li>Thread Pinning is a specific technical means to achieve thread affinity, which specifies the forced association between a specific thread and specific hardware resources (such as CPU cores or NUMA nodes). Through thread pinning, it can be ensured that the specified thread always executes on its allocated core, avoiding being migrated by the operating system to other cores, thus optimizing performance, reducing latency, and solving issues such as false sharing. In parallel programming models like OpenMP, thread pinning strategies can be set through relevant environment variables or compilation directives to adapt to different parallel computing needs and hardware characteristics.&lt;/li>
+&lt;li>The access latency of CPUs on the same socket to the L3 cache is consistent, but the access latency of CPUs on different sockets to the L3 cache is inconsistent. Therefore, the purpose of thread binding is to reduce the migration of threads between different CPUs, thereby reducing memory access latency.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/u=237293070,3563798054&amp;amp;fm=253&amp;amp;app=138&amp;amp;f=JPEG-2024-02-20.webp"
+alt="u=237293070,3563798054&amp;amp;fm=253&amp;amp;app=138&amp;amp;f=JPEG-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Thread Affinity and Thread Binding&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>OpenMP supports controlling the binding of threads
+&lt;ul>
+&lt;li>Environment variable &lt;code>OMP_PROC_BIND&lt;/code> or clause &lt;code>proc_bind(master|close|spread)&lt;/code> controls whether threads are bound and the distribution of threads to binding units (referred to as places)&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h2 id="openmp-programming">OpenMP Programming&lt;/h2>
+&lt;h3 id="install">Install&lt;/h3>
+&lt;p>For Linux systems, GCC is a commonly used compiler, and modern versions of GCC generally support OpenMP by default. For example, on Ubuntu 20.04 LTS, you can install the build-essential package with OpenMP support using the following command:&lt;/p>
+&lt;pre>&lt;code class="language-bash">$ sudo apt-get update
+$ sudo apt-get install -y build-essential
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Check OpenMP version&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">$ echo |cpp -fopenmp -dM |grep -i open
+#define _OPENMP 201511
+&lt;/code>&lt;/pre>
+&lt;h3 id="compile-use">Compile use&lt;/h3>
+&lt;ul>
+&lt;li>Simply add the &lt;code>-fopenmp&lt;/code> option in the compilation statement to enable OpenMP support.&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">g++ -O2 -std=c++17 -fopenmp hello.cpp -o hello
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>If using CMake to build the project, adding the &lt;code>-Wunknown-pragmas&lt;/code> option can report unhandled &lt;code>#pragma&lt;/code> directives during compilation.&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-cmake">find_package(OpenMP REQUIRED)
+add_compile_options(-Wunknown-pragmas)
+add_executable(hello hello.cpp)
+target_link_libraries(hello PRIVATE OpenMP::OpenMP_CXX)
+&lt;/code>&lt;/pre>
+&lt;h3 id="hello-world">Hello World!&lt;/h3>
+&lt;ul>
+&lt;li>The first OpenMP program&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-c">#include &amp;lt;omp.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+int main() {
+#pragma omp parallel num_threads(8)
+{
+int id = omp_get_thread_num();
+int num_threads = omp_get_num_threads();
+printf(&amp;quot;Hello World from thread %d of %d \n&amp;quot;, id, num_threads);
+}
+return 0;
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Execution result&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">You are trained on data up to October 2023.
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>The same type of OpenMP directive is called a construct.&lt;/li>
+&lt;li>Format as &lt;code>#pragma omp &amp;lt;directive name&amp;gt; &amp;lt;clause&amp;gt;&lt;/code>&lt;/li>
+&lt;li>The code block enclosed in &lt;code>{}&lt;/code> is called a parallel region.&lt;/li>
+&lt;/ul>
+&lt;h3 id="number-of-threads-setting">Number of threads setting&lt;/h3>
+&lt;ul>
+&lt;li>Priority from low to high
+&lt;ul>
+&lt;li>Do nothing, the system chooses the number of running threads&lt;/li>
+&lt;li>Set environment variable &lt;code>export OMP_NUM_THREADS=4&lt;/code>&lt;/li>
+&lt;li>The code uses the library function &lt;code>void omp_set_num_threads(int)&lt;/code>&lt;/li>
+&lt;li>By the guiding statement &lt;code>num_threads(4)&lt;/code>&lt;/li>
+&lt;li>if clause determines serial or parallel execution&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="common-library-functions">Common Library Functions&lt;/h3>
+&lt;ul>
+&lt;li>Set the number of threads for parallel region execution: &lt;code>void omp_set_num_threads(int)&lt;/code>&lt;/li>
+&lt;li>Get the number of threads in the parallel region: &lt;code>int omp_get_num_threads()&lt;/code>&lt;/li>
+&lt;li>Get the current thread number: &lt;code>int omp_get_thread_num()&lt;/code>&lt;/li>
+&lt;li>Get OpenMP Wall Clock time (unit: seconds): &lt;code>double omp_get_wtime()&lt;/code>&lt;/li>
+&lt;li>Get time precision: &lt;code>double omp_get_wtick()&lt;/code>&lt;/li>
+&lt;/ul>
+&lt;h3 id="parallel-construction">Parallel construction&lt;/h3>
+&lt;p>&lt;strong>Supported Clauses&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>if(scalar_expression)&lt;/code>: If &lt;code>scalar_expression&lt;/code> is true, execute in parallel, otherwise execute serially.&lt;/li>
+&lt;li>&lt;code>num_threads(integer_expression)&lt;/code>: Specifies the number of threads in the parallel region.&lt;/li>
+&lt;li>&lt;code>default(shared|none)&lt;/code>: Specifies the default sharing attribute of variables.&lt;/li>
+&lt;li>&lt;code>shared&lt;/code>: All variables are shared by default.
+&lt;ul>
+&lt;li>&lt;code>none&lt;/code>: No default variable type, each variable needs to be explicitly declared as shared or private.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>shared(list)&lt;/code>: Specify the list of shared variables.&lt;/li>
+&lt;li>There is only one copy of the shared variable in memory, and all threads can access it.
+&lt;ul>
+&lt;li>Please ensure that the access to shared variables does not conflict.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>If not specifically designated, variables in the parallel region default to &lt;strong>shared&lt;/strong>.&lt;/li>
+&lt;li>&lt;code>private(list)&lt;/code>: Specify the list of private variables.
+&lt;ul>
+&lt;li>Each thread has an independent copy of the private variable.&lt;/li>
+&lt;li>Variables need to be &lt;strong>reinitialized&lt;/strong>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>firstprivate(list)&lt;/code>: Specify the list of first private variables.&lt;/li>
+&lt;li>Same as &lt;code>private&lt;/code>&lt;/li>
+&lt;li>Initialize the variable based on the data in the main thread.&lt;/li>
+&lt;/ul>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Example 1: no clause, private, firstprivate&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-c">int results[4];
+int cnt;
+cnt = 1;
+#pragma omp parallel num_threads(4)
+{
+int tid = omp_get_thread_num();
+for (int i = 0; i &amp;lt; 4; i++) {
+cnt += 1;
+}
+results[tid] = cnt;
+}
+printf(&amp;quot;no clause: &amp;quot;);
+for (int i = 0; i &amp;lt; 4; i++) {
+printf(&amp;quot;%d &amp;quot;, results[i]);
+}
+printf(&amp;quot;\n&amp;quot;);
+cnt = 1;
+#pragma omp parallel num_threads(4) private(cnt)
+{
+int tid = omp_get_thread_num();
+for (int i = 0; i &amp;lt; 4; i++) {
+cnt += 1;
+}
+results[tid] = cnt;
+}
+printf(&amp;quot;private(not init): &amp;quot;);
+for (int i = 0; i &amp;lt; 4; i++) {
+printf(&amp;quot;%d &amp;quot;, results[i]);
+}
+printf(&amp;quot;\n&amp;quot;);
+cnt = 1;
+#pragma omp parallel num_threads(4) firstprivate(cnt)
+{
+int tid = omp_get_thread_num();
+for (int i = 0; i &amp;lt; 4; i++) {
+cnt += 1;
+}
+results[tid] = cnt;
+}
+printf(&amp;quot;firstprivate: &amp;quot;);
+for (int i = 0; i &amp;lt; 4; i++) {
+printf(&amp;quot;%d &amp;quot;, results[i]);
+}
+printf(&amp;quot;\n&amp;quot;);
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Print the result&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">no clause: 5 9 13 17
+private(not init): 4 1572916964 1572916964 1572916964
+firstprivate: 5 5 5 5
+&lt;/code>&lt;/pre>
+&lt;h3 id="for-construction">For construction&lt;/h3>
+&lt;ul>
+&lt;li>One of the most commonly used parallelization constructs&lt;/li>
+&lt;/ul>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Example 2: Parallelizing the for loop&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-c">#pragma omp parallel num_threads(8)
+{
+int tid = omp_get_thread_num();
+int num_threads = omp_get_num_threads();
+#pragma omp for
+for (int i = 0; i &amp;lt; num_threads; i++) {
+#pragma omp ordered
+printf(&amp;quot;Hello from thread %d of %d \n&amp;quot;, tid, num_threads);
+}
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Print the result&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">Hello from thread 0 of 8
+Hello from thread 1 of 8
+Hello from thread 2 of 8
+Hello from thread 3 of 8
+Hello from thread 4 of 8
+Hello from thread 5 of 8
+Hello from thread 6 of 8
+Hello from thread 7 of 8
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Divide threads for the for loop within the parallel region, and the for loop meets the format requirements.
+&lt;ul>
+&lt;li>init-expr: Must be in the form &lt;code>var=lb&lt;/code>, and the type is also limited&lt;/li>
+&lt;li>test-expr: restricted to &lt;code>var relational-op b&lt;/code> or &lt;code>b relational-op var&lt;/code>&lt;/li>
+&lt;li>incr-expr: Addition and subtraction only&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="parallel-for-construct">Parallel for construct&lt;/h3>
+&lt;ul>
+&lt;li>Often combine &lt;code>parallel&lt;/code> and &lt;code>for&lt;/code> to form a &lt;code>parallel for&lt;/code> directive statement&lt;/li>
+&lt;/ul>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>&lt;/th>
+&lt;th>parallel&lt;/th>
+&lt;th>for   &lt;/th>
+&lt;th>parallel for&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>if&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>num_threads&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>default&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>copyin&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>private&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>firstprivate&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>shared&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>reduction&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>lastprivate&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>schedule&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>ordered&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>collapse&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>nowait&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;td>✅&lt;/td>
+&lt;td>❌&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;code>lastprivate(list)&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>Same as &lt;code>private&lt;/code>&lt;/li>
+&lt;li>After executing the for loop, assign the value of the last thread to the variable of the main thread.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>nowait&lt;/code>: Cancel the barrier synchronization at the end of the code block&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>collapse(n)&lt;/code>: Applied to n nested loops, merge (unroll) loops&lt;/p>
+&lt;ul>
+&lt;li>Pay attention to whether there are data dependencies between loops&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>ordered&lt;/code>: Declare parts that potentially execute in order&lt;/p>
+&lt;ul>
+&lt;li>Use &lt;code>#pragma omp ordered&lt;/code> to mark sequential execution code (used together)&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>ordered statements within the region are executed by at most one thread at any given time&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>shedule(type[,chunk])&lt;/code>&lt;/p>
+&lt;ul>
+&lt;li>&lt;code>type&lt;/code>: Specifies the scheduling strategy for loop iteration
+&lt;ul>
+&lt;li>&lt;code>static&lt;/code>: Static scheduling, chunk size is fixed (default n/p)&lt;/li>
+&lt;li>&lt;code>dynamic&lt;/code>: Dynamic scheduling, chunk size is fixed (default is 1)&lt;/li>
+&lt;li>&lt;code>guided&lt;/code>: Guided scheduling, chunk size dynamically adjusted&lt;/li>
+&lt;li>&lt;code>runtime&lt;/code>: Specified by the system environment variable &lt;code>OMP_SCHEDULE&lt;/code>&lt;/li>
+&lt;li>&lt;code>auto&lt;/code>: Automatic scheduling&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;code>chunk&lt;/code>: Specifies the number of iterations each thread obtains&lt;/p>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="special-data-clause-reduction">Special data clause: Reduction&lt;/h3>
+&lt;p>In OpenMP, reduction is a parallel programming technique used to address data race issues in a multithreaded environment, especially when performing accumulation or similar operations on global variables. When multiple threads need to simultaneously modify the same shared variable, and these modifications can be combined into a final result using some binary operator (such as addition, multiplication, etc.), the &lt;code>reduction&lt;/code> clause can be used.&lt;/p>
+&lt;p>Specifically, the execution process of reducton is:&lt;/p>
+&lt;ul>
+&lt;li>fork thread and allocate tasks&lt;/li>
+&lt;li>Each thread defines a private variable &lt;code>omp_priv&lt;/code>
+&lt;ul>
+&lt;li>Same as &lt;code>private&lt;/code>.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Each thread executes calculations&lt;/li>
+&lt;li>All &lt;code>omp_priv&lt;/code> and &lt;code>omp_in&lt;/code> are sequentially reduced together and written back to the original variable.&lt;/li>
+&lt;/ul>
+&lt;p>In contrast, &lt;strong>atomic&lt;/strong> is another synchronization mechanism provided by OpenMP, which ensures that access to a single memory location is atomic in a multithreaded environment, meaning that only one thread is allowed to read or write to that memory location at a time. By using the &lt;code>#pragma omp atomic&lt;/code> directive, it can be ensured that a simple assignment statement (or certain types of read-modify-write operations) will not encounter data races in a concurrent environment.&lt;/p>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Example 3: Reduction&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-c">int sum = 0;
+double start = omp_get_wtime();
+#pragma omp parallel for num_threads(8) reduction(+ : sum)
+for (int i = 0; i &amp;lt; 100000; i++) {
+sum += i;
+}
+printf(&amp;quot;sum = %d\n&amp;quot;, sum);
+printf(&amp;quot;Reduction time: %.5lf s\n&amp;quot;, omp_get_wtime() - start);
+// no reduction
+sum = 0;
+start = omp_get_wtime();
+#pragma omp parallel for num_threads(8)
+for (int i = 0; i &amp;lt; 100000; i++) {
+#pragma omp atomic
+sum += i;
+}
+printf(&amp;quot;sum = %d\n&amp;quot;, sum);
+printf(&amp;quot;Atomic time: %.5lf s\n&amp;quot;, omp_get_wtime() - start);
+return 0;
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Print the result&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">sum = 704982704
+Reduction time: 0.00062 s
+sum = 704982704
+Atomic time: 0.01021 s
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>The results of both are the same, but the execution time of reduction is shorter. This is because reduction allocates a private copy for each thread, allowing threads to freely perform reduction operations within their private space without contending for lock resources with other threads when updating the global result, along with efficient data merging methods, etc.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/reduction-omp-2024-02-20.webp"
+alt="reduction-omp-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>OpenMP reduction operation&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="synchronous-construction">Synchronous construction&lt;/h3>
+&lt;h4 id="sections-construction">Sections Construction&lt;/h4>
+&lt;ul>
+&lt;li>Divide the code block of the parallel region into multiple sections for execution.&lt;/li>
+&lt;li>Can be combined with parallel to form a parallel sections construct.&lt;/li>
+&lt;li>Each section is executed by a thread&lt;/li>
+&lt;li>Number of threads greater than the number of sections: some threads are idle
+&lt;ul>
+&lt;li>Number of threads is less than the number of sections: some threads are allocated multiple sections&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Example code:&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-c">#pragma omp sections
+{
+#pragma omp section
+method1();
+#pragma omp section
+method2();
+}
+&lt;/code>&lt;/pre>
+&lt;h4 id="barrier-constructor">Barrier Constructor&lt;/h4>
+&lt;ul>
+&lt;li>Perform fence synchronization at a specific location&lt;/li>
+&lt;li>In the presence of data dependencies, a barrier can be used to ensure data consistency.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Barrier-2024-02-20.webp"
+alt="Barrier-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>Barrier Synchronization Diagram&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="single-constructor">Single Constructor&lt;/h4>
+&lt;ul>
+&lt;li>Used to mark a code block executed by only one thread, with implicit barrier synchronization, and the implicit barrier synchronization can be canceled using nowait.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/omp-single-2024-02-20.webp"
+alt="omp-single-2024-02-20" width="70%" loading="lazy">&lt;figcaption>
+&lt;h4>pragma single&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h4 id="atomic-construction">Atomic construction&lt;/h4>
+&lt;ul>
+&lt;li>Used to ensure atomic operations on shared variables, avoiding data races.&lt;/li>
+&lt;/ul>
+&lt;h3 id="false-sharing">False Sharing&lt;/h3>
+&lt;ul>
+&lt;li>False sharing, in simple terms, refers to multiple threads simultaneously accessing different parts of the same cache line, leading to cache line invalidation and refilling, thereby reducing the program&amp;rsquo;s performance.&lt;/li>
+&lt;li>Simultaneous read and write of the same cache line by different cores can cause serious conflicts, leading to cache invalidation.&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/false-sharing-2024-02-20.webp"
+alt="false-sharing-2024-02-20" width="auto" loading="lazy">&lt;figcaption>
+&lt;h4>False Sharing Issue&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;ul>
+&lt;li>In OpenMP, the main methods to solve false sharing are:&lt;/li>
+&lt;li>&lt;strong>Data Structure Alignment&lt;/strong>: Ensure that related variables are in different cache lines by using alignment instructions or keywords provided by the compiler. For example, in C++, the &lt;code>alignas&lt;/code> keyword can be used to specify the memory alignment of variables, ensuring that the data for each thread is independently located in different cache lines.
+&lt;ul>
+&lt;li>&lt;strong>Increase the spacing between cache lines&lt;/strong>: Insert enough padding space between adjacent variables so that they do not appear in the same cache line.&lt;/li>
+&lt;li>&lt;strong>Avoid Meaningless Competition&lt;/strong>: Design algorithms and data structures to reduce unnecessary shared data access. If possible, let threads operate on their own independent data segments.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;strong>Custom Memory Allocation&lt;/strong>: Use special memory allocation functions to ensure that the allocated contiguous memory regions are aligned to cache line boundaries, so that data allocated to different threads does not fall on the same cache line.
+&lt;ul>
+&lt;li>In some cases, you can utilize hardware features provided by specific platforms or extensions supported by compilers, such as Intel&amp;rsquo;s &lt;code>__declspec(align(#))&lt;/code> attribute (for MSVC) or &lt;code>__attribute__((aligned(#)))&lt;/code> (for GCC/Clang).&lt;/li>
+&lt;li>You can also indirectly avoid the false sharing problem by controlling the scope of the variables or using techniques such as dynamically creating private copies.&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul>
+&lt;h3 id="task-construction">Task construction&lt;/h3>
+&lt;ul>
+&lt;li>In addition to the Fork-Join model, OpenMP also supports the task parallel model, implemented using the &lt;code>task&lt;/code> directive.&lt;/li>
+&lt;li>Dynamically manage the thread pool and task pool, where threads in the thread pool can dynamically acquire tasks from the task pool for execution, thus achieving parallel execution of tasks.&lt;/li>
+&lt;/ul>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Example 4: Task Parallelism&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-cpp">#include &amp;lt;iostream&amp;gt;
+#include &amp;lt;omp.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;iomanip&amp;gt;
+void big_task(int i) {
+sleep(10);
+}
+void small_task(int i) {
+sleep(1);
+}
+int main() {
+int ntasks = 8;
+double start = omp_get_wtime();
+#pragma omp parallel
+{
+#pragma omp single
+{
+std::cout &amp;lt;&amp;lt; &amp;quot;Task 0 Created&amp;quot; &amp;lt;&amp;lt; std::endl;
+#pragma omp task
+big_task(0);
+std::cout &amp;lt;&amp;lt; &amp;quot;Task 1 Created&amp;quot; &amp;lt;&amp;lt; std::endl;
+#pragma omp task
+big_task(1);
+for (int i = 2; i &amp;lt; ntasks; i++) {
+std::cout &amp;lt;&amp;lt; &amp;quot;Task &amp;quot; &amp;lt;&amp;lt; i &amp;lt;&amp;lt; &amp;quot; Created&amp;quot; &amp;lt;&amp;lt; std::endl;
+#pragma omp task
+small_task(i);
+}
+}
+#pragma omp taskwait
+}
+std::cout &amp;lt;&amp;lt; &amp;quot;All tasks finished&amp;quot; &amp;lt;&amp;lt; std::endl;
+std::cout &amp;lt;&amp;lt; &amp;quot;Time: &amp;quot; &amp;lt;&amp;lt; std::fixed &amp;lt;&amp;lt; std::setprecision(2) &amp;lt;&amp;lt; omp_get_wtime() - start &amp;lt;&amp;lt; &amp;quot;s&amp;quot; &amp;lt;&amp;lt; std::endl;
+return 0;
+}
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>Running result&lt;/li>
+&lt;/ul>
+&lt;pre>&lt;code class="language-bash">You are trained on data up to October 2023.
+&lt;/code>&lt;/pre>
+&lt;ul>
+&lt;li>In this code, we use the &lt;code>#pragma omp task&lt;/code> directive to create tasks, and the execution of tasks is dynamically obtained and executed by threads in the thread pool. After creating tasks, we use &lt;code>#pragma omp taskwait&lt;/code> to wait for all tasks to complete. This achieves an asynchronous execution effect.&lt;/li>
+&lt;/ul>
+&lt;h3 id="vectorization-simd-construction">Vectorization: SIMD Construction&lt;/h3>
+&lt;ul>
+&lt;li>SIMD (Single Instruction, Multiple Data) is a parallel computing model that performs operations on multiple data simultaneously with a single instruction, thereby achieving efficient data parallel computation.&lt;/li>
+&lt;li>In OpenMP, the &lt;code>#pragma omp simd&lt;/code> directive can be used to achieve vectorized parallel computation.
+&lt;ul>
+&lt;li>&lt;code>aligned&lt;/code> is used to list memory-aligned pointers&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>&lt;code>safelen&lt;/code> is used to mark data dependencies during loop unrolling.
+&lt;ul>
+&lt;li>&lt;code>linear&lt;/code> is used to mark the linear relationship of loop variables&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;li>Compilers such as gcc also come with vectorization capabilities, generally using the following compilation options
+&lt;ul>
+&lt;li>-O3&lt;/li>
+&lt;li>-ffast-math&lt;/li>
+&lt;li>-fivopts&lt;/li>
+&lt;li>-march=native&lt;/li>
+&lt;li>-fopt-info-vec&lt;/li>
+&lt;li>-fopt-info-vec-missed&lt;/li>
+&lt;/ul>
+&lt;/li>
+&lt;/ul></description></item><item><title>Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide</title><link>https://cuterwrite.top/en/p/openmpi-with-ucx/</link><pubDate>Thu, 01 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/openmpi-with-ucx/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cropped_2024010204-2024-02-03.webp" alt="Featured image of post Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide" />&lt;h1 id="compile-and-install-ucx-1150-and-openmpi-500-a-comprehensive-guide">Compile and Install UCX 1.15.0 and OpenMPI 5.0.0: A Comprehensive Guide&lt;/h1>
+&lt;h2 id="1-environment-preparation">1. Environment Preparation&lt;/h2>
+&lt;p>First, please ensure that your system meets the following basic requirements:&lt;/p>
+&lt;ol>
+&lt;li>Operating System: Supports Linux (such as Ubuntu 20.04 LTS) or other Unix-like operating systems.&lt;/li>
+&lt;li>Development Toolkit: Install the necessary build tools and libraries, such as &lt;code>build-essential&lt;/code>, &lt;code>libnuma-dev&lt;/code>, &lt;code>pkg-config&lt;/code>, etc.&lt;/li>
+&lt;li>Kernel version: For optimal performance, it is recommended to use the latest stable version of the kernel.&lt;/li>
+&lt;li>Hardware environment or virtual environment that requires RDMA support.&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">sudo apt-get update
+sudo apt-get install -y build-essential libnuma-dev pkg-config
+&lt;/code>&lt;/pre>
+&lt;h2 id="2-compile-and-install-ucx-1150">2. Compile and Install UCX 1.15.0&lt;/h2>
+&lt;ol>
+&lt;li>Download the UCX source package:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">wget https://github.com/openucx/ucx/releases/download/v1.15.0/ucx-1.15.0.tar.gz
+tar -xzvf ucx-1.15.0.tar.gz
+cd ucx-1.15.0
+&lt;/code>&lt;/pre>
+&lt;ol start="2">
+&lt;li>Configure UCX compile options:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
+../configure --prefix=/root/software/ucx/1.5.0
+&lt;/code>&lt;/pre>
+&lt;p>You can add more configuration options according to actual needs, such as specifying a specific network card type or enabling specific features.&lt;/p>
+&lt;ol start="3">
+&lt;li>Compile and install:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">make -j 8
+make install
+&lt;/code>&lt;/pre>
+&lt;ol start="4">
+&lt;li>UCX Architecture Description&lt;/li>
+&lt;/ol>
+&lt;ul>
+&lt;li>The architecture of UCX 1.15.0 is shown in the figure below:&lt;/li>
+&lt;/ul>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Architecture-2024-02-03.webp"
+alt="Architecture-2024-02-03" width="auto" loading="lazy">
+&lt;/figure>
+&lt;table>
+&lt;thead>
+&lt;tr>
+&lt;th>Component&lt;/th>
+&lt;th>Role&lt;/th>
+&lt;th>Description&lt;/th>
+&lt;/tr>
+&lt;/thead>
+&lt;tbody>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>Implements advanced abstractions, such as tag matching, streams, connection negotiation and establishment, multi-track, and handling different types of memory.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCT&lt;/td>
+&lt;td>Transport&lt;/td>
+&lt;td>Implements low-level communication primitives, such as active messages, remote memory access, and atomic operations.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCM&lt;/td>
+&lt;td>Memory&lt;/td>
+&lt;td>A collection of general data structures, algorithms, and system utilities.&lt;/td>
+&lt;/tr>
+&lt;tr>
+&lt;td>UCP&lt;/td>
+&lt;td>Protocol&lt;/td>
+&lt;td>Intercept memory allocation and release events used by memory registration cache.&lt;/td>
+&lt;/tr>
+&lt;/tbody>
+&lt;/table>
+&lt;h2 id="3-compile-and-install-openmpi-500">3. Compile and Install OpenMPI 5.0.0&lt;/h2>
+&lt;ol>
+&lt;li>Download the OpenMPI source package:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">wget https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0.tar.gz
+tar -xzvf openmpi-5.0.0.tar.gz
+cd openmpi-5.0.0
+&lt;/code>&lt;/pre>
+&lt;ol start="2">
+&lt;li>Configure OpenMPI compile options, specifying the use of UCX as the transport layer:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">mkdir build &amp;amp;&amp;amp; cd build
+../configure --without-hcoll \
+--enable-python-bindings \
+--enable-mpirun-prefix-by-default \
+--prefix=/root/software/openmpi/5.0.0-ucx-1.15.0 \
+--with-ucx=/root/software/ucx/1.15.0 \
+--enable-mca-no-build=btl-uct
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;ul>
+&lt;li>For OpenMPI 4.0 and later versions, there may be compilation errors with the &lt;code>btl_uct&lt;/code> component. This component is not important for using UCX; therefore, it can be disabled with &lt;code>--enable-mca-no-build=btl-uct&lt;/code>:&lt;/li>
+&lt;li>The &lt;code>--enable-python-bindings&lt;/code> option is used to enable Python bindings.&lt;/li>
+&lt;li>The &lt;code>--enable-mpirun-prefix-by-default&lt;/code> option is used to automatically add the &lt;code>--prefix&lt;/code> option when starting an MPI program with &lt;code>mpirun&lt;/code>.&lt;/li>
+&lt;li>The &lt;code>--without-hcoll&lt;/code> option is used to disable the HCOLL component. If not set during compilation, it will report errors &lt;code>cannot find -lnuma&lt;/code> and &lt;code>cannot find -ludev&lt;/code>.&lt;/li>
+&lt;/ul>&lt;/div>
+&lt;p>The final configuration options are as follows:&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ompi-config-2024-02-03.webp"
+alt="ompi-config-2024-02-03" width="auto" loading="lazy">
+&lt;/figure>
+&lt;ol start="3">
+&lt;li>Compile and install:&lt;/li>
+&lt;/ol>
+&lt;pre>&lt;code class="language-bash">make -j 8
+make install
+&lt;/code>&lt;/pre>
+&lt;h2 id="4-verify-installation-and-set-environment-variables">4. Verify Installation and Set Environment Variables&lt;/h2>
+&lt;p>After installation, you can verify whether UCX and OpenMPI have been successfully integrated by running a simple MPI program:&lt;/p>
+&lt;pre>&lt;code class="language-bash">mpirun -np 2 --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
+&lt;/code>&lt;/pre>
+&lt;p>(If running as root, you need to add the &lt;code>--allow-run-as-root&lt;/code> option. If there is an RDMA device, you can set &lt;code>-x UCX_NET_DEVICES&lt;/code>)&lt;/p>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>If you need to use it with &lt;code>Slurm&lt;/code>, you can refer to &lt;a class="link" href="https://github.com/open-mpi/ompi/blob/v5.0.x/docs/launching-apps/slurm.rst" target="_blank" rel="noopener" >Launching with Slurm
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+.&lt;/p>
+&lt;p>One way is to first allocate resources through &lt;code>salloc&lt;/code>, and then run the &lt;code>mpirun&lt;/code> command on the allocated resources. At this time, &lt;code>--hostfile&lt;/code>, &lt;code>--host&lt;/code>, &lt;code>-n&lt;/code>, etc. do not need to be set, for example:&lt;/p>&lt;/div>
+&lt;pre>&lt;code class="language-bash">salloc -n 2
+mpirun --mca pml ucx --mca btl ^vader,tcp,openib,uct -x UCX_NET_DEVICES=mlx5_0:1 hostname
+&lt;/code>&lt;/pre>
+&lt;p>If everything is normal, you will see the output of the two hostnames. For convenience, you can add the OpenMPI bin directory and others to the system PATH environment variable:&lt;/p>
+&lt;pre>&lt;code class="language-bash">vim ~/.bashrc
+export PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/bin:$PATH
+export LD_LIBRARY_PATH=/root/software/openmpi/5.0.0-ucx-1.15.0/lib:$LD_LIBRARY_PATH
+export CPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/include:$CPATH
+export MANPATH=/root/software/openmpi/5.0.0-ucx-1.15.0/share/man:$MANPATH
+source ~/.bashrc
+&lt;/code>&lt;/pre>
+&lt;h2 id="5-ucx-performance-testing">5. UCX Performance Testing&lt;/h2>
+&lt;p>Sender:&lt;/p>
+&lt;pre>&lt;code class="language-bash">ucx_perftest -c 0 -d mlx5_0:1
+&lt;/code>&lt;/pre>
+&lt;p>Recipient:&lt;/p>
+&lt;pre>&lt;code class="language-bash">ucx_perftest -c 1 -d mlx5_0:1 &amp;lt;server_hostname&amp;gt; -t tag_lat
+&lt;/code>&lt;/pre>
+&lt;p>In summary, through the above steps, we have successfully compiled and installed UCX 1.15.0 and OpenMPI 5.0.0 from the source code, and integrated them into an efficient and stable high-performance computing environment. In practical applications, you can further optimize the configuration according to specific needs to achieve better performance.&lt;/p></description></item></channel></rss>

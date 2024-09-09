@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>PWA on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/pwa/</link><description>Recent content in PWA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 18 Jun 2024 22:28:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/pwa/index.xml" rel="self" type="application/rss+xml"/><item><title>Implementing Hugo Progressive Web App Based on Workbox</title><link>https://cuterwrite.top/en/p/hugo-pwa/</link><pubDate>Tue, 18 Jun 2024 22:28:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/hugo-pwa/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116406967_p0_master1200.webp" alt="Featured image of post Implementing Hugo Progressive Web App Based on Workbox" />&lt;h1 id="implement-hugo-pwa-based-on-workbox">Implement Hugo PWA based on Workbox&lt;/h1>
+&lt;p>Recently added PWA functionality to a blog built on &lt;a class="link" href="https://gohugo.io/" target="_blank" rel="noopener" >Hugo
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+, significantly improving loading speed and user experience, even enabling offline access. As for how to achieve this, you need to understand &lt;strong>Progressive Web Apps (PWA)&lt;/strong>.&lt;/p>
+&lt;h2 id="what-is-pwa">What is PWA?&lt;/h2>
+&lt;p>Progressive Web Apps (PWA) leverage modern Web APIs and traditional progressive enhancement strategies to create cross-platform web applications. These applications are ubiquitous, feature-rich, and provide users with an experience comparable to native apps.&lt;/p>
+&lt;p>&lt;strong>Advantages of PWA:&lt;/strong>&lt;/p>
+&lt;ul>
+&lt;li>⚡️ &lt;strong>Faster loading speed&lt;/strong>: PWA can cache important resources and load quickly even in poor network conditions.&lt;/li>
+&lt;li>✈️ &lt;strong>Offline Access&lt;/strong>: PWA can cache content, allowing users to access content even when offline.&lt;/li>
+&lt;li>🔔 &lt;strong>Push Notifications&lt;/strong>: Like native applications, PWAs can send push notifications to users to increase user engagement.&lt;/li>
+&lt;li>📱 &lt;strong>Install to Home Screen&lt;/strong>: Users can add your application to the desktop of their computer or phone and browse your web application like a native app.&lt;/li>
+&lt;/ul>
+&lt;p>The implementation principle of PWA is &lt;strong>Service Worker&lt;/strong>. &lt;strong>Service Worker is a special JavaScript resource that runs independently in the browser background, acting as a proxy between the web browser and the web server. It can intercept and handle network requests, cache resources, and push notifications&lt;/strong>.&lt;/p>
+&lt;p>Mainstream front-end frameworks Vue, React, and Angular all provide corresponding PWA plugins. As for static site generators like Hugo, we can implement PWA functionality by manually adding &lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+.&lt;/p>
+&lt;h2 id="workbox">Workbox&lt;/h2>
+&lt;p>&lt;a class="link" href="https://developer.chrome.com/docs/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+is a set of modules developed by the Google Chrome team, designed to simplify common Service Worker routing and caching operations. Each module is optimized for a specific aspect of Service Worker development. The goal of Workbox is to simplify the use of Service Workers as much as possible while providing the flexibility to meet the needs of complex applications when necessary.&lt;/p>
+&lt;p>If there is no Workbox, we need to manually write a Service Worker to listen to fetch events, cache resources, and implement offline access and other functions. Workbox provides a set of tools that can help us automatically generate a Service Worker and comes with some commonly used caching strategies, allowing us to focus more on business logic.&lt;/p>
+&lt;h2 id="configure-pwa">Configure PWA&lt;/h2>
+&lt;p>In the previous section, we learned about the concept and advantages of PWA, and how Workbox simplifies the development of Service Workers. Next, we will step by step configure PWA functionality for the Hugo blog.&lt;/p>
+&lt;h3 id="register-service-worker">Register Service Worker&lt;/h3>
+&lt;p>First, we need to register the Service Worker on the page. Add the following code snippet to your Hugo theme&amp;rsquo;s &lt;code>layouts/partials/footer/custom.html&lt;/code> file (other themes may need adjustments based on the file structure):&lt;/p>
+&lt;pre>&lt;code class="language-javascript">&amp;lt;script&amp;gt;
+// Check that service workers are registered
+if ('serviceWorker' in navigator) {
+// Use the window load event to keep the page load performant
+window.addEventListener('load', () =&amp;gt; {
+navigator.serviceWorker.register('/sw.js').then(reg =&amp;gt; {
+console.log('Service worker registered with scope: ', reg.scope);
+}, err =&amp;gt; {
+console.log('Service worker registration failed: ', err);
+});
+});
+}
+&amp;lt;/script&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Note: Before registering the Service Worker, you need to first create the &lt;code>sw.js&lt;/code> file, which we will complete in the next section.&lt;/p>&lt;/div>
+&lt;p>After completing the registration, you can view the registration status of the Service Worker in the developer tools (F12) of the browser under &lt;strong>&amp;ldquo;Application&amp;rdquo; -&amp;gt; &amp;ldquo;Service Workers&amp;rdquo;&lt;/strong> panel.&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_service-worker.webp"
+alt="Service Worker" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>Service Worker&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;h3 id="import-workbox">Import Workbox&lt;/h3>
+&lt;p>In the &lt;code>static&lt;/code> folder of your Hugo site root directory, create the &lt;code>sw.js&lt;/code> file. Then, add the following code in the &lt;code>sw.js&lt;/code> file to import Workbox using CDN:&lt;/p>
+&lt;pre>&lt;code class="language-javascript">importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+&lt;/code>&lt;/pre>
+&lt;h3 id="cache-strategy">Cache strategy&lt;/h3>
+&lt;p>Workbox provides some common caching strategies, such as &lt;code>CacheFirst&lt;/code>, &lt;code>NetworkFirst&lt;/code>, &lt;code>StaleWhileRevalidate&lt;/code>, etc. Here we introduce some common strategies first.&lt;/p>
+&lt;h4 id="cacheonly-cache-only">CacheOnly Cache only&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-6850d07d742bf_1440.webp"
+alt="CacheOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>Forced response from cache.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkonly-network-only">NetworkOnly Network Only&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-48f46158a5575_1440.webp"
+alt="NetworkOnly" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkOnly&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>This caching strategy forces all requests to retrieve the latest data from the network, completely bypassing the cache.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cachefirst-cache-priority">CacheFirst Cache Priority&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-falling-to-networ-f4c1aa5570621_1440.webp"
+alt="CacheFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>CacheFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>This caching strategy prioritizes speed, first attempting to retrieve the response from the cache to display content to the user as quickly as possible. If the required data is not in the cache, it will then make a request to the network to obtain the data.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="networkfirst-优先网络">NetworkFirst 优先网络&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_network-falling-to-cache-39d267a044b35_1440.webp"
+alt="NetworkFirst" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>NetworkFirst&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>This caching strategy prioritizes using the latest data, so it will first attempt to fetch the response from the network. If the network request fails, such as when the user is offline or the network connection is unstable, it will fall back to using cached data to ensure that the user can still access the content.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.NetworkFirst()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="stalewhilerevalidate-reads-the-cache-while-initiating-a-network-request">StaleWhileRevalidate reads the cache while initiating a network request&lt;/h4>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-19_cache-network-873b1ec5f25cc_1440.webp"
+alt="StaleWhileRevalidate" width="90%" loading="lazy">&lt;figcaption>
+&lt;h4>StaleWhileRevalidate&lt;/h4>
+&lt;/figcaption>
+&lt;/figure>
+&lt;p>This caching strategy prioritizes returning cached content (if available). Even if the cached content is valid, it will initiate a network request in the background to obtain the latest data, ensuring that the user ultimately sees the most up-to-date content. Although this strategy ensures that the cache is regularly updated for the user, it also means that every request generates network traffic, which can be a waste of bandwidth even if the data hasn&amp;rsquo;t changed.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="strategy-configuration">Strategy Configuration&lt;/h4>
+&lt;p>Workbox not only provides the aforementioned strategies but also allows customization through configuration options such as cacheName, plugins, and expiration. You can customize routing behavior by defining the plugins you want to use. For example, you can configure the cache name, cache expiration, and cacheable response status codes as follows:&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp(regex),
+new workbox.strategies.CacheFirst({
+cacheName: 'my-cache',
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: 60,
+maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="site-configuration">Site Configuration&lt;/h3>
+&lt;h4 id="global-configuration">Global configuration&lt;/h4>
+&lt;p>The following is the global cache configuration:&lt;/p>
+&lt;pre>&lt;code class="language-javascript">// Cache version number
+let cacheVersion = '-240619';
+// Maximum number of entries
+const maxEntries = 100;
+&lt;/code>&lt;/pre>
+&lt;h4 id="twitto-configuration">Twitto Configuration&lt;/h4>
+&lt;p>In order to ensure that users can view comments even when offline, the Twitto Comments API uses a &lt;code>NetworkFirst&lt;/code> caching strategy. This means the browser will first attempt to fetch the latest data from the network, and if the network is unavailable, it will use the data from the cache.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="rss-and-sitemap-configuration">RSS and Sitemap Configuration&lt;/h4>
+&lt;p>In order to ensure that users always obtain the latest RSS and Sitemap data, these pages are configured to use only the network strategy (&lt;code>NetworkOnly&lt;/code>) without caching.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="html-configuration">HTML Configuration&lt;/h4>
+&lt;p>In order to ensure that users can quickly load pages while also obtaining the latest content, the website uses the &lt;code>StaleWhileRevalidate&lt;/code> caching strategy for HTML pages. This means the browser will prioritize displaying the page from the cache while simultaneously making a request to the server in the background to fetch the latest version, which will be used on the next request.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="google-fonts-configuration">Google Fonts Configuration&lt;/h4>
+&lt;p>In order to ensure the font files are updated while also utilizing caching to speed up page loading, the website uses a &lt;code>CacheFirst&lt;/code> caching strategy for Google Fonts resources and sets a long cache expiration time.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*\.(?:woff|woff2|ttf|otf|eot)'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'google-fonts' + cacheVersion,
+plugins: [
+// Use expiration plugin to control the number and time of cache entries
+new workbox.expiration.ExpirationPlugin({
+// Maximum number of cache entries
+maxEntries: maxEntries,
+// Maximum cache time 30 days
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+// Use cacheableResponse plugin to cache requests with status code 0
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="cdn-configuration">CDN Configuration&lt;/h4>
+&lt;p>In order to maximize the use of cache to speed up page loading, the website adopts a &lt;code>CacheFirst&lt;/code> caching strategy for resources from common CDNs and sets a long cache expiration time.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'cdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="umani-website-statistics-configuration">Umani website statistics configuration&lt;/h4>
+&lt;p>In order to ensure the accuracy of website statistics, the website adopts the &lt;code>NetworkOnly&lt;/code> strategy for Umani website statistics requests and uses the &lt;code>BackgroundSyncPlugin&lt;/code> to ensure that data is eventually sent successfully even when the network is offline.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// Use background sync plugin to implement background synchronization
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="image-configuration">Image Configuration&lt;/h4>
+&lt;p>In order to speed up image loading and reduce the number of network requests, the website uses a &lt;code>CacheFirst&lt;/code> caching strategy for image resources and sets a long cache expiration time.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="suffix-match-configuration">Suffix match configuration&lt;/h4>
+&lt;p>In order to balance loading speed and content updates, the website uses the &lt;code>StaleWhileRevalidate&lt;/code> caching strategy for static files (such as images, CSS, and JavaScript files) that are not matched by the domain name.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.registerRoute(
+new RegExp('.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*\.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+&lt;/code>&lt;/pre>
+&lt;h4 id="default-behavior-configuration">Default behavior configuration&lt;/h4>
+&lt;p>In order to handle requests that are not matched by any custom routing rules, the website is configured with a default caching behavior, using the &lt;code>NetworkFirst&lt;/code> strategy and setting a network timeout to balance resource retrieval speed and offline availability.&lt;/p>
+&lt;pre>&lt;code class="language-javascript">workbox.routing.setDefaultHandler(
+// Prefer using cache, if cache is not available then use network request
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+&lt;/code>&lt;/pre>
+&lt;h3 id="full-configuration">Full configuration&lt;/h3>
+&lt;details>
+&lt;summary>sw.js&lt;/summary>
+&lt;pre>&lt;code class="language-javascript">```javascript
+importScripts('https://cdn.bootcdn.net/ajax/libs/workbox-sw/7.1.0/workbox-sw.js');
+// Cache version number
+let cacheVersion = '-240619';
+// Maximum number of entries
+const maxEntries = 100;
+if (workbox) {
+console.log(`Yay! Workbox is loaded 🎉`);
+// Comment cache
+workbox.routing.registerRoute(
+new RegExp('^https://comment\.cuterwrite\.top'),
+new workbox.strategies.NetworkFirst({
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// Do not cache rss and sitemap
+workbox.routing.registerRoute(
+new RegExp('^https://cuterwrite\.top/(index|sitemap)\.xml'),
+new workbox.strategies.NetworkOnly()
+);
+// Cache HTML
+workbox.routing.registerRoute(
+new RegExp('.*\.html'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'html-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// Cache Google Fonts
+workbox.routing.registerRoute(
+new RegExp('.*\.(?:woff|woff2|ttf|otf|eot)'),
+new workbox.strategies.StaleWhileRevalidate({
+cacheName: 'google-fonts' + cacheVersion,
+plugins: [
+// Use expiration plugin to control cache entry number and time
+new workbox.expiration.ExpirationPlugin({
+// Maximum number of cache entries
+maxEntries: maxEntries,
+// Maximum cache time 30 days
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+// Use cacheableResponse plugin to cache requests with status code 0
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// Cache public libraries like bootcdn, unpkg, jsdelivr using regex
+workbox.routing.registerRoute(
+new RegExp('^https://(?:cdn\.bootcdn\.net|unpkg\.com|cdn\.jsdelivr\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'cdn' + cacheVersion,
+fetchOptions: {
+mode: 'cors',
+credentials: 'omit',
+},
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+],
+})
+);
+// Self-built UMA statistics script: https://analytics.cuterwrite.top/uma
+workbox.routing.registerRoute(
+new RegExp('^https://analytics\.cuterwrite\.top/uma'),
+new workbox.strategies.NetworkOnly({
+plugins: [
+// Use background sync plugin for background synchronization
+new workbox.backgroundSync.BackgroundSyncPlugin('Optical_Collect', {
+maxRetentionTime: 12 * 60,
+}),
+],
+})
+);
+// Cache bucket images https://cuterwrite-1302252842.file.myqcloud.com/
+workbox.routing.registerRoute(
+new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+new workbox.strategies.CacheFirst({
+cacheName: 'image-cache' + cacheVersion,
+plugins: [
+new workbox.expiration.ExpirationPlugin({
+maxEntries: maxEntries,
+maxAgeSeconds: 30 * 24 * 60 * 60,
+}),
+new workbox.cacheableResponse.CacheableResponsePlugin({
+statuses: [0, 200],
+}),
+],
+})
+);
+// Suffix matching for other static files not matched by domain
+workbox.routing.registerRoute(
+new RegExp('.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+workbox.routing.registerRoute(
+new RegExp('.*\.(css|js)'),
+new workbox.strategies.StaleWhileRevalidate()
+);
+// Default match for remaining requests
+workbox.routing.setDefaultHandler(
+// Prefer cache, if cache is not available, use network request
+new workbox.strategies.NetworkFirst({
+networkTimeoutSeconds: 3,
+})
+);
+} else {
+console.log(`Boo! Workbox didn't load 😬`);
+}
+&lt;/code>&lt;/pre>
+&lt;pre>&lt;code>
+&lt;/code>&lt;/pre>
+&lt;/details>
+&lt;h3 id="manifestjson">manifest.json&lt;/h3>
+&lt;ol>
+&lt;li>&lt;strong>Create manifest.json file&lt;/strong>&lt;/li>
+&lt;/ol>
+&lt;p>Create a &lt;code>manifest.json&lt;/code> file in the &lt;code>static&lt;/code> folder at the root directory of your Hugo blog, which contains metadata about your blog, such as name, icon, and display options.&lt;/p>
+&lt;pre>&lt;code class="language-json">{
+&amp;quot;name&amp;quot;: &amp;quot;Your Blog Name&amp;quot;,
+&amp;quot;short_name&amp;quot;: &amp;quot;Blog Short Name&amp;quot;,
+&amp;quot;start_url&amp;quot;: &amp;quot;/&amp;quot;,
+&amp;quot;display&amp;quot;: &amp;quot;standalone&amp;quot;,
+&amp;quot;background_color&amp;quot;: &amp;quot;#ffffff&amp;quot;,
+&amp;quot;theme_color&amp;quot;: &amp;quot;#000000&amp;quot;,
+&amp;quot;icons&amp;quot;: [{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-192x192.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;192x192&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+},
+{
+&amp;quot;src&amp;quot;: &amp;quot;/icon-512x512.png&amp;quot;,
+&amp;quot;sizes&amp;quot;: &amp;quot;512x512&amp;quot;,
+&amp;quot;type&amp;quot;: &amp;quot;image/png&amp;quot;
+}
+]
+}
+&lt;/code>&lt;/pre>
+&lt;div class="notice notice-tip" >
+&lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Note: Replace icon-192x192.png and icon-512x512.png with your own icon filenames. And make sure to place these two icon files in the &lt;code>static&lt;/code> folder of your Hugo blog. If you want to modify the theme color and background color, you can modify the theme_color and background_color fields.&lt;/p>&lt;/div>
+&lt;ol start="2">
+&lt;li>&lt;strong>Link manifest.json file&lt;/strong>&lt;/li>
+&lt;/ol>
+&lt;p>In your Hugo blog&amp;rsquo;s &lt;code>layouts/partials/head/custom.html&lt;/code> file, add the following code to link the &lt;code>manifest.json&lt;/code> file to your website:&lt;/p>
+&lt;pre>&lt;code class="language-html">&amp;lt;link rel=&amp;quot;manifest&amp;quot; href=&amp;quot;/manifest.json&amp;quot;&amp;gt;
+&lt;/code>&lt;/pre>
+&lt;p>After completing the above steps, your Hugo blog will have PWA functionality, allowing users to access your site as if it were a native application.&lt;/p>
+&lt;h2 id="references">References&lt;/h2>
+&lt;ul>
+&lt;li>
+&lt;p>&lt;a class="link" href="https://web.dev/articles/offline-cookbook?hl=zh-cn" target="_blank" rel="noopener" >Offline Cookbook
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a class="link" href="https://developers.google.com/web/tools/workbox" target="_blank" rel="noopener" >Workbox
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;/li>
+&lt;li>
+&lt;p>&lt;a class="link" href="https://github.com/GoogleChrome/workbox" target="_blank" rel="noopener" >Workbox Github
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+&lt;/p>
+&lt;/li>
+&lt;/ul></description></item></channel></rss>

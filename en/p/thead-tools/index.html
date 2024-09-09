@@ -1,0 +1,454 @@
+<!doctype html><html lang=en dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="With the rapid development of domestic RISC-V chip technology, Alibaba Pingtouge's Xuantie 900 series processors have attracted much attention for their high performance and low power consumption. To better support the development and debugging work based on the Xuantie 900 series chips, it is crucial to set up a complete toolchain and simulation environment. This article will provide a detailed introduction on how to set up the Xuantie 900 series toolchain and xuantie-qemu environment."><title>Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment</title>
+<link rel=canonical href=https://cuterwrite.top/en/p/thead-tools/><link rel=stylesheet href=/scss/style.min.d868325a06463baba6d200785a33fa8fa3938dfd7e281fd7f2903481e7b1679b.css><meta property='og:title' content="Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment"><meta property='og:description' content="With the rapid development of domestic RISC-V chip technology, Alibaba Pingtouge's Xuantie 900 series processors have attracted much attention for their high performance and low power consumption. To better support the development and debugging work based on the Xuantie 900 series chips, it is crucial to set up a complete toolchain and simulation environment. This article will provide a detailed introduction on how to set up the Xuantie 900 series toolchain and xuantie-qemu environment."><meta property='og:url' content='https://cuterwrite.top/en/p/thead-tools/'><meta property='og:site_name' content="Cuterwrite's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='RISC-V'><meta property='article:tag' content='Linux 内核'><meta property='article:published_time' content='2024-02-20T01:51:00+00:00'><meta property='article:modified_time' content='2024-02-20T01:51:00+00:00'><meta property='og:image' content='https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp'><meta name=twitter:title content="Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment"><meta name=twitter:description content="With the rapid development of domestic RISC-V chip technology, Alibaba Pingtouge's Xuantie 900 series processors have attracted much attention for their high performance and low power consumption. To better support the development and debugging work based on the Xuantie 900 series chips, it is crucial to set up a complete toolchain and simulation environment. This article will provide a detailed introduction on how to set up the Xuantie 900 series toolchain and xuantie-qemu environment."><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp'><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><script async src=https://analytics.cuterwrite.top/uma.js data-website-id=b13594a2-4d15-4a4e-a020-5e3cc1d88c12 data-domains=cuterwrite.top></script><link rel=manifest href=/manifest.json></head><body class="article-page
+line-numbers"><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="Toggle Menu">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/en/><img src=/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>😉</span></figure><div class=site-meta><h1 class=site-name><a href=/en>Cuterwrite's Blog</a></h1><h2 class=site-description>Cuterwrite's tech blog, focusing on in-depth exploration and experience sharing in areas such as high-performance computing, operating systems, full-stack development, and artificial intelligence.</h2></div></header><ol class=menu-social><li><a href=https://analytics.cuterwrite.top/share/Ji0gm9OaLDk8gco7 target=_blank title=Analytics rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 5H7A2 2 0 005 7v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 17v-5"/><path d="M12 17v-1"/><path d="M15 17v-3"/></svg></a></li><li><a href=https://stats.uptimerobot.com/6NVhRHkSAQ target=_blank title=Uptime rel=me><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chart-line"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 19h16"/><path d="M4 15l4-6 4 2 4-5 4 4"/></svg></a></li><li><a href=/index.xml target=_blank title=RSS rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-rss" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="5" cy="19" r="1"/><path d="M4 4a16 16 0 0116 16"/><path d="M4 11a9 9 0 019 9"/></svg></a></li><li><a href=https://github.com/PKUcoldkeyboard target=_blank title=GitHub rel=me><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://www.zhihu.com/people/kong-tiao-cheng-tai-lang-30-57 target=_blank title=zhihu rel=me><svg t="1705591931290" class="icon" viewBox="0 0 1280 1024" xmlns="http://www.w3.org/2000/svg" p-id="21048" width="32" height="32"><path d="M341.08 296.26v435.08l46.86.02 15.42 52.74 84.02-52.74h99.06V296.26H341.08zm195.5 387.86H480.7l-55.8 35.02-10.16-34.94-23.8-.08V343.5h145.64v340.62zM299.66 495.34H195c3.48-54.2 4.4-103.18 4.4-146.92h102.32s3.94-45.12-17.16-44.62h-177c6.98-26.24 15.74-53.32 26.24-81.34.0.0-48.14.0-64.54 43.14-6.78 17.8-26.42 86.28-61.4 156.24 11.78-1.28 50.74-2.36 73.68-44.42 4.22-11.78 5.02-13.32 10.28-29.06h57.74c0 21-2.4 133.76-3.36 146.88H41.66c-23.48.0-31.12 47.24-31.12 47.24H141.7C132.9 642.2 85.66 726.24.0 792.68c40.98 11.7 81.82-1.86 102-19.8.0.0 45.96-41.8 71.18-138.5L281.1 764.26s15.82-53.78-2.48-79.98c-15.16-17.84-56.12-66.12-73.58-83.62L175.8 623.9c8.72-27.96 13.98-55.1 15.74-81.34h123.3s-.18-47.24-15.18-47.24v.02zm824.04-3.2c41.66-51.28 89.96-117.14 89.96-117.14s-37.3-29.6-54.76-8.12c-12 16.3-73.66 96.4-73.66 96.4l38.46 28.86zM823.52 373.96c-18.02-16.5-51.82 4.26-51.82 4.26s79.04 110.08 82.24 114.9l38.92-27.46s-51.34-75.22-69.32-91.72h-.02zM1280 516.7c-39.56.0-261.82 1.86-262.12 1.86v-202c9.62.0 24.84-.8 45.7-2.4 81.76-4.82 140.26-8 175.54-9.62.0.0 24.44-54.38-1.18-66.88-6.14-2.36-46.34 9.16-46.34 9.16s-330.44 32.98-464.72 36.1c3.2 17.64 15.24 34.16 31.56 39.1 26.62 6.96 45.38 3.4 98.3 1.78 49.66-3.2 87.36-4.86 113.02-4.86v199.62H702.82s5.64 44.62 51.02 45.7h215.88V706.1c0 27.94-22.38 43.98-48.96 42.24-28.16.22-52.16-2.3-83.38-3.62 3.98 7.94 12.66 28.78 38.62 43.68 19.76 9.62 32.34 13.14 52.04 13.14 59.12.0 91.34-34.56 89.78-90.62V564.28h244.72c19.36.0 17.4-47.56 17.4-47.56l.06-.02z" fill="#707070" p-id="21049"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/en/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>主页 | Home</span></a></li><li><a href=/en/about/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-user" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="7" r="4"/><path d="M6 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/></svg>
+<span>关于 | About</span></a></li><li><a href=/en/archives/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>归档 | Archives</span></a></li><li><a href=/en/search/><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>搜索 | Search</span></a></li><li><a href=https://cuterwrite.top/image-hosting target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-album"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 4m0 2a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2z"/><path d="M12 4v7l2-2 2 2V4"/></svg>
+<span>图册 | Gallery</span></a></li><li><a href=https://draw.cuterwrite.top target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-artboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M8 8m0 1a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H9a1 1 0 01-1-1z"/><path d="M3 8h1"/><path d="M3 16h1"/><path d="M8 3v1"/><path d="M16 3v1"/><path d="M20 8h1"/><path d="M20 16h1"/><path d="M8 20v1"/><path d="M16 20v1"/></svg>
+<span>画板 | Canvas</span></a></li><li><a href=https://it-tools.tech target=_blank><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-tools"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M3 21h4L20 8a1.5 1.5.0 00-4-4L3 17v4"/><path d="M14.5 5.5l4 4"/><path d="M12 8 7 3 3 7l5 5"/><path d="M7 8 5.5 9.5"/><path d="M16 12l5 5-4 4-5-5"/><path d="M16 17l-1.5 1.5"/></svg>
+<span>工具 | Tools</span></a></li><li class=menu-bottom-section><ol class=menu><li id=i18n-switch><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h7"/><path d="M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c-.003 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9"/><path d="M19.1 18h-6.2"/></svg>
+<select name=language title=language onchange="window.location.href=this.selectedOptions[0].value"><option value=https://cuterwrite.top/>中文</option><option value=https://cuterwrite.top/en/ selected>English</option></select></li><li id=dark-mode-toggle><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>Dark Mode</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">Table of contents</h2><div class=widget--toc><nav id=TableOfContents><ul><li><a href=#1-build-the-platform>1. Build the platform</a></li><li><a href=#2-set-up-the-xuantie-900-series-toolchain-environment>2. Set up the XuanTie 900 series toolchain environment</a><ul><li><a href=#1-download-xuantie-900-series-toolchain>1. Download Xuantie 900 series toolchain</a></li><li><a href=#2-verify-toolchain-installation>2. Verify toolchain installation</a></li></ul></li><li><a href=#3-set-up-the-xuantie-qemu-environment>3. Set up the xuantie-qemu environment</a><ul><li><a href=#1-prerequisites>1. Prerequisites</a></li><li><a href=#2-download-and-install-xuantie-qemu>2. Download and install xuantie-qemu</a></li><li><a href=#3-compile-and-install-xuantie-qemu>3. Compile and install xuantie-qemu</a></li><li><a href=#4-verify-xuantie-qemu-installation>4. Verify xuantie-qemu installation</a></li></ul></li><li><a href=#4-running-risc-v-64-bit-linux-system-on-qemu>4. Running RISC-V 64-bit Linux System on QEMU</a><ul><li><a href=#1-make-kernel>1. Make kernel</a><ul><li><a href=#11-download-the-kernel-source-code>1.1 Download the kernel source code</a></li><li><a href=#12-configure-and-compile-the-kernel>1.2 Configure and Compile the Kernel</a></li></ul></li><li><a href=#2-create-rootfs>2. Create rootfs</a><ul><li><a href=#21-download-busybox-source-code>2.1 Download busybox source code</a></li><li><a href=#22-configure-busybox>2.2 Configure busybox</a></li><li><a href=#23-compile-and-install-busybox>2.3 Compile and Install busybox</a></li><li><a href=#24-create-file-system>2.4 Create File System</a></li></ul></li><li><a href=#3-start-running>3. Start running</a></li></ul></li><li><a href=#5-summary>5. Summary</a></li></ul></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/en/p/thead-tools/><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/59aa9fecb7e1a3a2b2c88811e6360647195413.jpg@1256w_774h_!web-article-pic-2024-02-20.webp loading=lazy alt="Featured image of post Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment"></a></div><div class=article-details><header class=article-category><a href=/en/categories/hpc/ style=background-color:#ffb900;color:#fff>High Performance Computing
+</a><a href=/en/categories/techstack/ style=background-color:#0177b8;color:#fff>Comprehensive Tech Stack</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/en/p/thead-tools/>Setting Up the Xuantie 900 Series Toolchain and xuantie-qemu Environment</a></h2><h3 class=article-subtitle>With the rapid development of domestic RISC-V chip technology, Alibaba Pingtouge's Xuantie 900 series processors have attracted much attention for their high performance and low power consumption. To better support the development and debugging work based on the Xuantie 900 series chips, it is crucial to set up a complete toolchain and simulation environment. This article will provide a detailed introduction on how to set up the Xuantie 900 series toolchain and xuantie-qemu environment.</h3></div><footer class=article-time><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published>2024-02-20</time></div><div><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>6 minute read</time></div><div><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentcolor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-keyboard"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M2 6m0 2a2 2 0 012-2h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2z"/><path d="M6 10v.01"/><path d="M10 10v.01"/><path d="M14 10v.01"/><path d="M18 10v.01"/><path d="M6 14v.01"/><path d="M18 14v.01"/><path d="M10 14l4 .01"/></svg>
+<time class=article-time--wordcount>2892 words</time></div></footer><footer class=article-translations><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h7"/><path d="M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c-.003 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9"/><path d="M19.1 18h-6.2"/></svg><div><a href=https://cuterwrite.top/p/thead-tools/ class=link>中文</a></div></footer></div></header><section class=article-content><h1 id=set-up-xuantie-900-series-toolchain-and-xuantie-qemu-environment>Set up Xuantie 900 series toolchain and xuantie-qemu environment</h1><h2 id=1-build-the-platform>1. Build the platform</h2><ul><li>Linux distribution: CentOS Linux release 7.6.1810 (Core)</li><li>Kernel version: 3.10.0-957.el7.x86_64</li></ul><pre><code class=language-bash>$ cat /etc/centos-release
+CentOS Linux release 7.6.1810 (Core)
+
+$ uname -r
+3.10.0-957.el7.x86_64
+</code></pre><h2 id=2-set-up-the-xuantie-900-series-toolchain-environment>2. Set up the XuanTie 900 series toolchain environment</h2><h3 id=1-download-xuantie-900-series-toolchain>1. Download Xuantie 900 series toolchain</h3><p>First, we need to download the Xuantie GNU toolchain for the RISC-V architecture. Go to the <a class=link href=https://www.xrvm.cn/ target=_blank rel=noopener>Xuantie official website
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span>
+</a>to get the latest version of the precompiled package and install it according to your operating system. On Linux systems, it is usually sufficient to add the <code>bin</code> path to the <code>$PATH</code> environment variable after extraction.</p><p>The toolchain installation package is divided into different versions due to the differences between the execution platform and the target program platform. For example, Xuantie-<em>-elf-</em>-x86_64-V*-.tar.gz is a RISC-V bare program toolchain suite for the 64-bit Linux platform. The specific classifications are as follows:</p><ul><li>According to the execution platform</li><li>x86_64: 64-bit Linux platform</li><li>i386: 32-bit Linux platform<ul><li>mingw: Windows Mingw platform</li></ul></li><li>According to the target program platform</li><li>elf: Bare program compilation suite</li><li>linux: linux application compilation suite</li></ul><p>Here we download the latest version 2.8.1 of the Linux application compilation suite for the 64-bit Linux platform, namely Xuantie-900-gcc-linux-5.10.4-glibc-x86_64.</p><pre><code class=language-bash>wget https://occ-oss-prod.oss-cn-hangzhou.aliyuncs.com/resource//1705395627867/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+tar -xzvf Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115.tar.gz
+sudo mv Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115 /opt
+export PATH=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.1-20240115/bin:$PATH
+</code></pre><h3 id=2-verify-toolchain-installation>2. Verify toolchain installation</h3><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -v
+Using built-in specs.
+COLLECT_GCC=riscv64-unknown-linux-gnu-gcc
+COLLECT_LTO_WRAPPER=/opt/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/bin/../libexec/gcc/riscv64-unknown-linux-gnu/10.4.0/lto-wrapper
+Target: riscv64-unknown-linux-gnu
+Configured with: /mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc/configure --target=riscv64-unknown-linux-gnu --with-gmp=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpfr=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-mpc=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libexpat-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-libmpfr-prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/build-Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/lib-for-gcc-x86_64-linux --with-pkgversion='Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018' CXXFLAGS='-g -O2 -DTHEAD_VERSION_NUMBER=2.8.0 ' --prefix=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0 --with-sysroot=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/build-gcc-riscv64-unknown-linux-gnu/Xuantie-900-gcc-linux-5.10.4-glibc-x86_64-V2.8.0/sysroot --with-system-zlib --enable-shared --enable-tls --enable-languages=c,c++,fortran --disable-libmudflap --disable-libssp --disable-libquadmath --enable-libsanitizer --disable-nls --disable-bootstrap --src=/mnt/ssd/jenkins_iotsw/slave/workspace/Toolchain/build-gnu-riscv_4/./source/riscv/riscv-gcc --enable-multilib --with-abi=lp64d --with-arch=rv64gc_zfh_xtheadc 'CFLAGS_FOR_TARGET=-O2   -mcmodel=medany' 'CXXFLAGS_FOR_TARGET=-O2   -mcmodel=medany'
+Thread model: posix
+Supported LTO compression algorithms: zlib
+gcc version 10.4.0 (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018)
+</code></pre><p>You can see the output of the gcc version information, indicating that the toolchain was installed successfully.</p><h2 id=3-set-up-the-xuantie-qemu-environment>3. Set up the xuantie-qemu environment</h2><h3 id=1-prerequisites>1. Prerequisites</h3><p>Before installing xuantie-qemu, you need to ensure that the system contains the following tools or libraries.</p><ul><li>gcc compiler</li><li>automake</li><li>autoconf</li><li>libtool</li><li>glib2 library</li><li>Others&mldr;..</li></ul><p>Install the above tools or libraries using the following command.</p><pre><code class=language-bash>sudo yum update -y
+sudo yum install -y autoconf automake libtool make gcc gcc-c++ gawk bison flex texinfo gperf patchutils bc \
+                 zlib-devel mpfr-devel gmp-devel curl-devel expat-devel git \
+                 glib2-devel libfdt-devel pixman-devel ncurses-devel ncurses-compat-libs
+</code></pre><p>If it is an Ubuntu/Debian system, you can use the following command to install.</p><pre><code class=language-bash>sudo apt-get update
+sudo apt-get install -y autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev \
+                 gawk build-essential bison flex texinfo gperf libtool patchutils bc \
+                 zlib1g-dev libexpat-dev git \
+                 libglib2.0-dev libfdt-dev libpixman-1-dev \
+                 libncurses5-dev libncursesw5-dev
+</code></pre><h3 id=2-download-and-install-xuantie-qemu>2. Download and install xuantie-qemu</h3><p>Visit the <a class=link href=https://github.com/T-head-Semi/qemu.git target=_blank rel=noopener>Xuantie QEMU official repository
+<span style=white-space:nowrap><svg width=".8em" height=".8em" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z" fill="currentcolor"/><path d="M19 19H5V5h7l-2-2H5c-1.103.0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103.0 2-.897 2-2v-5l-2-2v7z" fill="currentcolor"/></span>
+</a>to obtain the xuantie-qemu source code suitable for the Xuantie 900 series chips, and then follow the usual steps to compile and install:</p><pre><code class=language-bash>git clone https://github.com/T-head-Semi/qemu.git
+git checkout xuantie-qemu-6.1.0
+</code></pre><h3 id=3-compile-and-install-xuantie-qemu>3. Compile and install xuantie-qemu</h3><pre><code class=language-bash>cd qemu
+mkdir build
+cd build
+../configure --target-list=riscv64-softmmu,riscv64-linux-user --prefix=/opt/qemu/6.1.0-xuantie
+make -j $(nproc)
+sudo make install
+
+export PATH=/opt/qemu/6.1.0-xuantie/bin:$PATH
+</code></pre><h3 id=4-verify-xuantie-qemu-installation>4. Verify xuantie-qemu installation</h3><p>After the installation is complete, if you can view the specific version of qemu by executing the following command, it means the installation was successful.</p><pre><code class=language-bash>$ qemu-riscv64 --version
+qemu-riscv64 version 6.0.94 (v6.1.0-12-g03813c9)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+</code></pre><p>Write a C language program as follows:</p><pre><code class=language-c>#include &lt;stdio.h&gt;
+
+int main() {
+    printf(&quot;Hello RISC-V \n&quot;);
+    return 0;
+}
+</code></pre><p>Compile the program using the Xuantie 900 series toolchain and run the program using xuantie-qemu in user mode.</p><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -static -o hello hello.c
+$ qemu-riscv64 ./hello
+Hello RISC-V
+</code></pre><p>Write another C language program with RVV vectorization, as follows:</p><details><summary><strong>RVV Vectorization of C Language Program</strong></summary><pre><code class=language-c>#include &lt;riscv_vector.h&gt;
+#include &lt;stdio.h&gt;
+
+#define N 15
+
+float vsum(float* v, int n) {
+    vfloat32m1_t vs, vv, vtmp;
+    float s = 0.0;
+    int i;
+    int vlmax;
+
+    vlmax = vsetvlmax_e32m1();
+
+    printf(&quot;vlmax:%d\n&quot;, vlmax);
+
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
+
+    vtmp = vfmv_v_f_f32m1(0.0, vlmax);
+
+    for (i = 0; i &lt; n - vlmax; i += vlmax) {
+        vv = vle32_v_f32m1(&amp;v[i], vlmax);
+        vtmp = vfadd_vv_f32m1(vtmp, vv, vlmax);
+    }
+
+    vs = vfredusum_vs_f32m1_f32m1(vs, vtmp, vs, vlmax);
+
+    s = vfmv_f_s_f32m1_f32(vs);
+
+    for (; i &lt; n; i++) {
+        s += v[i];
+    }
+    return s;
+}
+
+float vsum1(float* v, int n) {
+    vfloat32m1_t vs, vv;
+    float s;
+    int i;
+    int vl, vlmax;
+
+    vlmax = vsetvlmax_e32m1();
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
+
+    for (i = 0; n &gt; 0; i += vl, n -= vl) {
+        vl = vsetvl_e32m1(n);
+        printf(&quot;vl:%d\n&quot;, vl);
+        vv = vle32_v_f32m1(&amp;v[i], vl);
+
+        vs = vfredusum_vs_f32m1_f32m1(vs, vv, vs, vl);
+    }
+
+    s = vfmv_f_s_f32m1_f32(vs);
+
+    return s;
+}
+
+float vsum2(float* v, int n) {
+    vfloat32m2_t vv;
+    vfloat32m1_t vs;
+    float s;
+    int i;
+    int vl, vlmax;
+
+    vlmax = vsetvlmax_e32m1();
+
+    vs = vfmv_v_f_f32m1(0.0, vlmax);
+
+    for (i = 0; n &gt; 0; i += vl, n -= vl) {
+        vl = vsetvl_e32m2(n);
+        printf(&quot;vl:%d\n&quot;, vl);
+        vv = vle32_v_f32m2(&amp;v[i], vl);
+
+        vs = vfredusum_vs_f32m2_f32m1(vs, vv, vs, vl);
+    }
+
+    s = vfmv_f_s_f32m1_f32(vs);
+
+    return s;
+}
+
+int main() {
+    int i;
+    float v[N], sum = 0.0;
+
+    printf(&quot;Hello RISC-V!\n&quot;);
+
+    for (i = 0; i &lt; N; i++) {
+        v[i] = i;
+    }
+
+    sum = vsum(v, N);
+
+    printf(&quot;%f\n&quot;, sum);
+
+    return 0;
+}
+</code></pre></details><p>Compile and run the program (at this time you need to specify <code>-cpu</code>, otherwise it will report an illegal instruction exception, i.e., Illegal instruction (core dumped)):</p><pre><code class=language-bash>$ riscv64-unknown-linux-gnu-gcc -static -O3 -march=rv64imafdcv0p7_zfh_xtheadc -o test_vec test_vec.c
+$ qemu-riscv64 -cpu c920 ./test_vec
+Hello RISC-V!
+vlmax:4
+105.000000
+</code></pre><h2 id=4-running-risc-v-64-bit-linux-system-on-qemu>4. Running RISC-V 64-bit Linux System on QEMU</h2><h3 id=1-make-kernel>1. Make kernel</h3><h4 id=11-download-the-kernel-source-code>1.1 Download the kernel source code</h4><pre><code class=language-bash>$ wget https://mirrors.edge.kernel.org/pub/linux/kernel/v5.x/linux-5.10.42.tar.gz
+$ tar -xzvf linux-5.10.42.tar.gz
+</code></pre><p>After downloading, enter the kernel source directory</p><pre><code class=language-bash>$ cd linux-5.10.42
+</code></pre><h4 id=12-configure-and-compile-the-kernel>1.2 Configure and Compile the Kernel</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+...
+  AR      drivers/built-in.a
+  GEN     .version
+  CHK     include/generated/compile.h
+  LD      vmlinux.o
+  MODPOST vmlinux.symvers
+  MODINFO modules.builtin.modinfo
+  GEN     modules.builtin
+  LD      .tmp_vmlinux.kallsyms1
+  KSYMS   .tmp_vmlinux.kallsyms1.S
+  AS      .tmp_vmlinux.kallsyms1.S
+  LD      .tmp_vmlinux.kallsyms2
+  KSYMS   .tmp_vmlinux.kallsyms2.S
+  AS      .tmp_vmlinux.kallsyms2.S
+  LD      vmlinux
+  SYSMAP  System.map
+  MODPOST modules-only.symvers
+  GEN     Module.symvers
+  CC [M]  fs/efivarfs/efivarfs.mod.o
+  OBJCOPY arch/riscv/boot/Image
+  GZIP    arch/riscv/boot/Image.gz
+  LD [M]  fs/efivarfs/efivarfs.ko
+  Kernel: arch/riscv/boot/Image.gz is ready
+</code></pre><h3 id=2-create-rootfs>2. Create rootfs</h3><h4 id=21-download-busybox-source-code>2.1 Download busybox source code</h4><pre><code class=language-bash>$ wget https://busybox.net/downloads/busybox-1.33.1.tar.bz2
+</code></pre><p>After downloading, enter the busybox source code directory</p><pre><code class=language-bash>cd busybox-1.33.1
+</code></pre><h4 id=22-configure-busybox>2.2 Configure busybox</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- defconfig
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- menuconfig
+</code></pre><p>After opening the configuration menu, go to the first line &ldquo;Settings&rdquo;, in the &ldquo;Build Options&rdquo; section, select &ldquo;Build static binary (no shared libs)&rdquo;, then exit and save the configuration.</p><p>Check if <code>CONFIG_STATIC=y</code> is in the <code>.config</code> file, if not, add it manually.</p><h4 id=23-compile-and-install-busybox>2.3 Compile and Install busybox</h4><pre><code class=language-bash>$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- -j $(nproc)
+$ make ARCH=riscv CROSS_COMPILE=riscv64-unknown-linux-gnu- install
+</code></pre><p>At this point, a new <code>_install</code> directory will appear under the source directory busyboxsource, where you can see the generated items.</p><pre><code class=language-bash>$ ls _install
+bin  linuxrc  sbin  usr
+</code></pre><p>Enter the <code>_install</code> directory and create the following directories</p><pre><code class=language-bash>$ cd _install
+$ mkdir proc sys dev etc etc/init.d
+$ ls
+bin  dev  etc  linuxrc  proc  sbin  sys  usr
+</code></pre><p>Then create another simplest init RC file:</p><pre><code class=language-bash>$ cd etc/init.d/
+$ touch rcS
+$ vim rcS
+</code></pre><p>Edit the file content to:</p><pre><code class=language-bash>#!/bin/sh
+mount -t proc none /proc
+mount -t sysfs none /sys
+/sbin/mdev -s
+</code></pre><p>Then modify the rcS file permissions to add executable permissions.</p><pre><code class=language-bash>$ chmod +x rcS
+</code></pre><h4 id=24-create-file-system>2.4 Create File System</h4><p>Continue executing the following command in the <code>_install</code> directory:</p><pre><code class=language-bash>$ find -print0 | cpio -0oH newc | gzip -9 &gt; ../rootfs.img
+3276 blocks
+</code></pre><h3 id=3-start-running>3. Start running</h3><p>Create a new directory and move the compiled kernel <code>Image</code> and the prepared <code>rootfs.img</code> to that directory.</p><pre><code class=language-bash>$ mkdir riscv64-linux
+$ cd riscv64-linux
+$ cp ../linux-5.10.42/arch/riscv/boot/Image .
+$ cp ../busybox-1.33.1/rootfs.img .
+</code></pre><p>Execute the following command:</p><pre><code class=language-bash>$ qemu-system-riscv64 \
+-nographic -machine virt \
+-kernel Image \
+-initrd rootfs.img \
+-append &quot;root=/dev/ram rdinit=/sbin/init&quot;
+</code></pre><p>Show the Linux Kernel boot process:</p><details><summary><strong>Click to expand</strong></summary><pre><code class=language-bash>OpenSBI v0.9
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ &lt; | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : timer,mfdeleg
+Platform HART Count       : 1
+Firmware Base             : 0x80000000
+Firmware Size             : 100 KB
+Runtime SBI Version       : 0.2
+
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000080000000-0x000000008001ffff ()
+Domain0 Region01          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x0000000087000000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcvsu
+Boot HART Features        : scounteren,mcounteren,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 0
+Boot HART MHPM Count      : 0
+Boot HART MIDELEG         : 0x0000000000000222
+Boot HART MEDELEG         : 0x000000000000b109
+[    0.000000] Linux version 5.10.42 (root@centos) (riscv64-unknown-linux-gnu-gcc (Xuantie-900 linux-5.10.4 glibc gcc Toolchain V2.8.0 B-20231018) 10.4.0, GNU ld (GNU Binutils) 2.35) #1 SMP Wed Feb 21 02:07:46 CST 2024
+[    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[    0.000000] efi: UEFI not found.
+[    0.000000] Initial ramdisk at: 0x(____ptrval____) (1085440 bytes)
+[    0.000000] Zone ranges:
+[    0.000000]   DMA32    [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x0000000087ffffff]
+[    0.000000] software IO TLB: Cannot allocate buffer
+[    0.000000] SBI specification v0.2 detected
+[    0.000000] SBI implementation ID=0x1 Version=0x9
+[    0.000000] SBI v0.2 TIME extension detected
+[    0.000000] SBI v0.2 IPI extension detected
+[    0.000000] SBI v0.2 RFENCE extension detected
+[    0.000000] SBI v0.2 HSM extension detected
+[    0.000000] riscv: ISA extensions acdfimsuv
+[    0.000000] riscv: ELF capabilities acdfim
+[    0.000000] percpu: Embedded 17 pages/cpu s32360 r8192 d29080 u69632
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 31815
+[    0.000000] Kernel command line: root=/dev/ram rdinit=/sbin/init
+[    0.000000] Dentry cache hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    0.000000] Inode-cache hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    0.000000] Sorting __ex_table...
+[    0.000000] mem auto-init: stack:off, heap alloc:off, heap free:off
+[    0.000000] Memory: 108240K/129024K available (7084K kernel code, 3993K rwdata, 4096K rodata, 223K init, 342K bss, 20784K reserved, 0K cma-reserved)
+[    0.000000] Virtual kernel memory layout:
+[    0.000000]       fixmap : 0xffffffcefee00000 - 0xffffffceff000000   (2048 kB)
+[    0.000000]       pci io : 0xffffffceff000000 - 0xffffffcf00000000   (  16 MB)
+[    0.000000]      vmemmap : 0xffffffcf00000000 - 0xffffffcfffffffff   (4095 MB)
+[    0.000000]      vmalloc : 0xffffffd000000000 - 0xffffffdfffffffff   (65535 MB)
+[    0.000000]       lowmem : 0xffffffe000000000 - 0xffffffe007e00000   ( 126 MB)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] rcu: Hierarchical RCU implementation.
+[    0.000000] rcu:     RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
+[    0.000000] rcu:     RCU debug extended QS entry/exit.
+[    0.000000]  Tracing variant of Tasks RCU enabled.
+[    0.000000] rcu: RCU calculated value of scheduler-enlistment delay is 25 jiffies.
+[    0.000000] rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 64, nr_irqs: 64, preallocated irqs: 0
+[    0.000000] riscv-intc: 64 local interrupts mapped
+[    0.000000] plic: plic@c000000: mapped 53 interrupts with 1 handlers for 2 contexts.
+[    0.000000] random: get_random_bytes called from start_kernel+0x31a/0x48c with crng_init=0
+[    0.000000] riscv_timer_init_dt: Registering clocksource cpuid [0] hartid [0]
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x24e6a1710, max_idle_ns: 440795202120 ns
+[    0.000150] sched_clock: 64 bits at 10MHz, resolution 100ns, wraps every 4398046511100ns
+[    0.003557] Console: colour dummy device 80x25
+[    0.008887] printk: console [tty0] enabled
+[    0.012368] Calibrating delay loop (skipped), value calculated using timer frequency.. 20.00 BogoMIPS (lpj=40000)
+[    0.012666] pid_max: default: 32768 minimum: 301
+[    0.014227] Mount-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.014306] Mountpoint-cache hash table entries: 512 (order: 0, 4096 bytes, linear)
+[    0.040922] rcu: Hierarchical SRCU implementation.
+[    0.042741] EFI services will not be available.
+[    0.044926] smp: Bringing up secondary CPUs ...
+[    0.045062] smp: Brought up 1 node, 1 CPU
+[    0.054128] devtmpfs: initialized
+[    0.061463] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.061753] futex hash table entries: 256 (order: 2, 16384 bytes, linear)
+[    0.067460] NET: Registered protocol family 16
+[    0.131233] vgaarb: loaded
+[    0.132530] SCSI subsystem initialized
+[    0.134485] usbcore: registered new interface driver usbfs
+[    0.134834] usbcore: registered new interface driver hub
+[    0.135035] usbcore: registered new device driver usb
+[    0.150024] clocksource: Switched to clocksource riscv_clocksource
+[    0.167109] NET: Registered protocol family 2
+[    0.168330] IP idents hash table entries: 2048 (order: 2, 16384 bytes, linear)
+[    0.172076] tcp_listen_portaddr_hash hash table entries: 128 (order: 0, 5120 bytes, linear)
+[    0.172242] TCP established hash table entries: 1024 (order: 1, 8192 bytes, linear)
+[    0.172480] TCP bind hash table entries: 1024 (order: 3, 32768 bytes, linear)
+[    0.172690] TCP: Hash tables configured (established 1024 bind 1024)
+[    0.173861] UDP hash table entries: 256 (order: 2, 24576 bytes, linear)
+[    0.174481] UDP-Lite hash table entries: 256 (order: 2, 24576 bytes, linear)
+[    0.175963] NET: Registered protocol family 1
+[    0.179024] RPC: Registered named UNIX socket transport module.
+[    0.179111] RPC: Registered udp transport module.
+[    0.179150] RPC: Registered tcp transport module.
+[    0.179186] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.179332] PCI: CLS 0 bytes, default 64
+[    0.182716] Unpacking initramfs...
+[    0.263706] Freeing initrd memory: 1056K
+[    0.265678] workingset: timestamp_bits=62 max_order=15 bucket_order=0
+[    0.281052] NFS: Registering the id_resolver key type
+[    0.282003] Key type id_resolver registered
+[    0.282074] Key type id_legacy registered
+[    0.282505] nfs4filelayout_init: NFSv4 File Layout Driver Registering...
+[    0.282631] nfs4flexfilelayout_init: NFSv4 Flexfile Layout Driver Registering...
+[    0.283481] 9p: Installing v9fs 9p2000 file system support
+[    0.284918] NET: Registered protocol family 38
+[    0.285416] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 251)
+[    0.285593] io scheduler mq-deadline registered
+[    0.285692] io scheduler kyber registered
+[    0.295484] pci-host-generic 30000000.pci: host bridge /soc/pci@30000000 ranges:
+[    0.296336] pci-host-generic 30000000.pci:       IO 0x0003000000..0x000300ffff -&gt; 0x0000000000
+[    0.296861] pci-host-generic 30000000.pci:      MEM 0x0040000000..0x007fffffff -&gt; 0x0040000000
+[    0.296961] pci-host-generic 30000000.pci:      MEM 0x0400000000..0x07ffffffff -&gt; 0x0400000000
+[    0.299940] pci-host-generic 30000000.pci: ECAM at [mem 0x30000000-0x3fffffff] for [bus 00-ff]
+[    0.301083] pci-host-generic 30000000.pci: PCI host bridge to bus 0000:00
+[    0.301328] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    0.301486] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    0.301528] pci_bus 0000:00: root bus resource [mem 0x40000000-0x7fffffff]
+[    0.301568] pci_bus 0000:00: root bus resource [mem 0x400000000-0x7ffffffff]
+[    0.302864] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000
+[    0.377412] Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+[    0.389894] 10000000.uart: ttyS0 at MMIO 0x10000000 (irq = 2, base_baud = 230400) is a 16550A
+[    0.428017] printk: console [ttyS0] enabled
+[    0.430410] [drm] radeon kernel modesetting enabled.
+[    0.457312] loop: module loaded
+[    0.460726] libphy: Fixed MDIO Bus: probed
+[    0.464996] e1000e: Intel(R) PRO/1000 Network Driver
+[    0.465383] e1000e: Copyright(c) 1999 - 2015 Intel Corporation.
+[    0.466272] ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+[    0.466724] ehci-pci: EHCI PCI platform driver
+[    0.467203] ehci-platform: EHCI generic platform driver
+[    0.467683] ohci_hcd: USB 1.1 'Open' Host Controller (OHCI) Driver
+[    0.468129] ohci-pci: OHCI PCI platform driver
+[    0.468593] ohci-platform: OHCI generic platform driver
+[    0.469968] usbcore: registered new interface driver uas
+[    0.470477] usbcore: registered new interface driver usb-storage
+[    0.471603] mousedev: PS/2 mouse device common for all mice
+[    0.475055] goldfish_rtc 101000.rtc: registered as rtc0
+[    0.476070] goldfish_rtc 101000.rtc: setting system clock to 2024-02-20T19:37:51 UTC (1708457871)
+[    0.478889] syscon-poweroff soc:poweroff: pm_power_off already claimed (____ptrval____) sbi_shutdown
+[    0.479494] syscon-poweroff: probe of soc:poweroff failed with error -16
+[    0.480977] usbcore: registered new interface driver usbhid
+[    0.481324] usbhid: USB HID core driver
+[    0.483516] NET: Registered protocol family 10
+[    0.491589] Segment Routing with IPv6
+[    0.492256] sit: IPv6, IPv4 and MPLS over IPv4 tunneling driver
+[    0.495528] NET: Registered protocol family 17
+[    0.497086] 9pnet: Installing 9P2000 support
+[    0.497667] Key type dns_resolver registered
+[    0.498706] debug_vm_pgtable: [debug_vm_pgtable         ]: Validating architecture page table helpers
+[    0.533266] Freeing unused kernel memory: 220K
+[    0.539682] Run /sbin/init as init process
+
+Please press Enter to activate this console.
+</code></pre></details><p>After seeing the prompt <code>"Please press Enter to activate this console."</code>, just press Enter to enter the system without a password.</p><p>Execute several common commands to test, all can work normally:</p><pre><code class=language-bash>/ # ls
+bin      etc      proc     sbin     usr
+dev      linuxrc  root     sys
+/ # pwd
+/
+/ # cd bin
+/bin #
+/ # ls
+arch           dumpkmap       kill           netstat        setarch
+ash            echo           link           nice           setpriv
+base32         ed             linux32        nuke           setserial
+base64         egrep          linux64        pidof          sh
+busybox        false          ln             ping           sleep
+cat            fatattr        login          ping6          stat
+chattr         fdflush        ls             pipe_progress  stty
+chgrp          fgrep          lsattr         printenv       su
+chmod          fsync          lzop           ps             sync
+chown          getopt         makemime       pwd            tar
+conspy         grep           mkdir          reformime      touch
+cp             gunzip         mknod          resume         true
+cpio           gzip           mktemp         rev            umount
+cttyhack       hostname       more           rm             uname
+date           hush           mount          rmdir          usleep
+dd             ionice         mountpoint     rpm            vi
+df             iostat         mpstat         run-parts      watch
+dmesg          ipcalc         mt             scriptreplay   zcat
+dnsdomainname  kbd_mode       mv             sed
+/bin #
+</code></pre><p>To exit QEMU, press <code>Ctrl + A</code>, release it, and then press the <code>x</code> key to exit QEMU.</p><p>If you want to transfer files into QEMU, you can use the mount method, as shown below:</p><pre><code class=language-bash>$ mkdir rootfs
+$ sudo mount -o loop rootfs.img rootfs
+$ cp [-r] [file] ./rootfs/
+$ sudo umount rootfs
+</code></pre><h2 id=5-summary>5. Summary</h2><p>At this point, we have successfully set up the toolchain environment for the XuanTie 900 series and the xuantie-qemu simulation environment, which lays the foundation for subsequent development, compilation, linking, running, and debugging of RISC-V applications based on the XuanTie 900 series chips.</p></section><footer class=article-footer><section class=article-tags><a href=/en/tags/risc-v/>RISC-V</a>
+<a href=/en/tags/linux-kernel/>Linux Kernel</a></section><section class=article-copyright><svg xmlns="http://www.w3.org/2000/svg" class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentcolor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under CC BY-NC-SA 4.0</span></section></footer><script type=text/javascript src=/js/prism.js async></script></article><aside class=related-content--wrapper><h2 class=section-title>Related content</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/en/p/arm-sme-for-performance/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_117622407_p0_master1200.webp loading=lazy data-key=arm-sme-for-performance data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_117622407_p0_master1200.webp></div><div class=article-details><h2 class=article-title>Arm Matrix Acceleration: Scalable Matrix Extension SME</h2></div></a></article><article class=has-image><a href=/en/p/arm-sve-for-performance/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp loading=lazy data-key=arm-sve-for-performance data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp></div><div class=article-details><h2 class=article-title>Arm Performance Optimization: Scalable Vector Extension SVE</h2></div></a></article><article class=has-image><a href=/en/p/rdma-memory-window/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp loading=lazy data-key=rdma-memory-window data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp></div><div class=article-details><h2 class=article-title>RDMA: Memory Window</h2></div></a></article><article class=has-image><a href=/en/p/rdma-shared-receive-queue/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp loading=lazy data-key=rdma-shared-receive-queue data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp></div><div class=article-details><h2 class=article-title>RDMA: Shared Receive Queue</h2></div></a></article><article class=has-image><a href=/en/p/rdma-completion-queue/><div class=article-image><img src=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp loading=lazy data-key=rdma-completion-queue data-hash=https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp></div><div class=article-details><h2 class=article-title>RDMA: Completion Queue</h2></div></a></article></div></div></aside><script src=https://unpkg.com/twikoo@1.6.20/dist/twikoo.all.min.js></script><div id=tcomment></div><style>.twikoo{background-color:var(--card-background);border-radius:var(--card-border-radius);box-shadow:var(--shadow-l1);padding:var(--card-padding)}:root[data-scheme=dark]{--twikoo-body-text-color-main:rgba(255, 255, 255, 0.9);--twikoo-body-text-color:rgba(255, 255, 255, 0.7)}.twikoo .el-input-group__prepend,.twikoo .tk-action-icon,.twikoo .tk-time,.twikoo .tk-comments-count{color:var(--twikoo-body-text-color)}.twikoo .el-input__inner,.twikoo .el-textarea__inner,.twikoo .tk-preview-container,.twikoo .tk-content,.twikoo .tk-nick,.twikoo .tk-send{color:var(--twikoo-body-text-color-main)}.twikoo .el-button{color:var(--twikoo-body-text-color)!important}.OwO .OwO-body{background-color:var(--body-background)!important;color:var(--body-text-color)!important}</style><script>twikoo.init({envId:"https://comment.cuterwrite.top",el:"#tcomment",lang:"zh-CN"})</script><footer class=site-footer><section class=copyright>&copy;
+2021 -
+2024 cuterwrite</section><section class=running-time>本博客已稳定运行
+<span id=runningdays class=running-days></span></section><section class=totalcount>发表了24篇文章 ·
+总计57.43k字</section><section class=powerby>Welcome to cuterwrite's blog!<br>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>Theme <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.17.0>Stack</a></b> designed by <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a><br><span>基于 <a href=https://github.com/CaiJimmy/hugo-theme-stack/tree/v3.25.0 target=_blank rel=noopener><b style=color:#9e8f9f>v3.25.0</b></a> 分支版本修改</span><br></section></footer><script>let s1="2021-4-17";s1=new Date(s1.replace(/-/g,"/"));let s2=new Date,timeDifference=s2.getTime()-s1.getTime(),days=Math.floor(timeDifference/(1e3*60*60*24)),hours=Math.floor(timeDifference%(1e3*60*60*24)/(1e3*60*60)),minutes=Math.floor(timeDifference%(1e3*60*60)/(1e3*60)),result=days+"天"+hours+"小时"+minutes+"分钟";document.getElementById("runningdays").innerHTML=result</script><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://libs.jshub.com/photoswipe/4.1.3/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://libs.jshub.com/photoswipe/4.1.3/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://libs.jshub.com/photoswipe/4.1.3/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://libs.jshub.com/photoswipe/4.1.3/photoswipe.min.css crossorigin=anonymous></main></div><script type=text/javascript src=/ts/main.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.font.im/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script><meta name=apple-mobile-web-app-capable content="yes"><meta name=theme-color content="#ffffff"><script>"serviceWorker"in navigator&&window.addEventListener("load",()=>{navigator.serviceWorker.register("/sw.js").then(e=>{console.log("Service worker registered with scope: ",e.scope)},e=>{console.log("Service worker registration failed: ",e)})})</script></body></html>
