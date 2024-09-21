@@ -1,13 +1,31 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Hadoop on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/hadoop/</link><description>Recent content in Hadoop on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Thu, 22 Sep 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/hadoop/index.xml" rel="self" type="application/rss+xml"/><item><title>Hadoop3 HA 模式三节点高可用集群搭建实验</title><link>https://cuterwrite.top/p/hadoop-ha/</link><pubDate>Thu, 22 Sep 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/hadoop-ha/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/32756284e8854b9ba653bd3632af435d.webp" alt="Featured image of post Hadoop3 HA 模式三节点高可用集群搭建实验" />&lt;hr>
-&lt;h1 id="hadoop3-ha-模式三节点高可用集群搭建实验">Hadoop3 HA 模式三节点高可用集群搭建实验&lt;/h1>
-&lt;h1 id="关于-hadoop3-ha-模式">关于 Hadoop3 HA 模式&lt;/h1>
-&lt;h3 id="单点故障spof">单点故障（SPOF）&lt;/h3>
+&lt;h1 id="hadoop3-ha-模式三节点高可用集群搭建实验">
+&lt;a href="#hadoop3-ha-%e6%a8%a1%e5%bc%8f%e4%b8%89%e8%8a%82%e7%82%b9%e9%ab%98%e5%8f%af%e7%94%a8%e9%9b%86%e7%be%a4%e6%90%ad%e5%bb%ba%e5%ae%9e%e9%aa%8c" class="header-anchor">#&lt;/a>
+Hadoop3 HA 模式三节点高可用集群搭建实验
+&lt;/h1>
+&lt;h1 id="关于-hadoop3-ha-模式">
+&lt;a href="#%e5%85%b3%e4%ba%8e-hadoop3-ha-%e6%a8%a1%e5%bc%8f" class="header-anchor">#&lt;/a>
+关于 Hadoop3 HA 模式
+&lt;/h1>
+&lt;h3 id="单点故障spof">
+&lt;a href="#%e5%8d%95%e7%82%b9%e6%95%85%e9%9a%9cspof" class="header-anchor">#&lt;/a>
+单点故障（SPOF）
+&lt;/h3>
 &lt;p>简单来说，单点故障指的是分布式系统过度依赖于某一个节点，以至于只要该节点宕掉，就算整个集群的其它节点是完好的，集群也无法正常工作。而单点故障问题一般出现在集群的元数据存储节点上，这种节点一般一个集群就一个，一旦坏了整个系统就不能正常使用。Hadoop 的单点故障出现在 namenode 上，影响集群不可用主要有以下两种情况：一是 namenode 节点宕机，将导致集群不可用，重启 namenode 之后才可使用；二是计划内的 namenode 节点软件或硬件升级，导致集群短时间内不可用。&lt;/p>
 &lt;p>为了避免出现单点故障，Hadoop 官方给出了高可用 HA 方案：可以采取同时启动两个 namenode：其中一个工作（active），另一个总是处于后备机（standby）的状态，让它只是单纯地同步活跃机的数据，当活跃机宕掉的时候就可以自动切换过去。这种模式称为&lt;strong>HA 模式&lt;/strong>。HA 模式下不能用[namenode 主机:端口]的模式来访问 Hadoop 集群，因为 namenode 主机已经不再是一个固定的 IP 了，而是采用 serviceid 的方式来访问，这个 serviceid 存储在 ZooKeeper 上。&lt;/p>
-&lt;h3 id="zookeeper">Zookeeper&lt;/h3>
+&lt;h3 id="zookeeper">
+&lt;a href="#zookeeper" class="header-anchor">#&lt;/a>
+Zookeeper
+&lt;/h3>
 &lt;p>Zookeeper 是一个轻量级的分布式架构集群，为分布式应用提供一致性服务，提供的功能包括：配置维护、域名服务、分布式同步和组服务等。在 HA 模式中，Zookeeper 最大的功能之一是知道某个节点是否宕机了。其原理是：每一个机器在 Zookeeper 中都有一个会话，如果某个机器宕机了，这个会话就会过期，Zookeeper 就能发现该节点已宕机。&lt;/p>
-&lt;h2 id="实验过程和结果">实验过程和结果&lt;/h2>
-&lt;h3 id="环境">环境&lt;/h3>
+&lt;h2 id="实验过程和结果">
+&lt;a href="#%e5%ae%9e%e9%aa%8c%e8%bf%87%e7%a8%8b%e5%92%8c%e7%bb%93%e6%9e%9c" class="header-anchor">#&lt;/a>
+实验过程和结果
+&lt;/h2>
+&lt;h3 id="环境">
+&lt;a href="#%e7%8e%af%e5%a2%83" class="header-anchor">#&lt;/a>
+环境
+&lt;/h3>
 &lt;p>本实验使用 Ubuntu 18.04 64 位作为系统环境，采用 3 台 2 核 16GB（ MA3.MEDIUM16 型号）的腾讯云服务器作为集群部署机器。&lt;/p>
 &lt;p>使用的软件如下：&lt;/p>
 &lt;table>
@@ -33,7 +51,10 @@
 &lt;/tbody>
 &lt;/table>
 &lt;p>&lt;!-- raw HTML omitted -->建议：在以下的部署过程中使用 root 用户可以避免很多权限问题。&lt;!-- raw HTML omitted -->&lt;/p>
-&lt;h3 id="集群规划">集群规划&lt;/h3>
+&lt;h3 id="集群规划">
+&lt;a href="#%e9%9b%86%e7%be%a4%e8%a7%84%e5%88%92" class="header-anchor">#&lt;/a>
+集群规划
+&lt;/h3>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -72,7 +93,10 @@
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="创建-hadoop-用户">创建 hadoop 用户&lt;/h3>
+&lt;h3 id="创建-hadoop-用户">
+&lt;a href="#%e5%88%9b%e5%bb%ba-hadoop-%e7%94%a8%e6%88%b7" class="header-anchor">#&lt;/a>
+创建 hadoop 用户
+&lt;/h3>
 &lt;p>在终端输出如下命令创建一个名为 hadoop 的用户。&lt;/p>
 &lt;pre>&lt;code class="language-shell">sudo useradd -m hadoop -s /bin/bash
 &lt;/code>&lt;/pre>
@@ -82,7 +106,10 @@
 &lt;p>此外，可以为 hadoop 用户添加管理员权限，方便后续的部署，避免一些权限问题的出现。&lt;/p>
 &lt;pre>&lt;code class="language-shell">sudo adduser hadoop sudo
 &lt;/code>&lt;/pre>
-&lt;h3 id="主机名和网络映射配置">主机名和网络映射配置&lt;/h3>
+&lt;h3 id="主机名和网络映射配置">
+&lt;a href="#%e4%b8%bb%e6%9c%ba%e5%90%8d%e5%92%8c%e7%bd%91%e7%bb%9c%e6%98%a0%e5%b0%84%e9%85%8d%e7%bd%ae" class="header-anchor">#&lt;/a>
+主机名和网络映射配置
+&lt;/h3>
 &lt;p>为了便于区分 master 节点和 slave 节点，可以修改各个节点的主机名。在 Ubuntu 系统中，我们可以执行以下命令来修改主机名。&lt;/p>
 &lt;pre>&lt;code class="language-shell">sudo vim /etc/hostname
 &lt;/code>&lt;/pre>
@@ -110,7 +137,10 @@ ping slave2 -c 3
 &lt;p>例如，在 master 节点上 ping slave1，如果 ping 通的话，会显示如下图所示的结果：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-51-51-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="安装-ssh-并配置-ssh-免密登录">安装 SSH 并配置 SSH 免密登录&lt;/h3>
+&lt;h3 id="安装-ssh-并配置-ssh-免密登录">
+&lt;a href="#%e5%ae%89%e8%a3%85-ssh-%e5%b9%b6%e9%85%8d%e7%bd%ae-ssh-%e5%85%8d%e5%af%86%e7%99%bb%e5%bd%95" class="header-anchor">#&lt;/a>
+安装 SSH 并配置 SSH 免密登录
+&lt;/h3>
 &lt;p>集群模式需要用到 SSH 登陆，Ubuntu 默认已经安装 SSH client，此外还需要安装 SSH server&lt;/p>
 &lt;pre>&lt;code class="language-shell">sudo apt-get install openssh-server
 &lt;/code>&lt;/pre>
@@ -141,7 +171,10 @@ rm ~/id_rsa.pub #用完之后可以删除掉
 &lt;p>会显示如下结果，显示已经登录到 slave1 节点上。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-30-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="安装-java-环境">安装 Java 环境&lt;/h3>
+&lt;h3 id="安装-java-环境">
+&lt;a href="#%e5%ae%89%e8%a3%85-java-%e7%8e%af%e5%a2%83" class="header-anchor">#&lt;/a>
+安装 Java 环境
+&lt;/h3>
 &lt;p>Hadoop3 需要 JDK 版本在 1.8 以上，这里我选择 11 版本 JDK 作为 Java 环境，先执行以下命令下载压缩包。&lt;/p>
 &lt;pre>&lt;code class="language-shell">cd /usr/local/softwares;
 sudo wget https://repo.huaweicloud.com/openjdk/11.0.2/openjdk-11.0.2_linux-x64_bin.tar.gz
@@ -157,7 +190,10 @@ sudo mv jdk-11.0.2 openjdk;
 &lt;p>如果返回如下信息，则说明安装成功：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-52-51-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="安装-hadoop3">安装 hadoop3&lt;/h3>
+&lt;h3 id="安装-hadoop3">
+&lt;a href="#%e5%ae%89%e8%a3%85-hadoop3" class="header-anchor">#&lt;/a>
+安装 hadoop3
+&lt;/h3>
 &lt;p>先执行以下命令下载压缩包。&lt;/p>
 &lt;pre>&lt;code class="language-shell">cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/hadoop/common/hadoop-3.2.3/hadoop-3.2.3.tar.gz
@@ -173,7 +209,10 @@ sudo mv hadoop-3.2.3 hadoop
 &lt;p>如果返回如下信息，则说明安装成功：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-22-53-11-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="安装-zookeeper">安装 Zookeeper&lt;/h3>
+&lt;h3 id="安装-zookeeper">
+&lt;a href="#%e5%ae%89%e8%a3%85-zookeeper" class="header-anchor">#&lt;/a>
+安装 Zookeeper
+&lt;/h3>
 &lt;p>先执行以下命令下载压缩包。&lt;/p>
 &lt;pre>&lt;code class="language-shell">cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/zookeeper/stable/apache-zookeeper-3.6.3-bin.tar.gz;
@@ -191,7 +230,10 @@ server.3=slave2:2888:3888
 &lt;pre>&lt;code class="language-shell">ZOO_LOG_DIR=/data/logs/zookeeper
 &lt;/code>&lt;/pre>
 &lt;p>最后，需要在每一个节点上的 dataDir 目录下手动创建一个文件，命名为 myid，并写入这台服务器的 Zookeeper ID。这个 ID 数字可以自己随便写，取值范围是 1~255，在这里我将 master、slave1 和 slave2 分别取值为 1，2，3。配置完成以上全部后，分别使用 zkServer.sh start 命令启动集群，ZooKeeper 会自动根据配置把所有的节点连接成一个集群。启动后使用 jps 命令可以查看到 QuorumPeerMain 进程已经启动成功。&lt;/p>
-&lt;h3 id="配置环境变量">配置环境变量&lt;/h3>
+&lt;h3 id="配置环境变量">
+&lt;a href="#%e9%85%8d%e7%bd%ae%e7%8e%af%e5%a2%83%e5%8f%98%e9%87%8f" class="header-anchor">#&lt;/a>
+配置环境变量
+&lt;/h3>
 &lt;p>配置环境变量后可以在任意目录中直接使用 hadoop、hdfs 等命令。配置方法也比较简单。首先执行命令：&lt;/p>
 &lt;pre>&lt;code class="language-shell">sudo vim ~/.bashrc
 &lt;/code>&lt;/pre>
@@ -211,14 +253,23 @@ export PATH=$PATH:$JAVA_HOME/bin:$HADOOP_HOME/bin:$HADOOP_HOME/sbin:$ZK_HOME/bin
 &lt;p>保存后执行如下命令使配置生效：&lt;/p>
 &lt;pre>&lt;code class="language-shell">source ~/.bashrc
 &lt;/code>&lt;/pre>
-&lt;h3 id="配置-ha-模式集群分布式环境">配置 HA 模式集群分布式环境&lt;/h3>
-&lt;h4 id="修改文件-workers">修改文件 workers&lt;/h4>
+&lt;h3 id="配置-ha-模式集群分布式环境">
+&lt;a href="#%e9%85%8d%e7%bd%ae-ha-%e6%a8%a1%e5%bc%8f%e9%9b%86%e7%be%a4%e5%88%86%e5%b8%83%e5%bc%8f%e7%8e%af%e5%a2%83" class="header-anchor">#&lt;/a>
+配置 HA 模式集群分布式环境
+&lt;/h3>
+&lt;h4 id="修改文件-workers">
+&lt;a href="#%e4%bf%ae%e6%94%b9%e6%96%87%e4%bb%b6-workers" class="header-anchor">#&lt;/a>
+修改文件 workers
+&lt;/h4>
 &lt;p>需要把所有数据节点的主机名写入该文件，每行一个，默认为 localhost（即把本机作为数据节点），在本实验中，master 和 slave1、slave2 都充当 datanode，所以该文件内容配置如下：&lt;/p>
 &lt;pre>&lt;code class="language-shell">master
 slave1
 slave2
 &lt;/code>&lt;/pre>
-&lt;h4 id="修改文件-core-sitexml">修改文件 core-site.xml&lt;/h4>
+&lt;h4 id="修改文件-core-sitexml">
+&lt;a href="#%e4%bf%ae%e6%94%b9%e6%96%87%e4%bb%b6-core-sitexml" class="header-anchor">#&lt;/a>
+修改文件 core-site.xml
+&lt;/h4>
 &lt;p>在一般集群模式中，&lt;code>fs.defaultFS&lt;/code> 配置为 hdfs://master:9000，即名称节点所在的主机名加上端口号，但需要注意的是，在 HA 模式下分别有一个 active 和 standby 的名称节点，需要将该属性设置为集群 id，这里写的 ha-cluster 需要与 hdfs-site.xml 中的配置一致，所以将该文件修改为如下内容：&lt;/p>
 &lt;pre>&lt;code class="language-xml">&amp;lt;configuration&amp;gt;
 &amp;lt;property&amp;gt;
@@ -235,7 +286,10 @@ slave2
 &amp;lt;/property&amp;gt;
 &amp;lt;/configuration&amp;gt;
 &lt;/code>&lt;/pre>
-&lt;h4 id="修改文件-hdfs-sitexml">修改文件 hdfs-site.xml&lt;/h4>
+&lt;h4 id="修改文件-hdfs-sitexml">
+&lt;a href="#%e4%bf%ae%e6%94%b9%e6%96%87%e4%bb%b6-hdfs-sitexml" class="header-anchor">#&lt;/a>
+修改文件 hdfs-site.xml
+&lt;/h4>
 &lt;p>对以下属性进行配置：&lt;/p>
 &lt;pre>&lt;code class="language-xml">&amp;lt;configuration&amp;gt;
 &amp;lt;!-- 服务 ID--&amp;gt;
@@ -313,13 +367,19 @@ slave2
 &amp;lt;/property&amp;gt;
 &amp;lt;/configuration&amp;gt;
 &lt;/code>&lt;/pre>
-&lt;h4 id="修改文件-hadoop-envsh">修改文件 hadoop-env.sh&lt;/h4>
+&lt;h4 id="修改文件-hadoop-envsh">
+&lt;a href="#%e4%bf%ae%e6%94%b9%e6%96%87%e4%bb%b6-hadoop-envsh" class="header-anchor">#&lt;/a>
+修改文件 hadoop-env.sh
+&lt;/h4>
 &lt;p>在文件开头添加以下变量&lt;/p>
 &lt;pre>&lt;code class="language-shell">export HADOOP_NAMENODE_OPS=&amp;quot; -Xms1024m -Xmx1024m -XX:+UseParallelGC&amp;quot;
 export HADOOP_DATANODE_OPS=&amp;quot; -Xms1024m -Xmx1024m&amp;quot;
 export HADOOP_LOG_DIR=/data/logs/hadoop
 &lt;/code>&lt;/pre>
-&lt;h4 id="在所有节点上创建数据文件夹和日志文件夹">在所有节点上创建数据文件夹和日志文件夹&lt;/h4>
+&lt;h4 id="在所有节点上创建数据文件夹和日志文件夹">
+&lt;a href="#%e5%9c%a8%e6%89%80%e6%9c%89%e8%8a%82%e7%82%b9%e4%b8%8a%e5%88%9b%e5%bb%ba%e6%95%b0%e6%8d%ae%e6%96%87%e4%bb%b6%e5%a4%b9%e5%92%8c%e6%97%a5%e5%bf%97%e6%96%87%e4%bb%b6%e5%a4%b9" class="header-anchor">#&lt;/a>
+在所有节点上创建数据文件夹和日志文件夹
+&lt;/h4>
 &lt;pre>&lt;code class="language-shell">sudo mkdir -p /data/hadoop/hdfs/nn;
 sudo mkdir -p /data/hadoop/hdfs/dn;
 sudo mkdir -p /data/hadoop/hdfs/jn;
@@ -331,10 +391,16 @@ sudo mkdir /data/logs/hadoop;
 sudo mkdir /data/logs/zookeeper;
 sudo chown -R hadoop.hadoop /data/logs
 &lt;/code>&lt;/pre>
-&lt;h4 id="在所有节点上分别启动-journalnode">在所有节点上分别启动 journalnode&lt;/h4>
+&lt;h4 id="在所有节点上分别启动-journalnode">
+&lt;a href="#%e5%9c%a8%e6%89%80%e6%9c%89%e8%8a%82%e7%82%b9%e4%b8%8a%e5%88%86%e5%88%ab%e5%90%af%e5%8a%a8-journalnode" class="header-anchor">#&lt;/a>
+在所有节点上分别启动 journalnode
+&lt;/h4>
 &lt;pre>&lt;code class="language-shell">hdfs --daemon start journalnode
 &lt;/code>&lt;/pre>
-&lt;h4 id="格式化-namenode-节点">格式化 namenode 节点&lt;/h4>
+&lt;h4 id="格式化-namenode-节点">
+&lt;a href="#%e6%a0%bc%e5%bc%8f%e5%8c%96-namenode-%e8%8a%82%e7%82%b9" class="header-anchor">#&lt;/a>
+格式化 namenode 节点
+&lt;/h4>
 &lt;ul>
 &lt;li>
 &lt;p>在第一个 namenode 上进行格式化并启动 hdfs：&lt;/p>
@@ -353,13 +419,22 @@ hdfs --daemon start namenode
 &lt;/code>&lt;/pre>
 &lt;/li>
 &lt;/ul>
-&lt;h4 id="分别在-namenode-节点上启动-zkfc">分别在 namenode 节点上启动 zkfc&lt;/h4>
+&lt;h4 id="分别在-namenode-节点上启动-zkfc">
+&lt;a href="#%e5%88%86%e5%88%ab%e5%9c%a8-namenode-%e8%8a%82%e7%82%b9%e4%b8%8a%e5%90%af%e5%8a%a8-zkfc" class="header-anchor">#&lt;/a>
+分别在 namenode 节点上启动 zkfc
+&lt;/h4>
 &lt;pre>&lt;code class="language-shel">hdfs zkfc -formatZK
 &lt;/code>&lt;/pre>
-&lt;h4 id="在主节点上启动所有-datanode-节点">在主节点上启动所有 datanode 节点&lt;/h4>
+&lt;h4 id="在主节点上启动所有-datanode-节点">
+&lt;a href="#%e5%9c%a8%e4%b8%bb%e8%8a%82%e7%82%b9%e4%b8%8a%e5%90%af%e5%8a%a8%e6%89%80%e6%9c%89-datanode-%e8%8a%82%e7%82%b9" class="header-anchor">#&lt;/a>
+在主节点上启动所有 datanode 节点
+&lt;/h4>
 &lt;pre>&lt;code class="language-shell">start-dfs.sh
 &lt;/code>&lt;/pre>
-&lt;h3 id="实验结果">实验结果&lt;/h3>
+&lt;h3 id="实验结果">
+&lt;a href="#%e5%ae%9e%e9%aa%8c%e7%bb%93%e6%9e%9c" class="header-anchor">#&lt;/a>
+实验结果
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-13-image.webp" width="90%" loading="lazy">
 &lt;/figure>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-26-image.webp" width="90%" loading="lazy">
@@ -368,7 +443,10 @@ hdfs --daemon start namenode
 &lt;/figure>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-03-42-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="实例运行">实例运行&lt;/h3>
+&lt;h3 id="实例运行">
+&lt;a href="#%e5%ae%9e%e4%be%8b%e8%bf%90%e8%a1%8c" class="header-anchor">#&lt;/a>
+实例运行
+&lt;/h3>
 &lt;p>首先创建 HDFS 上的用户目录，命令如下：&lt;/p>
 &lt;pre>&lt;code class="language-shell">hdfs dfs -mkdir -p /user/hadoop
 &lt;/code>&lt;/pre>
@@ -384,8 +462,14 @@ hdfs dfs -put /usr/local/softwares/hadoop/etc/hadoop/*.xml input
 &lt;/figure>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/typora/2022-09-20-23-17-58-image.webp" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h2 id="补充可选配置">补充：可选配置&lt;/h2>
-&lt;h3 id="hdfs-web-ui-配置认证">HDFS Web UI 配置认证&lt;/h3>
+&lt;h2 id="补充可选配置">
+&lt;a href="#%e8%a1%a5%e5%85%85%e5%8f%af%e9%80%89%e9%85%8d%e7%bd%ae" class="header-anchor">#&lt;/a>
+补充：可选配置
+&lt;/h2>
+&lt;h3 id="hdfs-web-ui-配置认证">
+&lt;a href="#hdfs-web-ui-%e9%85%8d%e7%bd%ae%e8%ae%a4%e8%af%81" class="header-anchor">#&lt;/a>
+HDFS Web UI 配置认证
+&lt;/h3>
 &lt;p>HDFS 带有一个可视化的端口号默认为 9870 的 Web UI 界面，这个界面如果没有做防火墙限制的话会暴露在公网上。而该界面又存在着大量的日志和配置信息，直接暴露在公网上不利于系统的安全，所以在这里可以配置一个简单的系统认证功能。步骤如下：&lt;/p>
 &lt;ul>
 &lt;li>

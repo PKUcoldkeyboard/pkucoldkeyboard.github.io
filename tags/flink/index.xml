@@ -1,6 +1,15 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Flink on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/flink/</link><description>Recent content in Flink on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/flink/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Flink Native Kubernetes 的词频统计实验</title><link>https://cuterwrite.top/p/flink-native-k8s/</link><pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/flink-native-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" />&lt;h1 id="基于-flink-native-kubernetes-的词频统计实验">基于 Flink Native Kubernetes 的词频统计实验&lt;/h1>
-&lt;h2 id="1-简介">1 简介&lt;/h2>
-&lt;h3 id="11-实验环境">1.1 实验环境&lt;/h3>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Flink on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/flink/</link><description>Recent content in Flink on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 23 Dec 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/flink/index.xml" rel="self" type="application/rss+xml"/><item><title>基于 Flink Native Kubernetes 的词频统计实验</title><link>https://cuterwrite.top/p/flink-native-k8s/</link><pubDate>Fri, 23 Dec 2022 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/flink-native-k8s/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/YSFD_P2_50.webp" alt="Featured image of post 基于 Flink Native Kubernetes 的词频统计实验" />&lt;h1 id="基于-flink-native-kubernetes-的词频统计实验">
+&lt;a href="#%e5%9f%ba%e4%ba%8e-flink-native-kubernetes-%e7%9a%84%e8%af%8d%e9%a2%91%e7%bb%9f%e8%ae%a1%e5%ae%9e%e9%aa%8c" class="header-anchor">#&lt;/a>
+基于 Flink Native Kubernetes 的词频统计实验
+&lt;/h1>
+&lt;h2 id="1-简介">
+&lt;a href="#1-%e7%ae%80%e4%bb%8b" class="header-anchor">#&lt;/a>
+1 简介
+&lt;/h2>
+&lt;h3 id="11-实验环境">
+&lt;a href="#11-%e5%ae%9e%e9%aa%8c%e7%8e%af%e5%a2%83" class="header-anchor">#&lt;/a>
+1.1 实验环境
+&lt;/h3>
 &lt;p>本实验主要使用 Ubuntu 20.04 64 位作为系统环境，采用 3 台 4 核 8GB 云服务器作为 Kubernetes 集群部署机器，1 台 4 核 8GB 云服务器作为集群管理工具 Kuboard Spary 部署机器，并作为 NFS Server 部署机器。使用的软件如下：&lt;/p>
 &lt;table>
 &lt;thead>
@@ -72,7 +81,10 @@
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="12-集群规划">1.2 集群规划&lt;/h3>
+&lt;h3 id="12-集群规划">
+&lt;a href="#12-%e9%9b%86%e7%be%a4%e8%a7%84%e5%88%92" class="header-anchor">#&lt;/a>
+1.2 集群规划
+&lt;/h3>
 &lt;ul>
 &lt;li>Kuborad Spary&lt;/li>
 &lt;/ul>
@@ -144,7 +156,10 @@
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h2 id="2-kubernetes-集群部署">2 Kubernetes 集群部署&lt;/h2>
+&lt;h2 id="2-kubernetes-集群部署">
+&lt;a href="#2-kubernetes-%e9%9b%86%e7%be%a4%e9%83%a8%e7%bd%b2" class="header-anchor">#&lt;/a>
+2 Kubernetes 集群部署
+&lt;/h2>
 &lt;ul>
 &lt;li>这部分内容已经在&lt;a class="link" href="https://cuterwrite.top/p/spark-on-k8s/" target="_blank" rel="noopener" >Spark on K8s
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -156,8 +171,14 @@ fill="currentColor">
 &lt;/a>
 实验中给出详细步骤，这里不再重复。&lt;/li>
 &lt;/ul>
-&lt;h2 id="3-flink-native-kubernetes-部署">3 Flink Native Kubernetes 部署&lt;/h2>
-&lt;h3 id="31-配置-flink-用户权限">3.1 配置 flink 用户权限&lt;/h3>
+&lt;h2 id="3-flink-native-kubernetes-部署">
+&lt;a href="#3-flink-native-kubernetes-%e9%83%a8%e7%bd%b2" class="header-anchor">#&lt;/a>
+3 Flink Native Kubernetes 部署
+&lt;/h2>
+&lt;h3 id="31-配置-flink-用户权限">
+&lt;a href="#31-%e9%85%8d%e7%bd%ae-flink-%e7%94%a8%e6%88%b7%e6%9d%83%e9%99%90" class="header-anchor">#&lt;/a>
+3.1 配置 flink 用户权限
+&lt;/h3>
 &lt;ul>
 &lt;li>创建用户&lt;code>flink&lt;/code> 并配置权限&lt;/li>
 &lt;/ul>
@@ -166,7 +187,10 @@ kubectl create clusterrolebinding flink-role-binding-flink \
 --clusterrole=edit \
 --serviceaccount=bigdata:flink
 &lt;/code>&lt;/pre>
-&lt;h3 id="32-创建-session-cluster">3.2 创建 session cluster&lt;/h3>
+&lt;h3 id="32-创建-session-cluster">
+&lt;a href="#32-%e5%88%9b%e5%bb%ba-session-cluster" class="header-anchor">#&lt;/a>
+3.2 创建 session cluster
+&lt;/h3>
 &lt;ul>
 &lt;li>
 &lt;p>在安装了 Flink 的节点上进入 flink 根目录，执行以下命令并指定资源：&lt;/p>
@@ -213,7 +237,10 @@ examples/streaming/WindowJoin.jar
 &lt;p>可以看到&lt;code>WindowJoin.jar&lt;/code> 已经被提交到 session cluster，占用 1 个 Slot，总共 Slot 数为 4&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="4-编写-wordcount-程序">4 编写 WordCount 程序&lt;/h2>
+&lt;h2 id="4-编写-wordcount-程序">
+&lt;a href="#4-%e7%bc%96%e5%86%99-wordcount-%e7%a8%8b%e5%ba%8f" class="header-anchor">#&lt;/a>
+4 编写 WordCount 程序
+&lt;/h2>
 &lt;ul>
 &lt;li>配置 POM 文件：&lt;/li>
 &lt;/ul>
@@ -336,7 +363,10 @@ env.execute(&amp;quot;Word Count&amp;quot;);
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h2 id="5-实验结果">5 实验结果&lt;/h2>
+&lt;h2 id="5-实验结果">
+&lt;a href="#5-%e5%ae%9e%e9%aa%8c%e7%bb%93%e6%9e%9c" class="header-anchor">#&lt;/a>
+5 实验结果
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>提交 WordCount 程序 jar 包&lt;/p>

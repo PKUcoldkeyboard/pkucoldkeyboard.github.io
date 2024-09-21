@@ -1,6 +1,15 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AIO on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/aio/</link><description>Recent content in AIO on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 01 Aug 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/aio/index.xml" rel="self" type="application/rss+xml"/><item><title>高性能异步 I/O 框架：io_uring</title><link>https://cuterwrite.top/p/efficient-liburing/</link><pubDate>Tue, 01 Aug 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/efficient-liburing/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" alt="Featured image of post 高性能异步 I/O 框架：io_uring" />&lt;h1 id="高性能异步-io-框架io_uring">高性能异步 I/O 框架：io_uring&lt;/h1>
-&lt;h2 id="一-引言">一、 引言&lt;/h2>
-&lt;h3 id="1-linux-原生-aio-接口">1. Linux 原生 aio 接口&lt;/h3>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>AIO on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/aio/</link><description>Recent content in AIO on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 01 Aug 2023 01:00:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/aio/index.xml" rel="self" type="application/rss+xml"/><item><title>高性能异步 I/O 框架：io_uring</title><link>https://cuterwrite.top/p/efficient-liburing/</link><pubDate>Tue, 01 Aug 2023 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/efficient-liburing/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230801145236.webp" alt="Featured image of post 高性能异步 I/O 框架：io_uring" />&lt;h1 id="高性能异步-io-框架io_uring">
+&lt;a href="#%e9%ab%98%e6%80%a7%e8%83%bd%e5%bc%82%e6%ad%a5-io-%e6%a1%86%e6%9e%b6io_uring" class="header-anchor">#&lt;/a>
+高性能异步 I/O 框架：io_uring
+&lt;/h1>
+&lt;h2 id="一-引言">
+&lt;a href="#%e4%b8%80-%e5%bc%95%e8%a8%80" class="header-anchor">#&lt;/a>
+一、 引言
+&lt;/h2>
+&lt;h3 id="1-linux-原生-aio-接口">
+&lt;a href="#1-linux-%e5%8e%9f%e7%94%9f-aio-%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+1. Linux 原生 aio 接口
+&lt;/h3>
 &lt;p>在 Linux 中，有很多方法可以进行基于文件的 I/O。最早的和最基本的就是系统调用 read(2)和 write(2)。后来增加了允许传入偏移量的 pread(2)和 pwrite(2)，以及基于 vector 的 preadv(2)和 pwrite(2)。再后来，Linux 提供了 preadv2(2)和 pwritev2(2)。它们进一步扩展了 API 以允许修饰符标志。抛开这些系统调用的不同点不谈，它们有一个共同的特点：都是同步接口。这意味着当数据准备好读（或写入）时，系统调用才会返回。对于某些场景，这远远不够，因此还需要异步接口。POSIX 提供了 aio_read(3)和 aio_write(3)来满足这种需求，但是它们的实现通常性能不佳。Linux 原生 aio 接口是 Linux 内核中提供的一种异步 I/O 接口，它使用 io_submit(2)、io_getevents(2)等系统调用来提交和获取 I/O 请求，并使用 struct iocb 来描述每个 I/O 请求。它支持 O_DIRECT（或非缓冲）访问的异步 I/O，并且可以使用信号或回调函数来通知 I/O 完成事件。&lt;/p>
 &lt;p>然而，Linux 原生 aio 接口存在着许多的限制与不足之处：&lt;/p>
 &lt;ul>
@@ -15,7 +24,10 @@
 &lt;li>IOPOLL 支持不好。&lt;/li>
 &lt;/ul>
 &lt;p>随着时间的推移，尽管有一些努力试图解决这些限制，但没有成功。随着具备亚 10 微秒延迟和非常高 IOPS 的设备的出现，这个接口开始显现出其性能缺陷。对于这些类型的设备来说，慢速和非确定性的提交延迟是一个很大的问题，而且单个核心无法提供足够的性能。此外，由于前面提到的限制，可以说原生的 Linux aio 接口用途并不广泛。它被限制在应用程序的一小部分领域中，并且伴随着一些问题。&lt;/p>
-&lt;h3 id="2-io_uring-接口">2. io_uring 接口&lt;/h3>
+&lt;h3 id="2-io_uring-接口">
+&lt;a href="#2-io_uring-%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+2. io_uring 接口
+&lt;/h3>
 &lt;p>io_uring 是 Linux 内核中的一种新的异步 I/O 接口，旨在提供高效和可扩展的 I/O 操作。它通过使用一对环形队列（提交队列和完成队列）作为应用程序和内核之间的通信通道，实现了零拷贝的 I/O 操作。&lt;/p>
 &lt;p>io_uring 的设计目标是在提供高性能的同时解决传统异步 I/O 接口的一些限制和问题。它避免了内存复制和内存方向性，通过共享数据结构和内存来优雅地实现应用程序和内核之间的协调。这种设计使得 io_uring 能够更高效地处理 I/O 请求，并且不需要频繁的系统调用来同步和通信。&lt;/p>
 &lt;p>通过 io_uring，应用程序可以作为生产者将 I/O 请求提交到提交队列，而内核作为消费者处理这些请求。一旦请求完成，内核会生成相应的完成事件，并将其放入完成队列中，应用程序可以从完成队列中消费这些事件。这种异步的方式使得应用程序能够更好地利用系统资源，提高 I/O 操作的效率和性能。&lt;/p>
@@ -26,7 +38,10 @@
 &lt;li>特性丰富：支持非常多的高级特性。&lt;/li>
 &lt;li>高性能：I/O 请求 overhead 小。&lt;/li>
 &lt;/ul>
-&lt;h3 id="3-liburing-库">3. liburing 库&lt;/h3>
+&lt;h3 id="3-liburing-库">
+&lt;a href="#3-liburing-%e5%ba%93" class="header-anchor">#&lt;/a>
+3. liburing 库
+&lt;/h3>
 &lt;p>liburing 是一个基于 io_uring 接口的用户空间库，它是 Linux 内核开发者 Axboe 于 2019 年发布的一个开源项目。io_uring 是一种新的 Linux 异步 I/O 接口，它通过使用一对环形缓冲区（ring buffer）来实现用户空间和内核空间之间的通信，从而避免了传统异步 I/O 接口（如 AIO）所需的系统调用、信号、回调等机制。这样，用户空间可以直接向内核提交 I/O 请求，并从内核获取 I/O 结果，而无需等待或切换上下文。这大大提高了异步 I/O 操作的效率和性能。&lt;/p>
 &lt;p>liburing 是对 io_uring 接口的封装和扩展，它提供了一套简洁和灵活的 API，让开发者可以方便地使用 io_uring 的功能，而无需关心底层的细节和复杂性。liburing 主要包括以下几个组件：&lt;/p>
 &lt;ul>
@@ -36,11 +51,17 @@
 &lt;li>liburing/io_uring.h：定义了 io_uring 接口相关的数据结构和常量&lt;/li>
 &lt;li>liburing/compat.h：提供了一些兼容性相关的宏定义&lt;/li>
 &lt;/ul>
-&lt;h2 id="二io_uring-的核心数据结构与原理">二、io_uring 的核心数据结构与原理&lt;/h2>
+&lt;h2 id="二io_uring-的核心数据结构与原理">
+&lt;a href="#%e4%ba%8cio_uring-%e7%9a%84%e6%a0%b8%e5%bf%83%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84%e4%b8%8e%e5%8e%9f%e7%90%86" class="header-anchor">#&lt;/a>
+二、io_uring 的核心数据结构与原理
+&lt;/h2>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230802172119.webp"
 alt="20230802172119" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="1-io_uring-的核心数据结构">1. io_uring 的核心数据结构&lt;/h3>
+&lt;h3 id="1-io_uring-的核心数据结构">
+&lt;a href="#1-io_uring-%e7%9a%84%e6%a0%b8%e5%bf%83%e6%95%b0%e6%8d%ae%e7%bb%93%e6%9e%84" class="header-anchor">#&lt;/a>
+1. io_uring 的核心数据结构
+&lt;/h3>
 &lt;ul>
 &lt;li>每个 io_uring 实例都有两个环形队列(称为 ring)，在内核和应用程序之间共享：
 &lt;ol>
@@ -80,7 +101,10 @@ alt="20230802000924" width="90%" loading="lazy">
 &lt;/ol>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="2-io_uring-的三种工作模式">2. io_uring 的三种工作模式：&lt;/h3>
+&lt;h3 id="2-io_uring-的三种工作模式">
+&lt;a href="#2-io_uring-%e7%9a%84%e4%b8%89%e7%a7%8d%e5%b7%a5%e4%bd%9c%e6%a8%a1%e5%bc%8f" class="header-anchor">#&lt;/a>
+2. io_uring 的三种工作模式：
+&lt;/h3>
 &lt;ol>
 &lt;li>中断驱动模式 (interrupt-driven)
 &lt;ul>
@@ -103,7 +127,10 @@ alt="20230802000924" width="90%" loading="lazy">
 &lt;/ul>
 &lt;/li>
 &lt;/ol>
-&lt;h3 id="3-io_uring-的系统调用-api">3. io_uring 的系统调用 API&lt;/h3>
+&lt;h3 id="3-io_uring-的系统调用-api">
+&lt;a href="#3-io_uring-%e7%9a%84%e7%b3%bb%e7%bb%9f%e8%b0%83%e7%94%a8-api" class="header-anchor">#&lt;/a>
+3. io_uring 的系统调用 API
+&lt;/h3>
 &lt;ul>
 &lt;li>
 &lt;p>io_uring 的系统调用 API 有三个，分别是：&lt;/p>
@@ -185,7 +212,10 @@ alt="20230802000924" width="90%" loading="lazy">
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="4-io_uring-的高级特性">4. io_uring 的高级特性&lt;/h3>
+&lt;h3 id="4-io_uring-的高级特性">
+&lt;a href="#4-io_uring-%e7%9a%84%e9%ab%98%e7%ba%a7%e7%89%b9%e6%80%a7" class="header-anchor">#&lt;/a>
+4. io_uring 的高级特性
+&lt;/h3>
 &lt;ul>
 &lt;li>io_uring 还提供了一些用于特殊场景的高级特性
 &lt;ul>
@@ -196,9 +226,15 @@ alt="20230802000924" width="90%" loading="lazy">
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="三io_uring-的使用示例">三、io_uring 的使用示例&lt;/h2>
+&lt;h2 id="三io_uring-的使用示例">
+&lt;a href="#%e4%b8%89io_uring-%e7%9a%84%e4%bd%bf%e7%94%a8%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+三、io_uring 的使用示例
+&lt;/h2>
 &lt;p>liburing 提供了一个简单的高层 API， 可用于一些基本场景，应用程序避免了直接使用更底层的系统调用。此外，这个 API 还避免了一些重复操作的代码，如设置 io_uring 实例。&lt;/p>
-&lt;h3 id="1-在项目中引入-liburing">1. 在项目中引入 liburing&lt;/h3>
+&lt;h3 id="1-在项目中引入-liburing">
+&lt;a href="#1-%e5%9c%a8%e9%a1%b9%e7%9b%ae%e4%b8%ad%e5%bc%95%e5%85%a5-liburing" class="header-anchor">#&lt;/a>
+1. 在项目中引入 liburing
+&lt;/h3>
 &lt;ol>
 &lt;li>apt-get 安装 liburing
 &lt;ul>
@@ -240,7 +276,10 @@ sudo make install
 &lt;/ul>
 &lt;/li>
 &lt;/ol>
-&lt;h3 id="2-代码示例">2. 代码示例&lt;/h3>
+&lt;h3 id="2-代码示例">
+&lt;a href="#2-%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+2. 代码示例
+&lt;/h3>
 &lt;ul>
 &lt;li>使用 4 个 SQE，从输入文件中读取最多 16KB 的数据。&lt;/li>
 &lt;/ul>
@@ -518,7 +557,10 @@ return ret;
 &lt;li>queue_rw_pair() 构造一个 read-write SQE pair. read SQE 的 IOSQE_IO_LINK flag 表示开始一个 chain，write SQE 不用设置这个 flag，标志着这个 chain 的结束。用户 data 字段设置为同一个 data 描述符，并且在随后的 completion 处理中会用到。&lt;/li>
 &lt;li>handle_cqe() 从 CQE 中提取之前由  queue_rw_pair() 保存的 data 描述符，并在描述符中记录处理进展（index）。 如果之前请求被取消，它还会重新提交 read-write pair。 一个 CQE pair 的两个 member 都处理完成之后（index==2），释放共享的 data descriptor。最后通知内核这个 CQE 已经被消费。&lt;/li>
 &lt;/ul>
-&lt;h3 id="3-最佳实践">3. 最佳实践&lt;/h3>
+&lt;h3 id="3-最佳实践">
+&lt;a href="#3-%e6%9c%80%e4%bd%b3%e5%ae%9e%e8%b7%b5" class="header-anchor">#&lt;/a>
+3. 最佳实践
+&lt;/h3>
 &lt;p>io_uring 是一个高性能的异步 I/O 框架，它在 Linux 内核中引入了一种新的 I/O 模型，可以显著提高 I/O 操作的吞吐量和响应速度。然而，要充分发挥 io_uring 的优势，需要注意一些优化和最佳实践。&lt;/p>
 &lt;table>
 &lt;thead>
@@ -571,7 +613,10 @@ return ret;
 &lt;/tbody>
 &lt;/table>
 &lt;p>通过遵循上述优化和最佳实践，可以充分发挥 io_uring 的性能优势，提高系统的 I/O 性能和响应速度。然而，需要根据具体的应用场景和需求，进行合理的调优和配置。在实际使用中，可以通过性能测试和监测来评估和优化 io_uring 的性能。&lt;/p>
-&lt;h2 id="结论">结论&lt;/h2>
+&lt;h2 id="结论">
+&lt;a href="#%e7%bb%93%e8%ae%ba" class="header-anchor">#&lt;/a>
+结论
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>io_uring 是一个高性能的异步 I/O 框架，通过在 Linux 内核中引入新的 I/O 模型，它能够显著提高 I/O 操作的吞吐量和响应速度。本章节我们深入探讨了 io_uring 的优化和最佳实践，以帮助开发者充分发挥其性能优势。&lt;/p>
@@ -589,7 +634,10 @@ return ret;
 &lt;p>io_uring 作为一个新兴的异步 I/O 框架，具有很大的潜力和广阔的应用前景。它已经在许多领域得到了广泛的应用，如数据库、网络服务器和存储系统等。随着对 io_uring 的进一步研究和优化，相信它将在未来发挥更大的作用，并成为开发者们的首选工具之一。&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;h2 id="参考文献">
+&lt;a href="#%e5%8f%82%e8%80%83%e6%96%87%e7%8c%ae" class="header-anchor">#&lt;/a>
+参考文献
+&lt;/h2>
 &lt;p>[1] io_uring 官方文档：&lt;a class="link" href="https://kernel.dk/io_uring.pdf" target="_blank" rel="noopener" >https://kernel.dk/io_uring.pdf
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">

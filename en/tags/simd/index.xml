@@ -1,5 +1,11 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>SIMD on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/simd/</link><description>Recent content in SIMD on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 13 Aug 2024 22:44:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/simd/index.xml" rel="self" type="application/rss+xml"/><item><title>Arm Matrix Acceleration: Scalable Matrix Extension SME</title><link>https://cuterwrite.top/en/p/arm-sme-for-performance/</link><pubDate>Tue, 13 Aug 2024 22:44:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sme-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_117622407_p0_master1200.webp" alt="Featured image of post Arm Matrix Acceleration: Scalable Matrix Extension SME" />&lt;h1 id="arm-matrix-acceleration-scalable-matrix-extension-sme">Arm Matrix Acceleration: Scalable Matrix Extension SME&lt;/h1>
-&lt;h2 id="1-sme-introduction">1. SME Introduction&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>SIMD on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/simd/</link><description>Recent content in SIMD on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Tue, 13 Aug 2024 22:44:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/simd/index.xml" rel="self" type="application/rss+xml"/><item><title>Arm Matrix Acceleration: Scalable Matrix Extension SME</title><link>https://cuterwrite.top/en/p/arm-sme-for-performance/</link><pubDate>Tue, 13 Aug 2024 22:44:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sme-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-14_117622407_p0_master1200.webp" alt="Featured image of post Arm Matrix Acceleration: Scalable Matrix Extension SME" />&lt;h1 id="arm-matrix-acceleration-scalable-matrix-extension-sme">
+&lt;a href="#arm-matrix-acceleration-scalable-matrix-extension-sme" class="header-anchor">#&lt;/a>
+Arm Matrix Acceleration: Scalable Matrix Extension SME
+&lt;/h1>
+&lt;h2 id="1-sme-introduction">
+&lt;a href="#1-sme-introduction" class="header-anchor">#&lt;/a>
+1. SME Introduction
+&lt;/h2>
 &lt;p>Scalable Matrix Extension SME is built on the basis of Scalable Vector Extensions (SVE and SVE2) and adds the capability to efficiently handle matrices. The main features include:&lt;/p>
 &lt;ul>
 &lt;li>Calculate the SVE vector&amp;rsquo;s outer product&lt;/li>
@@ -57,7 +63,10 @@
 &lt;li>New load, store, and move instructions: Vectors can be written to a row or column of a matrix tile, or a row or column of a matrix tile can be read into a vector.&lt;/li>
 &lt;/ul>
 &lt;p>Similar to SVE2, SME is also an extension that supports scalable vector length, enabling vector length agnosticism (VLA), per-lane predication, predication-driven loop control, and management functions.&lt;/p>
-&lt;h2 id="2-streaming-sve-mode">2. Streaming SVE mode&lt;/h2>
+&lt;h2 id="2-streaming-sve-mode">
+&lt;a href="#2-streaming-sve-mode" class="header-anchor">#&lt;/a>
+2. Streaming SVE mode
+&lt;/h2>
 &lt;p>SME introduced the Streaming SVE mode, which implements a subset of the SVE2 instruction set and adds new SME-specific instructions.&lt;/p>
 &lt;p>Streaming SVE mode supports high-throughput streaming data processing for large datasets, and streaming data usually has simple loop control flow and limited conditionality.&lt;/p>
 &lt;p>In Non-streaming SVE mode, the complete SVE2 instruction set is supported, typically handling complex data structures and complex judgments.&lt;/p>
@@ -71,7 +80,10 @@ alt="Streaming SVE Mode and Non-streaming SVE Mode" width="80%" loading="lazy">&
 &lt;p>The SVL of SME can be 128-bit, 256-bit, 512-bit, 1024-bit, or 2048-bit. SVL needs to be a power of 2, and NSVL needs to be a multiple of 128.&lt;/p>
 &lt;p>Similar to SVE2, the software can control the &lt;code>SMCR_ELx.LEN&lt;/code> register bit to set the effective SVL length that EL1, EL2, EL3 want to use (it can be set shorter than the SVL supported by the hardware).&lt;/p>
 &lt;p>For more information on the Streaming SVE mode, refer to section B1.4.6 of the Arm Architecture Reference Manual (A-profile architecture).&lt;/p>
-&lt;h2 id="3-switch-between-non-streaming-and-streaming-sve-modes">3. Switch between Non-streaming and Streaming SVE modes&lt;/h2>
+&lt;h2 id="3-switch-between-non-streaming-and-streaming-sve-modes">
+&lt;a href="#3-switch-between-non-streaming-and-streaming-sve-modes" class="header-anchor">#&lt;/a>
+3. Switch between Non-streaming and Streaming SVE modes
+&lt;/h2>
 &lt;p>If the CPU hardware implementation supports both Streaming SVE mode of SME and Non-streaming SVE mode of SVE2, applications can dynamically switch between these two operation modes based on their needs.&lt;/p>
 &lt;p>Provide an independent operating mode for SME, allowing CPU hardware implementations to offer different vector lengths for the same application. For example, a CPU hardware implementation can choose to support a longer Streaming SVE mode vector length and optimize the hardware for stream operations suitable for high throughput.&lt;/p>
 &lt;p>Applications can easily switch dynamically between Streaming SVE mode and Non-streaming SVE mode. The &lt;code>PSTATE.{SM, ZA}&lt;/code> bits introduced by SME can enable and disable Streaming SVE mode and SME ZA storage:&lt;/p>
@@ -104,7 +116,10 @@ alt="Application switching Streaming SVE mode and Non-streaming SVE mode" width=
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>For more information on switching between Streaming SVE mode and Non-Streaming SVE mode using SMSTART and SMSTOP, please refer to sections C6.2.327 and C6.2.328 of the Arm Architecture Reference Manual on A-profile architecture.&lt;/p>
-&lt;h2 id="4-sme-architecture-status">4. SME Architecture Status&lt;/h2>
+&lt;h2 id="4-sme-architecture-status">
+&lt;a href="#4-sme-architecture-status" class="header-anchor">#&lt;/a>
+4. SME Architecture Status
+&lt;/h2>
 &lt;p>Similar to SVE2, in Streaming SVE mode, it has &lt;code>Z0-Z31&lt;/code> vector registers and &lt;code>P0-P15&lt;/code> predicate registers.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_4130_ARM2799_3_Scalable_Matrix_p1.webp"
 alt="Streaming mode registers" width="70%" loading="lazy">
@@ -117,7 +132,10 @@ RDSVL &amp;lt;Xd&amp;gt;, #&amp;lt;imm&amp;gt;
 &lt;/code>&lt;/pre>
 &lt;div class="notice notice-info" >
 &lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>Because SME supports Vector Length Agnostic (VLA), in Streaming SVE mode, software rarely needs to explicitly read the SVL vector length. In Non-streaming SVE mode, the RDSVL instruction is usually used to determine the value of SVL.&lt;/p>&lt;/div>
-&lt;h2 id="5-za-array">5. ZA array&lt;/h2>
+&lt;h2 id="5-za-array">
+&lt;a href="#5-za-array" class="header-anchor">#&lt;/a>
+5. ZA array
+&lt;/h2>
 &lt;p>The newly introduced ZA (Z Array, ZA Storage) in SME is a two-dimensional (2D) square array with a size of SVL x SVL. It is called Z Array because the length of its rows and columns is consistent with the Zn registers in Streaming SVE mode.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-15_4314_ARM2799_4_Scalable_Matrix_p1.webp"
 alt="ZA array" width="50%" loading="lazy">&lt;figcaption>
@@ -131,7 +149,10 @@ alt="ZA array" width="50%" loading="lazy">&lt;figcaption>
 &lt;li>ZA tiles&lt;/li>
 &lt;li>ZA tile slices&lt;/li>
 &lt;/ul>
-&lt;h3 id="51-za-array-vector-access">5.1 ZA array vector access&lt;/h3>
+&lt;h3 id="51-za-array-vector-access">
+&lt;a href="#51-za-array-vector-access" class="header-anchor">#&lt;/a>
+5.1 ZA array vector access
+&lt;/h3>
 &lt;p>A row of the ZA array can be accessed as a vector of SVL length, and this vector can contain elements with data type lengths of 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit, such as 32-bit fp32 floating-point numbers.&lt;/p>
 &lt;pre>&lt;code class="language-c">ZA.B[N], ZA.H[N], ZA.S[N], ZA.D[N], ZA.Q[N]
 &lt;/code>&lt;/pre>
@@ -141,7 +162,10 @@ alt="ZA array" width="50%" loading="lazy">&lt;figcaption>
 &lt;pre>&lt;code class="language-armasm">LDR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
 STR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
 &lt;/code>&lt;/pre>
-&lt;h3 id="52-za-tiles">5.2 ZA tiles&lt;/h3>
+&lt;h3 id="52-za-tiles">
+&lt;a href="#52-za-tiles" class="header-anchor">#&lt;/a>
+5.2 ZA tiles
+&lt;/h3>
 &lt;p>ZA tile is a square two-dimensional submatrix within ZA. The width of a ZA tile is always SVL, which is the same as the width of the ZA array.&lt;/p>
 &lt;p>How many usable ZA tiles ZA can be divided into is determined by the size of the data type of the elements:&lt;/p>
 &lt;table>
@@ -196,7 +220,10 @@ alt="ZA0.B" width="50%" loading="lazy">
 alt="ZA0.H and ZA1.H" width="40%" loading="lazy">
 &lt;/figure>
 &lt;p>The advantage of doing this is to fully utilize ZA storage. In practical applications, for example, when the SVL is 256-bit, the element data type size is 32-bit, and the size of ZA is 256-bit x 256-bit, &lt;strong>to perform an outer product operation on vectors in two Z registers&lt;/strong>, the outer product result is a 2D array of 8 x 8 floating-point numbers. This outer product only requires 1/4 of the storage space of ZA. By dividing ZA into 4 ZA tiles, ZA storage can be fully utilized.&lt;/p>
-&lt;h3 id="53-za-tile-slices">5.3 ZA tile slices&lt;/h3>
+&lt;h3 id="53-za-tile-slices">
+&lt;a href="#53-za-tile-slices" class="header-anchor">#&lt;/a>
+5.3 ZA tile slices
+&lt;/h3>
 &lt;p>A ZA tile can be accessed as a whole or in the form of individual ZA tile slices.&lt;/p>
 &lt;p>When accessed as a whole, instructions can be accessed using the name of the tile:&lt;/p>
 &lt;pre>&lt;code class="language-text">ZA0.B, ZA0.H-ZA1.H, ZA0.S-ZA3.S, ZA0.D-ZA7.D or ZA0.Q-ZA15.Q
@@ -232,7 +259,10 @@ alt="ZA tile slices" width="auto" loading="lazy">
 &lt;p>&lt;code>ZAnV.[m]&lt;/code> accesses a vector containing column (m x SIZE) and row elements (i x SIZE + n), where i ranges from 0 to NUM_OF_ELEMENTS-1. This vector contains elements of data types B, H, S, D, or Q.&lt;/p>
 &lt;p>Be careful with overlapping when applying mixed element data type sizes and horizontal and vertical tile slices.&lt;/p>
 &lt;p>For more information on ZA Array, ZA array vectors, tile, and tile slices, refer to sections B1.4.8 to B1.4.12 of the Arm Architecture Reference Manual for the A-profile architecture.&lt;/p>
-&lt;h2 id="6-instructions-supported-in-steaming-sve-mode">6. Instructions supported in Steaming SVE mode&lt;/h2>
+&lt;h2 id="6-instructions-supported-in-steaming-sve-mode">
+&lt;a href="#6-instructions-supported-in-steaming-sve-mode" class="header-anchor">#&lt;/a>
+6. Instructions supported in Steaming SVE mode
+&lt;/h2>
 &lt;p>Some instructions have limitations in Streaming SVE mode:&lt;/p>
 &lt;ul>
 &lt;li>Some SVE/SVE2 instructions become illegal to execute
@@ -256,7 +286,10 @@ alt="ZA tile slices" width="auto" loading="lazy">
 &lt;li>Instruction for clearing ZA tiles&lt;/li>
 &lt;li>Added some instructions that can be used in both Streaming and Non-streaming modes.&lt;/li>
 &lt;/ul>
-&lt;h2 id="7-sme-directive">7. SME Directive&lt;/h2>
+&lt;h2 id="7-sme-directive">
+&lt;a href="#7-sme-directive" class="header-anchor">#&lt;/a>
+7. SME Directive
+&lt;/h2>
 &lt;p>The main SME commands for operating ZA storage include:&lt;/p>
 &lt;ul>
 &lt;li>Calculate the cross product of two vectors, and then accumulate or decrement, and place the result into an instruction of a ZA tile.&lt;/li>
@@ -264,7 +297,10 @@ alt="ZA tile slices" width="auto" loading="lazy">
 &lt;li>In the horizontal or vertical direction, an SVE vector and ZA tile addition instruction&lt;/li>
 &lt;li>An instruction to add a multiple of the vector length in Streaming SVE mode to a scalar register&lt;/li>
 &lt;/ul>
-&lt;h3 id="71-outer-product-and-accumulate-or-subtract-instructions">7.1 Outer Product and Accumulate or Subtract Instructions&lt;/h3>
+&lt;h3 id="71-outer-product-and-accumulate-or-subtract-instructions">
+&lt;a href="#71-outer-product-and-accumulate-or-subtract-instructions" class="header-anchor">#&lt;/a>
+7.1 Outer Product and Accumulate or Subtract Instructions
+&lt;/h3>
 &lt;p>In order to help understand outer product and accumulate or subtract instructions, let&amp;rsquo;s see how to use the outer product operation to perform matrix multiplication.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_2313_Picture1_png-1280x960.webp"
 alt="Outer product" width="auto" loading="lazy">
@@ -341,7 +377,10 @@ alt="Matrix multiplication with outer product" width="auto" loading="lazy">
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h4 id="711-fp32-fp64-outer-product-and-accumulate-or-subtract-instructions">7.1.1 FP32, FP64 outer product and accumulate or subtract instructions&lt;/h4>
+&lt;h4 id="711-fp32-fp64-outer-product-and-accumulate-or-subtract-instructions">
+&lt;a href="#711-fp32-fp64-outer-product-and-accumulate-or-subtract-instructions" class="header-anchor">#&lt;/a>
+7.1.1 FP32, FP64 outer product and accumulate or subtract instructions
+&lt;/h4>
 &lt;p>Instructions where the input vectors and output arrays have the same data type (FP32, FP64) are relatively simple.&lt;/p>
 &lt;p>The following example demonstrates FP32 type outer product with accumulation or subtraction instructions.&lt;/p>
 &lt;pre>&lt;code class="language-armasm">FMOPA &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;lt;Zn&amp;gt;.S, &amp;lt;Zm&amp;gt;.S
@@ -351,7 +390,10 @@ FMOPS &amp;lt;ZAda&amp;gt;.S, &amp;lt;Pn&amp;gt;/M, &amp;lt;Pm&amp;gt;/M, &amp;l
 alt="FMOPA and FMOPS" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>In this example, assuming the SVL vector length is 128, &lt;code>Zn.S&lt;/code> and &lt;code>Zm.S&lt;/code> contain vectors composed of 4 FP32 numbers, this instruction calculates the outer product of &lt;code>Zn.S&lt;/code> and &lt;code>Zm.S&lt;/code>, the result of the outer product is the gray matrix in the figure, then accumulates or subtracts this outer product result with the existing values in the ZA tile &lt;code>ZAda.S&lt;/code>, and stores the result in the same ZA tile.&lt;/p>
-&lt;h4 id="712-fp16-bf16-int16-int8-i16i64-type-outer-product-and-accumulate-or-subtract-instructions">7.1.2 FP16, BF16, INT16, INT8, I16I64 type outer product and accumulate or subtract instructions&lt;/h4>
+&lt;h4 id="712-fp16-bf16-int16-int8-i16i64-type-outer-product-and-accumulate-or-subtract-instructions">
+&lt;a href="#712-fp16-bf16-int16-int8-i16i64-type-outer-product-and-accumulate-or-subtract-instructions" class="header-anchor">#&lt;/a>
+7.1.2 FP16, BF16, INT16, INT8, I16I64 type outer product and accumulate or subtract instructions
+&lt;/h4>
 &lt;p>Because these instructions will expand the data type of the calculation results, these operations are not as straightforward as the previous FP32 and FP64 type instructions.&lt;/p>
 &lt;ul>
 &lt;li>BF16 instruction calculates the outer product of two BF16s, expands the result type to FP32, and then destructively adds or subtracts the result with the target tile.&lt;/li>
@@ -436,7 +478,10 @@ alt="BF16 BFMOPA" width="auto" loading="lazy">
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h3 id="72-sme-instructions-with-predication">7.2 SME Instructions with Predication&lt;/h3>
+&lt;h3 id="72-sme-instructions-with-predication">
+&lt;a href="#72-sme-instructions-with-predication" class="header-anchor">#&lt;/a>
+7.2 SME Instructions with Predication
+&lt;/h3>
 &lt;p>Each source vector can be independently predicated by its corresponding control predicate register:&lt;/p>
 &lt;ul>
 &lt;li>Outer product and accumulate or subtract instructions use Pn/M and Pn/M (without /Z form): Inactive source elements are treated as having a value of 0.&lt;/li>
@@ -465,7 +510,10 @@ alt="SME prediction FMOPA" width="auto" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_3513_Picture16_png-1280x960.webp"
 alt="SME prediction UMOPA" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h3 id="73-za-tile-and-addition-operation-with-a-z-vector">7.3 ZA tile and addition operation with a Z vector&lt;/h3>
+&lt;h3 id="73-za-tile-and-addition-operation-with-a-z-vector">
+&lt;a href="#73-za-tile-and-addition-operation-with-a-z-vector" class="header-anchor">#&lt;/a>
+7.3 ZA tile and addition operation with a Z vector
+&lt;/h3>
 &lt;p>SME includes instructions to add a vector to the rows or columns of a ZA tile, and these instructions also support predication.&lt;/p>
 &lt;table>
 &lt;thead>
@@ -498,7 +546,10 @@ alt="SME ADDHA" width="auto" loading="lazy">
 &lt;li>It is TRUE for the element corresponding to the second governing predicate, and&lt;/li>
 &lt;li>It corresponds to TRUE at the row number of the first governing predicate&amp;rsquo;s horizontal slice, and the inactive elements in the target tile remain unchanged.&lt;/li>
 &lt;/ul>
-&lt;h3 id="74-tile-load-store-move-instructions">7.4 Tile load, store, move instructions&lt;/h3>
+&lt;h3 id="74-tile-load-store-move-instructions">
+&lt;a href="#74-tile-load-store-move-instructions" class="header-anchor">#&lt;/a>
+7.4 Tile load, store, move instructions
+&lt;/h3>
 &lt;p>SME tile load, store, move instructions can:&lt;/p>
 &lt;ul>
 &lt;li>Read data from memory and place it into a row or column of the ZA tile&lt;/li>
@@ -506,7 +557,10 @@ alt="SME ADDHA" width="auto" loading="lazy">
 &lt;li>Move the row of the ZA tile to the SVE Z vector register&lt;/li>
 &lt;li>Move the SVE Z vector register to a ZA tile row or column&lt;/li>
 &lt;/ul>
-&lt;h4 id="741-tile-slice-load-and-store-instructions">7.4.1 Tile slice load and store instructions&lt;/h4>
+&lt;h4 id="741-tile-slice-load-and-store-instructions">
+&lt;a href="#741-tile-slice-load-and-store-instructions" class="header-anchor">#&lt;/a>
+7.4.1 Tile slice load and store instructions
+&lt;/h4>
 &lt;p>The LD1B, LD1H, LD1S, LD1D, and LD1Q instructions load consecutive memory values into a ZA tile slice with 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit elements, respectively.&lt;/p>
 &lt;p>The ST1B, ST1H, ST1S, ST1D, and ST1Q instructions store a ZA tile slice containing 8-bit, 16-bit, 32-bit, 64-bit, or 128-bit elements, respectively, into contiguous memory.&lt;/p>
 &lt;p>These instructions also support predication, for example:&lt;/p>
@@ -516,7 +570,10 @@ alt="SME ADDHA" width="auto" loading="lazy">
 &lt;pre>&lt;code class="language-armasm">ST1H ZA1V.H[W0, #imm], P2, [X1, X2, LSL #1]
 &lt;/code>&lt;/pre>
 &lt;p>This ST1H instruction executes a predicated continuous halfword store operation, storing the vertical tile slice in ZA1 with the column number (W0+imm) to the memory address (X1+X2*2), and elements that are inactive in the tile slice are not written to memory.&lt;/p>
-&lt;h4 id="742-tile-slice-move-instruction">7.4.2 Tile slice move instruction&lt;/h4>
+&lt;h4 id="742-tile-slice-move-instruction">
+&lt;a href="#742-tile-slice-move-instruction" class="header-anchor">#&lt;/a>
+7.4.2 Tile slice move instruction
+&lt;/h4>
 &lt;p>The MOV instruction (alias for the MOVA instruction) moves the value of a Z vector register to a ZA tile slice, or moves the value from a ZA tile slice to a Z vector register. This instruction operates on a single horizontal or vertical tile slice of a ZA tile with a specified element size. The row number/column number of the slice is specified by the slice&amp;rsquo;s retrieval register plus an immediate offset. Inactive elements in the target slice remain unchanged.&lt;/p>
 &lt;p>For example:&lt;/p>
 &lt;pre>&lt;code class="language-armasm">MOV ZA0H.B[W0, #imm], P0/M, Z0.B
@@ -525,20 +582,29 @@ alt="SME ADDHA" width="auto" loading="lazy">
 &lt;pre>&lt;code class="language-armasm">MOVA ZA0H.B[W0, #imm], P0/M, Z0.B
 &lt;/code>&lt;/pre>
 &lt;p>This instruction moves the values in vector register &lt;code>Z0.B&lt;/code> to the horizontal ZA tile slice &lt;code>ZA0H.B[W0,#imm]&lt;/code>, using &lt;code>P0&lt;/code> as the predication register. Inactive elements in the target tile slice remain unchanged.&lt;/p>
-&lt;h3 id="75-za-array-vector-loadstore-instructions">7.5 ZA array vector load/store instructions&lt;/h3>
+&lt;h3 id="75-za-array-vector-loadstore-instructions">
+&lt;a href="#75-za-array-vector-loadstore-instructions" class="header-anchor">#&lt;/a>
+7.5 ZA array vector load/store instructions
+&lt;/h3>
 &lt;p>SME LDR instruction reads data from memory into a ZA array vector, SME STR instruction stores the values from a ZA array vector into memory.
 These instructions do not have predication functionality. They are primarily for saving/restoring ZA storage during software context switching. SME LDR/STR instructions can also be used in Non-streaming SVE mode when PSTATE.ZA is enabled.
 For example, the ZA array vector in the following STR instruction is specified by a vector selection register Wv (scalar register W) plus an optional immediate number (Wv+Imm). The address for accessing memory is: a scalar register as the base, plus the same optional immediate offset multiplied by the current vector length in bytes.&lt;/p>
 &lt;pre>&lt;code class="language-armasm">STR ZA[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;], [&amp;lt;Xn|SP&amp;gt;{, #&amp;lt;imm&amp;gt;, MUL VL}]
 &lt;/code>&lt;/pre>
-&lt;h3 id="76-za-tile-clear-instruction">7.6 ZA tile clear instruction&lt;/h3>
+&lt;h3 id="76-za-tile-clear-instruction">
+&lt;a href="#76-za-tile-clear-instruction" class="header-anchor">#&lt;/a>
+7.6 ZA tile clear instruction
+&lt;/h3>
 &lt;p>SME ZERO instruction can clear a group of 64-bit ZA tile:&lt;/p>
 &lt;pre>&lt;code class="language-armasm">ZERO { &amp;lt;mask&amp;gt;}
 &lt;/code>&lt;/pre>
 &lt;p>The ZERO instruction can zero out up to 8 ZA tiles named &lt;code>ZA0.D&lt;/code> to &lt;code>ZA8.D&lt;/code>. The tiles to be zeroed are specified by the mask in the instruction, while the remaining tiles remain unchanged.&lt;/p>
 &lt;p>This instruction can also be used in Non-streaming SVE mode when &lt;code>PSTATE.ZA&lt;/code> is enabled.&lt;/p>
 &lt;p>If you want to clear the entire ZA array, you can use an instruction alias, &lt;code>ZERO {ZA}&lt;/code>.&lt;/p>
-&lt;h3 id="77-new-sve2-instructions">7.7 New SVE2 Instructions&lt;/h3>
+&lt;h3 id="77-new-sve2-instructions">
+&lt;a href="#77-new-sve2-instructions" class="header-anchor">#&lt;/a>
+7.7 New SVE2 Instructions
+&lt;/h3>
 &lt;p>The SME architecture extension has added some new SVE2 instructions, which can also be used in PE that implements SVE2 when in Non-streaming SVE mode. These instructions include:&lt;/p>
 &lt;ul>
 &lt;li>Select a predicate register or an all-false Predicate select instruction&lt;/li>
@@ -546,7 +612,10 @@ For example, the ZA array vector in the following STR instruction is specified b
 &lt;li>Signed/Unsigned clamp to smaller/larger value vector instructions&lt;/li>
 &lt;/ul>
 &lt;p>The following introduces the Predicate select instruction.&lt;/p>
-&lt;h4 id="771-psel-instruction">7.7.1 PSEL Instruction&lt;/h4>
+&lt;h4 id="771-psel-instruction">
+&lt;a href="#771-psel-instruction" class="header-anchor">#&lt;/a>
+7.7.1 PSEL Instruction
+&lt;/h4>
 &lt;p>PSEL instruction selects a predicate register or all-false to the target predicate register, as follows:&lt;/p>
 &lt;pre>&lt;code class="language-armasm">PSEL &amp;lt;Pd&amp;gt;, &amp;lt;Pn&amp;gt;, &amp;lt;Pm&amp;gt;.&amp;lt;T&amp;gt;[&amp;lt;Wv&amp;gt;, &amp;lt;imm&amp;gt;]
 &lt;/code>&lt;/pre>
@@ -565,7 +634,10 @@ alt="SME PSEL" width="auto" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-16_0116_Picture11_png-1280x960.webp"
 alt="SME PSEL" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="references">References&lt;/h2>
+&lt;h2 id="references">
+&lt;a href="#references" class="header-anchor">#&lt;/a>
+References
+&lt;/h2>
 &lt;ul>
 &lt;li>&lt;a class="link" href="https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/arm-scalable-matrix-extension-introduction" target="_blank" rel="noopener" >Arm Scalable Matrix Extension (SME) Introduction
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -585,8 +657,14 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/li>
-&lt;/ul></description></item><item><title>Arm Performance Optimization: Scalable Vector Extension SVE</title><link>https://cuterwrite.top/en/p/arm-sve-for-performance/</link><pubDate>Sun, 11 Aug 2024 02:13:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sve-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp" alt="Featured image of post Arm Performance Optimization: Scalable Vector Extension SVE" />&lt;h1 id="arm-performance-optimization-scalable-vector-extension-sve">ARM Performance Optimization: Scalable Vector Extension SVE&lt;/h1>
-&lt;h2 id="1-sve-introduction">1. SVE Introduction&lt;/h2>
+&lt;/ul></description></item><item><title>Arm Performance Optimization: Scalable Vector Extension SVE</title><link>https://cuterwrite.top/en/p/arm-sve-for-performance/</link><pubDate>Sun, 11 Aug 2024 02:13:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/arm-sve-for-performance/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_117622464_p0_master1200.webp" alt="Featured image of post Arm Performance Optimization: Scalable Vector Extension SVE" />&lt;h1 id="arm-performance-optimization-scalable-vector-extension-sve">
+&lt;a href="#arm-performance-optimization-scalable-vector-extension-sve" class="header-anchor">#&lt;/a>
+ARM Performance Optimization: Scalable Vector Extension SVE
+&lt;/h1>
+&lt;h2 id="1-sve-introduction">
+&lt;a href="#1-sve-introduction" class="header-anchor">#&lt;/a>
+1. SVE Introduction
+&lt;/h2>
 &lt;p>After the Neon architecture extension with a fixed 128-bit vector length instruction set, Arm designed the Scalable Vector Extension (SVE) as the next-generation SIMD extension for AArch64. SVE introduces the scalable concept, allowing flexible vector length implementations and providing a range of possible values in CPU implementations. The vector length can vary from a minimum of 128 bits to a maximum of 2048 bits, in increments of 128 bits. &lt;strong>The SVE design ensures that the same application can run on different SVE-supporting implementations without recompiling the code&lt;/strong>. SVE enhances the architecture&amp;rsquo;s applicability to high-performance computing (HPC) and machine learning (ML) applications, which require very large amounts of data processing. SVE2 is a superset of SVE and Neon. SVE2 allows the use of more functional domains in data-level parallelism. SVE2 inherits the concepts, vector registers, and operation principles of SVE. SVE and SVE2 define 32 scalable vector registers. Chip partners can choose an appropriate vector length design implementation, with hardware varying between 128 bits and 2048 bits (in increments of 128 bits). The advantage of SVE and SVE2 is that only one vector instruction set uses scalable variables.&lt;/p>
 &lt;p>The SVE design philosophy allows developers to write and build software once, and then run the same binary on different AArch64 hardware with various SVE vector length implementations. The portability of the binary means developers do not need to know the vector length implementation of their system. This eliminates the need to rebuild the binary, making the software easier to port. In addition to scalable vectors, SVE and SVE2 also include:&lt;/p>
 &lt;ul>
@@ -606,7 +684,10 @@ fill="currentColor">
 &lt;li>General software&lt;/li>
 &lt;/ul>
 &lt;p>SVE and SVE2 both support collecting and processing large amounts of data. SVE and SVE2 are not extensions of the Neon instruction set. Instead, SVE and SVE2 are redesigned to offer better data parallelism than Neon. However, the hardware logic of SVE and SVE2 covers the implementation of Neon hardware. When a microarchitecture supports SVE or SVE2, it also supports Neon. To use SVE and SVE2, the software running on that microarchitecture must first support Neon.&lt;/p>
-&lt;h2 id="2-sve-architecture-basics">2. SVE Architecture Basics&lt;/h2>
+&lt;h2 id="2-sve-architecture-basics">
+&lt;a href="#2-sve-architecture-basics" class="header-anchor">#&lt;/a>
+2. SVE Architecture Basics
+&lt;/h2>
 &lt;p>This section introduces the basic architectural features shared by SVE and SVE2. Like SVE, SVE2 is also based on scalable vectors. In addition to the existing register file provided by Neon, SVE and SVE2 add the following registers:&lt;/p>
 &lt;ul>
 &lt;li>32 scalable vector registers, &lt;code>Z0-Z31&lt;/code>&lt;/li>
@@ -617,7 +698,10 @@ fill="currentColor">
 &lt;/li>
 &lt;li>Scalable Vector System Control Register, &lt;code>ZCR_ELx&lt;/code>&lt;/li>
 &lt;/ul>
-&lt;h3 id="21-scalable-vector-registers">2.1 Scalable Vector Registers&lt;/h3>
+&lt;h3 id="21-scalable-vector-registers">
+&lt;a href="#21-scalable-vector-registers" class="header-anchor">#&lt;/a>
+2.1 Scalable Vector Registers
+&lt;/h3>
 &lt;p>Scalable vector registers &lt;code>Z0-Z31&lt;/code> can be implemented in microarchitecture as 128-2048 bits. The lowest 128 bits are shared with Neon&amp;rsquo;s fixed 128-bit vectors &lt;code>V0-V31&lt;/code>.&lt;/p>
 &lt;p>The image below shows scalable vector registers &lt;code>Z0-Z31&lt;/code>:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Z-register.webp"
@@ -631,7 +715,10 @@ alt="Z Registers-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>Supports integer, double precision, single precision, and half precision floating-point elements&lt;/li>
 &lt;li>The vector length can be configured for each exception level (EL)&lt;/li>
 &lt;/ul>
-&lt;h3 id="22-scalable-predicate-register">2.2 Scalable Predicate Register&lt;/h3>
+&lt;h3 id="22-scalable-predicate-register">
+&lt;a href="#22-scalable-predicate-register" class="header-anchor">#&lt;/a>
+2.2 Scalable Predicate Register
+&lt;/h3>
 &lt;p>In order to control which active elements participate in operations, Predicate registers (abbreviated as P registers) are used as masks in many SVE instructions, which also provides flexibility for vector operations. The figure below shows the scalable Predicate registers &lt;code>P0-P15&lt;/code>:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_Predicate-register.webp"
 alt="P Register-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
@@ -645,7 +732,10 @@ alt="P Register-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>&lt;code>P8-P15&lt;/code> used for loop management&lt;/li>
 &lt;li>FFR is a special P register set by the first-fault vector load and store instructions, used to indicate the success of load and store operations for each element. FFR is designed to support speculative memory access, making vectorization easier and safer in many cases.&lt;/li>
 &lt;/ul>
-&lt;h3 id="23-scalable-vector-system-control-register">2.3 Scalable Vector System Control Register&lt;/h3>
+&lt;h3 id="23-scalable-vector-system-control-register">
+&lt;a href="#23-scalable-vector-system-control-register" class="header-anchor">#&lt;/a>
+2.3 Scalable Vector System Control Register
+&lt;/h3>
 &lt;p>The figure below shows the Scalable Vector System Control Register &lt;code>ZCR_ELx&lt;/code>:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-08-13_ZCR_Elx.webp"
 alt="ZCR_Elx-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
@@ -657,7 +747,10 @@ alt="ZCR_Elx-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>&lt;code>ZCR_Elx.LEN&lt;/code> field is used for the vector length of the current and lower anomaly levels.&lt;/li>
 &lt;li>Most bits are currently reserved for future use.&lt;/li>
 &lt;/ul>
-&lt;h3 id="24-sve-assembly-syntax">2.4 SVE Assembly Syntax&lt;/h3>
+&lt;h3 id="24-sve-assembly-syntax">
+&lt;a href="#24-sve-assembly-syntax" class="header-anchor">#&lt;/a>
+2.4 SVE Assembly Syntax
+&lt;/h3>
 &lt;p>The SVE assembly syntax format consists of an opcode, destination register, P register (if the instruction supports a Predicate mask), and input operands. The following instruction example will detail this format.&lt;/p>
 &lt;p>Example 1:&lt;/p>
 &lt;pre>&lt;code class="language-armasm">LDFF1D {&amp;lt;Zt&amp;gt;.D}, &amp;lt;Pg&amp;gt;/Z, [&amp;lt;Xn|SP&amp;gt;, &amp;lt;Zm&amp;gt;.D, LSL #3]
@@ -685,7 +778,10 @@ alt="ZCR_Elx-2024-08-12" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>&lt;code>S&lt;/code> is the new interpretation of the P register condition flags &lt;code>NZCV&lt;/code>.&lt;/li>
 &lt;li>&lt;code>&amp;lt;Pg&amp;gt;&lt;/code> controls the P register to act as a bitmask in the example operation.&lt;/li>
 &lt;/ul>
-&lt;h3 id="25-sve-architecture-features">2.5 SVE Architecture Features&lt;/h3>
+&lt;h3 id="25-sve-architecture-features">
+&lt;a href="#25-sve-architecture-features" class="header-anchor">#&lt;/a>
+2.5 SVE Architecture Features
+&lt;/h3>
 &lt;p>SVE includes the following key architectural features:&lt;/p>
 &lt;ul>
 &lt;li>per-lane predication&lt;/li>
@@ -765,7 +861,10 @@ alt="Extended_Floating-poing-and-horizontal-reductions-example-2024-08-13" width
 &lt;h4>Extended Floating-point and Horizontal Reductions Example&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h2 id="3-new-features-of-sve2">3. New Features of SVE2&lt;/h2>
+&lt;h2 id="3-new-features-of-sve2">
+&lt;a href="#3-new-features-of-sve2" class="header-anchor">#&lt;/a>
+3. New Features of SVE2
+&lt;/h2>
 &lt;p>This section introduces the features added by SVE2 to the Arm AArch64 architecture. To achieve scalable performance, SVE2 is built on SVE, allowing vectors to reach up to 2048 bits.&lt;/p>
 &lt;p>In SVE2, many instructions that replicate existing instructions in Neon have been added, including:&lt;/p>
 &lt;ul>
@@ -785,9 +884,15 @@ alt="transformed_neon_widen_narraow_pairwise_operations-2024-08-13" width="auto"
 &lt;p>For backward compatibility, the latest architecture requires Neon and VFP. Although SVE2 includes some features of SVE and Neon, SVE2 does not preclude the presence of Neon on the chip.&lt;/p>
 &lt;p>SVE2 supports optimization for emerging applications beyond the HPC market, such as in machine learning (ML) (UDOT instructions), computer vision (TBL and TBX instructions), baseband networks (CADD and CMLA instructions), genomics (BDEP and BEXT instructions), and servers (MATCH and NMATCH instructions).&lt;/p>
 &lt;p>SVE2 enhances the overall performance of general-purpose processors in handling large volumes of data, without the need for additional off-chip accelerators.&lt;/p>
-&lt;h2 id="4-using-sve-programming">4. Using SVE programming&lt;/h2>
+&lt;h2 id="4-using-sve-programming">
+&lt;a href="#4-using-sve-programming" class="header-anchor">#&lt;/a>
+4. Using SVE programming
+&lt;/h2>
 &lt;p>This section introduces software tools and libraries that support SVE2 application development. This section also explains how to develop applications for targets that support SVE2, run the application on hardware that supports SVE2, and simulate the application on any Armv8-A hardware.&lt;/p>
-&lt;h3 id="41-software-and-library-support">4.1 Software and Library Support&lt;/h3>
+&lt;h3 id="41-software-and-library-support">
+&lt;a href="#41-software-and-library-support" class="header-anchor">#&lt;/a>
+4.1 Software and Library Support
+&lt;/h3>
 &lt;p>To build SVE or SVE2 applications, you must choose a compiler that supports SVE and SVE2 features.&lt;/p>
 &lt;ul>
 &lt;li>GNU tools version 8.0+ supports SVE.&lt;/li>
@@ -821,7 +926,10 @@ fill="currentColor">
 &lt;/a>
 are highly optimized for mathematical routines and can be linked to your applications. Arm Performance Libraries version 19.3+ supports SVE&amp;rsquo;s math library.&lt;/p>
 &lt;p>Arm Compiler for Linux is part of Arm Allinea Studio, including Arm C/C++ Compiler, Arm Fortran Compiler, and Arm Performance Libraries.&lt;/p>
-&lt;h3 id="42-how-to-program-using-sve2">4.2 How to Program Using SVE2&lt;/h3>
+&lt;h3 id="42-how-to-program-using-sve2">
+&lt;a href="#42-how-to-program-using-sve2" class="header-anchor">#&lt;/a>
+4.2 How to Program Using SVE2
+&lt;/h3>
 &lt;p>There are several methods to write or generate SVE and SVE2 code. In this section, we will explore some of these methods.&lt;/p>
 &lt;p>To write or generate SVE and SVE2 code, you can:&lt;/p>
 &lt;ul>
@@ -831,7 +939,10 @@ are highly optimized for mathematical routines and can be linked to your applica
 &lt;li>Use SVE optimization library&lt;/li>
 &lt;/ul>
 &lt;p>Let&amp;rsquo;s take a closer look at these four options.&lt;/p>
-&lt;h4 id="421-write-sve-assembly-code">4.2.1 Write SVE assembly code&lt;/h4>
+&lt;h4 id="421-write-sve-assembly-code">
+&lt;a href="#421-write-sve-assembly-code" class="header-anchor">#&lt;/a>
+4.2.1 Write SVE assembly code
+&lt;/h4>
 &lt;p>You can write SVE instructions as inline assembly in C/C++ code, or as a complete function in assembly source code. For example:&lt;/p>
 &lt;pre>&lt;code class="language-armasm">```assembly
 .globl subtract_arrays // -- Begin function
@@ -879,7 +990,10 @@ specifies data types and register allocation, and is most relevant to assembly p
 &lt;li>&lt;code>Z8-Z15&lt;/code> and &lt;code>P4-P15&lt;/code> are callee-saved.&lt;/li>
 &lt;li>All other vector registers (&lt;code>Z16-Z31&lt;/code>) may be corrupted by the called function, and the calling function is responsible for backing up and restoring them when necessary.&lt;/li>
 &lt;/ul>
-&lt;h4 id="422-using-sve-instruction-functions-intrinsics">4.2.2 Using SVE Instruction Functions (Intrinsics)&lt;/h4>
+&lt;h4 id="422-using-sve-instruction-functions-intrinsics">
+&lt;a href="#422-using-sve-instruction-functions-intrinsics" class="header-anchor">#&lt;/a>
+4.2.2 Using SVE Instruction Functions (Intrinsics)
+&lt;/h4>
 &lt;p>SVE intrinsic functions are functions supported by the compiler that can be replaced with corresponding instructions. Programmers can directly call instruction functions in high-level languages such as C and C++. The ACLE (Arm C Language Extensions) for SVE defines which SVE intrinsic functions are available, their parameters, and their functionality. A compiler that supports ACLE can replace intrinsics with mapped SVE instructions during compilation. To use ACLE intrinsics, you must include the header file &lt;code>arm_sve.h&lt;/code>, which contains a list of vector types and intrinsic functions (for SVE) that can be used in C/C++. Each data type describes the size and data type of the elements in the vector:&lt;/p>
 &lt;ul>
 &lt;li>&lt;code>svint8_t svuint8_t&lt;/code>&lt;/li>
@@ -909,7 +1023,10 @@ uaddlb_array: // @uaddlb_array
 uaddlb z0.d, z0.s, z1.s
 ret
 &lt;/code>&lt;/pre>
-&lt;h4 id="423-automatic-vectorization">4.2.3 Automatic Vectorization&lt;/h4>
+&lt;h4 id="423-automatic-vectorization">
+&lt;a href="#423-automatic-vectorization" class="header-anchor">#&lt;/a>
+4.2.3 Automatic Vectorization
+&lt;/h4>
 &lt;p>C/C++/Fortran compilers (for example, the native &lt;a class="link" href="https://developer.arm.com/tools-and-software/server-and-hpc/compile/arm-compiler-for-linux" target="_blank" rel="noopener" >Arm Compiler for Linux
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -919,7 +1036,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 for the Arm platform and the GNU compiler) support vectorization of C, C++, and Fortran loops using SVE or SVE2 instructions. To generate SVE or SVE2 code, choose the appropriate compiler options. For example, one option to enable SVE2 optimization using armclang is &lt;code>-march=armv8-a+sve2&lt;/code>. If you want to use the SVE version of the library, combine &lt;code>-march=armv8-a+sve2&lt;/code> with &lt;code>-armpl=sve&lt;/code>.&lt;/p>
-&lt;h4 id="424-using-svesve2-to-optimize-libraries">4.2.4 Using SVE/SVE2 to Optimize Libraries&lt;/h4>
+&lt;h4 id="424-using-svesve2-to-optimize-libraries">
+&lt;a href="#424-using-svesve2-to-optimize-libraries" class="header-anchor">#&lt;/a>
+4.2.4 Using SVE/SVE2 to Optimize Libraries
+&lt;/h4>
 &lt;p>Use libraries highly optimized for SVE/SVE2, such as &lt;a class="link" href="https://developer.arm.com/Tools%20and%20Software/Arm%20Performance%20Libraries" target="_blank" rel="noopener" >Arm Performance Libraries
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -929,15 +1049,24 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 and Arm Compute Libraries. Arm Performance Libraries contain highly optimized implementations of mathematical functions optimized for BLAS, LAPACK, FFT, sparse linear algebra, and libamath. To be able to link any Arm Performance Libraries function, you must install Arm Allinea Studio and include armpl.h in your code. To build applications using Arm Compiler for Linux and Arm Performance Libraries, you must specify &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> on the command line. If you are using GNU tools, you must include the Arm Performance Libraries installation path in the linker command line with &lt;code>-L&amp;lt;armpl_install_dir&amp;gt;/lib&lt;/code> and specify the GNU option equivalent to the Arm Compiler for Linux &lt;code>-armpl=&amp;lt;arg&amp;gt;&lt;/code> option, which is &lt;code>-larmpl_lp64&lt;/code>. For more information, please refer to the Arm Performance Libraries Getting Started Guide.&lt;/p>
-&lt;h3 id="43-how-to-run-svesve2-programs">4.3 How to run SVE/SVE2 programs&lt;/h3>
+&lt;h3 id="43-how-to-run-svesve2-programs">
+&lt;a href="#43-how-to-run-svesve2-programs" class="header-anchor">#&lt;/a>
+4.3 How to run SVE/SVE2 programs
+&lt;/h3>
 &lt;p>If you do not have access to SVE hardware, you can use models or simulators to run the code. You can choose from the following models and simulators:&lt;/p>
 &lt;ul>
 &lt;li>&lt;strong>QEMU&lt;/strong>: Cross-compilation and native models, supporting modeling on Arm AArch64 platforms with SVE.&lt;/li>
 &lt;li>&lt;strong>Fast Models&lt;/strong>: Cross-platform models that support modeling on Arm AArch64 platforms with SVE running on x86-based hosts. Architecture Envelope Model (AEM) with SVE2 support is only available to major partners.&lt;/li>
 &lt;li>&lt;strong>Arm Instruction Emulator (ArmIE)&lt;/strong>: Runs directly on the Arm platform. Supports SVE and supports SVE2 from version 19.2+.&lt;/li>
 &lt;/ul>
-&lt;h2 id="5-acle-intrinsics">5. ACLE Intrinsics&lt;/h2>
-&lt;h3 id="51-acle-introduction">5.1 ACLE Introduction&lt;/h3>
+&lt;h2 id="5-acle-intrinsics">
+&lt;a href="#5-acle-intrinsics" class="header-anchor">#&lt;/a>
+5. ACLE Intrinsics
+&lt;/h2>
+&lt;h3 id="51-acle-introduction">
+&lt;a href="#51-acle-introduction" class="header-anchor">#&lt;/a>
+5.1 ACLE Introduction
+&lt;/h3>
 &lt;p>ACLE (Arm C Language Extensions) is used in C and C++ code to support Arm features through intrinsics and other characteristics.&lt;/p>
 &lt;ul>
 &lt;li>ACLE (ARM C Language Extensions) extends the C/C++ language with Arm-specific features.
@@ -961,7 +1090,10 @@ and Arm Compute Libraries. Arm Performance Libraries contain highly optimized im
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="52-how-to-use-acle">5.2 How to use ACLE&lt;/h3>
+&lt;h3 id="52-how-to-use-acle">
+&lt;a href="#52-how-to-use-acle" class="header-anchor">#&lt;/a>
+5.2 How to use ACLE
+&lt;/h3>
 &lt;ul>
 &lt;li>Include header files
 &lt;ul>
@@ -984,7 +1116,10 @@ and Arm Compute Libraries. Arm Performance Libraries contain highly optimized im
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="53-sve-acle">5.3 SVE ACLE&lt;/h3>
+&lt;h3 id="53-sve-acle">
+&lt;a href="#53-sve-acle" class="header-anchor">#&lt;/a>
+5.3 SVE ACLE
+&lt;/h3>
 &lt;ul>
 &lt;li>The first thing to do is to include the header files&lt;/li>
 &lt;/ul>
@@ -1019,7 +1154,10 @@ and Arm Compute Libraries. Arm Performance Libraries contain highly optimized im
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="54-common-sve-intrinsics">5.4 Common SVE Intrinsics&lt;/h3>
+&lt;h3 id="54-common-sve-intrinsics">
+&lt;a href="#54-common-sve-intrinsics" class="header-anchor">#&lt;/a>
+5.4 Common SVE Intrinsics
+&lt;/h3>
 &lt;ul>
 &lt;li>Predicate
 &lt;ul>
@@ -1058,7 +1196,10 @@ and Arm Compute Libraries. Arm Performance Libraries contain highly optimized im
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="55-sve-structure-intrinsics">5.5 SVE Structure Intrinsics&lt;/h3>
+&lt;h3 id="55-sve-structure-intrinsics">
+&lt;a href="#55-sve-structure-intrinsics" class="header-anchor">#&lt;/a>
+5.5 SVE Structure Intrinsics
+&lt;/h3>
 &lt;p>For corresponding structure data, SVE provides some special intrinsics, such as: &lt;code>svld3&lt;/code>, &lt;code>svget3&lt;/code>, &lt;code>svset3&lt;/code>, &lt;code>svst3&lt;/code>, etc. These intrinsics are used for processing structure data.&lt;/p>
 &lt;p>For example, for the particle structure:&lt;/p>
 &lt;pre>&lt;code class="language-c">typedef struct {
@@ -1091,7 +1232,10 @@ svst3(pg, (float32_t *)&amp;amp;ps[i], sv_ps);
 &lt;li>&lt;code>svset3(tuple, index, vec)&lt;/code>: Set one vector in a group of 3 vectors; the value of index is 0, 1, or 2.&lt;/li>
 &lt;li>&lt;code>svst3(pg, *base, vec)&lt;/code>: Store a group of 3 vectors into a structure; where base is the address of an array of structures with 3 elements.&lt;/li>
 &lt;/ul>
-&lt;h3 id="56-sve-condition-selection">5.6 SVE Condition Selection&lt;/h3>
+&lt;h3 id="56-sve-condition-selection">
+&lt;a href="#56-sve-condition-selection" class="header-anchor">#&lt;/a>
+5.6 SVE Condition Selection
+&lt;/h3>
 &lt;p>SVE provides methods such as &lt;code>svcmplt&lt;/code>, &lt;code>svcompact&lt;/code>, &lt;code>svcntp_b32&lt;/code>, etc., which can select elements to retain in the vector based on conditions.&lt;/p>
 &lt;p>For example, for non-vectorized code:&lt;/p>
 &lt;pre>&lt;code class="language-c">for (int i = 0; i &amp;lt; num; i++) {
@@ -1135,7 +1279,10 @@ alt="svst1-2024-08-13" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>svst1 schematic diagram (256-bit vector)&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h3 id="57-sve-vectorized-loop-interleaving">5.7 SVE Vectorized Loop Interleaving&lt;/h3>
+&lt;h3 id="57-sve-vectorized-loop-interleaving">
+&lt;a href="#57-sve-vectorized-loop-interleaving" class="header-anchor">#&lt;/a>
+5.7 SVE Vectorized Loop Interleaving
+&lt;/h3>
 &lt;p>The vectorized loop interleaving implemented by SVE Intrinsic can greatly reduce the number of times vectors are read compared to compiler auto vectorization.&lt;/p>
 &lt;p>For example, for non-vectorized code:&lt;/p>
 &lt;pre>&lt;code class="language-c">for (int j = offset; j &amp;lt; outerLen - offset; j++) {
@@ -1184,7 +1331,10 @@ jp1Field = jp2Field;
 &lt;li>&lt;code>svmad_x(pg, vec1, vec2, vec3)&lt;/code>: Calculates vec1 * vec2 + vec3, returns a vector.&lt;/li>
 &lt;li>This code only needs to read one vector per iteration, greatly reducing the number of vector reads.&lt;/li>
 &lt;/ul>
-&lt;h2 id="references">References&lt;/h2>
+&lt;h2 id="references">
+&lt;a href="#references" class="header-anchor">#&lt;/a>
+References
+&lt;/h2>
 &lt;ol>
 &lt;li>&lt;a class="link" href="https://developer.arm.com/-/media/Arm%20Developer%20Community/PDF/102340_0001_02_en_introduction-to-sve2.pdf?revision=b208e56b-6569-4ae2-b6f3-cd7d5d1ecac3" target="_blank" rel="noopener" >Introduction to SVE2
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"

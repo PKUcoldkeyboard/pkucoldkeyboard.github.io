@@ -1,4 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Reprint on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/repost/</link><description>Recent content in Reprint on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA: Memory Window</title><link>https://cuterwrite.top/en/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA: Memory Window" />&lt;h1 id="memory-window-of-rdma">Memory Window of RDMA&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Reprint on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/tags/repost/</link><description>Recent content in Reprint on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/tags/repost/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA: Memory Window</title><link>https://cuterwrite.top/en/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA: Memory Window" />&lt;h1 id="memory-window-of-rdma">
+&lt;a href="#memory-window-of-rdma" class="header-anchor">#&lt;/a>
+Memory Window of RDMA
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source when reprinting.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easier reading.&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/353590347">&lt;cite>Zhihu Column: 14. RDMA Memory Window&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -9,16 +12,25 @@
 &lt;p>In this article, we will explain the concept of Memory Window, which is a more flexible memory management unit based on Memory Region. Besides the concept of MW, this article will also provide a more detailed introduction to some memory-related concepts in the RDMA field, such as L_Key/R_Key, etc. It is recommended to read this article in conjunction with &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-mr/" >【RDMA Memory Region】
 &lt;/a>
 for better understanding, and it is suggested that readers review it first.&lt;/p>
-&lt;h2 id="what-is-memory-window">What is Memory Window&lt;/h2>
+&lt;h2 id="what-is-memory-window">
+&lt;a href="#what-is-memory-window" class="header-anchor">#&lt;/a>
+What is Memory Window
+&lt;/h2>
 &lt;p>Memory Window, abbreviated as MW, can be translated into Chinese as 内存窗口. It is an RDMA resource requested by the user to allow a remote node to access the local memory area. Each MW is bound (referred to as bind) to an already registered MR, but compared to MR, it can provide more flexible permission control. MW can be roughly understood as a subset of MR, and many MWs can be divided from one MR, each MW can set its own permissions. The relationship between MW and MR is shown in the following diagram:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_1.webp"
 alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
 &lt;h4>The relationship between MR and MW&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h2 id="memory-access-permission-control">Memory access permission control&lt;/h2>
+&lt;h2 id="memory-access-permission-control">
+&lt;a href="#memory-access-permission-control" class="header-anchor">#&lt;/a>
+Memory access permission control
+&lt;/h2>
 &lt;p>To explain why MW is designed, let&amp;rsquo;s first discuss the access control involved in both MR and MW.&lt;/p>
-&lt;h3 id="mrmw-permissions-configuration">MR/MW permissions configuration&lt;/h3>
+&lt;h3 id="mrmw-permissions-configuration">
+&lt;a href="#mrmw-permissions-configuration" class="header-anchor">#&lt;/a>
+MR/MW permissions configuration
+&lt;/h3>
 &lt;p>The permissions here refer to the local/remote node, for the read/write permissions of the local memory, they form four combinations:&lt;/p>
 &lt;table>
 &lt;thead>
@@ -43,7 +55,10 @@ alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
 &lt;/table>
 &lt;p>Apart from these four types of permissions, there are also Atomic permissions, etc., which are not within the scope of this article.&lt;/p>
 &lt;p>Among the four types of permissions in the table, the lowest is Local Read, which is a permission that users must grant to MR/MW because if a piece of memory is inaccessible to local users, it loses its meaning. Additionally, there is a restriction: if an MR needs to be configured with Remote Write or the not-yet-introduced Remote Atomic permissions, it must also be configured with Local Write permissions. Under this constraint, each MR or MW can configure permissions as needed. For example, if an MR we registered needs to allow remote nodes to write data but not read, we enable the Remote Write permission and disable the Remote Read permission. In this way, when the HCA (network card) receives a WRITE request initiated by the peer for a certain address within the range of this MR, it can allow it; however, when the HCA receives a READ operation from the peer on this MR, it will reject the request and return an error message to the peer.&lt;/p>
-&lt;h3 id="memory-key">Memory Key&lt;/h3>
+&lt;h3 id="memory-key">
+&lt;a href="#memory-key" class="header-anchor">#&lt;/a>
+Memory Key
+&lt;/h3>
 &lt;p>The above access permission configuration cannot prevent malicious users from accessing local or remote memory. For example, if a node grants Remote Write permission to a memory region, wouldn&amp;rsquo;t any remote node (process) be able to write to this region as long as it provides the correct address information? Therefore, the IB specification designed the Memory Key, which can be simply understood as a key mechanism for accessing MR. Only with the correct key can one open the door to MR/MW.&lt;/p>
 &lt;p>Key is a string of numbers, consisting of two parts: a 24-bit Index and an 8-bit Key:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_2.webp"
@@ -53,7 +68,10 @@ alt="2024-06-28_12_2" width="60%" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>Among them, Index is used by HCA for quick indexing to local virtual-to-physical address translation tables and other MR-related information, while Key is used to verify the legality of the entire field to prevent unauthorized users from arbitrarily passing the Index.&lt;/p>
 &lt;p>Memory Key is divided into two types according to their usage, Local Key and Remote Key:&lt;/p>
-&lt;h4 id="l_key">L_Key&lt;/h4>
+&lt;h4 id="l_key">
+&lt;a href="#l_key" class="header-anchor">#&lt;/a>
+L_Key
+&lt;/h4>
 &lt;p>Local Key, associated with an MR, is used for HCA to access local memory. When a process on the local side attempts to use memory of an already registered MR, the HCA will verify the L_Key it passes. It uses the index in the L_Key to look up the address translation table, translates the virtual address into a physical address, and then accesses the memory.&lt;/p>
 &lt;p>In the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-shared-receive-queue/" >【RDMA Shared Receive Queue】
 &lt;/a>
@@ -63,7 +81,10 @@ alt="2024-06-28_12_3" width="50%" loading="lazy">&lt;figcaption>
 &lt;h4>The function of L_Key&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h4 id="r_key">R_Key&lt;/h4>
+&lt;h4 id="r_key">
+&lt;a href="#r_key" class="header-anchor">#&lt;/a>
+R_Key
+&lt;/h4>
 &lt;p>Remote Key, associated with an MR or MW, is used for a remote node to access local memory. When a remote node attempts to access local memory, on one hand, the local HCA will verify whether the R_Key is valid, and on the other hand, it will use the index in the R_Key to check the address translation table, translating the virtual address into a physical address and then accessing the memory.&lt;/p>
 &lt;p>For any RDMA operation (i.e., Write/Read/Atomic), the user must carry the remote memory region&amp;rsquo;s R_Key in the WR.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_4.webp"
@@ -73,7 +94,10 @@ alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>The IB specification ensures that MR can be accessed correctly and safely according to the user&amp;rsquo;s expectations through the two mechanisms mentioned above. We use a metaphor to summarize the content related to MR/MW permission control:&lt;/p>
 &lt;p>A equipped their room (MR) with two keys (Memory Key), one for personal use (L_Key), and the other key (R_Key) was sent to B (can be via any communication method). B can open the door when A is not home (the local CPU does not perceive the remote node&amp;rsquo;s RDMA operations on local memory) using the key (R_Key). After opening the door, B might only be able to view the room&amp;rsquo;s arrangement through glass (A only granted remote read permission for this MR), or enter the room and find it completely dark, unable to see anything, but can place items in the room (A only granted remote write permission for this MR), and of course, it is also possible that there&amp;rsquo;s no glass and the lights are on (remote read and write permissions were granted simultaneously).&lt;/p>
-&lt;h2 id="why-have-mw">Why have MW&lt;/h2>
+&lt;h2 id="why-have-mw">
+&lt;a href="#why-have-mw" class="header-anchor">#&lt;/a>
+Why have MW
+&lt;/h2>
 &lt;p>In short, the purpose of designing MW is to control remote memory access permissions more flexibly.&lt;/p>
 &lt;p>In the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-mr/" >【RDMA 之 Memory Region】
 &lt;/a>
@@ -81,27 +105,51 @@ alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
 &lt;p>Because MR is managed by the kernel, if a user wants to modify the information of an existing MR, for example, if I want to revoke the remote write permission of a certain MR, leaving only the remote read permission; or if I want to invalidate an R_Key that was previously authorized to a remote node, the user needs to use the Reregister MR interface to make modifications. This interface is equivalent to first Deregister MR and then Register MR. &lt;strong>The above process requires transitioning to kernel mode to complete, and this process is time-consuming.&lt;/strong>&lt;/p>
 &lt;p>Unlike MR, which requires permission modification through the control path, &lt;strong>MW can be dynamically bound to an already registered MR through the data path (i.e., directly issuing WR to the hardware from user space) after creation, and simultaneously set or change its access permissions. This process is much faster than re-registering MR&lt;/strong>.&lt;/p>
 &lt;p>In order for a piece of memory to be capable of RDMA WRITE/READ operations by a remote node, we have two methods: registering an MR and registering an MW and then binding it to an already registered MR. Both will generate an R_Key to provide to the remote node. The first method has simpler preparation steps but is less flexible, and once registered, modifications are relatively troublesome. The second method involves additional steps of registering an MW and binding the MW to an MR compared to the first method, but it allows for convenient and quick control over remote access permissions.&lt;/p>
-&lt;h2 id="the-relationship-between-mw-and-mr-permissions">The relationship between MW and MR permissions&lt;/h2>
+&lt;h2 id="the-relationship-between-mw-and-mr-permissions">
+&lt;a href="#the-relationship-between-mw-and-mr-permissions" class="header-anchor">#&lt;/a>
+The relationship between MW and MR permissions
+&lt;/h2>
 &lt;p>Perhaps some readers might think, when configuring their permissions during MR application, and when MW is bound to MR, their permissions are also configured, what is the relationship between these two permissions? The IB specification has a dedicated section on this in 10.6.7.2.2:&lt;/p>
 &lt;blockquote>
 &lt;p>When binding a Memory Window, a Consumer can request any combination of remote access rights for the Window. However, if the associated Region does not have local write access enabled and the Consumer requests remote write or remote atomic access for the Window, the Channel Interface must return an error either at bind time or access time.&lt;/p>
 &lt;/blockquote>
 &lt;p>In summary, &lt;strong>if you want to configure remote write or remote atomic operation (Atomic) permissions for MW, then the MR it is bound to must have local write permissions. In other cases, the permissions of the two do not interfere with each other&lt;/strong>: remote users using MW must follow the permission configuration of MW; remote users using MR must follow the permission configuration of MR.&lt;/p>
-&lt;h2 id="user-interface">User Interface&lt;/h2>
+&lt;h2 id="user-interface">
+&lt;a href="#user-interface" class="header-anchor">#&lt;/a>
+User Interface
+&lt;/h2>
 &lt;p>As usual, when it comes to user interfaces, we classify them according to control paths and data paths:&lt;/p>
-&lt;h3 id="control-path">Control path&lt;/h3>
+&lt;h3 id="control-path">
+&lt;a href="#control-path" class="header-anchor">#&lt;/a>
+Control path
+&lt;/h3>
 &lt;p>MW supports addition, deletion, and search, but cannot be directly modified:&lt;/p>
-&lt;h4 id="create---allocate-mw">Create - Allocate MW&lt;/h4>
+&lt;h4 id="create---allocate-mw">
+&lt;a href="#create---allocate-mw" class="header-anchor">#&lt;/a>
+Create - Allocate MW
+&lt;/h4>
 &lt;p>Apply for MW, mainly to create the software structure related to MW and prepare the hardware. The user needs to specify the type of MW introduced later in the text. This interface will generate a handle for the Memory Window, which the user can use to refer to this MW in the future.&lt;/p>
 &lt;p>Note that at this time MW is not bound to MR and is in a state that cannot be accessed remotely.&lt;/p>
-&lt;h4 id="delete---deallocate-mw">Delete - Deallocate MW&lt;/h4>
+&lt;h4 id="delete---deallocate-mw">
+&lt;a href="#delete---deallocate-mw" class="header-anchor">#&lt;/a>
+Delete - Deallocate MW
+&lt;/h4>
 &lt;p>Unregister MW. It&amp;rsquo;s easy to understand, just destroy the related resources.&lt;/p>
-&lt;h4 id="query---query-mw">Query - Query MW&lt;/h4>
+&lt;h4 id="query---query-mw">
+&lt;a href="#query---query-mw" class="header-anchor">#&lt;/a>
+Query - Query MW
+&lt;/h4>
 &lt;p>Query MW information, including R_Key and its status, MW type, and PD, etc.&lt;/p>
 &lt;p>It needs to be emphasized again that although this Verbs is described in the IB specification, the related API has not been implemented in the RDMA software stack. There are quite a few Verbs interfaces in similar situations. The RDMA software stack is based on practicality, and interfaces without user demand are generally not implemented.&lt;/p>
-&lt;h3 id="data-path">Data path&lt;/h3>
+&lt;h3 id="data-path">
+&lt;a href="#data-path" class="header-anchor">#&lt;/a>
+Data path
+&lt;/h3>
 &lt;p>MW has a unique set of interfaces in the data path, divided into Bind and Invalidate categories:&lt;/p>
-&lt;h4 id="bind">Bind&lt;/h4>
+&lt;h4 id="bind">
+&lt;a href="#bind" class="header-anchor">#&lt;/a>
+Bind
+&lt;/h4>
 &lt;p>Bind(ing) means &amp;ldquo;binding,&amp;rdquo; which refers to associating an MW with a specified range of an already registered MR and configuring certain read and write permissions. The result of binding will generate an R_key, which the user can pass to a remote node for remote access. Note that an MW can be bound multiple times, and multiple MWs can be bound to a single MR. If an MR still has bound MWs, then this MR cannot be deregistered.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_5.webp"
 alt="2024-06-28_12_5" width="90%" loading="lazy">&lt;figcaption>
@@ -125,7 +173,10 @@ alt="2024-06-28_12_6" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>The relationship between two types of Bind operations&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h4 id="invalidation">Invalidation&lt;/h4>
+&lt;h4 id="invalidation">
+&lt;a href="#invalidation" class="header-anchor">#&lt;/a>
+Invalidation
+&lt;/h4>
 &lt;p>Invalidate means invalidation, referring to the operation where a user sends a WR with an Invalidate opcode to the hardware to invalidate an R_Key.&lt;/p>
 &lt;p>&lt;strong>It is important to emphasize that the object of the Invalidate operation is the R_Key, not the MW itself. The effect after Invalidate is that the remote user can no longer use this R_Key to access the corresponding MW, but the MW resource still exists, and new R_Keys can still be generated for remote use in the future.&lt;/strong>&lt;/p>
 &lt;p>The Invalidate operation can only be used for Type 2 MW introduced below.&lt;/p>
@@ -149,22 +200,37 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;h4>Remote Invalidate operation&amp;#39;s software and hardware interaction&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h2 id="type-of-mw">Type of MW&lt;/h2>
+&lt;h2 id="type-of-mw">
+&lt;a href="#type-of-mw" class="header-anchor">#&lt;/a>
+Type of MW
+&lt;/h2>
 &lt;p>According to different implementations and application scenarios, the IB specification classifies MW:&lt;/p>
-&lt;h3 id="type-1">Type 1&lt;/h3>
+&lt;h3 id="type-1">
+&lt;a href="#type-1" class="header-anchor">#&lt;/a>
+Type 1
+&lt;/h3>
 &lt;p>Type 1 MW is associated with a PD and a QP, and it is not bound to a QP, so it will not affect the destruction of a QP under the same PD.&lt;/p>
 &lt;p>The key field of the R_Key for Type 1 MW is controlled by the driver and hardware. Here, &amp;ldquo;controlled&amp;rdquo; means that the key is allocated by the driver and hardware, not by the upper-level user. This is also the reason mentioned earlier that Type 1 MW cannot perform the Invalidate operation. If a user of Type 1 MW wants to invalidate an R_Key, they can bind this MW again through the Bind MW interface. The hardware or driver will automatically allocate a new key field for the R_Key, and the original R_Key will become invalid.&lt;/p>
 &lt;p>In addition, if a user temporarily wants to unbind an MW from any MR but still wants to retain the related resources instead of destroying this MW, they can achieve this by calling the Bind MW interface and setting the MW length to 0.&lt;/p>
 &lt;p>The IB specification allows multiple Type 1 MWs to be bound to the same MR, and their ranges can overlap.&lt;/p>
-&lt;h3 id="type-2">Type 2&lt;/h3>
+&lt;h3 id="type-2">
+&lt;a href="#type-2" class="header-anchor">#&lt;/a>
+Type 2
+&lt;/h3>
 &lt;p>Type 2 MW grants users greater freedom, with the key field segment of the R_Key controlled by the user, allowing them to allocate it as they wish. As mentioned earlier, users perform binding through the Post Send Bind MW WR operation, and this process does not return an R_Key. Users must remember the index from the Allocate MW operation and combine it with their chosen 8-bit key to form the R_Key and send it to the peer.&lt;/p>
 &lt;p>The user can invalidate an R_Key through the Invalidate operation introduced earlier. If you want to assign a new R_Key to the MW, you must first invalidate the previous R_Key through the Invalidate operation.&lt;/p>
 &lt;p>Unlike Type 1, Type 2&amp;rsquo;s MW does not support 0-length binding.&lt;/p>
 &lt;p>The IB specification also allows multiple Type 2s to be bound to the same MR, and the ranges can overlap.&lt;/p>
 &lt;p>In addition, based on different binding relationships, Type 2 can be further divided into two implementation methods, with their differences lying solely in the binding relationship with QP.&lt;/p>
-&lt;h4 id="type-2a">Type 2A&lt;/h4>
+&lt;h4 id="type-2a">
+&lt;a href="#type-2a" class="header-anchor">#&lt;/a>
+Type 2A
+&lt;/h4>
 &lt;p>Associated with a QP through QPN, meaning that when remote access occurs within this MW range, in addition to the R_Key, the correct QPN must also be specified. If a QP has a bound Type 2A MW, then this QP cannot be destroyed.&lt;/p>
-&lt;h4 id="type-2b">Type 2B&lt;/h4>
+&lt;h4 id="type-2b">
+&lt;a href="#type-2b" class="header-anchor">#&lt;/a>
+Type 2B
+&lt;/h4>
 &lt;p>By associating a QP with QPN and PD, there is an additional PD verification compared to Type 2A. When the remote end accesses the memory of the MW through RDMA operations, besides the QPN needing to be correct, the PD specified for the local QP must also be the same as the PD bound to this MW. Additionally, unlike Type 2A, a QP can be destroyed even if there is still a Type 2B MW binding relationship.&lt;/p>
 &lt;p>The introduction in the original IB specification is relatively scattered, so let&amp;rsquo;s briefly summarize the similarities and differences of several MWs:&lt;/p>
 &lt;table>
@@ -218,7 +284,10 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;p>In addition, the IB specification also provides the following descriptions for the above types: HCA must implement Type 1 MW, and can optionally choose to implement either Type 2A or 2B. Type 1 and Type 2 MW can be simultaneously associated with the same MR. Since I have not encountered many applications using MW, I cannot clearly explain in which scenarios each type of MW should be used. If readers have insights on this topic, they are welcome to share and discuss.&lt;/p>
 &lt;p>Alright, MW will be discussed up to here, and this concludes the introduction of common resources in RDMA technology.&lt;/p>
 &lt;p>Given that devices generally supporting RDMA are quite expensive, in the next article I will introduce how to conduct some programming experiments through software-simulated devices—namely Soft-RoCE.&lt;/p>
-&lt;h2 id="ib-specification-related-chapters">IB specification related chapters&lt;/h2>
+&lt;h2 id="ib-specification-related-chapters">
+&lt;a href="#ib-specification-related-chapters" class="header-anchor">#&lt;/a>
+IB specification related chapters
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>3.5.3 Memory Keys Introduction&lt;/p>
@@ -233,23 +302,38 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;p>11.2.10.9~12 Related Verbs Introduction&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="reference-document">Reference document&lt;/h2>
+&lt;h2 id="reference-document">
+&lt;a href="#reference-document" class="header-anchor">#&lt;/a>
+Reference document
+&lt;/h2>
 &lt;p>[1] IB Specification Vol 1-Release-1.4&lt;/p>
-&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA: Shared Receive Queue</title><link>https://cuterwrite.top/en/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA: Shared Receive Queue" />&lt;h1 id="shared-receive-queue-in-rdma">Shared Receive Queue in RDMA&lt;/h1>
+&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA: Shared Receive Queue</title><link>https://cuterwrite.top/en/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA: Shared Receive Queue" />&lt;h1 id="shared-receive-queue-in-rdma">
+&lt;a href="#shared-receive-queue-in-rdma" class="header-anchor">#&lt;/a>
+Shared Receive Queue in RDMA
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source when reprinting.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading.&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/279904125">&lt;cite>Zhihu Column: 11. RDMA Shared Receive Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>We briefly introduced the concept of SRQ in &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-element/" >【3. Basic Elements of RDMA】
 &lt;/a>
 . This article will take you through more details about SRQ.&lt;/p>
-&lt;h2 id="basic-concepts">Basic Concepts&lt;/h2>
-&lt;h3 id="what-is-srq">What is SRQ?&lt;/h3>
+&lt;h2 id="basic-concepts">
+&lt;a href="#basic-concepts" class="header-anchor">#&lt;/a>
+Basic Concepts
+&lt;/h2>
+&lt;h3 id="what-is-srq">
+&lt;a href="#what-is-srq" class="header-anchor">#&lt;/a>
+What is SRQ?
+&lt;/h3>
 &lt;p>The full name is Shared Receive Queue, literally translated as a shared receive queue. We know that the basic unit of RDMA communication is QP, and each QP consists of a send queue SQ and a receive queue RQ.&lt;/p>
 &lt;p>SRQ is designed by the IB protocol to save resources for the receiver. We can share an RQ with all associated QPs, and this shared RQ is called an SRQ. When a QP associated with it wants to post a receive WQE, it is filled into this SRQ. Then, whenever the hardware receives data, it stores the data in the specified location based on the content of the next WQE in the SRQ.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_1.webp"
 alt="2024-06-28_11_1" width="80%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="why-use-srq">Why use SRQ&lt;/h3>
+&lt;h3 id="why-use-srq">
+&lt;a href="#why-use-srq" class="header-anchor">#&lt;/a>
+Why use SRQ
+&lt;/h3>
 &lt;p>Under normal circumstances, the number of tasks we issue to SQ is far greater than the number of tasks issued to RQ. Why is that? Please first recall which types of operations use SQ and which use RQ.&lt;/p>
 &lt;p>SEND/WRITE/READ all require the communication initiator to issue a WR to the SQ, and only the RECV operation paired with SEND requires the communication responder to issue a WR to the RQ (the Write operation with immediate value will also consume Receive WR, which we haven&amp;rsquo;t discussed yet). As we know, the SEND-RECV pair of operations is usually used for transmitting control information, while WRITE and READ are the main operations for performing large amounts of remote memory read and write operations, so naturally, the usage rate of SQ is much higher than that of RQ.&lt;/p>
 &lt;p>Each queue is an entity, occupying memory and on-chip storage space of the network card. In commercial scenarios, the number of QPs can reach hundreds of thousands or even higher, which places high demands on memory capacity. Memory is bought with hard-earned money, and SRQ is a mechanism designed by the IB protocol to save user memory.&lt;/p>
@@ -275,29 +359,50 @@ alt="2024-06-28_11_2" width="80%" loading="lazy">
 &lt;/figure>
 &lt;p>In the above diagram, there are two RQ WQEs in the SRQ. Let&amp;rsquo;s take a look at the contents of an RQ WQE, which are composed of several SGEs (Scatter/Gather Elements). Each SGE consists of a memory address, length, and key. With a starting address and length, an SGE can point to a contiguous memory region, and multiple SGEs can represent multiple discrete contiguous memory blocks. We refer to multiple SGEs as an SGL (Scatter/Gather List). SGEs are ubiquitous in the IB software protocol stack (and indeed very common throughout Linux), allowing very large memory regions to be represented with minimal space. IB users use SGEs to specify send and receive areas.&lt;/p>
 &lt;p>You can simply estimate the size of the memory region each sge can point to. The length is a 32-bit unsigned integer, which can represent 4GB of space. Assuming an RQ WQE can hold a maximum of 256 sge, then an RQ WQE would be a total of 1TB. Of course, in reality, it cannot be that large, this is just to intuitively inform the reader of the potential memory space an RQ WQE might occupy.&lt;/p>
-&lt;h3 id="srqc">SRQC&lt;/h3>
+&lt;h3 id="srqc">
+&lt;a href="#srqc" class="header-anchor">#&lt;/a>
+SRQC
+&lt;/h3>
 &lt;p>That is SRQ Context. Like QPC, SRQC is used to inform the hardware about attributes related to SRQ, including depth, WQE size, and other information, which will not be elaborated on in this article.&lt;/p>
-&lt;h3 id="srqn">SRQN&lt;/h3>
+&lt;h3 id="srqn">
+&lt;a href="#srqn" class="header-anchor">#&lt;/a>
+SRQN
+&lt;/h3>
 &lt;p>That is SRQ Number. Like QP, there may be multiple SRQs in each node. To identify and distinguish these SRQs, each SRQ has a serial number, called SRQN.&lt;/p>
-&lt;h3 id="pd-of-srq">PD of SRQ&lt;/h3>
+&lt;h3 id="pd-of-srq">
+&lt;a href="#pd-of-srq" class="header-anchor">#&lt;/a>
+PD of SRQ
+&lt;/h3>
 &lt;p>In &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-protection-domain/" >【7. RDMA Protection Domain】
 &lt;/a>
 , we introduced the concept of Protection Domain, which is used to isolate different RDMA resources. Each SRQ must specify its own PD, which can be the same as the PD of its associated QP, or it can be different; SRQs can also use the same PD.&lt;/p>
 &lt;p>If a packet is received while using SRQ, it will only be properly received if the MR and SRQ being accessed are under the same PD; otherwise, an immediate error will occur.&lt;/p>
-&lt;h2 id="asynchronous-event">Asynchronous event&lt;/h2>
+&lt;h2 id="asynchronous-event">
+&lt;a href="#asynchronous-event" class="header-anchor">#&lt;/a>
+Asynchronous event
+&lt;/h2>
 &lt;p>In the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-completion-queue/" >【10. RDMA Completion Queue】
 &lt;/a>
 , we introduced that the IB protocol classifies error types into immediate errors, completion errors, and asynchronous errors based on the method of error reporting. Among them, asynchronous errors are similar to interrupts/events, so we sometimes refer to them as asynchronous events. Each HCA registers an event handling function specifically for handling asynchronous events. Upon receiving an asynchronous event, the driver performs the necessary processing and further reports it to the user.&lt;/p>
 &lt;p>There is a special asynchronous event regarding SRQ, used to promptly notify upper-level users of the SRQ status, namely the SRQ Limit Reached event.&lt;/p>
-&lt;h3 id="srq-limit">SRQ Limit&lt;/h3>
+&lt;h3 id="srq-limit">
+&lt;a href="#srq-limit" class="header-anchor">#&lt;/a>
+SRQ Limit
+&lt;/h3>
 &lt;p>SRQ can set a watermark/threshold, when the number of remaining WQEs in the queue is less than the watermark, this SRQ will report an asynchronous event. It reminds the user &amp;ldquo;The WQEs in the queue are about to run out, please issue more WQEs to prevent having no place to receive new data.&amp;rdquo; This watermark/threshold is called the SRQ Limit, and the reported event is called SRQ Limit Reached.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_3.webp"
 alt="2024-06-28_11_3" width="30%" loading="lazy">
 &lt;/figure>
 &lt;p>Because the SRQ is shared by multiple QPs, if the depth is relatively small, it is very likely that the WQE inside will suddenly run out. Therefore, the protocol is designed with this mechanism to ensure that users can promptly intervene in situations where the WQE is insufficient.&lt;/p>
 &lt;p>After reporting an asynchronous event, the value of SRQ Limit will be reset to 0 by the hardware (presumably to prevent continuously reporting asynchronous events to the upper layer). Of course, users can choose not to use this mechanism by simply setting the value of SRQ Limit to 0.&lt;/p>
-&lt;h2 id="user-interface">User interface&lt;/h2>
-&lt;h3 id="control-surface">Control surface&lt;/h3>
+&lt;h2 id="user-interface">
+&lt;a href="#user-interface" class="header-anchor">#&lt;/a>
+User interface
+&lt;/h2>
+&lt;h3 id="control-surface">
+&lt;a href="#control-surface" class="header-anchor">#&lt;/a>
+Control surface
+&lt;/h3>
 &lt;p>Still the old four types—&amp;ldquo;Add, Delete, Modify, Query&amp;rdquo;:&lt;/p>
 &lt;ul>
 &lt;li>Create SRQ&lt;/li>
@@ -315,21 +420,39 @@ alt="2024-06-28_11_3" width="30%" loading="lazy">
 &lt;li>Query SRQ&lt;/li>
 &lt;/ul>
 &lt;p>It is usually used to query the configuration of the waterline.&lt;/p>
-&lt;h3 id="data-surface">Data surface&lt;/h3>
-&lt;h3 id="post-srq-receive">Post SRQ Receive&lt;/h3>
+&lt;h3 id="data-surface">
+&lt;a href="#data-surface" class="header-anchor">#&lt;/a>
+Data surface
+&lt;/h3>
+&lt;h3 id="post-srq-receive">
+&lt;a href="#post-srq-receive" class="header-anchor">#&lt;/a>
+Post SRQ Receive
+&lt;/h3>
 &lt;p>Just like Post Receive, it issues a receive WQE to the SRQ, which contains information about the memory block used as the receive buffer. It is important to note that the subject is SRQ and has nothing to do with QP. Currently, the user is not concerned with which QP this SRQ is associated with.&lt;/p>
-&lt;h2 id="the-difference-between-srq-and-rq">The difference between SRQ and RQ&lt;/h2>
+&lt;h2 id="the-difference-between-srq-and-rq">
+&lt;a href="#the-difference-between-srq-and-rq" class="header-anchor">#&lt;/a>
+The difference between SRQ and RQ
+&lt;/h2>
 &lt;p>In terms of functionality, both SRQ and RQ are used to store received task requests, but due to the shared nature of SRQ, there are some differences between it and RQ.&lt;/p>
-&lt;h3 id="state-machine">State machine&lt;/h3>
+&lt;h3 id="state-machine">
+&lt;a href="#state-machine" class="header-anchor">#&lt;/a>
+State machine
+&lt;/h3>
 &lt;p>We introduced in &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-queue-pair/" >【9. RDMA Queue Pair】
 &lt;/a>
 that QP has a complex state machine, and the sending and receiving capabilities of QP vary in different states. However, SRQ only has two states: non-error and error.&lt;/p>
 &lt;p>Regardless of the state, users can issue WQEs to the SRQ. However, in an error state, the associated QP cannot receive data from this SRQ. Additionally, in an error state, users cannot query or modify the attributes of the SRQ.&lt;/p>
 &lt;p>When a QP is in an error state, it can be returned to the RESET state through Modify QP, but for SRQ, it can only exit the error state by destroying it.&lt;/p>
-&lt;h3 id="receiving-process">Receiving process&lt;/h3>
+&lt;h3 id="receiving-process">
+&lt;a href="#receiving-process" class="header-anchor">#&lt;/a>
+Receiving process
+&lt;/h3>
 &lt;p>For a QP, RQ and SRQ cannot be used simultaneously, one must be chosen. If a WQE is issued to the RQ of a QP that is already associated with SRQ, an immediate error will be returned.&lt;/p>
 &lt;p>Let&amp;rsquo;s compare the reception processes of SRQ and RQ. The content of this section is a key point of this article, and I believe that after reading it, readers will have a more complete understanding of the SRQ mechanism.&lt;/p>
-&lt;h3 id="rqs-receiving-process">RQ&amp;rsquo;s receiving process&lt;/h3>
+&lt;h3 id="rqs-receiving-process">
+&lt;a href="#rqs-receiving-process" class="header-anchor">#&lt;/a>
+RQ&amp;rsquo;s receiving process
+&lt;/h3>
 &lt;p>First, let&amp;rsquo;s revisit the receiving process of a regular RQ (for the complete process on the sender&amp;rsquo;s side, please read &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-op/" >【4. RDMA Operation Types】
 &lt;/a>
 ):&lt;/p>
@@ -368,7 +491,10 @@ that QP has a complex state machine, and the sending and receiving capabilities 
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_4.webp"
 alt="2024-06-28_11_4" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="srqs-reception-process">SRQ&amp;rsquo;s reception process&lt;/h3>
+&lt;h3 id="srqs-reception-process">
+&lt;a href="#srqs-reception-process" class="header-anchor">#&lt;/a>
+SRQ&amp;rsquo;s reception process
+&lt;/h3>
 &lt;p>And the SRQ receiving process has some differences:&lt;/p>
 &lt;ol start="0">
 &lt;li>
@@ -416,10 +542,16 @@ alt="2024-06-28_11_4" width="90%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_5.webp"
 alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h2 id="summary">Summary&lt;/h2>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
 &lt;p>This text first introduces the basic concept of SRQ, followed by its design purpose, related mechanisms, and user interface. Finally, it compares the SRQ receiving process with RQ. In actual business, the usage rate of SRQ is quite high, and it is hoped that readers can gain a deep understanding.&lt;/p>
 &lt;p>Let&amp;rsquo;s stop here, thank you for reading. In the next article, I will introduce the Memory Window.&lt;/p>
-&lt;h2 id="relevant-sections-of-the-agreement">Relevant sections of the agreement&lt;/h2>
+&lt;h2 id="relevant-sections-of-the-agreement">
+&lt;a href="#relevant-sections-of-the-agreement" class="header-anchor">#&lt;/a>
+Relevant sections of the agreement
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>10.2.9 The design concept of SRQ and related operations&lt;/p>
@@ -437,7 +569,10 @@ alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;p>11.5.2.4 Asynchronous Events&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="other-references">Other references&lt;/h2>
+&lt;h2 id="other-references">
+&lt;a href="#other-references" class="header-anchor">#&lt;/a>
+Other references
+&lt;/h2>
 &lt;div class="footnotes" role="doc-endnotes">
 &lt;hr>
 &lt;ol>
@@ -445,14 +580,20 @@ alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;p>Linux Kernel Networking - Implementation and Theory. Chapter 13. Shared Receive Queue&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
-&lt;/div></description></item><item><title>RDMA: Completion Queue</title><link>https://cuterwrite.top/en/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA: Completion Queue" />&lt;h1 id="rdmas-completion-queue">RDMA&amp;rsquo;s Completion Queue&lt;/h1>
+&lt;/div></description></item><item><title>RDMA: Completion Queue</title><link>https://cuterwrite.top/en/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA: Completion Queue" />&lt;h1 id="rdmas-completion-queue">
+&lt;a href="#rdmas-completion-queue" class="header-anchor">#&lt;/a>
+RDMA&amp;rsquo;s Completion Queue
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reproduction, please indicate the source.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/259650980">&lt;cite>Zhihu Column: 10. RDMA Completion Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>We have briefly introduced CQ in previous articles, and this article will delve deeper into some of its details. Before reading this article, readers can first review this article: &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-element/" >【“3. RDMA Basic Elements”】
 &lt;/a>
 .&lt;/p>
-&lt;h2 id="basic-concepts">Basic Concepts&lt;/h2>
+&lt;h2 id="basic-concepts">
+&lt;a href="#basic-concepts" class="header-anchor">#&lt;/a>
+Basic Concepts
+&lt;/h2>
 &lt;p>Let&amp;rsquo;s first review the function of CQ. CQ stands for Completion Queue, and its function is opposite to that of WQ (SQ and RQ). The hardware uses CQE/WC in the CQ to inform the software about the completion status of a certain WQE/WR. A reminder to readers: for upper-layer users, WC is generally used, while for drivers, it is generally referred to as CQE. This article does not distinguish between the two.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_1.webp"
 alt="2024-06-27_10_1" width="80%" loading="lazy">
@@ -474,7 +615,10 @@ alt="2024-06-27_10_1" width="80%" loading="lazy">
 &lt;/ul>
 &lt;p>Before the CQE is generated, it is possible that the hardware has not started writing data, it is possible that only half of the data has been written, or it is possible that a data verification error has occurred. Therefore, before the upper-layer software receives the CQE, the contents of the memory area used to store the received data are unreliable.&lt;/p>
 &lt;p>In summary, the user must obtain the CQE and confirm its content before considering the message sending and receiving task complete.&lt;/p>
-&lt;h3 id="when-was-it-generated">When was it generated?&lt;/h3>
+&lt;h3 id="when-was-it-generated">
+&lt;a href="#when-was-it-generated" class="header-anchor">#&lt;/a>
+When was it generated?
+&lt;/h3>
 &lt;p>We will explain separately according to the service type (this article only discusses RC and UD) and the operation type, because the timing and meaning of generating CQE are different in different situations. Readers are advised to review the 4th article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-op/" >&amp;ldquo;4. Basic RDMA Operations&amp;rdquo;
 &lt;/a>
 and the 5th article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-service-types/" >&amp;ldquo;5. Basic RDMA Service Types&amp;rdquo;
@@ -516,7 +660,10 @@ alt="2024-06-27_10_4" width="50%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_5.webp"
 alt="2024-06-27_10_5" width="50%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="the-correspondence-between-wq-and-cq">The correspondence between WQ and CQ&lt;/h3>
+&lt;h3 id="the-correspondence-between-wq-and-cq">
+&lt;a href="#the-correspondence-between-wq-and-cq" class="header-anchor">#&lt;/a>
+The correspondence between WQ and CQ
+&lt;/h3>
 &lt;p>&lt;strong>Each WQ must be associated with a CQ, and each CQ can be associated with multiple SQs and RQs.&lt;/strong>&lt;/p>
 &lt;p>The so-called &amp;ldquo;association&amp;rdquo; here refers to the fact that all CQEs corresponding to a WQ&amp;rsquo;s WQEs will be placed by the hardware into the bound CQ. It&amp;rsquo;s important to note that the SQ and RQ belonging to the same QP can each be associated with different CQs. As shown in the diagram below, both the SQ and RQ of QP1 are associated with CQ1, while the RQ of QP2 is associated with CQ1 and the SQ is associated with CQ2.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_6.webp"
@@ -537,14 +684,23 @@ alt="2024-06-27_10_8" width="auto" loading="lazy">
 &lt;p>The above description actually also includes the situation of &amp;ldquo;WQE in SQ and RQ of the same QP, their corresponding CQE is not ordered.&amp;rdquo; This is actually quite easy to understand. SQ and RQ, one is responsible for actively initiating tasks, and the other for passively receiving tasks. They can be considered as channels in two different directions and naturally should not affect each other. Suppose the user first issues a Receive WQE and then a Send WQE for the same QP. It can&amp;rsquo;t be that if the peer doesn&amp;rsquo;t send a message to the local end, the local end cannot send a message to the peer, right?&lt;/p>
 &lt;p>In this case, since the order in which CQEs are generated is not related to the order in which WQEs are obtained, how do the upper-level application and driver know which WQE the received CQE is associated with? It&amp;rsquo;s actually quite simple, &lt;strong>the CQE indicates the number of the WQE it corresponds to&lt;/strong>.&lt;/p>
 &lt;p>Additionally, it should be noted that even when multiple WQs share a single CQ, &amp;ldquo;WQEs in the same WQ have their corresponding CQEs ordered&amp;rdquo; is always guaranteed. This means that the CQEs corresponding to WQE 1, 3, and 4 belonging to WQ1 in the above diagram are generated in sequence, and the same applies to WQE 2, 5, and 6 belonging to WQ2.&lt;/p>
-&lt;h3 id="cqc">CQC&lt;/h3>
+&lt;h3 id="cqc">
+&lt;a href="#cqc" class="header-anchor">#&lt;/a>
+CQC
+&lt;/h3>
 &lt;p>Just like QP, CQ is merely a queue memory space for storing CQEs. Apart from knowing the starting address, the hardware is essentially unaware of this area. Therefore, it is necessary to agree on a format with the software in advance, and then the driver will allocate memory and fill in the basic information of the CQ in this memory according to the format for the hardware to read. This memory is the CQC. The CQC contains information such as the capacity size of the CQ, the sequence number of the currently processed CQE, and so on. So by slightly modifying the QPC diagram, you can represent the relationship between CQC and CQ:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_9.webp"
 alt="2024-06-27_10_9" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h3 id="cqn">CQN&lt;/h3>
+&lt;h3 id="cqn">
+&lt;a href="#cqn" class="header-anchor">#&lt;/a>
+CQN
+&lt;/h3>
 &lt;p>CQ Number is the CQ&amp;rsquo;s identifier, used to distinguish different CQs. CQ does not have special reserved numbers like QP0 and QP1, which will not be further elaborated in this article.&lt;/p>
-&lt;h2 id="complete-error">Complete error&lt;/h2>
+&lt;h2 id="complete-error">
+&lt;a href="#complete-error" class="header-anchor">#&lt;/a>
+Complete error
+&lt;/h2>
 &lt;p>There are three types of errors in the IB protocol: immediate error, Completion Error, and Asynchronous Errors.&lt;/p>
 &lt;p>Immediate error refers to &amp;ldquo;immediately stop the current operation and return an error to the upper-level user&amp;rdquo;; completion error refers to &amp;ldquo;return the error information to the upper-level user via CQE&amp;rdquo;; whereas asynchronous error refers to &amp;ldquo;report to the upper-level user through an interrupt event.&amp;rdquo; It might still be a bit abstract, so let&amp;rsquo;s give an example to illustrate under what circumstances these two types of errors might occur:&lt;/p>
 &lt;ul>
@@ -616,9 +772,15 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;/li>
 &lt;/ul>
 &lt;p>For a complete list of error types, please refer to Section 10.10.3 of the IB protocol.&lt;/p>
-&lt;h2 id="user-interface">User interface&lt;/h2>
+&lt;h2 id="user-interface">
+&lt;a href="#user-interface" class="header-anchor">#&lt;/a>
+User interface
+&lt;/h2>
 &lt;p>Like QP, we still introduce the interface provided by the IB protocol to the upper layer regarding CQ from the communication preparation phase (control plane) and the communication execution phase (data plane).&lt;/p>
-&lt;h3 id="control-surface">Control surface&lt;/h3>
+&lt;h3 id="control-surface">
+&lt;a href="#control-surface" class="header-anchor">#&lt;/a>
+Control surface
+&lt;/h3>
 &lt;p>Just like QP, there are still the four types of &amp;ldquo;add, delete, modify, and query,&amp;rdquo; but perhaps because for CQ, the upper-layer users are resource users rather than managers, they can only read data from CQ and cannot write data. Therefore, the configurable parameter open to users is only the &amp;ldquo;CQ specification.&amp;rdquo;&lt;/p>
 &lt;ul>
 &lt;li>Create CQ&lt;/li>
@@ -639,7 +801,10 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;blockquote>
 &lt;p>By comparing RDMA specifications and software protocol stacks, it can be found that many verbs interfaces are not implemented according to the specifications. Therefore, if readers find discrepancies between the software API and the protocol, there is no need to be puzzled, as RDMA technology itself is still evolving, and the software framework is in an active state of updates. If you are more concerned with programming implementation, please refer to the API documentation of the software protocol stack; if you are more concerned with academic research, please refer to the RDMA specifications.&lt;/p>
 &lt;/blockquote>
-&lt;h3 id="data-surface">Data surface&lt;/h3>
+&lt;h3 id="data-surface">
+&lt;a href="#data-surface" class="header-anchor">#&lt;/a>
+Data surface
+&lt;/h3>
 &lt;p>CQE is the medium through which hardware conveys information to software. Although the software knows under what circumstances a CQE will be generated, it does not know exactly when the hardware will place the CQE into the CQ. In the fields of communication and computing, this mode where the receiver does not know when the sender will send is called &amp;ldquo;asynchronous&amp;rdquo;. Let&amp;rsquo;s first take an example of a network card and then explain how a user can obtain a CQE (WC) through the data plane interface.&lt;/p>
 &lt;p>After the network card receives a data packet, how to let the CPU know about this and process the packet, there are two common modes:&lt;/p>
 &lt;ul>
@@ -654,13 +819,22 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;p>By comparing interrupt modes, we can find that although the polling mode requires the CPU to check at intervals, which brings some overhead, using polling mode when the business is busy can greatly reduce the number of context switches for interrupts, thereby reducing the CPU&amp;rsquo;s burden.&lt;/p>
 &lt;p>The current network cards generally use a combination of interrupt and polling, which dynamically switches based on business load.&lt;/p>
 &lt;p>In the RDMA protocol, a CQE is equivalent to a data packet received by the network card, and the RDMA hardware passes it to the CPU for processing. The RDMA framework defines two types of interfaces for the upper layer, namely poll and notify, corresponding to polling and interrupt modes.&lt;/p>
-&lt;h3 id="poll-completion-queue">Poll completion queue&lt;/h3>
+&lt;h3 id="poll-completion-queue">
+&lt;a href="#poll-completion-queue" class="header-anchor">#&lt;/a>
+Poll completion queue
+&lt;/h3>
 &lt;p>Very straightforward, poll means polling. After the user calls this interface, the CPU will periodically check if there are fresh CQEs in the CQ. If there are, it will extract this CQE (note that once extracted, the CQE is &amp;ldquo;consumed&amp;rdquo;), parse the information within, and return it to the upper-level user.&lt;/p>
-&lt;h3 id="solicitud-de-notificación-de-finalización">Solicitud de notificación de finalización&lt;/h3>
+&lt;h3 id="solicitud-de-notificación-de-finalización">
+&lt;a href="#solicitud-de-notificaci%c3%b3n-de-finalizaci%c3%b3n" class="header-anchor">#&lt;/a>
+Solicitud de notificación de finalización
+&lt;/h3>
 &lt;p>Literally translated, it is a request completion notification. After the user calls this interface, it is equivalent to registering an interrupt with the system. This way, when the hardware places a CQE into the CQ, it will immediately trigger an interrupt to the CPU. The CPU will then stop its current work to retrieve the CQE, process it, and return it to the user.&lt;/p>
 &lt;p>Similarly, which of these two interfaces to use depends on the user&amp;rsquo;s requirements for real-time performance and the actual busyness of the business.&lt;/p>
 &lt;p>Thank you for reading, that concludes the introduction to CQ. In the next article, I plan to discuss SRQ in detail.&lt;/p>
-&lt;h2 id="relevant-sections-of-the-agreement">Relevant sections of the agreement&lt;/h2>
+&lt;h2 id="relevant-sections-of-the-agreement">
+&lt;a href="#relevant-sections-of-the-agreement" class="header-anchor">#&lt;/a>
+Relevant sections of the agreement
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>9.9 CQ Error Detection and Recovery&lt;/p>
@@ -678,16 +852,28 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;p>11.4.2 CQ related data surface interface&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="other-references">Other references&lt;/h2>
-&lt;p>[1] Linux Kernel Networking - Implement and Theory. Chapter 13. Completion Queue&lt;/p></description></item><item><title>RDMA: Queue Pair</title><link>https://cuterwrite.top/en/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA: Queue Pair" />&lt;h1 id="queue-pair-of-rdma">Queue Pair of RDMA&lt;/h1>
+&lt;h2 id="other-references">
+&lt;a href="#other-references" class="header-anchor">#&lt;/a>
+Other references
+&lt;/h2>
+&lt;p>[1] Linux Kernel Networking - Implement and Theory. Chapter 13. Completion Queue&lt;/p></description></item><item><title>RDMA: Queue Pair</title><link>https://cuterwrite.top/en/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA: Queue Pair" />&lt;h1 id="queue-pair-of-rdma">
+&lt;a href="#queue-pair-of-rdma" class="header-anchor">#&lt;/a>
+Queue Pair of RDMA
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reposting, please indicate the source.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for convenient reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/195757767">&lt;cite>Zhihu Column: 9. Basic RDMA Service Types&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
-&lt;h2 id="queue-pair">Queue Pair&lt;/h2>
+&lt;h2 id="queue-pair">
+&lt;a href="#queue-pair" class="header-anchor">#&lt;/a>
+Queue Pair
+&lt;/h2>
 &lt;p>We have previously provided a brief introduction to the concept of QP in the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-element/" >&amp;ldquo;3. Basic Elements of RDMA&amp;rdquo;
 &lt;/a>
 . This article will delve deeper into some details about QP.&lt;/p>
-&lt;h2 id="review-of-basic-concepts">Review of Basic Concepts&lt;/h2>
+&lt;h2 id="review-of-basic-concepts">
+&lt;a href="#review-of-basic-concepts" class="header-anchor">#&lt;/a>
+Review of Basic Concepts
+&lt;/h2>
 &lt;p>First, let&amp;rsquo;s briefly review the basic knowledge about QP:&lt;/p>
 &lt;p>According to the description in the IB protocol, QP is a virtual interface between hardware and software. QP is a queue structure that sequentially stores tasks (WQE) issued by software to hardware. The WQE contains information such as where to retrieve data, how long the data is, and to which destination it should be sent.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_1.webp"
@@ -706,7 +892,10 @@ alt="2024-06-26_9_1" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>In software, QP is a data structure maintained by the driver of the IB network card, which contains the address pointer of the QP and some related software attributes.&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="qpc">QPC&lt;/h3>
+&lt;h3 id="qpc">
+&lt;a href="#qpc" class="header-anchor">#&lt;/a>
+QPC
+&lt;/h3>
 &lt;p>In the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-service-types/" >&amp;ldquo;5. RDMA Basic Service Types&amp;rdquo;
 &lt;/a>
 , we mentioned that QPC stands for Queue Pair Context, which is used to store properties related to QP. The driver does store the software properties of QP, so if we can store QP properties in software, why do we still use QPC?&lt;/p>
@@ -720,17 +909,32 @@ alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>As shown in the figure above, the hardware actually only needs to know the address 0x12350000 of the QPC, because it can parse the contents of the QPC to determine the position of the QP, the QP sequence number, the QP size, and other information. Consequently, it can locate the QP and determine which WQE to process. Different manufacturers may have some variations in implementation, but the general principle is like this.&lt;/p>
 &lt;p>There are many Context concepts in the IB software stack, in addition to QPC, there are also Device Context, SRQC, CQC, EQC (Event Queue Context), etc. Their functions are similar to QPC, all used to record and synchronize the related attributes of certain resources.&lt;/p>
-&lt;h3 id="qp-number">QP Number&lt;/h3>
+&lt;h3 id="qp-number">
+&lt;a href="#qp-number" class="header-anchor">#&lt;/a>
+QP Number
+&lt;/h3>
 &lt;p>Referred to as QPN, which is the number of each QP. The IB protocol specifies using $2^{24}$ bits to represent QPN, meaning each node can simultaneously use up to $2^{24}$ QPs, which is already a very large number and almost impossible to exhaust. Each node maintains its own set of QPNs independently, meaning QPs with the same number can exist on different nodes.&lt;/p>
 &lt;p>The concept of QPN itself is very simple, but there are two special reserved numbers that require extra attention:&lt;/p>
-&lt;h4 id="qp0">QP0&lt;/h4>
+&lt;h4 id="qp0">
+&lt;a href="#qp0" class="header-anchor">#&lt;/a>
+QP0
+&lt;/h4>
 &lt;p>QP with ID 0 is used for the Subnet Management Interface (SMI), which is used to manage all nodes in the subnet. To be honest, I haven&amp;rsquo;t figured out the purpose of this interface yet, so let&amp;rsquo;s put it aside for now.&lt;/p>
-&lt;h4 id="qp1">QP1&lt;/h4>
+&lt;h4 id="qp1">
+&lt;a href="#qp1" class="header-anchor">#&lt;/a>
+QP1
+&lt;/h4>
 &lt;p>QP numbered 1 is used for the General Service Interface (GSI), which is a set of management services, the most well-known of which is CM (Communication Management). It is a method used to exchange necessary information before formally establishing a connection between the communication nodes. Its details will be elaborated in a later article.&lt;/p>
 &lt;p>This is the reason why QP0 and QP1 did not appear in the diagram about QP in our previous article. All other QPs besides these two are regular QPs. When a user creates a QP, the driver or hardware will assign a QPN to this new QP, and generally, QPNs are assigned sequentially like 2, 3, 4. After a QP is destroyed, its QPN will be reclaimed and allocated to other newly created QPs at an appropriate time.&lt;/p>
-&lt;h2 id="user-interface">User interface&lt;/h2>
+&lt;h2 id="user-interface">
+&lt;a href="#user-interface" class="header-anchor">#&lt;/a>
+User interface
+&lt;/h2>
 &lt;p>We classify and introduce user interfaces from the control plane and data plane perspectives. The control plane refers to the user&amp;rsquo;s configuration of a certain resource, which is generally done before the actual data transmission; whereas the data plane naturally involves operations during the actual data transmission process.&lt;/p>
-&lt;h3 id="control-surface">Control surface&lt;/h3>
+&lt;h3 id="control-surface">
+&lt;a href="#control-surface" class="header-anchor">#&lt;/a>
+Control surface
+&lt;/h3>
 &lt;p>Readers who have encountered algorithms should all understand that the nodes of a linked list involve four operations: &amp;ldquo;add, delete, modify, and search.&amp;rdquo; The nodes of a linked list are a memory area and a type of software resource.&lt;/p>
 &lt;p>&amp;ldquo;Increase&amp;rdquo; means requesting a piece of memory from the operating system to store data. The system will allocate a space in memory and mark it as &amp;ldquo;in use by process XX,&amp;rdquo; and other unauthorized processes will not be able to overwrite or even read this memory space.&lt;/p>
 &lt;p>&amp;ldquo;Delete&amp;rdquo; means notifying the operating system that I am no longer using this space, and it can be marked as &amp;ldquo;unused&amp;rdquo; and made available for other processes to use.&lt;/p>
@@ -769,24 +973,48 @@ alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
 &lt;/tbody>
 &lt;/table>
 &lt;p>These four operations are actually the Verbs (RDMA&amp;rsquo;s API for upper-layer applications) that provide several interfaces to upper-layer users on the control plane:&lt;/p>
-&lt;h4 id="create-qp">Create QP&lt;/h4>
+&lt;h4 id="create-qp">
+&lt;a href="#create-qp" class="header-anchor">#&lt;/a>
+Create QP
+&lt;/h4>
 &lt;p>Create a QP&amp;rsquo;s hardware and software resources, including the QP itself and the QPC. When the user creates it, they will input a series of initialization attributes, including the service type of the QP, the number of WQEs that can be stored, and other information.&lt;/p>
-&lt;h4 id="destroy-qp">Destroy QP&lt;/h4>
+&lt;h4 id="destroy-qp">
+&lt;a href="#destroy-qp" class="header-anchor">#&lt;/a>
+Destroy QP
+&lt;/h4>
 &lt;p>Release all software and hardware resources of a QP, including the QP itself and the QPC. After destroying the QP, the user will no longer be able to index this QP through QPN.&lt;/p>
-&lt;h4 id="modify-qp">Modify QP&lt;/h4>
+&lt;h4 id="modify-qp">
+&lt;a href="#modify-qp" class="header-anchor">#&lt;/a>
+Modify QP
+&lt;/h4>
 &lt;p>Modify certain attributes of a QP, such as the state of the QP, the MTU of the path, etc. This modification process includes both the modification of software data structures and the modification of the QPC.&lt;/p>
-&lt;h4 id="query-qp">Query QP&lt;/h4>
+&lt;h4 id="query-qp">
+&lt;a href="#query-qp" class="header-anchor">#&lt;/a>
+Query QP
+&lt;/h4>
 &lt;p>Query the current status and some attributes of a QP. The data queried comes from the driver and the content of the QPC.&lt;/p>
 &lt;p>These four operations all have corresponding Verbs interfaces, similar to &lt;code>ibv_create_qp()&lt;/code> form, which we can directly call when writing the APP. More details about the upper-level API will be introduced later.&lt;/p>
-&lt;h2 id="data-surface">Data surface&lt;/h2>
+&lt;h2 id="data-surface">
+&lt;a href="#data-surface" class="header-anchor">#&lt;/a>
+Data surface
+&lt;/h2>
 &lt;p>In terms of data, a QP actually has only two interfaces to the upper layer, used to fill in send and receive requests in the QP. &lt;strong>Here, &amp;ldquo;send&amp;rdquo; and &amp;ldquo;receive&amp;rdquo; do not refer to sending and receiving data, but rather the &amp;ldquo;initiator&amp;rdquo; (Requestor) and &amp;ldquo;responder&amp;rdquo; (Responser) in a communication process.&lt;/strong>&lt;/p>
 &lt;p>In behavior, the software fills a WQE (called WR at the application layer) into the QP, requesting the hardware to perform an action. Therefore, both behaviors are called &amp;ldquo;Post XXX Request,&amp;rdquo; meaning issuing an XXX request.&lt;/p>
-&lt;h3 id="send-request">Send Request&lt;/h3>
+&lt;h3 id="send-request">
+&lt;a href="#send-request" class="header-anchor">#&lt;/a>
+Send Request
+&lt;/h3>
 &lt;p>To emphasize again, Post Send itself does not mean that the operation type of this WQE is Send, but indicates that this WQE belongs to the initiator of the communication. The WQE/WR filled into the QP in this process can be a Send operation, RDMA Write operation, or RDMA Read operation, etc.&lt;/p>
 &lt;p>The user needs to prepare the data buffer, destination address, and other information in advance, then call the interface to pass the WR to the driver, and the driver will fill the WQE into the QP.&lt;/p>
-&lt;h3 id="post-receive-request">Post Receive Request&lt;/h3>
+&lt;h3 id="post-receive-request">
+&lt;a href="#post-receive-request" class="header-anchor">#&lt;/a>
+Post Receive Request
+&lt;/h3>
 &lt;p>The usage scenarios for Post Recv are relatively fewer, generally only executed on the receiving end of the Send-Recv operation. The receiving end needs to prepare the buffer for receiving data in advance and inform the hardware of the buffer address and other information in the form of a WQE.&lt;/p>
-&lt;h2 id="qp-state-machine">QP state machine&lt;/h2>
+&lt;h2 id="qp-state-machine">
+&lt;a href="#qp-state-machine" class="header-anchor">#&lt;/a>
+QP state machine
+&lt;/h2>
 &lt;p>Speaking of the state of QP, we have to bring out the following image (taken from section 10.3.1 of the IB protocol):&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_3.webp"
 alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
@@ -797,25 +1025,52 @@ alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>For QP, the IB specification also designs several states for it. The functions of a QP in different states vary. For example, only after entering the Ready to Send state can the QP perform Post Send data operations. State transitions between normal states (in green) are actively triggered by the user through the Modify QP user interface introduced above; whereas error states (in red) often automatically transition after an error occurs. When a QP is in an error state, it cannot perform normal operations and needs to be reconfigured to a normal state by the upper layer through Modify QP.&lt;/p>
 &lt;p>In the above diagram, we only focus on the part of QP. EE (End-to-End Context) is a concept specifically used for RD service types, which we will not cover for now. We enter this state diagram through the Create QP interface and exit this state diagram through the Destroy QP interface.&lt;/p>
 &lt;p>QP has the following states, we will only introduce some important points:&lt;/p>
-&lt;h3 id="rst-reset">RST (Reset)&lt;/h3>
+&lt;h3 id="rst-reset">
+&lt;a href="#rst-reset" class="header-anchor">#&lt;/a>
+RST (Reset)
+&lt;/h3>
 &lt;p>Reset state. When a QP is created through Create QP, it is in this state. The related resources have already been allocated, but this QP cannot do anything at the moment. It cannot receive WQEs issued by the user, nor can it receive messages from a QP on the peer end.&lt;/p>
-&lt;h3 id="initinitialized">INIT（Initialized）&lt;/h3>
+&lt;h3 id="initinitialized">
+&lt;a href="#initinitialized" class="header-anchor">#&lt;/a>
+INIT（Initialized）
+&lt;/h3>
 &lt;p>Initialized state. In this state, the user can issue Receive WR to this QP via Post Receive, but the received messages will not be processed and will be silently discarded; if the user issues a Post Send WR, an error will occur.&lt;/p>
-&lt;h3 id="rtrready-to-receive">RTR（Ready to Receive）&lt;/h3>
+&lt;h3 id="rtrready-to-receive">
+&lt;a href="#rtrready-to-receive" class="header-anchor">#&lt;/a>
+RTR（Ready to Receive）
+&lt;/h3>
 &lt;p>Ready to receive status. Based on the INIT state, RQ can function normally, meaning it can move data to the specified memory location according to the instructions in the received message&amp;rsquo;s WQE. In this state, SQ still cannot function.&lt;/p>
-&lt;h3 id="rts-ready-to-send">RTS (Ready to Send)&lt;/h3>
+&lt;h3 id="rts-ready-to-send">
+&lt;a href="#rts-ready-to-send" class="header-anchor">#&lt;/a>
+RTS (Ready to Send)
+&lt;/h3>
 &lt;p>Ready to send status. Based on RTR, SQ can work normally, meaning the user can perform Post Send, and the hardware will also send the data according to the content of SQ. Before entering this state, QP must have already established a connection with the peer.&lt;/p>
-&lt;h3 id="sqd-send-queue-drain">SQD (Send Queue Drain)&lt;/h3>
+&lt;h3 id="sqd-send-queue-drain">
+&lt;a href="#sqd-send-queue-drain" class="header-anchor">#&lt;/a>
+SQD (Send Queue Drain)
+&lt;/h3>
 &lt;p>SQ emptying state. As the name suggests, this state will process all the existing unprocessed WQEs in the SQ queue. At this time, the user can still submit new WQEs, but these WQEs will be processed only after all the old WQEs have been processed.&lt;/p>
-&lt;h3 id="sqer-send-queue-error">SQEr (Send Queue Error)&lt;/h3>
+&lt;h3 id="sqer-send-queue-error">
+&lt;a href="#sqer-send-queue-error" class="header-anchor">#&lt;/a>
+SQEr (Send Queue Error)
+&lt;/h3>
 &lt;p>SQ error state. When a Send WR encounters a completion error (i.e., an error reported to the driver by the hardware through CQE), it causes the QP to enter this state.&lt;/p>
-&lt;h3 id="err-error">ERR (Error)&lt;/h3>
+&lt;h3 id="err-error">
+&lt;a href="#err-error" class="header-anchor">#&lt;/a>
+ERR (Error)
+&lt;/h3>
 &lt;p>Error state. If an error occurs in other states, they may enter this state. In the Error state, the QP will stop processing WQE, and any WQE that is halfway processed will also stop. The upper layer needs to switch the QP back to the initial RST state after fixing the error.&lt;/p>
-&lt;h2 id="summary">Summary&lt;/h2>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
 &lt;p>This article first reviews some important basic concepts of QP, then explains QPC, QPN, and other concepts closely related to QP, and finally introduces the interfaces commonly used by users to operate QP and the QP state machine. I believe that after reading this article, readers will have a deeper understanding of QP.&lt;/p>
 &lt;p>In fact, as a core concept of RDMA, there is a lot of content regarding QP, and this article cannot cover everything. I will gradually complete the related content in future articles. For example, the concept of QKey will be explained in detail in subsequent articles dedicated to various Keys.&lt;/p>
 &lt;p>Alright, this is the end of the article. Thank you for reading. A preview of the next article will provide a detailed explanation of CQ.&lt;/p>
-&lt;h2 id="relevant-sections-of-the-agreement">Relevant sections of the agreement&lt;/h2>
+&lt;h2 id="relevant-sections-of-the-agreement">
+&lt;a href="#relevant-sections-of-the-agreement" class="header-anchor">#&lt;/a>
+Relevant sections of the agreement
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>3.5.1 10.2.4 Basic Concepts of QP&lt;/p>
@@ -829,13 +1084,19 @@ alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>
 &lt;p>11.4 Post Send Post Recv&lt;/p>
 &lt;/li>
-&lt;/ul></description></item><item><title>RDMA: Address Handle</title><link>https://cuterwrite.top/en/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA: Address Handle" />&lt;h1 id="rdmas-address-handle">RDMA&amp;rsquo;s Address Handle&lt;/h1>
+&lt;/ul></description></item><item><title>RDMA: Address Handle</title><link>https://cuterwrite.top/en/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA: Address Handle" />&lt;h1 id="rdmas-address-handle">
+&lt;a href="#rdmas-address-handle" class="header-anchor">#&lt;/a>
+RDMA&amp;rsquo;s Address Handle
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source when reprinting.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>Zhihu Column: 8. RDMA Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>It has already been introduced that the basic unit of RDMA communication is the QP. Let&amp;rsquo;s consider a question: Suppose a QP on node A wants to exchange information with a QP on node B. Besides knowing the QP number—QPN—of node B, what other information is needed? It should be noted that the QPN is a number maintained independently by each node and is not unique across the entire network. For instance, if QP 3 on A wants to communicate with QP 5 on B, there is not just one QP5 in the network; many nodes might have their own QP 5. Therefore, we can naturally think of the need to find a way for each node to have a unique identifier.&lt;/p>
 &lt;p>In the traditional TCP-IP protocol stack, the well-known IP address is used to identify each node at the network layer. In the IB protocol, this identifier is called the &lt;strong>GID (Global Identifier)&lt;/strong>, which is a 128-bit sequence. This article will not discuss GID in detail and will introduce it later.&lt;/p>
-&lt;h2 id="what-is-ah">What is AH&lt;/h2>
+&lt;h2 id="what-is-ah">
+&lt;a href="#what-is-ah" class="header-anchor">#&lt;/a>
+What is AH
+&lt;/h2>
 &lt;p>AH stands for Address Handle. I couldn&amp;rsquo;t think of a particularly suitable Chinese translation, so let&amp;rsquo;s directly translate it as &amp;ldquo;地址句柄&amp;rdquo; for now. The address here refers to a set of information used to locate a remote node. In the IB protocol, the address refers to information such as GID, port number, etc. As for the so-called handle, we can understand it as a pointer to an object.&lt;/p>
 &lt;p>Does everyone still remember that there are four basic service types in the IB protocol—RC, UD, RD, and UC, with RC and UD being the most commonly used. The characteristic of RC is that a reliable connection is established between the QPs of two nodes, and once the connection is established, it is not easily changed. The information of the peer is stored in the QP Context when creating the QP.&lt;/p>
 &lt;p>As for UD, there is no connection relationship between QPs. The user can fill in the peer&amp;rsquo;s address information in the WQE for whoever they want to send to. &lt;strong>The user does not directly fill the peer&amp;rsquo;s address information into the WQE but prepares an &amp;ldquo;address book&amp;rdquo; in advance, specifying the peer node&amp;rsquo;s address information each time through an index, which is the AH.&lt;/strong>&lt;/p>
@@ -846,7 +1107,10 @@ alt="2024-06-16_8_1" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>For each destination node, a corresponding AH will be created at this end, and the same AH can be shared by multiple QPs.&lt;/p>
-&lt;h2 id="the-role-of-ah">The role of AH&lt;/h2>
+&lt;h2 id="the-role-of-ah">
+&lt;a href="#the-role-of-ah" class="header-anchor">#&lt;/a>
+The role of AH
+&lt;/h2>
 &lt;p>Before each communication of the UD service type, the user needs to first use the interface provided by the IB framework to &lt;strong>create an AH for each possible peer node&lt;/strong>, then these AHs are driven into a &amp;ldquo;secure&amp;rdquo; area, and an index (pointer/handle) is returned to the user. When the user actually issues a WR (Work Request), they just need to pass in this index.&lt;/p>
 &lt;p>The above process is shown in the diagram below. Node A receives a task from the user to exchange data using its QP4 with Node B&amp;rsquo;s QP3 (specified through AH):&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_2.webp"
@@ -875,20 +1139,32 @@ alt="2024-06-16_8_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>For example, in the image above, AH1~3 can only be used by QP3 and QP9 under the same PD, while AH4 can only be used by QP5.&lt;/p>
-&lt;h2 id="relevant-sections-of-the-agreement">Relevant sections of the agreement&lt;/h2>
+&lt;h2 id="relevant-sections-of-the-agreement">
+&lt;a href="#relevant-sections-of-the-agreement" class="header-anchor">#&lt;/a>
+Relevant sections of the agreement
+&lt;/h2>
 &lt;p>There is not much coverage about AH in the agreement, and there is not even a chapter dedicated to introducing its concept:&lt;/p>
 &lt;p>[1] 9.8.3 What components make up the destination address in UD service type: including AH, QPN, and Q_key&lt;/p>
 &lt;p>[2] 10.2.2.2 Relevant Considerations for the Destination Address&lt;/p>
 &lt;p>[3] 11.2.2.1 AH Related Verbs Interface&lt;/p>
-&lt;p>AH is introduced here, thank you for reading. In the next article, I plan to describe more details about QP.&lt;/p></description></item><item><title>RDMA: Protection Domain</title><link>https://cuterwrite.top/en/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA: Protection Domain" />&lt;h1 id="protection-domain-in-rdma">Protection Domain in RDMA&lt;/h1>
+&lt;p>AH is introduced here, thank you for reading. In the next article, I plan to describe more details about QP.&lt;/p></description></item><item><title>RDMA: Protection Domain</title><link>https://cuterwrite.top/en/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA: Protection Domain" />&lt;h1 id="protection-domain-in-rdma">
+&lt;a href="#protection-domain-in-rdma" class="header-anchor">#&lt;/a>
+Protection Domain in RDMA
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reproduction, please indicate the source when reproducing.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>Zhihu Column: 7. RDMA and Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>In the previous text, we briefly introduced some of the most common resources in RDMA, including various Queues and the concept of MR, among others. MR is used to control and manage HCA&amp;rsquo;s access rights to local and remote memory, ensuring that the HCA can only read and write to memory regions that the user has registered after obtaining the correct Key. To better ensure security, the IB protocol also introduced the concept of Protection Domain (PD) to ensure mutual isolation among RDMA resources. This article will introduce the concept of PD.&lt;/p>
-&lt;h2 id="what-is-pd">What is PD?&lt;/h2>
+&lt;h2 id="what-is-pd">
+&lt;a href="#what-is-pd" class="header-anchor">#&lt;/a>
+What is PD?
+&lt;/h2>
 &lt;p>PD stands for Protection Domain. The concept of a domain is often seen, from mathematical &amp;ldquo;real number fields&amp;rdquo; and &amp;ldquo;complex number fields&amp;rdquo; to geographical &amp;ldquo;airspace&amp;rdquo; and &amp;ldquo;sea area,&amp;rdquo; representing a space/range. In RDMA, a PD is like a &amp;ldquo;container&amp;rdquo; that holds various resources (QP, MR, etc.), bringing these resources under its protection to prevent unauthorized access. Multiple protection domains can be defined within a node, and the resources contained within each PD are isolated from each other and cannot be used together.&lt;/p>
 &lt;p>The concept is still somewhat abstract, let&amp;rsquo;s take a look at what role PD plays and what specific problems it solves.&lt;/p>
-&lt;h2 id="the-function-of-pd">The function of PD&lt;/h2>
+&lt;h2 id="the-function-of-pd">
+&lt;a href="#the-function-of-pd" class="header-anchor">#&lt;/a>
+The function of PD
+&lt;/h2>
 &lt;p>A user may create multiple QPs and multiple MRs, and each QP may establish connections with different remote QPs, as shown in the diagram below (gray arrows indicate the connection relationships between QPs):&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_1-2024-04-19.webp"
 alt="7_1-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
@@ -909,21 +1185,30 @@ alt="7_2-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>MR1 and QP3 of Node 0 belong to different PDs, so even if QP8 of Node 1 obtains the VA and R_key of MR1, the hardware will refuse to provide service due to different PDs.&lt;/li>
 &lt;/ol>
 &lt;p>As mentioned at the beginning of this article, a PD is like a container that protects some RDMA resources, isolating them from each other to enhance security. In fact, RDMA includes not only resources like QP and MR, but also Address Handle, Memory Window, etc., which are also isolated and protected by PD, as will be introduced later.&lt;/p>
-&lt;h2 id="how-to-use-pd">How to use PD&lt;/h2>
+&lt;h2 id="how-to-use-pd">
+&lt;a href="#how-to-use-pd" class="header-anchor">#&lt;/a>
+How to use PD
+&lt;/h2>
 &lt;p>Still looking at the above diagram, we notice that Node 0 has two PDs for resource isolation, whereas Node 1 and Node 2 have only one PD containing all the resources.&lt;/p>
 &lt;p>The reason I draw it this way is to illustrate that the number of PDs divided on a node is entirely up to the user. &lt;strong>If you want to enhance security, then each QP connected to a remote node and the MR provided for remote access should be isolated as much as possible by dividing PDs. If higher security is not a concern, then creating one PD that encompasses all resources is also acceptable.&lt;/strong>&lt;/p>
 &lt;p>The IB protocol specifies: &lt;strong>Each node must have at least one PD, each QP must belong to a PD, and each MR must also belong to a PD&lt;/strong>.&lt;/p>
 &lt;p>So how is the inclusion relationship of PD reflected in the software? It itself has a software entity (structure) that records some information about this protection domain. Before users create resources like QP and MR, they must first create a PD through the interface of the IB framework to get its pointer/handle. Then, when creating QP and MR, this PD&amp;rsquo;s pointer/handle needs to be passed in, and PD information will be included in QP and MR. When the hardware sends and receives packets, it will verify the PD of QP and MR. I will introduce more about the software protocol stack in later articles.&lt;/p>
 &lt;p>Additionally, it is important to emphasize that &lt;strong>PD is a local concept and only exists within the node&lt;/strong>, it is not visible to other nodes; whereas MR is visible to both the local and remote ends.&lt;/p>
 &lt;p>For everyone&amp;rsquo;s convenience in referencing and learning, I will list the protocol sections involved in the articles. I will also supplement the previous content when I have time.&lt;/p>
-&lt;h2 id="pd-related-protocol-chapter">PD related protocol chapter&lt;/h2>
+&lt;h2 id="pd-related-protocol-chapter">
+&lt;a href="#pd-related-protocol-chapter" class="header-anchor">#&lt;/a>
+PD related protocol chapter
+&lt;/h2>
 &lt;ul>
 &lt;li>Basic concepts and functions of 3.5.5 PD&lt;/li>
 &lt;li>10.2.3 introduces the relationship between PD and some other RDMA resources, as well as the software interfaces related to PD.&lt;/li>
 &lt;li>10.6.3.5 Emphasize again the relationship between PD, MR, and QP.&lt;/li>
 &lt;li>11.2.1.5 Detailed introduction to the Verbs interface of PD, including functions, input parameters, output parameters, and return values, etc.&lt;/li>
 &lt;/ul>
-&lt;p>Alright, that concludes the introduction to PD. In the following text, I will introduce the concept of Address Handle used for UD service types.&lt;/p></description></item><item><title>RDMA: Memory Region</title><link>https://cuterwrite.top/en/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA: Memory Region" />&lt;h1 id="memory-region-of-rdma">Memory Region of RDMA&lt;/h1>
+&lt;p>Alright, that concludes the introduction to PD. In the following text, I will introduce the concept of Address Handle used for UD service types.&lt;/p></description></item><item><title>RDMA: Memory Region</title><link>https://cuterwrite.top/en/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA: Memory Region" />&lt;h1 id="memory-region-of-rdma">
+&lt;a href="#memory-region-of-rdma" class="header-anchor">#&lt;/a>
+Memory Region of RDMA
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reproduction, please indicate the source.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>Zhihu Column: 6. RDMA Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -934,15 +1219,24 @@ alt="6_1-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>So the question arises, the addresses provided by the APP are all virtual addresses (Virtual Address, referred to as VA below), which need to be converted by the MMU to obtain the real physical address (Physical Address, referred to as PA below). &lt;strong>How does our RDMA network card obtain the PA to fetch data from memory&lt;/strong>? Even if the network card knows where to fetch the data, &lt;strong>if a user maliciously specifies an illegal VA, wouldn&amp;rsquo;t the network card possibly be &amp;ldquo;instructed&amp;rdquo; to read and write critical memory&lt;/strong>?&lt;/p>
 &lt;p>To solve the above problem, the IB protocol proposed the concept of MR.&lt;/p>
-&lt;h2 id="what-is-mr">What is MR&lt;/h2>
+&lt;h2 id="what-is-mr">
+&lt;a href="#what-is-mr" class="header-anchor">#&lt;/a>
+What is MR
+&lt;/h2>
 &lt;p>MR stands for Memory Region, which refers to a region designated by the RDMA software layer in memory for storing transmitted and received data. In the IB protocol, after a user requests a memory region for storing data, they must register the MR by calling the API provided by the IB framework to allow the RDMA network card to access this memory region. As can be seen from the diagram below, MR is just a special piece of memory:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_2-2024-04-04.webp"
 alt="6_2-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>When describing the IB protocol, we usually refer to the RDMA hardware as &lt;strong>HCA (Host Channel Adapter)&lt;/strong>. The IB protocol defines it as &amp;ldquo;an IB device in processors and I/O units capable of generating and consuming packets.&amp;rdquo; To remain consistent with the protocol, we will refer to the hardware part as HCA in this and subsequent articles.&lt;/p>
-&lt;h2 id="why-register-mr">Why register MR&lt;/h2>
+&lt;h2 id="why-register-mr">
+&lt;a href="#why-register-mr" class="header-anchor">#&lt;/a>
+Why register MR
+&lt;/h2>
 &lt;p>Let&amp;rsquo;s take a look at how MR addresses the two questions raised at the beginning of this article:&lt;/p>
-&lt;h3 id="1-register-mr-to-achieve-virtual-to-physical-address-translation">1. Register MR to achieve virtual-to-physical address translation&lt;/h3>
+&lt;h3 id="1-register-mr-to-achieve-virtual-to-physical-address-translation">
+&lt;a href="#1-register-mr-to-achieve-virtual-to-physical-address-translation" class="header-anchor">#&lt;/a>
+1. Register MR to achieve virtual-to-physical address translation
+&lt;/h3>
 &lt;p>We all know that an APP can only see virtual addresses, and it will directly pass the VA to the HCA in the WQE (including both the source VA on the local end and the destination VA on the remote end). Modern CPUs have the &amp;ldquo;tool&amp;rdquo; of MMU and page tables to perform the conversion between VA and PA, while the HCA is either directly connected to the bus or connected to the bus after address translation through IOMMU/SMMU. It cannot &amp;ldquo;understand&amp;rdquo; the real physical memory address corresponding to the VA provided by the APP.&lt;/p>
 &lt;p>So during the process of registering MR, the hardware will create and fill a VA to PA mapping table in memory, so that when needed, VA can be converted to PA by looking up the table. Let&amp;rsquo;s provide a specific example to explain this process:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_3-2024-04-04.webp"
@@ -956,7 +1250,10 @@ alt="6_3-2024-04-04" width="auto" loading="lazy">
 &lt;li>The peer HCA uses the VA-&amp;gt;PA mapping table stored in local memory to find the real physical address, verifies the permissions, and then stores the data in memory.&lt;/li>
 &lt;/ul>
 &lt;p>Emphasize once again, for the right-side node, &lt;strong>whether it&amp;rsquo;s address translation or writing to memory, it does not require any involvement of its CPU&lt;/strong>.&lt;/p>
-&lt;h3 id="2-mr-can-control-hcas-access-to-memory-permissions">2. MR can control HCA&amp;rsquo;s access to memory permissions&lt;/h3>
+&lt;h3 id="2-mr-can-control-hcas-access-to-memory-permissions">
+&lt;a href="#2-mr-can-control-hcas-access-to-memory-permissions" class="header-anchor">#&lt;/a>
+2. MR can control HCA&amp;rsquo;s access to memory permissions
+&lt;/h3>
 &lt;p>Because the memory address accessed by the HCA comes from the user, if the user provides an illegal address (such as system memory or memory used by another process), HCA reading or writing to it may cause information leakage or memory corruption. Therefore, we need a mechanism to ensure that HCA can only access authorized and safe memory addresses. In the IB protocol, during the preparation stage for data interaction, the APP needs to perform the action of registering MR.&lt;/p>
 &lt;p>When a user registers MR, two keys are generated—L_KEY (Local Key) and R_KEY (Remote Key). Although they are called keys, their entities are actually just a sequence. They will be used to ensure access permissions for the local and remote memory regions, respectively. The following two diagrams are schematic representations describing the functions of L_Key and R_Key:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_4-2024-04-04.webp"
@@ -971,12 +1268,18 @@ alt="6_5-2024-04-04" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>Here, everyone might have a question: how does this end know the available VA and the corresponding R_Key of the peer node? In fact, before the actual RDMA communication, both nodes establish a link through some means (it could be a Socket connection or a CM connection) and exchange some necessary information for RDMA communication (VA, Key, QPN, etc.) through this link. We call this process &amp;ldquo;link establishment&amp;rdquo; and &amp;ldquo;handshake.&amp;rdquo; I will introduce this in detail in the following articles.&lt;/p>
 &lt;p>In addition to the two points above, registering MR has another important function:&lt;/p>
-&lt;h3 id="3-mr-can-avoid-page-swapping">3. MR can avoid page swapping&lt;/h3>
+&lt;h3 id="3-mr-can-avoid-page-swapping">
+&lt;a href="#3-mr-can-avoid-page-swapping" class="header-anchor">#&lt;/a>
+3. MR can avoid page swapping
+&lt;/h3>
 &lt;p>Because physical memory is limited, the operating system uses a paging mechanism to temporarily save the unused memory contents of a process to the hard drive. When the process needs to use it, a page fault interrupt is used to move the contents from the hard drive back to memory, and this process almost inevitably causes the VA-PA mapping relationship to change.&lt;/p>
 &lt;p>Since HCA often bypasses the CPU to read and write to the physical memory areas pointed to by the VA provided by the user, if the VA-PA mapping relationship changes, then the VA-&amp;gt;PA mapping table mentioned earlier will lose its significance, and HCA will be unable to find the correct physical address.&lt;/p>
 &lt;p>In order to prevent the VA-PA mapping relationship from changing due to page swapping, the memory is &amp;ldquo;Pinned&amp;rdquo; when registering MR (also known as &amp;ldquo;page locking&amp;rdquo;), which means locking the VA-PA mapping relationship. In other words, this MR memory area will remain in physical memory without being swapped out until the communication is completed, and the user actively deregisters this MR.&lt;/p>
 &lt;p>Alright, we have now finished introducing the concept and function of MR. In the next article, I will introduce the concept of PD (Protection Domain).&lt;/p>
-&lt;h2 id="code-example">Code example&lt;/h2>
+&lt;h2 id="code-example">
+&lt;a href="#code-example" class="header-anchor">#&lt;/a>
+Code example
+&lt;/h2>
 &lt;p>Below is a simple RDMA program demonstrating how to register MR:&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 int main() {
@@ -989,37 +1292,55 @@ uint32_t lkey = mr-&amp;gt;lkey;
 uint32_t rkey = mr-&amp;gt;rkey;
 // Omit other code...
 }
-&lt;/code>&lt;/pre></description></item><item><title>RDMA Basic Service Types</title><link>https://cuterwrite.top/en/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA Basic Service Types" />&lt;h1 id="rdma-basic-service-types">RDMA Basic Service Types&lt;/h1>
+&lt;/code>&lt;/pre></description></item><item><title>RDMA Basic Service Types</title><link>https://cuterwrite.top/en/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA Basic Service Types" />&lt;h1 id="rdma-basic-service-types">
+&lt;a href="#rdma-basic-service-types" class="header-anchor">#&lt;/a>
+RDMA Basic Service Types
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source when reprinting.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for convenient reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/144099636">&lt;cite>Zhihu Column: 5. Basic RDMA Service Types&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>In the article &lt;a class="link" href="https://cuterwrite.top/en/p/rdma-element/" >【“3. RDMA Basic Elements”】
 &lt;/a>
 , we mentioned that &lt;strong>the basic communication unit of RDMA is QP&lt;/strong>, and there are many communication models based on QP, which we refer to as &amp;ldquo;service types&amp;rdquo; in the field of RDMA. The IB protocol describes a service type through two dimensions: &amp;ldquo;reliable&amp;rdquo; and &amp;ldquo;connected&amp;rdquo;.&lt;/p>
-&lt;h2 id="reliable">Reliable&lt;/h2>
+&lt;h2 id="reliable">
+&lt;a href="#reliable" class="header-anchor">#&lt;/a>
+Reliable
+&lt;/h2>
 &lt;p>Reliability in communication refers to ensuring that the sent data packets can be properly received through some mechanisms. In the IB protocol, reliable service is described as follows:&lt;/p>
 &lt;blockquote>
 &lt;p>&lt;strong>Reliable Service&lt;/strong> provides a guarantee that messages are delivered from a requester to a responder at most once, in order and without corruption.&lt;/p>
 &lt;/blockquote>
 &lt;p>&amp;ldquo;Reliable service ensures that information is transmitted at most once between the sender and receiver, and it can guarantee that it is completely received in the order it was sent.&amp;rdquo;&lt;/p>
 &lt;p>IB ensures reliability through the following three mechanisms:&lt;/p>
-&lt;h2 id="response-mechanism">Response mechanism&lt;/h2>
+&lt;h2 id="response-mechanism">
+&lt;a href="#response-mechanism" class="header-anchor">#&lt;/a>
+Response mechanism
+&lt;/h2>
 &lt;p>Suppose A sends a data packet to B, how can A know that B has received it? Naturally, B replies with a &amp;ldquo;I have received it&amp;rdquo; message to A. In the field of communications, we generally refer to this reply as an acknowledgment packet or ACK. In the reliable service type of the IB protocol, an acknowledgment mechanism is used to ensure that the data packet is received by the other party. In the reliable service type of IB, the receiver does not have to reply to every packet; it can also reply with an ACK for multiple packets at once. We will discuss this further later.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ib_ack-2024-02-26.webp"
 alt="ib_ack-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="data-validation-mechanism">Data validation mechanism&lt;/h2>
+&lt;h2 id="data-validation-mechanism">
+&lt;a href="#data-validation-mechanism" class="header-anchor">#&lt;/a>
+Data validation mechanism
+&lt;/h2>
 &lt;p>This is relatively easy to understand. The sender will use a certain algorithm to obtain a checksum for the Header and Payload (the actual data to be sent and received) and place it at the end of the data packet. When the receiving end receives the data packet, it will also use the same algorithm to calculate the checksum and then compare it with the checksum in the data packet. If they do not match, it indicates that the data contains errors (usually caused by link issues), and the receiving end will discard this data packet. The IB protocol uses CRC for checksum, and this article does not provide an in-depth introduction to CRC.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crc-2024-02-26.png"
 alt="crc-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="order-preserving-mechanism">Order-preserving mechanism&lt;/h2>
+&lt;h2 id="order-preserving-mechanism">
+&lt;a href="#order-preserving-mechanism" class="header-anchor">#&lt;/a>
+Order-preserving mechanism
+&lt;/h2>
 &lt;p>In-order delivery refers to ensuring that data packets sent first over the physical link are received by the recipient before later sent packets. Some services have strict requirements on the order of data packets, such as voice or video. The IB protocol includes the concept of PSN (Packet Sequence Number), meaning each packet has an incrementing number. PSN can be used to detect packet loss; for example, if the receiver gets 1 but receives 3 without having received 2, it will consider an error occurred during transmission and will send a NAK back to the sender, requesting the retransmission of the lost packet.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/psn-2024-02-26.webp"
 alt="psn-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>Unreliable service, without the above mechanisms to ensure that packets are received correctly, belongs to the type of service that is &amp;ldquo;just send it out, I don&amp;rsquo;t care if it is received or not.&amp;rdquo;&lt;/p>
-&lt;h2 id="connection-and-datagram">Connection and Datagram&lt;/h2>
+&lt;h2 id="connection-and-datagram">
+&lt;a href="#connection-and-datagram" class="header-anchor">#&lt;/a>
+Connection and Datagram
+&lt;/h2>
 &lt;p>&lt;strong>Connection&lt;/strong> here refers to an abstract logical concept, which needs to be distinguished from a physical connection. Readers familiar with Sockets will certainly not be unfamiliar with this. A connection is a communication &amp;ldquo;pipeline.&amp;rdquo; Once the pipeline is established, the data sent from this end of the pipeline will definitely reach the other end along this pipeline.&lt;/p>
 &lt;p>There are many definitions for &amp;ldquo;connection&amp;rdquo; or &amp;ldquo;connection-oriented&amp;rdquo;, some focus on ensuring the order of messages, some emphasize the uniqueness of the message delivery path, some highlight the need for software and hardware overhead to maintain the connection, and some overlap with the concept of reliability. Since this column is about introducing RDMA technology, let&amp;rsquo;s take a look at its description in section 3.2.2 of the IB protocol:&lt;/p>
 &lt;blockquote>
@@ -1044,7 +1365,10 @@ alt="Datagram-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>In the context of a datagram-type QP, it does not contain peer information, meaning each QP is not bound to another QP. &lt;strong>Each WQE issued to the hardware by the QP may point to a different destination&lt;/strong>. For example, the first WQE issued by QP2 of node A instructs to send data to QP3 of node C; while the next WQE may instruct the hardware to send to QP7 of node B.&lt;/p>
 &lt;p>Like the connection service type, which remote QP the local QP can send data to is mutually informed in advance during the preparation stage through certain means. This is also the meaning of the above statement &amp;ldquo;the datagram service needs to perform this exchange process once for each destination node.&amp;rdquo;&lt;/p>
-&lt;h2 id="service-type">Service type&lt;/h2>
+&lt;h2 id="service-type">
+&lt;a href="#service-type" class="header-anchor">#&lt;/a>
+Service type
+&lt;/h2>
 &lt;p>The two dimensions mentioned above combine in pairs to form the four basic service types of IB:&lt;/p>
 &lt;table>
 &lt;thead>
@@ -1094,7 +1418,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 for pointing it out in the comments section.&lt;/p>
-&lt;h2 id="code-example">Code example&lt;/h2>
+&lt;h2 id="code-example">
+&lt;a href="#code-example" class="header-anchor">#&lt;/a>
+Code example
+&lt;/h2>
 &lt;p>In RDMA programming, we can create a QP using the &lt;code>ibv_create_qp&lt;/code> function, where the &lt;code>qp_type&lt;/code> field in the &lt;code>struct ibv_qp_init_attr&lt;/code> structure is used to specify the service type of the QP. Below is a simple example code:&lt;/p>
 &lt;pre>&lt;code class="language-c">struct ibv_qp_init_attr qp_init_attr;
 qp_init_attr.qp_type = IBV_QPT_RC; // RC type
@@ -1103,13 +1430,19 @@ qp_init_attr.send_cq = cq; // Send CQ
 qp_init_attr.recv_cq = cq; // Receive CQ
 qp_init_attr.cap.max_send_wr = 1024; // Depth of SQ
 struct ibv_qp *qp = ibv_create_qp(pd, &amp;amp;qp_init_attr);
-&lt;/code>&lt;/pre></description></item><item><title>RDMA Operation Types</title><link>https://cuterwrite.top/en/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA Operation Types" />&lt;h1 id="rdma-operation-type">RDMA operation type&lt;/h1>
+&lt;/code>&lt;/pre></description></item><item><title>RDMA Operation Types</title><link>https://cuterwrite.top/en/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA Operation Types" />&lt;h1 id="rdma-operation-type">
+&lt;a href="#rdma-operation-type" class="header-anchor">#&lt;/a>
+RDMA operation type
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source when reprinting.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection purposes only, for easier reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/142175657">&lt;cite>Zhihu Column: 4. RDMA Operation Types&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>In previous articles discussing RDMA communication processes, SEND-RECV has been mentioned frequently. However, it cannot really be called &amp;ldquo;RDMA&amp;rdquo;; it is merely an &amp;ldquo;upgraded version&amp;rdquo; of the traditional send-receive model with added zero-copy and protocol stack offloading. This type of operation does not fully leverage the entire capabilities of RDMA technology and is often used in scenarios where control information is exchanged between two ends. When it comes to sending and receiving large amounts of data, two RDMA-exclusive operations are more commonly used: WRITE and READ.&lt;/p>
 &lt;p>Let&amp;rsquo;s first review the dual-end operations—SEND and RECV, and then introduce and compare the single-end operations—WRITE and READ.&lt;/p>
-&lt;h2 id="send--recv">SEND &amp;amp; RECV&lt;/h2>
+&lt;h2 id="send--recv">
+&lt;a href="#send--recv" class="header-anchor">#&lt;/a>
+SEND &amp;amp; RECV
+&lt;/h2>
 &lt;p>SEND and RECV are two different types of operations, but because if one end performs a SEND operation, the opposite end must perform a RECV operation, they are usually described together.&lt;/p>
 &lt;p>Why is it called &amp;ldquo;dual-end operation&amp;rdquo;? Because &lt;strong>completing a communication process requires the participation of both ends&amp;rsquo; CPUs&lt;/strong>, and the receiving end needs to explicitly issue a WQE in advance. The diagram below is a schematic of a SEND-RECV operation process. The original image is from [1], and I have made some modifications.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-1-2024-02-25.webp"
@@ -1121,7 +1454,10 @@ alt="rdma-op-1-2024-02-25" width="auto" loading="lazy">
 alt="rdma-op-2-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>The following will introduce the WRITE operation, and I believe everyone can understand it better after comparison.&lt;/p>
-&lt;h2 id="write">WRITE&lt;/h2>
+&lt;h2 id="write">
+&lt;a href="#write" class="header-anchor">#&lt;/a>
+WRITE
+&lt;/h2>
 &lt;p>WRITE is the full name of the RDMA WRITE operation, which is the behavior of actively writing to remote memory from the local end. Except for the preparation phase, the remote CPU does not need to participate and is not aware of when data is written or when the data reception is complete. Therefore, this is a single-end operation.&lt;/p>
 &lt;p>Through the diagram below, we compare the differences between WRITE and SEND-RECV operations. In the preparation phase, this end obtains the &lt;strong>address&lt;/strong> and &amp;ldquo;&lt;strong>key&lt;/strong>&amp;rdquo; of a certain piece of available memory on the opposite end through data exchange, which is equivalent to obtaining read and write permissions for this piece of remote memory. After obtaining the permissions, this end can &lt;strong>directly read and write to this remote memory area&lt;/strong> as if accessing its own memory, which is the essence of RDMA—Remote Direct Memory Access.&lt;/p>
 &lt;p>How are the destination address and key obtained in WRITE/READ operations? They can usually be obtained through the SEND-RECV operation we just discussed, because obtaining the key is ultimately allowed by the controller of the remote memory—the CPU. Although the preparation work is relatively complex, once the preparation is completed, RDMA can leverage its advantages to read and write large amounts of data. Once the remote CPU authorizes the memory for local use, it will no longer participate in the data transmission process, which frees the remote CPU and reduces communication latency.&lt;/p>
@@ -1147,7 +1483,10 @@ alt="rdma-op-4-2024-02-25" width="auto" loading="lazy">
 &lt;p>Note: Strictly speaking, at step 6 when ACK is replied, the RDMA network card can only guarantee that the Payload in the packet has been &amp;ldquo;temporarily stored,&amp;rdquo; but it cannot guarantee that the data has been placed in the destination memory. However, this does not affect our understanding of the sorting process. Thanks to @nekomii for the reminder.&lt;/p>
 &lt;p>IB Spec. 9.7.5.1.6 ACKNOWLEDGE MESSAGE SCHEDULING Original text: &amp;ldquo;For SEND or RDMA WRITE requests, an ACK may be scheduled before data is actually written into the responder’s memory. The ACK simply indicates that the data has successfully reached the fault domain of the responding node. That is, the data has been received by the channel adapter and the channel adapter will write that data to the memory system of the responding node, or the responding application will at least be informed of the failure.&amp;rdquo;&lt;/p>
 &lt;/blockquote>
-&lt;h2 id="read">READ&lt;/h2>
+&lt;h2 id="read">
+&lt;a href="#read" class="header-anchor">#&lt;/a>
+READ
+&lt;/h2>
 &lt;p>As the name suggests, READ and WRITE are opposite processes, with READ being the local end actively reading the remote memory. Like WRITE, the remote CPU does not need to participate and is not aware of the process of data being read from memory.&lt;/p>
 &lt;p>The process of obtaining the key and virtual address is no different from WRITE. It is important to note that &lt;strong>the data requested by the &amp;ldquo;read&amp;rdquo; action&lt;/strong> is carried in the message replied by the other end.&lt;/p>
 &lt;p>The following describes the process of a READ operation, note that it only differs from WRITE in direction and order of steps.&lt;/p>
@@ -1164,7 +1503,10 @@ alt="rdma5-2024-02-25" width="auto" loading="lazy">
 &lt;li>The requester&amp;rsquo;s network card generates a CQE and places it in the CQ.&lt;/li>
 &lt;li>The requesting APP obtains task completion information.&lt;/li>
 &lt;/ol>
-&lt;h2 id="summary">Summary&lt;/h2>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
 &lt;p>We abstract by ignoring various details, and RDMA WRITE and READ operations are simply utilizing the network card to complete the memory copy operation shown in the left diagram below. The copying process is completed by the RDMA network card through the network link; whereas local memory copying, as shown in the right diagram below, is completed by the CPU through the bus:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-6-2024-02-25.webp"
 alt="rdma-op-6-2024-02-25" width="auto" loading="lazy">
@@ -1172,7 +1514,10 @@ alt="rdma-op-6-2024-02-25" width="auto" loading="lazy">
 &lt;p>The words used in the RDMA standard to define the aforementioned operations are very appropriate, &amp;ldquo;receive&amp;rdquo; and &amp;ldquo;send&amp;rdquo; have the semantics of requiring active participation from the peer, while &amp;ldquo;read&amp;rdquo; and &amp;ldquo;write&amp;rdquo; are more like the semantics of the local end operating on a passive peer.&lt;/p>
 &lt;p>By comparing SEND/RECV and WRITE/READ operations, we can find that WRITE/READ, which does not require the responding end&amp;rsquo;s CPU involvement during data transmission, has greater advantages. The drawback is that the requesting end needs to obtain read and write permissions for a section of memory on the responding end during the preparation phase. However, during actual data transmission, the power and time consumption of this preparation phase can be negligible. Therefore, RDMA WRITE/READ is the type of operation used for large data transfers, while SEND/RECV is usually used to transmit some control information.&lt;/p>
 &lt;p>In addition to the types of operations introduced in this article, there are more complex types of operations such as ATOMIC, which will be analyzed in detail in the protocol interpretation section later. This concludes this article, and the next one will introduce the basic service types of RDMA.&lt;/p>
-&lt;h2 id="code-example">Code example&lt;/h2>
+&lt;h2 id="code-example">
+&lt;a href="#code-example" class="header-anchor">#&lt;/a>
+Code example
+&lt;/h2>
 &lt;p>The operation types in this text are all issued through WQE. Below is a simple example demonstrating how to use libibverbs to create a QP and then issue a WRITE operation through WQE.&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 #include &amp;lt;stdio.h&amp;gt;
@@ -1210,8 +1555,14 @@ ibv_post_send(qp, &amp;amp;wr, &amp;amp;bad_wr);
 return 0;
 }
 &lt;/code>&lt;/pre>
-&lt;h2 id="references">References&lt;/h2>
-&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>RDMA Basic Elements</title><link>https://cuterwrite.top/en/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA Basic Elements" />&lt;h1 id="rdma-basic-elements">RDMA Basic Elements&lt;/h1>
+&lt;h2 id="references">
+&lt;a href="#references" class="header-anchor">#&lt;/a>
+References
+&lt;/h2>
+&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>RDMA Basic Elements</title><link>https://cuterwrite.top/en/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/en/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA Basic Elements" />&lt;h1 id="rdma-basic-elements">
+&lt;a href="#rdma-basic-elements" class="header-anchor">#&lt;/a>
+RDMA Basic Elements
+&lt;/h1>
 &lt;p>&lt;strong>This article welcomes non-commercial reprints, please indicate the source.&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>Statement: For collection only, for easy reading&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/141267386">&lt;cite>Zhihu Column: 3. Basic Elements of RDMA&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1220,18 +1571,30 @@ return 0;
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
 alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="wq">WQ&lt;/h2>
+&lt;h2 id="wq">
+&lt;a href="#wq" class="header-anchor">#&lt;/a>
+WQ
+&lt;/h2>
 &lt;p>Work Queue, abbreviated as WQ, is one of the most important concepts in RDMA technology. WQ is a queue that stores work requests. To clearly explain what WQ is, we first introduce the elements in this queue, WQE (Work Queue Element).&lt;/p>
-&lt;h3 id="wqe">WQE&lt;/h3>
+&lt;h3 id="wqe">
+&lt;a href="#wqe" class="header-anchor">#&lt;/a>
+WQE
+&lt;/h3>
 &lt;p>WQE can be considered a &amp;ldquo;task description,&amp;rdquo; which is a work request issued by software to hardware. This description contains the tasks that the software hopes the hardware will perform, as well as detailed information about the task. For example, a task might be like this: &amp;ldquo;I want to send data located at address 0x12345678 with a length of 10 bytes to the opposite node.&amp;rdquo; After receiving the task, the hardware will use DMA to fetch the data from memory, assemble the data packet, and then send it.&lt;/p>
 &lt;p>The meaning of WQE should be quite clear, so what is the WQ we mentioned at the beginning? It is the &amp;ldquo;folder&amp;rdquo; used to store &amp;ldquo;task documents,&amp;rdquo; and the WQ can contain many WQEs. Readers with a basic understanding of data structures should know that a queue is a first-in-first-out data structure, which is very common in computer systems. We can use the diagram below to represent the relationship between WQ and WQE described above:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
 alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>WQ This queue is always added to by the software with WQE (enqueue), and the hardware extracts WQE from it, which is the process of the software &amp;ldquo;issuing tasks&amp;rdquo; to the hardware. Why use a queue instead of a stack? Because the &amp;ldquo;store&amp;rdquo; and &amp;ldquo;retrieve&amp;rdquo; operations are performed separately by software and hardware, and it is necessary to ensure that user requests are processed in order. In RDMA technology, all communication requests must be notified to the hardware in the manner shown in the above diagram, which is often referred to as &amp;ldquo;Post&amp;rdquo;.&lt;/p>
-&lt;h3 id="qp">QP&lt;/h3>
+&lt;h3 id="qp">
+&lt;a href="#qp" class="header-anchor">#&lt;/a>
+QP
+&lt;/h3>
 &lt;p>Queue Pair, abbreviated as QP, means &amp;ldquo;a pair&amp;rdquo; of WQ.&lt;/p>
-&lt;h3 id="sq-and-rq">SQ and RQ&lt;/h3>
+&lt;h3 id="sq-and-rq">
+&lt;a href="#sq-and-rq" class="header-anchor">#&lt;/a>
+SQ and RQ
+&lt;/h3>
 &lt;p>Any communication process must have both sending and receiving ends. A QP is a combination of a send work queue and a receive work queue, which are referred to as the SQ (Send Queue) and RQ (Receive Queue) respectively. Let&amp;rsquo;s enrich the diagram above; the left side is the sending end, and the right side is the receiving end:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
 alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
@@ -1243,12 +1606,18 @@ alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="
 alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>Each QP of every node has a unique number, called QPN (Queue Pair Number), which can uniquely identify a QP on a node.&lt;/p>
-&lt;h3 id="srq">SRQ&lt;/h3>
+&lt;h3 id="srq">
+&lt;a href="#srq" class="header-anchor">#&lt;/a>
+SRQ
+&lt;/h3>
 &lt;p>Shared Receive Queue, abbreviated as SRQ, means a shared receive queue. The concept is easy to understand; it refers to a situation where several QPs share the same RQ, which we call SRQ. We will later learn that the use of RQ is far less than the use of SQ, and each queue consumes memory resources. When we need to use a large number of QPs, we can save memory through SRQ. As shown in the figure below, QP2~QP4 use the same RQ together:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
 alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="cq">CQ&lt;/h2>
+&lt;h2 id="cq">
+&lt;a href="#cq" class="header-anchor">#&lt;/a>
+CQ
+&lt;/h2>
 &lt;p>Completion Queue, abbreviated as CQ, means completion queue. Similar to WQ, we first introduce the elements in the CQ queue — CQE (Completion Queue Element). CQE can be considered the opposite concept of WQE. If WQE is the &amp;ldquo;task list&amp;rdquo; issued by software to hardware, then CQE is the &amp;ldquo;task report&amp;rdquo; returned by hardware to software after completing the task. CQE describes whether a task was executed correctly or if an error was encountered, and if so, what the cause of the error was.&lt;/p>
 &lt;p>And CQ is the container that carries CQE—a first-in-first-out queue. If we invert the diagram representing the relationship between WQ and WQE, we get the relationship between CQ and CQE:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
@@ -1281,14 +1650,20 @@ alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="
 &lt;div class="notice notice-note" >
 &lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>NOTE: One important point to note is that the example in the above diagram is the interaction flow of a reliable service type. If it is an unreliable service, there will be no ACK reply in step 5, and step 9 and subsequent steps will be triggered immediately after step 5. We will explain service types and the difference between reliable and unreliable in the article &amp;ldquo;Basic RDMA Service Types.&amp;rdquo;&lt;/p>&lt;/div>
 &lt;p>At this point, through the two media, WQ and CQ, both ends of the software and hardware have jointly completed a transmission and reception process.&lt;/p>
-&lt;h2 id="wr-and-wc">WR and WC&lt;/h2>
+&lt;h2 id="wr-and-wc">
+&lt;a href="#wr-and-wc" class="header-anchor">#&lt;/a>
+WR and WC
+&lt;/h2>
 &lt;p>After discussing several Queues, there are actually two concepts mentioned at the beginning of the article that have not been explained, namely WR and WC (not the abbreviation for Water Closet).&lt;/p>
 &lt;p>WR stands for Work Request; WC stands for Work Completion. These two are actually &amp;ldquo;mappings&amp;rdquo; of WQE and CQE at the user level. Since the APP completes RDMA communication by calling the protocol stack interface, WQE and CQE themselves are not visible to the user and are concepts within the driver. What the user actually submits through the API is WR, and what is received is WC.&lt;/p>
 &lt;p>WR/WC and WQE/CQE are the same concepts at different levels of entities, both being &amp;ldquo;task book&amp;rdquo; and &amp;ldquo;task report&amp;rdquo;. Therefore, we have added some content to the two diagrams mentioned earlier:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
 alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="code-example">Code example&lt;/h2>
+&lt;h2 id="code-example">
+&lt;a href="#code-example" class="header-anchor">#&lt;/a>
+Code example
+&lt;/h2>
 &lt;p>Finally, below is a simple example demonstrating how to use libibverbs to create a QP and then send data through this QP. This is a very simple example, just to give readers an intuitive understanding of the concepts mentioned above.&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 int main() {
@@ -1320,12 +1695,18 @@ ibv_poll_cq(cq, 1, &amp;amp;wc);
 return 0;
 }
 &lt;/code>&lt;/pre>
-&lt;h2 id="summary">Summary&lt;/h2>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
 &lt;p>Alright, let&amp;rsquo;s use Figure 11 from section 3.2.1 of the IB protocol[1] to summarize the content of this article:&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
 alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>The user-mode WR is converted by the driver into a WQE and filled into the WQ. The WQ can be an SQ responsible for sending or an RQ responsible for receiving. The hardware will take out the WQE from each WQ and complete the sending or receiving task according to the requirements in the WQE. After the task is completed, a CQE will be generated for this task and filled into the CQ. The driver will take out the CQE from the CQ and convert it into a WC to return to the user.&lt;/p>
 &lt;p>The introduction to the basic concepts ends here. The next article will introduce several common types of RDMA operations.&lt;/p>
-&lt;h2 id="references">References&lt;/h2>
+&lt;h2 id="references">
+&lt;a href="#references" class="header-anchor">#&lt;/a>
+References
+&lt;/h2>
 &lt;p>[1] &amp;ldquo;IB Specification Vol 1-Release-1.3-2015-03-03&amp;rdquo;&lt;/p></description></item></channel></rss>

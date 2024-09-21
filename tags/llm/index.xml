@@ -1,13 +1,252 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>llm on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/llm/</link><description>Recent content in llm on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 05 Jul 2024 22:46:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/llm/index.xml" rel="self" type="application/rss+xml"/><item><title>LLM 生态介绍：从模型微调到应用落地</title><link>https://cuterwrite.top/p/llm-ecosystem/</link><pubDate>Fri, 05 Jul 2024 22:46:00 +0000</pubDate><guid>https://cuterwrite.top/p/llm-ecosystem/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_119269220_p0_master1200.webp" alt="Featured image of post LLM 生态介绍：从模型微调到应用落地" />&lt;h1 id="llm-生态介绍从模型微调到应用落地">LLM 生态介绍：从模型微调到应用落地&lt;/h1>
-&lt;h2 id="模型微调">模型微调&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>llm on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/llm/</link><description>Recent content in llm on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Fri, 20 Sep 2024 22:44:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/llm/index.xml" rel="self" type="application/rss+xml"/><item><title>实现本地 RAG 服务：整合 Open WebUI、Ollama 和 Qwen2.5</title><link>https://cuterwrite.top/p/integrate-open-webui-ollama-qwen25-local-rag/</link><pubDate>Fri, 20 Sep 2024 22:44:00 +0000</pubDate><guid>https://cuterwrite.top/p/integrate-open-webui-ollama-qwen25-local-rag/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_116903285_p0_master1200.webp" alt="Featured image of post 实现本地 RAG 服务：整合 Open WebUI、Ollama 和 Qwen2.5" />&lt;h1 id="实现本地-rag-服务整合-open-webuiollama-和-qwen25">
+&lt;a href="#%e5%ae%9e%e7%8e%b0%e6%9c%ac%e5%9c%b0-rag-%e6%9c%8d%e5%8a%a1%e6%95%b4%e5%90%88-open-webuiollama-%e5%92%8c-qwen25" class="header-anchor">#&lt;/a>
+实现本地 RAG 服务：整合 Open WebUI、Ollama 和 Qwen2.5
+&lt;/h1>
+&lt;h2 id="引言">
+&lt;a href="#%e5%bc%95%e8%a8%80" class="header-anchor">#&lt;/a>
+引言
+&lt;/h2>
+&lt;p>在构建信息检索和生成式 AI 应用时，Retrieval-Augmented Generation (RAG) 模型凭借其能够从知识库中检索相关信息并生成准确答案的强大能力，受到越来越多开发者的青睐。然而，实现端到端的本地 RAG 服务，需求的不只是合适的模型，还需要集成强大的用户界面和高效的推理框架。&lt;/p>
+&lt;p>在构建本地 RAG 服务时，利用易于部署的 Docker 方式，可以极大简化模型管理和服务集成。这里我们依赖 Open WebUI 提供的用户界面与模型推理服务，再通过 Ollama 来引入 &lt;code>bge-m3&lt;/code> embedding 模型以实现文档向量化方式的检索功能，从而帮助 Qwen2.5 完成更精准的答案生成。&lt;/p>
+&lt;p>本文我们将讨论如何通过 Docker 快速启动 Open WebUI，同步 Ollama 的 RAG 能力，并结合 Qwen2.5 模型实现高效的文档检索与生成系统。&lt;/p>
+&lt;h2 id="项目概览">
+&lt;a href="#%e9%a1%b9%e7%9b%ae%e6%a6%82%e8%a7%88" class="header-anchor">#&lt;/a>
+项目概览
+&lt;/h2>
+&lt;p>该项目将使用以下关键工具：&lt;/p>
+&lt;ol>
+&lt;li>&lt;strong>Open WebUI&lt;/strong> : 提供用户与模型交互的 web 界面。&lt;/li>
+&lt;li>&lt;strong>Ollama&lt;/strong> : 用于管理 embedding 和大语言模型的模型推理任务。其中 Ollama 中的 &lt;code>bge-m3&lt;/code> 模型将用于文档检索，Qwen2.5 将负责回答生成。&lt;/li>
+&lt;li>&lt;strong>Qwen2.5&lt;/strong> : 模型部分使用阿里推出的 Qwen 2.5 系列，为检索增强生成服务提供自然语言生成。&lt;/li>
+&lt;/ol>
+&lt;p>为了实现 RAG 服务，我们需要以下步骤：&lt;/p>
+&lt;ol>
+&lt;li>部署 Open WebUI 作为用户交互界面。&lt;/li>
+&lt;li>配置 Ollama 以高效调度 Qwen2.5 系列模型。&lt;/li>
+&lt;li>使用 Ollama 配置的名为 &lt;code>bge-m3&lt;/code> 的 embedding 模型实现检索向量化处理。&lt;/li>
+&lt;/ol>
+&lt;h2 id="部署-open-webui">
+&lt;a href="#%e9%83%a8%e7%bd%b2-open-webui" class="header-anchor">#&lt;/a>
+部署 Open WebUI
+&lt;/h2>
+&lt;p>Open WebUI 提供了一个简洁的 Docker 化解决方案，用户无需手动配置大量依赖，直接通过 Docker 启动 Web 界面。&lt;/p>
+&lt;p>首先，服务器上需要确保已经安装了 &lt;a class="link" href="https://docs.docker.com/get-docker/" target="_blank" rel="noopener" >Docker
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+，如果没有安装，可以通过以下命令进行快速安装：&lt;/p>
+&lt;pre>&lt;code class="language-bash">curl https://get.docker.com | sh
+&lt;/code>&lt;/pre>
+&lt;p>然后创建一个目录用于保存 Open WebUI 的数据，这样数据不会在项目更新后丢失：&lt;/p>
+&lt;pre>&lt;code class="language-bash">sudo mkdir -p /DATA/open-webui
+&lt;/code>&lt;/pre>
+&lt;p>接下来，我们可以通过以下命令来启动 Open WebUI ：&lt;/p>
+&lt;pre>&lt;code class="language-bash">docker run -d -p 3000:8080 \
+--add-host=host.docker.internal:host-gateway \
+-v /DATA/open-webui:/app/backend/data \
+--name open-webui \
+--restart always \
+ghcr.io/open-webui/open-webui:main
+&lt;/code>&lt;/pre>
+&lt;p>如果想要运行支持 Nvidia GPU 的 Open WebUI ，可以使用以下命令：&lt;/p>
+&lt;pre>&lt;code class="language-bash">docker run -d -p 3000:8080 \
+--gpus all \
+--add-host=host.docker.internal:host-gateway \
+-v /DATA/open-webui:/app/backend/data \
+--name open-webui \
+--restart always \
+ghcr.io/open-webui/open-webui:cuda
+&lt;/code>&lt;/pre>
+&lt;p>这里我们将 Open WebUI 的服务暴露在机器的 3000 端口，可以通过浏览器访问 &lt;code>http://localhost:3000&lt;/code> 即可使用（远程访问则使用公网 ip ，开放 3000 端口）。/DATA/open-webui 是数据存储目录，你可以根据需要调整这个路径。&lt;/p>
+&lt;p>当然除了 Docker 安装方式外，你也可以通过 pip 、源码编译、Podman 等方式安装 Open WebUI 。更多安装方式请参考 &lt;a class="link" href="https://docs.openwebui.com/getting-started" target="_blank" rel="noopener" >Open WebUI 官方文档
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+。&lt;/p>
+&lt;h3 id="基础设置">
+&lt;a href="#%e5%9f%ba%e7%a1%80%e8%ae%be%e7%bd%ae" class="header-anchor">#&lt;/a>
+基础设置
+&lt;/h3>
+&lt;ol>
+&lt;li>输入要注册的账号信息，&lt;strong>设置强密码！！！&lt;/strong>&lt;/li>
+&lt;/ol>
+&lt;div class="notice notice-info" >
+&lt;div class="notice-title">&lt;svg t="1705940100069" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6252" width="200" height="200">&lt;path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m32 664c0 4.4-3.6 8-8 8h-48c-4.4 0-8-3.6-8-8V456c0-4.4 3.6-8 8-8h48c4.4 0 8 3.6 8 8v272z m-32-344c-26.5 0-48-21.5-48-48s21.5-48 48-48 48 21.5 48 48-21.5 48-48 48z" p-id="6253" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>第一个注册的用户将被自动设置为系统管理员，所以请确保你是第一个注册的用户。&lt;/p>&lt;/div>
+&lt;ol start="2">
+&lt;li>点击左下角头像，选择管理员面板&lt;/li>
+&lt;li>点击面板中的设置&lt;/li>
+&lt;li>关闭允许新用户注册（可选）&lt;/li>
+&lt;li>点击右下角保存&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-09-21_openwebui_admin.webp"
+alt="Open WebUI" width="85%" loading="lazy">
+&lt;/figure>
+&lt;h2 id="配置-ollama-和-qwen25">
+&lt;a href="#%e9%85%8d%e7%bd%ae-ollama-%e5%92%8c-qwen25" class="header-anchor">#&lt;/a>
+配置 Ollama 和 Qwen2.5
+&lt;/h2>
+&lt;h3 id="部署-ollama">
+&lt;a href="#%e9%83%a8%e7%bd%b2-ollama" class="header-anchor">#&lt;/a>
+部署 Ollama
+&lt;/h3>
+&lt;p>在本地服务器上安装 Ollama。目前 Ollama 提供多种安装方式，请参考 Ollama 的&lt;a class="link" href="https://ollama.com/" target="_blank" rel="noopener" >官方文档
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+下载安装最新的 &lt;code>0.3.11&lt;/code> 版本（Qwen2.5 在该版本才开始支持）。安装细节可以参考我之前写的一篇文章：&lt;a class="link" href="https://cuterwrite.top/p/ollama/" >Ollama：从入门到进阶
+&lt;/a>
+。&lt;/p>
+&lt;p>启动 Ollama 服务（如果是 Docker 方式启动则不需要，但必须暴露 11434 端口）：&lt;/p>
+&lt;pre>&lt;code class="language-bash">ollama serve
+&lt;/code>&lt;/pre>
+&lt;p>Ollama 服务启动后，可以通过访问地址 &lt;code>http://localhost:11434&lt;/code> 连接到 Ollama 服务。&lt;/p>
+&lt;p>&lt;a class="link" href="https://ollama.com/library" target="_blank" rel="noopener" >Ollama Library
+&lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
+xmlns="http://www.w3.org/2000/svg">
+&lt;path d="m13 3l3.293 3.293l-7 7l1.414 1.414l7-7L21 11V3z" fill="currentColor" />
+&lt;path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"
+fill="currentColor">
+&lt;/svg>&lt;/span>
+&lt;/a>
+提供了语义向量模型 ( &lt;code>bge-m3&lt;/code> ) 以及各大文本生成模型（包括 Qwen2.5）。下一步我们将配置 Ollama 以适应本项目对文档检索和问答生成的需求。&lt;/p>
+&lt;h3 id="下载-qwen25-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd-qwen25-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载 Qwen2.5 模型
+&lt;/h3>
+&lt;p>通过 Ollama 安装 Qwen2.5，你可以直接在命令行中运行 &lt;code>ollama pull&lt;/code> 命令来下载 Qwen2.5 模型，比如要下载 Qwen2.5 的 72B 模型，可以使用以下命令：&lt;/p>
+&lt;pre>&lt;code class="language-bash">ollama pull qwen2.5:72b
+&lt;/code>&lt;/pre>
+&lt;p>该命令将从 Ollama 的模型仓库抓取 Qwen2.5 模型，并准备运行环境。&lt;/p>
+&lt;p>Qwen2.5 提供了多种模型尺寸，包括 72B、32B、14B、7B、3B、1.5B、0.5B 等，你可以根据自己的需求和 GPU 显存大小选择合适的模型。我采用的是 4x V100 的服务器，所以可以直接选择 72B 模型。如果要求吐字速度快且能接收微小的性能损失的话，可以使用 &lt;code>q4_0&lt;/code> 量化版本 &lt;code>qwen2.5:72b-instruct-q4_0&lt;/code> ；如果能接受吐字速度慢一些，可以使用 &lt;code>qwen2.5:72b-instruct-q5_K_M&lt;/code> 。对于 4x V100 的服务器，虽然 &lt;code>q5_K_M&lt;/code> 模型的 token 生成明显卡顿，但是为了试验一下 Qwen2.5 的性能，我还是选择了 &lt;code>q5_K_M&lt;/code> 模型。&lt;/p>
+&lt;p>对于显存较少的个人电脑，推荐使用 14B 或 7B 模型，通过以下命令下载：&lt;/p>
+&lt;pre>&lt;code class="language-bash">ollama pull qwen2.5:14b
+&lt;/code>&lt;/pre>
+&lt;p>或者&lt;/p>
+&lt;pre>&lt;code class="language-bash">ollama pull qwen2.5:7b
+&lt;/code>&lt;/pre>
+&lt;p>如果你同时启动好了 Open WebUI 和 Ollama 服务，那么也可以在管理员面板中下载模型。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-09-21_download_qwen2-5-7b.webp"
+alt="Download Ollama Model in Open WebUI" width="85%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="下载-bge-m3-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd-bge-m3-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载 bge-m3 模型
+&lt;/h3>
+&lt;p>在 Ollama 中下载 &lt;code>bge-m3&lt;/code> 模型，该模型用于文档向量化处理。在命令行中运行以下命令下载模型（或者在 Open WebUI 界面下载）：&lt;/p>
+&lt;pre>&lt;code class="language-bash">ollama pull bge-m3:latest
+&lt;/code>&lt;/pre>
+&lt;p>到这里，我们已经完成了 Ollama 的配置，接下来我们将在 Open WebUI 中配置 RAG 服务。&lt;/p>
+&lt;h2 id="rag-集成与配置">
+&lt;a href="#rag-%e9%9b%86%e6%88%90%e4%b8%8e%e9%85%8d%e7%bd%ae" class="header-anchor">#&lt;/a>
+RAG 集成与配置
+&lt;/h2>
+&lt;h3 id="在-open-webui-中配置-ollama-的-rag-接口">
+&lt;a href="#%e5%9c%a8-open-webui-%e4%b8%ad%e9%85%8d%e7%bd%ae-ollama-%e7%9a%84-rag-%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+在 Open WebUI 中配置 Ollama 的 RAG 接口
+&lt;/h3>
+&lt;h4 id="访问-open-webui-管理界面">
+&lt;a href="#%e8%ae%bf%e9%97%ae-open-webui-%e7%ae%a1%e7%90%86%e7%95%8c%e9%9d%a2" class="header-anchor">#&lt;/a>
+访问 Open WebUI 管理界面
+&lt;/h4>
+&lt;p>启动 Open WebUI 之后，你可以直接通过 Web 浏览器访问服务地址，登录你的管理员账户，然后进入管理员面板。&lt;/p>
+&lt;h4 id="设置-ollama-接口">
+&lt;a href="#%e8%ae%be%e7%bd%ae-ollama-%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+设置 Ollama 接口
+&lt;/h4>
+&lt;p>在 Open WebUI 的管理员面板中，点击&lt;strong>设置&lt;/strong>，你会看到外部连接的选项，确保 Ollama API 的地址为 &lt;code>host.docker.internal:11434&lt;/code> ，然后点击右边的 &lt;strong>verify connection&lt;/strong> 按钮确认 Ollama 服务是否正常连接。&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-09-21_ollama_api.webp"
+alt="Open WebUI Ollama Setting" width="85%" loading="lazy">
+&lt;/figure>
+&lt;h4 id="设置语义向量模型">
+&lt;a href="#%e8%ae%be%e7%bd%ae%e8%af%ad%e4%b9%89%e5%90%91%e9%87%8f%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+设置语义向量模型
+&lt;/h4>
+&lt;p>在 Open WebUI 的管理员面板中，点击&lt;strong>设置&lt;/strong>，接着点击&lt;strong>文档&lt;/strong>，依次完成以下步骤：&lt;/p>
+&lt;ol>
+&lt;li>设置语义向量模型引擎为 Ollama 。&lt;/li>
+&lt;li>设置语义向量模型为 &lt;code>bge-m3:latest&lt;/code> 。&lt;/li>
+&lt;li>其余设置可以保持默认，这里我设置了文件最大上传大小为 10MB，最大上传数量为 3，Top K 设置为 5，块大小和块重叠分别设置为 1500 和 100 ，并开启 PDF 图像处理。&lt;/li>
+&lt;li>点击右下角保存。&lt;/li>
+&lt;/ol>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-09-21_openwebui_embedding.webp"
+alt="Open WebUI Embedding Setting" width="85%" loading="lazy">
+&lt;/figure>
+&lt;h3 id="测试-rag-服务">
+&lt;a href="#%e6%b5%8b%e8%af%95-rag-%e6%9c%8d%e5%8a%a1" class="header-anchor">#&lt;/a>
+测试 RAG 服务
+&lt;/h3>
+&lt;p>现在，你已经实现了完整的本地 RAG 系统。你可以在 Open WebUI 的主界面中输入任意自然语言问题，然后上传响应文档，系统会调用语义向量模型向量化文档，再使用 Qwen2.5 模型检索文档生成答案并返回给用户。&lt;/p>
+&lt;p>在 Open WebUI 的用户聊天界面，上传你要检索的文档，然后输入你的问题，点击发送，Open WebUI 将会调用 Ollama 的 &lt;code>bge-m3&lt;/code> 模型进行文档向量化处理，然后调用 Qwen2.5 模型进行问答生成。&lt;/p>
+&lt;p>这里我上传了一个简单的 &lt;code>txt&lt;/code> 文件（由 GPT 生成的文本），内容如下：&lt;/p>
+&lt;pre>&lt;code class="language-md"># 奇幻森林的冒险
+## 引言
+在一个遥远的王国边界，有一片神秘的奇幻森林，传说中栖息着许多奇异的生物和古老的魔法。很少有人敢于进入，因为进入森林的人都没有再回来过。故事的主人公是一个年轻的冒险者，他名叫艾文。
+## 第一章：艾文的决定
+艾文是一个热爱冒险和探索的年轻人，他从小就听过很多关于奇幻森林的故事。尽管家人和朋友都劝他不要去，但他坚定地认为，自己注定要揭开这片森林的秘密。一天清晨，他收拾好行囊，带着勇气和好奇心，向森林进发。
+### 1.1 出发前的准备
+在出发前，艾文去了城里最有名的图书馆，查阅了关于奇幻森林的资料。他发现，有一本古老的手稿记录了进入森林的路线，以及如何避开其中一些危险的生物。艾文将这本手稿复印在自己的笔记本上，准备在需要的时候参考。
+### 1.2 第一次穿越
+艾文刚进入森林就感觉到这里的气息与外界完全不同。空气中弥漫着浓郁的花香，还有隐隐约约的奇怪声音。穿越森林的第一天，艾文没有遇到什么危险，但他能感觉到，有什么东西在暗中观察他。
+## 第二章：神秘生物
+第二天，艾文继续深入森林。然而，他没走多远，就遇到了一只奇异的生物。这是一只会发光的小鹿，全身散发着柔和的蓝色光芒。起初，艾文感到惊讶和畏惧，但这只小鹿却没有攻击他的意思，还带着他走向一个隐秘的洞穴。
+### 2.1 洞穴中的秘密
+在洞穴中，艾文发现了一块古老的石板，石板上刻有一些奇怪的符号。小鹿似乎知道这些符号的含义，带着艾文一步一步地解读。原来，这些符号记载着一种强大的魔法，可以帮助他在森林中找到失落的宝藏。
+### 2.2 获得帮助
+艾文决定接受小鹿的帮助，解开这些符号的秘密。他们在洞穴中度过了几天，艾文学会了如何利用森林中的资源制作药剂和武器。通过这些，他在森林中的生存能力大大提高。
+## 第三章：最终的试炼
+在小鹿的指引下，艾文终于来到了森林的深处，那里有一个古老的祭坛。据说，只有最勇敢的冒险者才能通过祭坛的试炼，获得最终的宝藏。
+### 3.1 面对恐惧
+祭坛周围布满了各种陷阱和幻觉。艾文必须面对自己内心深处的恐惧，才能通过这些障碍。最终，他用智慧和勇气克服了一切，获得了进入祭坛的资格。
+### 3.2 发现宝藏
+在祭坛的中心，艾文发现了一颗闪闪发光的宝石。据传，这颗宝石拥有改变命运的力量。艾文拿起宝石，感受到了其中的强大力量。他知道，这不仅仅是一件珍宝，还有可能是破解奇幻森林秘密的关键。
+## 结论
+艾文成功地揭开了奇幻森林的部分秘密，成为了传说中的英雄。他的冒险故事也激励了更多年轻的冒险者，带着勇气和智慧，踏上探索未知世界的旅程。
+&lt;/code>&lt;/pre>
+&lt;p>然后分别提了三个问题：&lt;/p>
+&lt;ol>
+&lt;li>艾文在森林中遇到的奇异生物是什么？&lt;/li>
+&lt;li>艾文在洞穴中找到的古老石板上刻的是什么？&lt;/li>
+&lt;li>艾文在祭坛中心发现了什么宝藏？&lt;/li>
+&lt;/ol>
+&lt;p>下图是回答结果：&lt;/p>
+&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-09-21_qwen2-5-QA.webp"
+alt="Open WebUI Qwen2.5 Answer" width="90%" loading="lazy">
+&lt;/figure>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
+&lt;p>借助 Open WebUI 和 Ollama，我们可以轻松搭建一个高效、直观的本地 RAG 系统。通过将 &lt;code>bge-m3&lt;/code> 语义向量模型用于文本向量化，再结合 Qwen2.5 生成模型，用户可以在一个统一的 Web 界面中进行文档检索与增强生成任务的高效互动。不但保护了数据隐私，还大幅提升了生成式 AI 的本地化应用能力。&lt;/p></description></item><item><title>LLM 生态介绍：从模型微调到应用落地</title><link>https://cuterwrite.top/p/llm-ecosystem/</link><pubDate>Fri, 05 Jul 2024 22:46:00 +0000</pubDate><guid>https://cuterwrite.top/p/llm-ecosystem/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-29_119269220_p0_master1200.webp" alt="Featured image of post LLM 生态介绍：从模型微调到应用落地" />&lt;h1 id="llm-生态介绍从模型微调到应用落地">
+&lt;a href="#llm-%e7%94%9f%e6%80%81%e4%bb%8b%e7%bb%8d%e4%bb%8e%e6%a8%a1%e5%9e%8b%e5%be%ae%e8%b0%83%e5%88%b0%e5%ba%94%e7%94%a8%e8%90%bd%e5%9c%b0" class="header-anchor">#&lt;/a>
+LLM 生态介绍：从模型微调到应用落地
+&lt;/h1>
+&lt;h2 id="模型微调">
+&lt;a href="#%e6%a8%a1%e5%9e%8b%e5%be%ae%e8%b0%83" class="header-anchor">#&lt;/a>
+模型微调
+&lt;/h2>
 &lt;p>预训练的 LLM 通常具备广泛的知识，但要使其在特定任务上表现出色，微调是必不可少的。以下是一些常用的 LLM 微调工具：&lt;/p>
-&lt;h3 id="axolotl">Axolotl&lt;/h3>
+&lt;h3 id="axolotl">
+&lt;a href="#axolotl" class="header-anchor">#&lt;/a>
+Axolotl
+&lt;/h3>
 &lt;a href="https://github.com/OpenAccess-AI-Collective/axolotl" target="_blank" class="card-github fetch-waiting no-styling"
-repo="OpenAccess-AI-Collective/axolotl" id="repo-HjpOgAKPxpgC0Vi9-card">
+repo="OpenAccess-AI-Collective/axolotl" id="repo-sB0Ta9e9GEFXPGeW-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">OpenAccess-AI-Collective&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -15,43 +254,43 @@ repo="OpenAccess-AI-Collective/axolotl" id="repo-HjpOgAKPxpgC0Vi9-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-HjpOgAKPxpgC0Vi9-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-sB0Ta9e9GEFXPGeW-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-HjpOgAKPxpgC0Vi9-script" type="text/javascript" defer>
+&lt;script id="repo-sB0Ta9e9GEFXPGeW-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/OpenAccess-AI-Collective\/axolotl', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-description').innerText = data.description.replace(
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-language').innerText = data.language;
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-language').innerText = data.language;
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-HjpOgAKPxpgC0Vi9-avatar');
+const avatarEl = document.getElementById('repo-sB0Ta9e9GEFXPGeW-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-license').innerText = data.license.spdx_id
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-license').classList.add = "no-license"
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-license').classList.add = "no-license"
 };
-document.getElementById('repo-HjpOgAKPxpgC0Vi9-card').classList.remove("fetch-waiting");
+document.getElementById('repo-sB0Ta9e9GEFXPGeW-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for OpenAccess-AI-Collective\/axolotl.")
 }).catch(err => {
-const c = document.getElementById('repo-HjpOgAKPxpgC0Vi9-card');
+const c = document.getElementById('repo-sB0Ta9e9GEFXPGeW-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for OpenAccess-AI-Collective\/axolotl.")
 })
@@ -99,16 +338,19 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 项目主页。&lt;/p>
-&lt;h3 id="llama-factory">Llama-Factory&lt;/h3>
+&lt;h3 id="llama-factory">
+&lt;a href="#llama-factory" class="header-anchor">#&lt;/a>
+Llama-Factory
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-07-07_llama-factory-logo.webp"
 alt="Llama Factory Logo" width="80%" loading="lazy">
 &lt;/figure>
 &lt;a href="https://github.com/hiyouga/LLaMA-Factory" target="_blank" class="card-github fetch-waiting no-styling"
-repo="hiyouga/LLaMA-Factory" id="repo-jNwzFHvavKT2vUAg-card">
+repo="hiyouga/LLaMA-Factory" id="repo-8hGte4jHL6AuosUg-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-jNwzFHvavKT2vUAg-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">hiyouga&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -116,43 +358,43 @@ repo="hiyouga/LLaMA-Factory" id="repo-jNwzFHvavKT2vUAg-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-jNwzFHvavKT2vUAg-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-jNwzFHvavKT2vUAg-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-jNwzFHvavKT2vUAg-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-jNwzFHvavKT2vUAg-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-jNwzFHvavKT2vUAg-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-8hGte4jHL6AuosUg-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-jNwzFHvavKT2vUAg-script" type="text/javascript" defer>
+&lt;script id="repo-8hGte4jHL6AuosUg-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/hiyouga\/LLaMA-Factory', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-jNwzFHvavKT2vUAg-description').innerText = data.description.replace(
+document.getElementById('repo-8hGte4jHL6AuosUg-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-jNwzFHvavKT2vUAg-language').innerText = data.language;
-document.getElementById('repo-jNwzFHvavKT2vUAg-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-8hGte4jHL6AuosUg-language').innerText = data.language;
+document.getElementById('repo-8hGte4jHL6AuosUg-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-jNwzFHvavKT2vUAg-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-8hGte4jHL6AuosUg-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-jNwzFHvavKT2vUAg-avatar');
+const avatarEl = document.getElementById('repo-8hGte4jHL6AuosUg-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-jNwzFHvavKT2vUAg-license').innerText = data.license.spdx_id
+document.getElementById('repo-8hGte4jHL6AuosUg-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-jNwzFHvavKT2vUAg-license').classList.add = "no-license"
+document.getElementById('repo-8hGte4jHL6AuosUg-license').classList.add = "no-license"
 };
-document.getElementById('repo-jNwzFHvavKT2vUAg-card').classList.remove("fetch-waiting");
+document.getElementById('repo-8hGte4jHL6AuosUg-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for hiyouga\/LLaMA-Factory.")
 }).catch(err => {
-const c = document.getElementById('repo-jNwzFHvavKT2vUAg-card');
+const c = document.getElementById('repo-8hGte4jHL6AuosUg-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for hiyouga\/LLaMA-Factory.")
 })
@@ -353,13 +595,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 项目主页。&lt;/p>
-&lt;h3 id="firefly">Firefly&lt;/h3>
+&lt;h3 id="firefly">
+&lt;a href="#firefly" class="header-anchor">#&lt;/a>
+Firefly
+&lt;/h3>
 &lt;a href="https://github.com/yangjianxin1/Firefly" target="_blank" class="card-github fetch-waiting no-styling"
-repo="yangjianxin1/Firefly" id="repo-pJSIcPap40fA1epc-card">
+repo="yangjianxin1/Firefly" id="repo-oqWds5Q4sQG4Qg63-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-pJSIcPap40fA1epc-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">yangjianxin1&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -367,43 +612,43 @@ repo="yangjianxin1/Firefly" id="repo-pJSIcPap40fA1epc-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-pJSIcPap40fA1epc-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-pJSIcPap40fA1epc-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-pJSIcPap40fA1epc-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-pJSIcPap40fA1epc-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-pJSIcPap40fA1epc-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-oqWds5Q4sQG4Qg63-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-pJSIcPap40fA1epc-script" type="text/javascript" defer>
+&lt;script id="repo-oqWds5Q4sQG4Qg63-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/yangjianxin1\/Firefly', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-pJSIcPap40fA1epc-description').innerText = data.description.replace(
+document.getElementById('repo-oqWds5Q4sQG4Qg63-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-pJSIcPap40fA1epc-language').innerText = data.language;
-document.getElementById('repo-pJSIcPap40fA1epc-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-oqWds5Q4sQG4Qg63-language').innerText = data.language;
+document.getElementById('repo-oqWds5Q4sQG4Qg63-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-pJSIcPap40fA1epc-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-oqWds5Q4sQG4Qg63-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-pJSIcPap40fA1epc-avatar');
+const avatarEl = document.getElementById('repo-oqWds5Q4sQG4Qg63-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-pJSIcPap40fA1epc-license').innerText = data.license.spdx_id
+document.getElementById('repo-oqWds5Q4sQG4Qg63-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-pJSIcPap40fA1epc-license').classList.add = "no-license"
+document.getElementById('repo-oqWds5Q4sQG4Qg63-license').classList.add = "no-license"
 };
-document.getElementById('repo-pJSIcPap40fA1epc-card').classList.remove("fetch-waiting");
+document.getElementById('repo-oqWds5Q4sQG4Qg63-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for yangjianxin1\/Firefly.")
 }).catch(err => {
-const c = document.getElementById('repo-pJSIcPap40fA1epc-card');
+const c = document.getElementById('repo-oqWds5Q4sQG4Qg63-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for yangjianxin1\/Firefly.")
 })
@@ -444,13 +689,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 项目主页。&lt;/p>
-&lt;h3 id="xtuner">XTuner&lt;/h3>
+&lt;h3 id="xtuner">
+&lt;a href="#xtuner" class="header-anchor">#&lt;/a>
+XTuner
+&lt;/h3>
 &lt;a href="https://github.com/InternLM/xtuner" target="_blank" class="card-github fetch-waiting no-styling"
-repo="InternLM/xtuner" id="repo-hBSTssLmgldPybhi-card">
+repo="InternLM/xtuner" id="repo-5BnebWfSMZXsC6m2-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-hBSTssLmgldPybhi-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">InternLM&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -458,43 +706,43 @@ repo="InternLM/xtuner" id="repo-hBSTssLmgldPybhi-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-hBSTssLmgldPybhi-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-hBSTssLmgldPybhi-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-hBSTssLmgldPybhi-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-hBSTssLmgldPybhi-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-hBSTssLmgldPybhi-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-5BnebWfSMZXsC6m2-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-hBSTssLmgldPybhi-script" type="text/javascript" defer>
+&lt;script id="repo-5BnebWfSMZXsC6m2-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/InternLM\/xtuner', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-hBSTssLmgldPybhi-description').innerText = data.description.replace(
+document.getElementById('repo-5BnebWfSMZXsC6m2-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-hBSTssLmgldPybhi-language').innerText = data.language;
-document.getElementById('repo-hBSTssLmgldPybhi-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-5BnebWfSMZXsC6m2-language').innerText = data.language;
+document.getElementById('repo-5BnebWfSMZXsC6m2-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-hBSTssLmgldPybhi-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-5BnebWfSMZXsC6m2-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-hBSTssLmgldPybhi-avatar');
+const avatarEl = document.getElementById('repo-5BnebWfSMZXsC6m2-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-hBSTssLmgldPybhi-license').innerText = data.license.spdx_id
+document.getElementById('repo-5BnebWfSMZXsC6m2-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-hBSTssLmgldPybhi-license').classList.add = "no-license"
+document.getElementById('repo-5BnebWfSMZXsC6m2-license').classList.add = "no-license"
 };
-document.getElementById('repo-hBSTssLmgldPybhi-card').classList.remove("fetch-waiting");
+document.getElementById('repo-5BnebWfSMZXsC6m2-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for InternLM\/xtuner.")
 }).catch(err => {
-const c = document.getElementById('repo-hBSTssLmgldPybhi-card');
+const c = document.getElementById('repo-5BnebWfSMZXsC6m2-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for InternLM\/xtuner.")
 })
@@ -718,15 +966,21 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h2 id="模型量化">模型量化&lt;/h2>
+&lt;h2 id="模型量化">
+&lt;a href="#%e6%a8%a1%e5%9e%8b%e9%87%8f%e5%8c%96" class="header-anchor">#&lt;/a>
+模型量化
+&lt;/h2>
 &lt;p>LLM 通常体积庞大，对计算资源要求高。模型量化技术可以压缩模型大小，提高运行效率，使其更易于部署：&lt;/p>
-&lt;h3 id="autogptq">AutoGPTQ&lt;/h3>
+&lt;h3 id="autogptq">
+&lt;a href="#autogptq" class="header-anchor">#&lt;/a>
+AutoGPTQ
+&lt;/h3>
 &lt;a href="https://github.com/PanQiWei/AutoGPTQ" target="_blank" class="card-github fetch-waiting no-styling"
-repo="PanQiWei/AutoGPTQ" id="repo-BSMI5HynrJsy7O3M-card">
+repo="PanQiWei/AutoGPTQ" id="repo-Vu2CBqnDTc6qz0gl-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-BSMI5HynrJsy7O3M-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">PanQiWei&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -734,43 +988,43 @@ repo="PanQiWei/AutoGPTQ" id="repo-BSMI5HynrJsy7O3M-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-BSMI5HynrJsy7O3M-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-BSMI5HynrJsy7O3M-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-BSMI5HynrJsy7O3M-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-BSMI5HynrJsy7O3M-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-BSMI5HynrJsy7O3M-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-Vu2CBqnDTc6qz0gl-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-BSMI5HynrJsy7O3M-script" type="text/javascript" defer>
+&lt;script id="repo-Vu2CBqnDTc6qz0gl-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/PanQiWei\/AutoGPTQ', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-BSMI5HynrJsy7O3M-description').innerText = data.description.replace(
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-BSMI5HynrJsy7O3M-language').innerText = data.language;
-document.getElementById('repo-BSMI5HynrJsy7O3M-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-language').innerText = data.language;
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-BSMI5HynrJsy7O3M-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-BSMI5HynrJsy7O3M-avatar');
+const avatarEl = document.getElementById('repo-Vu2CBqnDTc6qz0gl-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-BSMI5HynrJsy7O3M-license').innerText = data.license.spdx_id
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-BSMI5HynrJsy7O3M-license').classList.add = "no-license"
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-license').classList.add = "no-license"
 };
-document.getElementById('repo-BSMI5HynrJsy7O3M-card').classList.remove("fetch-waiting");
+document.getElementById('repo-Vu2CBqnDTc6qz0gl-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for PanQiWei\/AutoGPTQ.")
 }).catch(err => {
-const c = document.getElementById('repo-BSMI5HynrJsy7O3M-card');
+const c = document.getElementById('repo-Vu2CBqnDTc6qz0gl-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for PanQiWei\/AutoGPTQ.")
 })
@@ -801,13 +1055,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="autoawq">AutoAWQ&lt;/h3>
+&lt;h3 id="autoawq">
+&lt;a href="#autoawq" class="header-anchor">#&lt;/a>
+AutoAWQ
+&lt;/h3>
 &lt;a href="https://github.com/casper-hansen/AutoAWQ" target="_blank" class="card-github fetch-waiting no-styling"
-repo="casper-hansen/AutoAWQ" id="repo-zQ10zCYJd2z1LKZN-card">
+repo="casper-hansen/AutoAWQ" id="repo-TiR4ZOKzmTSTecZw-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-zQ10zCYJd2z1LKZN-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">casper-hansen&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -815,43 +1072,43 @@ repo="casper-hansen/AutoAWQ" id="repo-zQ10zCYJd2z1LKZN-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-zQ10zCYJd2z1LKZN-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-zQ10zCYJd2z1LKZN-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-zQ10zCYJd2z1LKZN-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-zQ10zCYJd2z1LKZN-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-zQ10zCYJd2z1LKZN-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-TiR4ZOKzmTSTecZw-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-zQ10zCYJd2z1LKZN-script" type="text/javascript" defer>
+&lt;script id="repo-TiR4ZOKzmTSTecZw-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/casper-hansen\/AutoAWQ', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-zQ10zCYJd2z1LKZN-description').innerText = data.description.replace(
+document.getElementById('repo-TiR4ZOKzmTSTecZw-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-zQ10zCYJd2z1LKZN-language').innerText = data.language;
-document.getElementById('repo-zQ10zCYJd2z1LKZN-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-TiR4ZOKzmTSTecZw-language').innerText = data.language;
+document.getElementById('repo-TiR4ZOKzmTSTecZw-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-zQ10zCYJd2z1LKZN-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-TiR4ZOKzmTSTecZw-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-zQ10zCYJd2z1LKZN-avatar');
+const avatarEl = document.getElementById('repo-TiR4ZOKzmTSTecZw-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-zQ10zCYJd2z1LKZN-license').innerText = data.license.spdx_id
+document.getElementById('repo-TiR4ZOKzmTSTecZw-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-zQ10zCYJd2z1LKZN-license').classList.add = "no-license"
+document.getElementById('repo-TiR4ZOKzmTSTecZw-license').classList.add = "no-license"
 };
-document.getElementById('repo-zQ10zCYJd2z1LKZN-card').classList.remove("fetch-waiting");
+document.getElementById('repo-TiR4ZOKzmTSTecZw-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for casper-hansen\/AutoAWQ.")
 }).catch(err => {
-const c = document.getElementById('repo-zQ10zCYJd2z1LKZN-card');
+const c = document.getElementById('repo-TiR4ZOKzmTSTecZw-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for casper-hansen\/AutoAWQ.")
 })
@@ -879,13 +1136,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="neural-compressor">Neural Compressor&lt;/h3>
+&lt;h3 id="neural-compressor">
+&lt;a href="#neural-compressor" class="header-anchor">#&lt;/a>
+Neural Compressor
+&lt;/h3>
 &lt;a href="https://github.com/intel/neural-compressor" target="_blank" class="card-github fetch-waiting no-styling"
-repo="intel/neural-compressor" id="repo-QxNM63fkzTLQzEw1-card">
+repo="intel/neural-compressor" id="repo-m86UWtJyVEp1CYau-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-QxNM63fkzTLQzEw1-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">intel&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -893,43 +1153,43 @@ repo="intel/neural-compressor" id="repo-QxNM63fkzTLQzEw1-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-QxNM63fkzTLQzEw1-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-QxNM63fkzTLQzEw1-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-QxNM63fkzTLQzEw1-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-QxNM63fkzTLQzEw1-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-QxNM63fkzTLQzEw1-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-m86UWtJyVEp1CYau-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-QxNM63fkzTLQzEw1-script" type="text/javascript" defer>
+&lt;script id="repo-m86UWtJyVEp1CYau-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/intel\/neural-compressor', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-QxNM63fkzTLQzEw1-description').innerText = data.description.replace(
+document.getElementById('repo-m86UWtJyVEp1CYau-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-QxNM63fkzTLQzEw1-language').innerText = data.language;
-document.getElementById('repo-QxNM63fkzTLQzEw1-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-m86UWtJyVEp1CYau-language').innerText = data.language;
+document.getElementById('repo-m86UWtJyVEp1CYau-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-QxNM63fkzTLQzEw1-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-m86UWtJyVEp1CYau-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-QxNM63fkzTLQzEw1-avatar');
+const avatarEl = document.getElementById('repo-m86UWtJyVEp1CYau-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-QxNM63fkzTLQzEw1-license').innerText = data.license.spdx_id
+document.getElementById('repo-m86UWtJyVEp1CYau-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-QxNM63fkzTLQzEw1-license').classList.add = "no-license"
+document.getElementById('repo-m86UWtJyVEp1CYau-license').classList.add = "no-license"
 };
-document.getElementById('repo-QxNM63fkzTLQzEw1-card').classList.remove("fetch-waiting");
+document.getElementById('repo-m86UWtJyVEp1CYau-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for intel\/neural-compressor.")
 }).catch(err => {
-const c = document.getElementById('repo-QxNM63fkzTLQzEw1-card');
+const c = document.getElementById('repo-m86UWtJyVEp1CYau-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for intel\/neural-compressor.")
 })
@@ -947,15 +1207,21 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h2 id="模型部署">模型部署&lt;/h2>
+&lt;h2 id="模型部署">
+&lt;a href="#%e6%a8%a1%e5%9e%8b%e9%83%a8%e7%bd%b2" class="header-anchor">#&lt;/a>
+模型部署
+&lt;/h2>
 &lt;p>将训练好的 LLM 部署到生产环境至关重要。以下是一些常用的 LLM 部署工具：&lt;/p>
-&lt;h3 id="vllm">vLLM&lt;/h3>
+&lt;h3 id="vllm">
+&lt;a href="#vllm" class="header-anchor">#&lt;/a>
+vLLM
+&lt;/h3>
 &lt;a href="https://github.com/vllm-project/vllm" target="_blank" class="card-github fetch-waiting no-styling"
-repo="vllm-project/vllm" id="repo-t7RwN0cYS6dozQ7j-card">
+repo="vllm-project/vllm" id="repo-EqXGrtuku1rCOaRy-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-t7RwN0cYS6dozQ7j-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">vllm-project&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -963,43 +1229,43 @@ repo="vllm-project/vllm" id="repo-t7RwN0cYS6dozQ7j-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-t7RwN0cYS6dozQ7j-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-t7RwN0cYS6dozQ7j-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-t7RwN0cYS6dozQ7j-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-t7RwN0cYS6dozQ7j-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-t7RwN0cYS6dozQ7j-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-EqXGrtuku1rCOaRy-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-t7RwN0cYS6dozQ7j-script" type="text/javascript" defer>
+&lt;script id="repo-EqXGrtuku1rCOaRy-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/vllm-project\/vllm', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-t7RwN0cYS6dozQ7j-description').innerText = data.description.replace(
+document.getElementById('repo-EqXGrtuku1rCOaRy-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-t7RwN0cYS6dozQ7j-language').innerText = data.language;
-document.getElementById('repo-t7RwN0cYS6dozQ7j-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-EqXGrtuku1rCOaRy-language').innerText = data.language;
+document.getElementById('repo-EqXGrtuku1rCOaRy-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-t7RwN0cYS6dozQ7j-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-EqXGrtuku1rCOaRy-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-t7RwN0cYS6dozQ7j-avatar');
+const avatarEl = document.getElementById('repo-EqXGrtuku1rCOaRy-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-t7RwN0cYS6dozQ7j-license').innerText = data.license.spdx_id
+document.getElementById('repo-EqXGrtuku1rCOaRy-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-t7RwN0cYS6dozQ7j-license').classList.add = "no-license"
+document.getElementById('repo-EqXGrtuku1rCOaRy-license').classList.add = "no-license"
 };
-document.getElementById('repo-t7RwN0cYS6dozQ7j-card').classList.remove("fetch-waiting");
+document.getElementById('repo-EqXGrtuku1rCOaRy-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for vllm-project\/vllm.")
 }).catch(err => {
-const c = document.getElementById('repo-t7RwN0cYS6dozQ7j-card');
+const c = document.getElementById('repo-EqXGrtuku1rCOaRy-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for vllm-project\/vllm.")
 })
@@ -1049,13 +1315,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 官方文档。&lt;/p>
-&lt;h3 id="sgl">SGL&lt;/h3>
+&lt;h3 id="sgl">
+&lt;a href="#sgl" class="header-anchor">#&lt;/a>
+SGL
+&lt;/h3>
 &lt;a href="https://github.com/sgl-project/sglang" target="_blank" class="card-github fetch-waiting no-styling"
-repo="sgl-project/sglang" id="repo-4amyUaRdqBN40vel-card">
+repo="sgl-project/sglang" id="repo-yMkb12uqR7bFojeI-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-4amyUaRdqBN40vel-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">sgl-project&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1063,43 +1332,43 @@ repo="sgl-project/sglang" id="repo-4amyUaRdqBN40vel-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-4amyUaRdqBN40vel-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-4amyUaRdqBN40vel-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-4amyUaRdqBN40vel-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-4amyUaRdqBN40vel-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-4amyUaRdqBN40vel-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-yMkb12uqR7bFojeI-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-4amyUaRdqBN40vel-script" type="text/javascript" defer>
+&lt;script id="repo-yMkb12uqR7bFojeI-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/sgl-project\/sglang', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-4amyUaRdqBN40vel-description').innerText = data.description.replace(
+document.getElementById('repo-yMkb12uqR7bFojeI-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-4amyUaRdqBN40vel-language').innerText = data.language;
-document.getElementById('repo-4amyUaRdqBN40vel-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-yMkb12uqR7bFojeI-language').innerText = data.language;
+document.getElementById('repo-yMkb12uqR7bFojeI-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-4amyUaRdqBN40vel-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-yMkb12uqR7bFojeI-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-4amyUaRdqBN40vel-avatar');
+const avatarEl = document.getElementById('repo-yMkb12uqR7bFojeI-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-4amyUaRdqBN40vel-license').innerText = data.license.spdx_id
+document.getElementById('repo-yMkb12uqR7bFojeI-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-4amyUaRdqBN40vel-license').classList.add = "no-license"
+document.getElementById('repo-yMkb12uqR7bFojeI-license').classList.add = "no-license"
 };
-document.getElementById('repo-4amyUaRdqBN40vel-card').classList.remove("fetch-waiting");
+document.getElementById('repo-yMkb12uqR7bFojeI-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for sgl-project\/sglang.")
 }).catch(err => {
-const c = document.getElementById('repo-4amyUaRdqBN40vel-card');
+const c = document.getElementById('repo-yMkb12uqR7bFojeI-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for sgl-project\/sglang.")
 })
@@ -1119,13 +1388,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="skypilot">SkyPilot&lt;/h3>
+&lt;h3 id="skypilot">
+&lt;a href="#skypilot" class="header-anchor">#&lt;/a>
+SkyPilot
+&lt;/h3>
 &lt;a href="https://github.com/skypilot-org/skypilot" target="_blank" class="card-github fetch-waiting no-styling"
-repo="skypilot-org/skypilot" id="repo-OO5eif5mhlSehbOQ-card">
+repo="skypilot-org/skypilot" id="repo-iibwX28qJQCEDFWo-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-OO5eif5mhlSehbOQ-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">skypilot-org&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1133,43 +1405,43 @@ repo="skypilot-org/skypilot" id="repo-OO5eif5mhlSehbOQ-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-OO5eif5mhlSehbOQ-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-OO5eif5mhlSehbOQ-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-OO5eif5mhlSehbOQ-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-OO5eif5mhlSehbOQ-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-OO5eif5mhlSehbOQ-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-iibwX28qJQCEDFWo-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-OO5eif5mhlSehbOQ-script" type="text/javascript" defer>
+&lt;script id="repo-iibwX28qJQCEDFWo-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/skypilot-org\/skypilot', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-OO5eif5mhlSehbOQ-description').innerText = data.description.replace(
+document.getElementById('repo-iibwX28qJQCEDFWo-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-OO5eif5mhlSehbOQ-language').innerText = data.language;
-document.getElementById('repo-OO5eif5mhlSehbOQ-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-iibwX28qJQCEDFWo-language').innerText = data.language;
+document.getElementById('repo-iibwX28qJQCEDFWo-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-OO5eif5mhlSehbOQ-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-iibwX28qJQCEDFWo-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-OO5eif5mhlSehbOQ-avatar');
+const avatarEl = document.getElementById('repo-iibwX28qJQCEDFWo-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-OO5eif5mhlSehbOQ-license').innerText = data.license.spdx_id
+document.getElementById('repo-iibwX28qJQCEDFWo-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-OO5eif5mhlSehbOQ-license').classList.add = "no-license"
+document.getElementById('repo-iibwX28qJQCEDFWo-license').classList.add = "no-license"
 };
-document.getElementById('repo-OO5eif5mhlSehbOQ-card').classList.remove("fetch-waiting");
+document.getElementById('repo-iibwX28qJQCEDFWo-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for skypilot-org\/skypilot.")
 }).catch(err => {
-const c = document.getElementById('repo-OO5eif5mhlSehbOQ-card');
+const c = document.getElementById('repo-iibwX28qJQCEDFWo-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for skypilot-org\/skypilot.")
 })
@@ -1190,13 +1462,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="tensorrt-llm">TensorRT-LLM&lt;/h3>
+&lt;h3 id="tensorrt-llm">
+&lt;a href="#tensorrt-llm" class="header-anchor">#&lt;/a>
+TensorRT-LLM
+&lt;/h3>
 &lt;a href="https://github.com/NVIDIA/TensorRT-LLM" target="_blank" class="card-github fetch-waiting no-styling"
-repo="NVIDIA/TensorRT-LLM" id="repo-7ad6rb1LtOma2rJj-card">
+repo="NVIDIA/TensorRT-LLM" id="repo-ue2XSWN22zHCStBq-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-7ad6rb1LtOma2rJj-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">NVIDIA&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1204,43 +1479,43 @@ repo="NVIDIA/TensorRT-LLM" id="repo-7ad6rb1LtOma2rJj-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-7ad6rb1LtOma2rJj-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-7ad6rb1LtOma2rJj-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-7ad6rb1LtOma2rJj-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-7ad6rb1LtOma2rJj-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-7ad6rb1LtOma2rJj-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-ue2XSWN22zHCStBq-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-7ad6rb1LtOma2rJj-script" type="text/javascript" defer>
+&lt;script id="repo-ue2XSWN22zHCStBq-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/NVIDIA\/TensorRT-LLM', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-7ad6rb1LtOma2rJj-description').innerText = data.description.replace(
+document.getElementById('repo-ue2XSWN22zHCStBq-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-7ad6rb1LtOma2rJj-language').innerText = data.language;
-document.getElementById('repo-7ad6rb1LtOma2rJj-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-ue2XSWN22zHCStBq-language').innerText = data.language;
+document.getElementById('repo-ue2XSWN22zHCStBq-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-7ad6rb1LtOma2rJj-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-ue2XSWN22zHCStBq-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-7ad6rb1LtOma2rJj-avatar');
+const avatarEl = document.getElementById('repo-ue2XSWN22zHCStBq-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-7ad6rb1LtOma2rJj-license').innerText = data.license.spdx_id
+document.getElementById('repo-ue2XSWN22zHCStBq-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-7ad6rb1LtOma2rJj-license').classList.add = "no-license"
+document.getElementById('repo-ue2XSWN22zHCStBq-license').classList.add = "no-license"
 };
-document.getElementById('repo-7ad6rb1LtOma2rJj-card').classList.remove("fetch-waiting");
+document.getElementById('repo-ue2XSWN22zHCStBq-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for NVIDIA\/TensorRT-LLM.")
 }).catch(err => {
-const c = document.getElementById('repo-7ad6rb1LtOma2rJj-card');
+const c = document.getElementById('repo-ue2XSWN22zHCStBq-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for NVIDIA\/TensorRT-LLM.")
 })
@@ -1256,13 +1531,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="openvino">OpenVino&lt;/h3>
+&lt;h3 id="openvino">
+&lt;a href="#openvino" class="header-anchor">#&lt;/a>
+OpenVino
+&lt;/h3>
 &lt;a href="https://github.com/openvinotoolkit/openvino" target="_blank" class="card-github fetch-waiting no-styling"
-repo="openvinotoolkit/openvino" id="repo-aC4lHZvTnOA9SAaO-card">
+repo="openvinotoolkit/openvino" id="repo-Qc1hHyJo2r8TRLRk-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-aC4lHZvTnOA9SAaO-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">openvinotoolkit&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1270,43 +1548,43 @@ repo="openvinotoolkit/openvino" id="repo-aC4lHZvTnOA9SAaO-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-aC4lHZvTnOA9SAaO-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-aC4lHZvTnOA9SAaO-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-aC4lHZvTnOA9SAaO-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-aC4lHZvTnOA9SAaO-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-aC4lHZvTnOA9SAaO-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-Qc1hHyJo2r8TRLRk-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-aC4lHZvTnOA9SAaO-script" type="text/javascript" defer>
+&lt;script id="repo-Qc1hHyJo2r8TRLRk-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/openvinotoolkit\/openvino', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-aC4lHZvTnOA9SAaO-description').innerText = data.description.replace(
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-aC4lHZvTnOA9SAaO-language').innerText = data.language;
-document.getElementById('repo-aC4lHZvTnOA9SAaO-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-language').innerText = data.language;
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-aC4lHZvTnOA9SAaO-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-aC4lHZvTnOA9SAaO-avatar');
+const avatarEl = document.getElementById('repo-Qc1hHyJo2r8TRLRk-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-aC4lHZvTnOA9SAaO-license').innerText = data.license.spdx_id
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-aC4lHZvTnOA9SAaO-license').classList.add = "no-license"
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-license').classList.add = "no-license"
 };
-document.getElementById('repo-aC4lHZvTnOA9SAaO-card').classList.remove("fetch-waiting");
+document.getElementById('repo-Qc1hHyJo2r8TRLRk-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for openvinotoolkit\/openvino.")
 }).catch(err => {
-const c = document.getElementById('repo-aC4lHZvTnOA9SAaO-card');
+const c = document.getElementById('repo-Qc1hHyJo2r8TRLRk-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for openvinotoolkit\/openvino.")
 })
@@ -1328,13 +1606,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="tgi">TGI&lt;/h3>
+&lt;h3 id="tgi">
+&lt;a href="#tgi" class="header-anchor">#&lt;/a>
+TGI
+&lt;/h3>
 &lt;a href="https://github.com/huggingface/text-generation-inference" target="_blank" class="card-github fetch-waiting no-styling"
-repo="huggingface/text-generation-inference" id="repo-eGkUoIzoF5nQTiu7-card">
+repo="huggingface/text-generation-inference" id="repo-XcjhTUtfAtWJAkWV-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-eGkUoIzoF5nQTiu7-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">huggingface&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1342,43 +1623,43 @@ repo="huggingface/text-generation-inference" id="repo-eGkUoIzoF5nQTiu7-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-eGkUoIzoF5nQTiu7-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-eGkUoIzoF5nQTiu7-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-eGkUoIzoF5nQTiu7-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-eGkUoIzoF5nQTiu7-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-eGkUoIzoF5nQTiu7-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-XcjhTUtfAtWJAkWV-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-eGkUoIzoF5nQTiu7-script" type="text/javascript" defer>
+&lt;script id="repo-XcjhTUtfAtWJAkWV-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/huggingface\/text-generation-inference', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-eGkUoIzoF5nQTiu7-description').innerText = data.description.replace(
+document.getElementById('repo-XcjhTUtfAtWJAkWV-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-eGkUoIzoF5nQTiu7-language').innerText = data.language;
-document.getElementById('repo-eGkUoIzoF5nQTiu7-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-XcjhTUtfAtWJAkWV-language').innerText = data.language;
+document.getElementById('repo-XcjhTUtfAtWJAkWV-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-eGkUoIzoF5nQTiu7-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-XcjhTUtfAtWJAkWV-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-eGkUoIzoF5nQTiu7-avatar');
+const avatarEl = document.getElementById('repo-XcjhTUtfAtWJAkWV-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-eGkUoIzoF5nQTiu7-license').innerText = data.license.spdx_id
+document.getElementById('repo-XcjhTUtfAtWJAkWV-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-eGkUoIzoF5nQTiu7-license').classList.add = "no-license"
+document.getElementById('repo-XcjhTUtfAtWJAkWV-license').classList.add = "no-license"
 };
-document.getElementById('repo-eGkUoIzoF5nQTiu7-card').classList.remove("fetch-waiting");
+document.getElementById('repo-XcjhTUtfAtWJAkWV-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for huggingface\/text-generation-inference.")
 }).catch(err => {
-const c = document.getElementById('repo-eGkUoIzoF5nQTiu7-card');
+const c = document.getElementById('repo-XcjhTUtfAtWJAkWV-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for huggingface\/text-generation-inference.")
 })
@@ -1393,15 +1674,21 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页上找到详细信息。&lt;/p>
-&lt;h2 id="本地运行">本地运行&lt;/h2>
+&lt;h2 id="本地运行">
+&lt;a href="#%e6%9c%ac%e5%9c%b0%e8%bf%90%e8%a1%8c" class="header-anchor">#&lt;/a>
+本地运行
+&lt;/h2>
 &lt;p>得益于模型压缩和优化技术，我们也可以在个人设备上运行 LLM：&lt;/p>
-&lt;h3 id="mlx">MLX&lt;/h3>
+&lt;h3 id="mlx">
+&lt;a href="#mlx" class="header-anchor">#&lt;/a>
+MLX
+&lt;/h3>
 &lt;a href="https://github.com/ml-explore/mlx" target="_blank" class="card-github fetch-waiting no-styling"
-repo="ml-explore/mlx" id="repo-eRnqOcdKVRk05iLq-card">
+repo="ml-explore/mlx" id="repo-Mh925yUIGgqXuI48-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-eRnqOcdKVRk05iLq-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">ml-explore&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1409,43 +1696,43 @@ repo="ml-explore/mlx" id="repo-eRnqOcdKVRk05iLq-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-eRnqOcdKVRk05iLq-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-eRnqOcdKVRk05iLq-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-eRnqOcdKVRk05iLq-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-eRnqOcdKVRk05iLq-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-eRnqOcdKVRk05iLq-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-Mh925yUIGgqXuI48-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-eRnqOcdKVRk05iLq-script" type="text/javascript" defer>
+&lt;script id="repo-Mh925yUIGgqXuI48-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/ml-explore\/mlx', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-eRnqOcdKVRk05iLq-description').innerText = data.description.replace(
+document.getElementById('repo-Mh925yUIGgqXuI48-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-eRnqOcdKVRk05iLq-language').innerText = data.language;
-document.getElementById('repo-eRnqOcdKVRk05iLq-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Mh925yUIGgqXuI48-language').innerText = data.language;
+document.getElementById('repo-Mh925yUIGgqXuI48-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-eRnqOcdKVRk05iLq-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-Mh925yUIGgqXuI48-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-eRnqOcdKVRk05iLq-avatar');
+const avatarEl = document.getElementById('repo-Mh925yUIGgqXuI48-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-eRnqOcdKVRk05iLq-license').innerText = data.license.spdx_id
+document.getElementById('repo-Mh925yUIGgqXuI48-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-eRnqOcdKVRk05iLq-license').classList.add = "no-license"
+document.getElementById('repo-Mh925yUIGgqXuI48-license').classList.add = "no-license"
 };
-document.getElementById('repo-eRnqOcdKVRk05iLq-card').classList.remove("fetch-waiting");
+document.getElementById('repo-Mh925yUIGgqXuI48-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for ml-explore\/mlx.")
 }).catch(err => {
-const c = document.getElementById('repo-eRnqOcdKVRk05iLq-card');
+const c = document.getElementById('repo-Mh925yUIGgqXuI48-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for ml-explore\/mlx.")
 })
@@ -1469,14 +1756,17 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="llamacpp">Llama.cpp&lt;/h3>
+&lt;h3 id="llamacpp">
+&lt;a href="#llamacpp" class="header-anchor">#&lt;/a>
+Llama.cpp
+&lt;/h3>
 &lt;p>Llama.cpp 是使用 C++ 实现的 Llama 模型推理引擎，可以在 CPU 上高效运行，并支持多种操作系统和硬件平台，方便开发者在资源受限的设备上运行 LLM。&lt;/p>
 &lt;a href="https://github.com/ggerganov/llama.cpp" target="_blank" class="card-github fetch-waiting no-styling"
-repo="ggerganov/llama.cpp" id="repo-BAVzmYSYbCybWx00-card">
+repo="ggerganov/llama.cpp" id="repo-WvSkQgsS7P95rwNV-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-BAVzmYSYbCybWx00-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">ggerganov&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1484,43 +1774,43 @@ repo="ggerganov/llama.cpp" id="repo-BAVzmYSYbCybWx00-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-BAVzmYSYbCybWx00-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-BAVzmYSYbCybWx00-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-BAVzmYSYbCybWx00-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-BAVzmYSYbCybWx00-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-BAVzmYSYbCybWx00-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-WvSkQgsS7P95rwNV-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-BAVzmYSYbCybWx00-script" type="text/javascript" defer>
+&lt;script id="repo-WvSkQgsS7P95rwNV-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/ggerganov\/llama.cpp', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-BAVzmYSYbCybWx00-description').innerText = data.description.replace(
+document.getElementById('repo-WvSkQgsS7P95rwNV-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-BAVzmYSYbCybWx00-language').innerText = data.language;
-document.getElementById('repo-BAVzmYSYbCybWx00-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-WvSkQgsS7P95rwNV-language').innerText = data.language;
+document.getElementById('repo-WvSkQgsS7P95rwNV-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-BAVzmYSYbCybWx00-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-WvSkQgsS7P95rwNV-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-BAVzmYSYbCybWx00-avatar');
+const avatarEl = document.getElementById('repo-WvSkQgsS7P95rwNV-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-BAVzmYSYbCybWx00-license').innerText = data.license.spdx_id
+document.getElementById('repo-WvSkQgsS7P95rwNV-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-BAVzmYSYbCybWx00-license').classList.add = "no-license"
+document.getElementById('repo-WvSkQgsS7P95rwNV-license').classList.add = "no-license"
 };
-document.getElementById('repo-BAVzmYSYbCybWx00-card').classList.remove("fetch-waiting");
+document.getElementById('repo-WvSkQgsS7P95rwNV-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for ggerganov\/llama.cpp.")
 }).catch(err => {
-const c = document.getElementById('repo-BAVzmYSYbCybWx00-card');
+const c = document.getElementById('repo-WvSkQgsS7P95rwNV-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for ggerganov\/llama.cpp.")
 })
@@ -1540,13 +1830,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="ollama">Ollama&lt;/h3>
+&lt;h3 id="ollama">
+&lt;a href="#ollama" class="header-anchor">#&lt;/a>
+Ollama
+&lt;/h3>
 &lt;a href="https://github.com/ollama/ollama" target="_blank" class="card-github fetch-waiting no-styling"
-repo="ollama/ollama" id="repo-ypEzbZeqmHbQUnTY-card">
+repo="ollama/ollama" id="repo-7AaLcWV4duxhlgHz-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-ypEzbZeqmHbQUnTY-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">ollama&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1554,43 +1847,43 @@ repo="ollama/ollama" id="repo-ypEzbZeqmHbQUnTY-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-ypEzbZeqmHbQUnTY-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-ypEzbZeqmHbQUnTY-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-ypEzbZeqmHbQUnTY-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-ypEzbZeqmHbQUnTY-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-ypEzbZeqmHbQUnTY-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-7AaLcWV4duxhlgHz-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-ypEzbZeqmHbQUnTY-script" type="text/javascript" defer>
+&lt;script id="repo-7AaLcWV4duxhlgHz-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/ollama\/ollama', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-ypEzbZeqmHbQUnTY-description').innerText = data.description.replace(
+document.getElementById('repo-7AaLcWV4duxhlgHz-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-ypEzbZeqmHbQUnTY-language').innerText = data.language;
-document.getElementById('repo-ypEzbZeqmHbQUnTY-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-7AaLcWV4duxhlgHz-language').innerText = data.language;
+document.getElementById('repo-7AaLcWV4duxhlgHz-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-ypEzbZeqmHbQUnTY-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-7AaLcWV4duxhlgHz-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-ypEzbZeqmHbQUnTY-avatar');
+const avatarEl = document.getElementById('repo-7AaLcWV4duxhlgHz-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-ypEzbZeqmHbQUnTY-license').innerText = data.license.spdx_id
+document.getElementById('repo-7AaLcWV4duxhlgHz-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-ypEzbZeqmHbQUnTY-license').classList.add = "no-license"
+document.getElementById('repo-7AaLcWV4duxhlgHz-license').classList.add = "no-license"
 };
-document.getElementById('repo-ypEzbZeqmHbQUnTY-card').classList.remove("fetch-waiting");
+document.getElementById('repo-7AaLcWV4duxhlgHz-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for ollama\/ollama.")
 }).catch(err => {
-const c = document.getElementById('repo-ypEzbZeqmHbQUnTY-card');
+const c = document.getElementById('repo-7AaLcWV4duxhlgHz-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for ollama\/ollama.")
 })
@@ -1613,15 +1906,21 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h2 id="agent-及-rag-框架">Agent 及 RAG 框架&lt;/h2>
+&lt;h2 id="agent-及-rag-框架">
+&lt;a href="#agent-%e5%8f%8a-rag-%e6%a1%86%e6%9e%b6" class="header-anchor">#&lt;/a>
+Agent 及 RAG 框架
+&lt;/h2>
 &lt;p>将 LLM 与外部数据和工具结合，可以构建更强大的应用。以下是一些常用的 Agent 及 RAG 框架：&lt;/p>
-&lt;h3 id="llamaindex">LlamaIndex&lt;/h3>
+&lt;h3 id="llamaindex">
+&lt;a href="#llamaindex" class="header-anchor">#&lt;/a>
+LlamaIndex
+&lt;/h3>
 &lt;a href="https://github.com/run-llama/llama_index" target="_blank" class="card-github fetch-waiting no-styling"
-repo="run-llama/llama_index" id="repo-Gq1cCyJsJM1iC1mj-card">
+repo="run-llama/llama_index" id="repo-RcQXCLxaVAmwtWuR-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">run-llama&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1629,43 +1928,43 @@ repo="run-llama/llama_index" id="repo-Gq1cCyJsJM1iC1mj-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-Gq1cCyJsJM1iC1mj-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-RcQXCLxaVAmwtWuR-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-Gq1cCyJsJM1iC1mj-script" type="text/javascript" defer>
+&lt;script id="repo-RcQXCLxaVAmwtWuR-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/run-llama\/llama_index', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-description').innerText = data.description.replace(
+document.getElementById('repo-RcQXCLxaVAmwtWuR-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-language').innerText = data.language;
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-RcQXCLxaVAmwtWuR-language').innerText = data.language;
+document.getElementById('repo-RcQXCLxaVAmwtWuR-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-RcQXCLxaVAmwtWuR-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-Gq1cCyJsJM1iC1mj-avatar');
+const avatarEl = document.getElementById('repo-RcQXCLxaVAmwtWuR-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-license').innerText = data.license.spdx_id
+document.getElementById('repo-RcQXCLxaVAmwtWuR-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-license').classList.add = "no-license"
+document.getElementById('repo-RcQXCLxaVAmwtWuR-license').classList.add = "no-license"
 };
-document.getElementById('repo-Gq1cCyJsJM1iC1mj-card').classList.remove("fetch-waiting");
+document.getElementById('repo-RcQXCLxaVAmwtWuR-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for run-llama\/llama_index.")
 }).catch(err => {
-const c = document.getElementById('repo-Gq1cCyJsJM1iC1mj-card');
+const c = document.getElementById('repo-RcQXCLxaVAmwtWuR-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for run-llama\/llama_index.")
 })
@@ -1701,13 +2000,16 @@ SubclassABC,
 from llama_index.core.llms import LLM
 from llama_index.llms.openai import OpenAI
 &lt;/code>&lt;/pre>
-&lt;h3 id="crewai">CrewAI&lt;/h3>
+&lt;h3 id="crewai">
+&lt;a href="#crewai" class="header-anchor">#&lt;/a>
+CrewAI
+&lt;/h3>
 &lt;a href="https://github.com/joaomdmoura/crewAI" target="_blank" class="card-github fetch-waiting no-styling"
-repo="joaomdmoura/crewAI" id="repo-0dhxOXy6aCX7X4e1-card">
+repo="joaomdmoura/crewAI" id="repo-RCAEnCJgozWePopO-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-0dhxOXy6aCX7X4e1-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">joaomdmoura&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1715,43 +2017,43 @@ repo="joaomdmoura/crewAI" id="repo-0dhxOXy6aCX7X4e1-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-0dhxOXy6aCX7X4e1-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-0dhxOXy6aCX7X4e1-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-0dhxOXy6aCX7X4e1-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-0dhxOXy6aCX7X4e1-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-0dhxOXy6aCX7X4e1-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-RCAEnCJgozWePopO-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-0dhxOXy6aCX7X4e1-script" type="text/javascript" defer>
+&lt;script id="repo-RCAEnCJgozWePopO-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/joaomdmoura\/crewAI', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-0dhxOXy6aCX7X4e1-description').innerText = data.description.replace(
+document.getElementById('repo-RCAEnCJgozWePopO-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-0dhxOXy6aCX7X4e1-language').innerText = data.language;
-document.getElementById('repo-0dhxOXy6aCX7X4e1-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-RCAEnCJgozWePopO-language').innerText = data.language;
+document.getElementById('repo-RCAEnCJgozWePopO-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-0dhxOXy6aCX7X4e1-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-RCAEnCJgozWePopO-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-0dhxOXy6aCX7X4e1-avatar');
+const avatarEl = document.getElementById('repo-RCAEnCJgozWePopO-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-0dhxOXy6aCX7X4e1-license').innerText = data.license.spdx_id
+document.getElementById('repo-RCAEnCJgozWePopO-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-0dhxOXy6aCX7X4e1-license').classList.add = "no-license"
+document.getElementById('repo-RCAEnCJgozWePopO-license').classList.add = "no-license"
 };
-document.getElementById('repo-0dhxOXy6aCX7X4e1-card').classList.remove("fetch-waiting");
+document.getElementById('repo-RCAEnCJgozWePopO-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for joaomdmoura\/crewAI.")
 }).catch(err => {
-const c = document.getElementById('repo-0dhxOXy6aCX7X4e1-card');
+const c = document.getElementById('repo-RCAEnCJgozWePopO-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for joaomdmoura\/crewAI.")
 })
@@ -1784,13 +2086,16 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h3 id="opendevin">OpenDevin&lt;/h3>
+&lt;h3 id="opendevin">
+&lt;a href="#opendevin" class="header-anchor">#&lt;/a>
+OpenDevin
+&lt;/h3>
 &lt;a href="https://github.com/opendevin/opendevin" target="_blank" class="card-github fetch-waiting no-styling"
-repo="opendevin/opendevin" id="repo-3iEmOx6A1Cf4B4IF-card">
+repo="opendevin/opendevin" id="repo-uRQqfIGn3mEPSaiL-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">opendevin&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1798,43 +2103,43 @@ repo="opendevin/opendevin" id="repo-3iEmOx6A1Cf4B4IF-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-3iEmOx6A1Cf4B4IF-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-uRQqfIGn3mEPSaiL-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-3iEmOx6A1Cf4B4IF-script" type="text/javascript" defer>
+&lt;script id="repo-uRQqfIGn3mEPSaiL-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/opendevin\/opendevin', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-description').innerText = data.description.replace(
+document.getElementById('repo-uRQqfIGn3mEPSaiL-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-language').innerText = data.language;
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-uRQqfIGn3mEPSaiL-language').innerText = data.language;
+document.getElementById('repo-uRQqfIGn3mEPSaiL-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-uRQqfIGn3mEPSaiL-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-3iEmOx6A1Cf4B4IF-avatar');
+const avatarEl = document.getElementById('repo-uRQqfIGn3mEPSaiL-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-license').innerText = data.license.spdx_id
+document.getElementById('repo-uRQqfIGn3mEPSaiL-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-license').classList.add = "no-license"
+document.getElementById('repo-uRQqfIGn3mEPSaiL-license').classList.add = "no-license"
 };
-document.getElementById('repo-3iEmOx6A1Cf4B4IF-card').classList.remove("fetch-waiting");
+document.getElementById('repo-uRQqfIGn3mEPSaiL-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for opendevin\/opendevin.")
 }).catch(err => {
-const c = document.getElementById('repo-3iEmOx6A1Cf4B4IF-card');
+const c = document.getElementById('repo-uRQqfIGn3mEPSaiL-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for opendevin\/opendevin.")
 })
@@ -1850,9 +2155,15 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 的项目主页。&lt;/p>
-&lt;h2 id="模型评测">模型评测&lt;/h2>
+&lt;h2 id="模型评测">
+&lt;a href="#%e6%a8%a1%e5%9e%8b%e8%af%84%e6%b5%8b" class="header-anchor">#&lt;/a>
+模型评测
+&lt;/h2>
 &lt;p>为了选择合适的 LLM 并评估其性能，我们需要进行模型评测：&lt;/p>
-&lt;h3 id="lmsys">LMSys&lt;/h3>
+&lt;h3 id="lmsys">
+&lt;a href="#lmsys" class="header-anchor">#&lt;/a>
+LMSys
+&lt;/h3>
 &lt;p>LMSys Org 是由加州大学伯克利分校的学生和教师与加州大学圣地亚哥分校以及卡内基梅隆大学合作成立的开放式研究组织。&lt;/p>
 &lt;p>目标是通过共同开发开放模型、数据集、系统和评估工具，使大型模型对每个人都可访问。训练大型语言模型并广泛提供它们的应用，同时也在开发分布式系统以加速它们的训练和推理过程。&lt;/p>
 &lt;p>目前，LMSys Chatbot Area 是最被认可的大模型排行榜之一，受多家公司和研究机构的认可。&lt;/p>
@@ -1865,14 +2176,17 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;h3 id="opencompass">OpenCompass&lt;/h3>
+&lt;h3 id="opencompass">
+&lt;a href="#opencompass" class="header-anchor">#&lt;/a>
+OpenCompass
+&lt;/h3>
 &lt;p>OpenCompass 是一个 LLM 评估平台，支持 100 多个数据集上的各种模型（Llama3、Mistral、InternLM2、GPT-4、LLaMa2、Qwen、GLM、Claude 等）。&lt;/p>
 &lt;a href="https://github.com/open-compass/opencompass" target="_blank" class="card-github fetch-waiting no-styling"
-repo="open-compass/opencompass" id="repo-zK9F036jiFrKMdrO-card">
+repo="open-compass/opencompass" id="repo-YIgfWKeqyZpFkA7e-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-zK9F036jiFrKMdrO-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">open-compass&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -1880,48 +2194,51 @@ repo="open-compass/opencompass" id="repo-zK9F036jiFrKMdrO-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-zK9F036jiFrKMdrO-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-zK9F036jiFrKMdrO-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-zK9F036jiFrKMdrO-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-zK9F036jiFrKMdrO-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-zK9F036jiFrKMdrO-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-YIgfWKeqyZpFkA7e-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-zK9F036jiFrKMdrO-script" type="text/javascript" defer>
+&lt;script id="repo-YIgfWKeqyZpFkA7e-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/open-compass\/opencompass', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-zK9F036jiFrKMdrO-description').innerText = data.description.replace(
+document.getElementById('repo-YIgfWKeqyZpFkA7e-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-zK9F036jiFrKMdrO-language').innerText = data.language;
-document.getElementById('repo-zK9F036jiFrKMdrO-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-YIgfWKeqyZpFkA7e-language').innerText = data.language;
+document.getElementById('repo-YIgfWKeqyZpFkA7e-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-zK9F036jiFrKMdrO-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-YIgfWKeqyZpFkA7e-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-zK9F036jiFrKMdrO-avatar');
+const avatarEl = document.getElementById('repo-YIgfWKeqyZpFkA7e-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-zK9F036jiFrKMdrO-license').innerText = data.license.spdx_id
+document.getElementById('repo-YIgfWKeqyZpFkA7e-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-zK9F036jiFrKMdrO-license').classList.add = "no-license"
+document.getElementById('repo-YIgfWKeqyZpFkA7e-license').classList.add = "no-license"
 };
-document.getElementById('repo-zK9F036jiFrKMdrO-card').classList.remove("fetch-waiting");
+document.getElementById('repo-YIgfWKeqyZpFkA7e-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for open-compass\/opencompass.")
 }).catch(err => {
-const c = document.getElementById('repo-zK9F036jiFrKMdrO-card');
+const c = document.getElementById('repo-YIgfWKeqyZpFkA7e-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for open-compass\/opencompass.")
 })
 &lt;/script>
-&lt;h3 id="open-llm-leaderboard">Open LLM Leaderboard&lt;/h3>
+&lt;h3 id="open-llm-leaderboard">
+&lt;a href="#open-llm-leaderboard" class="header-anchor">#&lt;/a>
+Open LLM Leaderboard
+&lt;/h3>
 &lt;p>Open LLM Leaderboard 是一个持续更新的 LLM 排行榜，根据多个评测指标对不同模型进行排名，方便开发者了解最新的模型性能和发展趋势。&lt;/p>
 &lt;p>排行榜地址：&lt;a class="link" href="https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard" target="_blank" rel="noopener" >https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -1932,11 +2249,20 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>LLM 生态正在蓬勃发展，涵盖了从模型训练到应用落地的各个环节。相信随着技术的不断进步，LLM 将会在更多领域发挥重要作用，为我们带来更加智能的应用体验。&lt;/p></description></item><item><title>Ollama：从入门到进阶</title><link>https://cuterwrite.top/p/ollama/</link><pubDate>Sat, 15 Jun 2024 23:10:00 +0000</pubDate><guid>https://cuterwrite.top/p/ollama/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903387_p0_master1200.webp" alt="Featured image of post Ollama：从入门到进阶" />&lt;p>近年来，大型语言模型（LLM）以其强大的文本生成和理解能力，成为了人工智能领域的中坚力量。商业 LLM 的价格通常高昂且代码封闭，限制了研究者和开发者的探索空间。幸运的是，开源社区提供了像 Ollama 这样优秀的替代方案，让每个人都能够轻松体验 LLM 的魅力，并能结合 HPC 和 IDE 插件，打造更强大的个人助手。&lt;/p>
-&lt;h2 id="什么是-ollama">什么是 Ollama？&lt;/h2>
+&lt;h2 id="什么是-ollama">
+&lt;a href="#%e4%bb%80%e4%b9%88%e6%98%af-ollama" class="header-anchor">#&lt;/a>
+什么是 Ollama？
+&lt;/h2>
 &lt;p>Ollama 是一个用于构建大型语言模型应用的工具，它提供了一个简洁易用的命令行界面和服务器，让你能够轻松下载、运行和管理各种开源 LLM。与需要复杂配置和强大硬件的传统 LLM 不同，Ollama 让你能够方便地像使用手机 App 一样体验 LLM 的强大功能。&lt;/p>
-&lt;h2 id="ollama-的优势">Ollama 的优势&lt;/h2>
+&lt;h2 id="ollama-的优势">
+&lt;a href="#ollama-%e7%9a%84%e4%bc%98%e5%8a%bf" class="header-anchor">#&lt;/a>
+Ollama 的优势
+&lt;/h2>
 &lt;p>Ollama 拥有以下显著优势：&lt;/p>
 &lt;ul>
 &lt;li>&lt;strong>开源免费&lt;/strong>： Ollama 及其支持的模型完全开源免费，任何人都可以自由使用、修改和分发。&lt;/li>
@@ -1945,7 +2271,10 @@ fill="currentColor">
 &lt;li>&lt;strong>资源占用低&lt;/strong>： 相比于商业 LLM，Ollama 对硬件要求更低，即使在普通笔记本电脑上也能流畅运行。&lt;/li>
 &lt;li>&lt;strong>社区活跃&lt;/strong>： Ollama 拥有庞大且活跃的社区，用户可以轻松获取帮助、分享经验和参与模型开发。&lt;/li>
 &lt;/ul>
-&lt;h2 id="如何使用-ollama">如何使用 Ollama？&lt;/h2>
+&lt;h2 id="如何使用-ollama">
+&lt;a href="#%e5%a6%82%e4%bd%95%e4%bd%bf%e7%94%a8-ollama" class="header-anchor">#&lt;/a>
+如何使用 Ollama？
+&lt;/h2>
 &lt;p>使用 Ollama 非常简单，只需要按照以下步骤：&lt;/p>
 &lt;ol>
 &lt;li>&lt;strong>安装 Ollama&lt;/strong>： 根据你的操作系统，从 &lt;a class="link" href="https://ollama.com/" target="_blank" rel="noopener" >Ollama 官网
@@ -1970,8 +2299,14 @@ fill="currentColor">
 &lt;li>&lt;strong>运行模型&lt;/strong>： 使用 &lt;code>ollama run&lt;/code> 命令启动模型，例如 &lt;code>ollama run llama3:70b&lt;/code> 。&lt;/li>
 &lt;li>&lt;strong>开始聊天&lt;/strong>： 在终端中输入你的问题或指令，Ollama 会根据模型生成相应的回复。&lt;/li>
 &lt;/ol>
-&lt;h3 id="安装-ollama">安装 Ollama&lt;/h3>
-&lt;h4 id="macos">macOS&lt;/h4>
+&lt;h3 id="安装-ollama">
+&lt;a href="#%e5%ae%89%e8%a3%85-ollama" class="header-anchor">#&lt;/a>
+安装 Ollama
+&lt;/h3>
+&lt;h4 id="macos">
+&lt;a href="#macos" class="header-anchor">#&lt;/a>
+macOS
+&lt;/h4>
 &lt;p>&lt;a class="link" href="https://ollama.com/download/Ollama-darwin.zip" target="_blank" rel="noopener" >下载 Ollama for macOS
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -1981,7 +2316,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;h4 id="windows">Windows&lt;/h4>
+&lt;h4 id="windows">
+&lt;a href="#windows" class="header-anchor">#&lt;/a>
+Windows
+&lt;/h4>
 &lt;p>&lt;a class="link" href="https://ollama.com/download/OllamaSetup.exe" target="_blank" rel="noopener" >下载 Ollama for Windows
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -1991,14 +2329,26 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;h4 id="linux">Linux&lt;/h4>
+&lt;h4 id="linux">
+&lt;a href="#linux" class="header-anchor">#&lt;/a>
+Linux
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">curl -fsSL https://ollama.com/install.sh | sh
 &lt;/code>&lt;/pre>
-&lt;h4 id="docker">Docker&lt;/h4>
-&lt;h5 id="cpu-版本">CPU 版本&lt;/h5>
+&lt;h4 id="docker">
+&lt;a href="#docker" class="header-anchor">#&lt;/a>
+Docker
+&lt;/h4>
+&lt;h5 id="cpu-版本">
+&lt;a href="#cpu-%e7%89%88%e6%9c%ac" class="header-anchor">#&lt;/a>
+CPU 版本
+&lt;/h5>
 &lt;pre>&lt;code class="language-bash">docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 &lt;/code>&lt;/pre>
-&lt;h5 id="gpu-版本">GPU 版本&lt;/h5>
+&lt;h5 id="gpu-版本">
+&lt;a href="#gpu-%e7%89%88%e6%9c%ac" class="header-anchor">#&lt;/a>
+GPU 版本
+&lt;/h5>
 &lt;ol>
 &lt;li>安装 &lt;a class="link" href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#installation" target="_blank" rel="noopener" >Nvidia container toolkit
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
@@ -2013,7 +2363,10 @@ fill="currentColor">
 &lt;/ol>
 &lt;pre>&lt;code class="language-bash">docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 &lt;/code>&lt;/pre>
-&lt;h3 id="启动-ollama">启动 Ollama&lt;/h3>
+&lt;h3 id="启动-ollama">
+&lt;a href="#%e5%90%af%e5%8a%a8-ollama" class="header-anchor">#&lt;/a>
+启动 Ollama
+&lt;/h3>
 &lt;pre>&lt;code class="language-bash">ollama serve
 &lt;/code>&lt;/pre>
 &lt;p>输出以下信息表示 Ollama 服务器已成功启动（V100 机器）：&lt;/p>
@@ -2021,10 +2374,16 @@ fill="currentColor">
 ### 省略的日志输出 ###
 Listening on [::]:11434 (version 0.1.42)
 &lt;/code>&lt;/pre>
-&lt;h3 id="下载模型">下载模型&lt;/h3>
+&lt;h3 id="下载模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载模型
+&lt;/h3>
 &lt;pre>&lt;code class="language-bash">ollama pull qwen2:72b
 &lt;/code>&lt;/pre>
-&lt;h3 id="运行模型">运行模型&lt;/h3>
+&lt;h3 id="运行模型">
+&lt;a href="#%e8%bf%90%e8%a1%8c%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+运行模型
+&lt;/h3>
 &lt;pre>&lt;code class="language-bash">ollama run qwen2:72b
 &lt;/code>&lt;/pre>
 &lt;p>例如，运行如下命令后：&lt;/p>
@@ -2034,10 +2393,16 @@ I am Qwen, a pre-trained language model developed by Alibaba Cloud. My purpose i
 questions by using the natural language processing techniques. How may I assist you today?
 &amp;gt;&amp;gt;&amp;gt; Send a message(/? for help)
 &lt;/code>&lt;/pre>
-&lt;h4 id="docker-容器中运行模型">Docker 容器中运行模型&lt;/h4>
+&lt;h4 id="docker-容器中运行模型">
+&lt;a href="#docker-%e5%ae%b9%e5%99%a8%e4%b8%ad%e8%bf%90%e8%a1%8c%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+Docker 容器中运行模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">docker exec -it ollama ollama run qwen2:72b
 &lt;/code>&lt;/pre>
-&lt;h3 id="配置-ollama">配置 Ollama&lt;/h3>
+&lt;h3 id="配置-ollama">
+&lt;a href="#%e9%85%8d%e7%bd%ae-ollama" class="header-anchor">#&lt;/a>
+配置 Ollama
+&lt;/h3>
 &lt;p>Ollama 提供了多种环境变量以供配置：&lt;/p>
 &lt;ul>
 &lt;li>&lt;code>OLLAMA_DEBUG&lt;/code>：是否开启调试模式，默认为 &lt;code>false&lt;/code>。&lt;/li>
@@ -2073,7 +2438,10 @@ questions by using the natural language processing techniques. How may I assist 
 &lt;li>&lt;code>OLLAMA_SCHED_SPREAD&lt;/code>：调度分布，默认为空。&lt;/li>
 &lt;li>&lt;code>OLLAMA_TMPDIR&lt;/code>：临时文件目录，默认为空。&lt;/li>
 &lt;/ul>
-&lt;h2 id="进阶用法hpc-集群上部署-ollama">进阶用法：HPC 集群上部署 Ollama&lt;/h2>
+&lt;h2 id="进阶用法hpc-集群上部署-ollama">
+&lt;a href="#%e8%bf%9b%e9%98%b6%e7%94%a8%e6%b3%95hpc-%e9%9b%86%e7%be%a4%e4%b8%8a%e9%83%a8%e7%bd%b2-ollama" class="header-anchor">#&lt;/a>
+进阶用法：HPC 集群上部署 Ollama
+&lt;/h2>
 &lt;p>对于大型模型或需要更高性能的情况，可以利用 HPC 集群的强大算力来运行 Ollama。结合 Slurm 进行任务管理，并使用端口映射将服务暴露到本地，即可方便地进行远程访问和使用：&lt;/p>
 &lt;ol>
 &lt;li>在登录节点配置 Ollama 环境： 安装 Ollama，并下载需要的模型。&lt;/li>
@@ -2098,7 +2466,10 @@ ollama serve
 &lt;/ol>
 &lt;div class="notice notice-tip" >
 &lt;div class="notice-title">&lt;svg t="1705945832245" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="19409" width="200" height="200">&lt;path d="M512 74.666667C270.933333 74.666667 74.666667 270.933333 74.666667 512S270.933333 949.333333 512 949.333333 949.333333 753.066667 949.333333 512 753.066667 74.666667 512 74.666667z m238.933333 349.866666l-2.133333 2.133334-277.333333 277.333333c-10.666667 10.666667-29.866667 12.8-42.666667 2.133333L426.666667 704l-149.333334-149.333333c-12.8-12.8-12.8-32 0-44.8 10.666667-10.666667 29.866667-12.8 42.666667-2.133334l2.133333 2.133334 125.866667 125.866666 253.866667-253.866666c10.666667-10.666667 29.866667-12.8 42.666666-2.133334l2.133334 2.133334c12.8 12.8 12.8 32 4.266666 42.666666z" fill="#ffffff" p-id="19410">&lt;/path>&lt;/svg>&lt;/div>&lt;p>注意：由于计算节点不联网，需要提前在登录节点使用 &lt;code>ollama pull&lt;/code> 下载所需模型。此外，需要设置 &lt;code>OLLAMA_ORIGINS&lt;/code> 为 &lt;code>*&lt;/code>，设置 &lt;code>OLLAMA_HOST&lt;/code> 为 &lt;code>0.0.0.0&lt;/code>，以允许所有来源访问服务。&lt;/p>&lt;/div>
-&lt;h2 id="进阶用法本地代码补全助手">进阶用法：本地代码补全助手&lt;/h2>
+&lt;h2 id="进阶用法本地代码补全助手">
+&lt;a href="#%e8%bf%9b%e9%98%b6%e7%94%a8%e6%b3%95%e6%9c%ac%e5%9c%b0%e4%bb%a3%e7%a0%81%e8%a1%a5%e5%85%a8%e5%8a%a9%e6%89%8b" class="header-anchor">#&lt;/a>
+进阶用法：本地代码补全助手
+&lt;/h2>
 &lt;p>Ollama 不仅可以用于聊天和文本创作，还可以结合代码生成模型和 IDE 插件，打造强大的代码补全助手。例如，使用 Codeqwen 7B 模型和 VS Code 插件 &lt;a class="link" href="https://continue.dev/" target="_blank" rel="noopener" >Continue
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -2159,12 +2530,21 @@ fill="currentColor">
 &lt;/li>
 &lt;/ul>
 &lt;p>接下来，我们以 VS Code 为例，介绍如何使用 Ollama + Continue 实现代码补全功能：&lt;/p>
-&lt;h3 id="codestral-22b-模型">Codestral 22B 模型&lt;/h3>
+&lt;h3 id="codestral-22b-模型">
+&lt;a href="#codestral-22b-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+Codestral 22B 模型
+&lt;/h3>
 &lt;p>Codestral 既能完成代码自动补全，也支持聊天功能。但鉴于其拥有 220 亿参数且不具备生产许可，它对显存要求颇高，仅限于研究和测试使用，因此可能并不适合日常本地应用。&lt;/p>
-&lt;h4 id="下载并运行-codestral-模型">下载并运行 Codestral 模型&lt;/h4>
+&lt;h4 id="下载并运行-codestral-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-codestral-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 Codestral 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run codestral
 &lt;/code>&lt;/pre>
-&lt;h4 id="配置-configjson">配置 config.json&lt;/h4>
+&lt;h4 id="配置-configjson">
+&lt;a href="#%e9%85%8d%e7%bd%ae-configjson" class="header-anchor">#&lt;/a>
+配置 config.json
+&lt;/h4>
 &lt;ul>
 &lt;li>在 VS Code 侧边栏点击 Continue 插件图标，然后在面板右下角点击 “齿轮” 图标，打开 &lt;code>config.json&lt;/code> 文件。然后复制以下配置到 &lt;code>config.json&lt;/code> 文件中：&lt;/li>
 &lt;/ul>
@@ -2183,15 +2563,27 @@ fill="currentColor">
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h3 id="deepseek-coder-67b-模型--llama-3-8b-模型">DeepSeek Coder 6.7B 模型 + Llama 3 8B 模型&lt;/h3>
+&lt;h3 id="deepseek-coder-67b-模型--llama-3-8b-模型">
+&lt;a href="#deepseek-coder-67b-%e6%a8%a1%e5%9e%8b--llama-3-8b-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+DeepSeek Coder 6.7B 模型 + Llama 3 8B 模型
+&lt;/h3>
 &lt;p>根据机器的显存大小，可以利用 Ollama 同时运行多个模型并处理多个并发请求的能力，使用 &lt;code>DeepSeek Coder 6.7B&lt;/code> 进行自动补全，&lt;code>Llama 3 8B&lt;/code> 进行聊天。如果你的机器无法同时运行两者，那么可以分别尝试，决定你更偏好本地自动补全还是本地聊天体验。&lt;/p>
-&lt;h4 id="下载并运行-deepseek-coder-模型">下载并运行 DeepSeek Coder 模型&lt;/h4>
+&lt;h4 id="下载并运行-deepseek-coder-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-deepseek-coder-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 DeepSeek Coder 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run deepseek-coder:6.7b-base
 &lt;/code>&lt;/pre>
-&lt;h4 id="下载并运行-llama-3-模型">下载并运行 Llama 3 模型&lt;/h4>
+&lt;h4 id="下载并运行-llama-3-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-llama-3-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 Llama 3 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run llama3:8b
 &lt;/code>&lt;/pre>
-&lt;h4 id="配置-configjson-1">配置 config.json&lt;/h4>
+&lt;h4 id="配置-configjson-1">
+&lt;a href="#%e9%85%8d%e7%bd%ae-configjson-1" class="header-anchor">#&lt;/a>
+配置 config.json
+&lt;/h4>
 &lt;pre>&lt;code class="language-json">{
 &amp;quot;models&amp;quot;: [
 {
@@ -2209,15 +2601,27 @@ fill="currentColor">
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h3 id="codeqwen-7b-模型--qwen2-7b-模型">Codeqwen 7B 模型 + Qwen2 7B 模型&lt;/h3>
+&lt;h3 id="codeqwen-7b-模型--qwen2-7b-模型">
+&lt;a href="#codeqwen-7b-%e6%a8%a1%e5%9e%8b--qwen2-7b-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+Codeqwen 7B 模型 + Qwen2 7B 模型
+&lt;/h3>
 &lt;p>Codeqwen 7B 模型是一个专门用于代码补全的模型，而 Qwen2 7B 模型则是一个通用的聊天模型。这两个模型可以很好地结合在一起，实现代码补全和聊天功能。&lt;/p>
-&lt;h4 id="下载并运行-codeqwen-模型">下载并运行 Codeqwen 模型&lt;/h4>
+&lt;h4 id="下载并运行-codeqwen-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-codeqwen-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 Codeqwen 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run codeqwen
 &lt;/code>&lt;/pre>
-&lt;h4 id="下载并运行-qwen2-模型">下载并运行 Qwen2 模型&lt;/h4>
+&lt;h4 id="下载并运行-qwen2-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-qwen2-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 Qwen2 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run qwen2:7b
 &lt;/code>&lt;/pre>
-&lt;h4 id="配置-configjson-2">配置 config.json&lt;/h4>
+&lt;h4 id="配置-configjson-2">
+&lt;a href="#%e9%85%8d%e7%bd%ae-configjson-2" class="header-anchor">#&lt;/a>
+配置 config.json
+&lt;/h4>
 &lt;pre>&lt;code class="language-json">{
 &amp;quot;models&amp;quot;: [
 {
@@ -2235,7 +2639,10 @@ fill="currentColor">
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h3 id="利用-rag-向量检索优化聊天">利用 RAG 向量检索优化聊天&lt;/h3>
+&lt;h3 id="利用-rag-向量检索优化聊天">
+&lt;a href="#%e5%88%a9%e7%94%a8-rag-%e5%90%91%e9%87%8f%e6%a3%80%e7%b4%a2%e4%bc%98%e5%8c%96%e8%81%8a%e5%a4%a9" class="header-anchor">#&lt;/a>
+利用 RAG 向量检索优化聊天
+&lt;/h3>
 &lt;p>Continue 内置了 &lt;a class="link" href="https://docs.continue.dev/customization/context-providers#codebase-retrieval" target="_blank" rel="noopener" >@codebase
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -2254,10 +2661,16 @@ fill="currentColor">
 &lt;/a>
 的向量化技术，可以实现更高效的代码检索和聊天体验。&lt;/p>
 &lt;p>这里，我们使用 &lt;code>nomic-embed-text&lt;/code> 模型作为向量检索模型：&lt;/p>
-&lt;h4 id="下载并运行-nomic-embed-text-模型">下载并运行 Nomic Embed Text 模型&lt;/h4>
+&lt;h4 id="下载并运行-nomic-embed-text-模型">
+&lt;a href="#%e4%b8%8b%e8%bd%bd%e5%b9%b6%e8%bf%90%e8%a1%8c-nomic-embed-text-%e6%a8%a1%e5%9e%8b" class="header-anchor">#&lt;/a>
+下载并运行 Nomic Embed Text 模型
+&lt;/h4>
 &lt;pre>&lt;code class="language-bash">ollama run nomic-embed-text
 &lt;/code>&lt;/pre>
-&lt;h4 id="配置-configjson-3">配置 config.json&lt;/h4>
+&lt;h4 id="配置-configjson-3">
+&lt;a href="#%e9%85%8d%e7%bd%ae-configjson-3" class="header-anchor">#&lt;/a>
+配置 config.json
+&lt;/h4>
 &lt;ul>
 &lt;li>在文件中添加以下内容：&lt;/li>
 &lt;/ul>
@@ -2269,7 +2682,10 @@ fill="currentColor">
 }
 }
 &lt;/code>&lt;/pre>
-&lt;h3 id="代码补全效果">代码补全效果&lt;/h3>
+&lt;h3 id="代码补全效果">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e8%a1%a5%e5%85%a8%e6%95%88%e6%9e%9c" class="header-anchor">#&lt;/a>
+代码补全效果
+&lt;/h3>
 &lt;ul>
 &lt;li>&lt;code>Ctrl + I&lt;/code>: 根据指令生成代码片段。&lt;/li>
 &lt;/ul>
@@ -2288,11 +2704,17 @@ alt="codeqwen_3-2024-06-17" width="90%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/codeqwen_4-2024-06-17.webp"
 alt="codeqwen_4-2024-06-17" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="与-ollama-聊天">与 Ollama 聊天&lt;/h3>
+&lt;h3 id="与-ollama-聊天">
+&lt;a href="#%e4%b8%8e-ollama-%e8%81%8a%e5%a4%a9" class="header-anchor">#&lt;/a>
+与 Ollama 聊天
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/codeqwen_5-2024-06-17.webp"
 alt="codeqwen_5-2024-06-17" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="代码自动注释">代码自动注释&lt;/h3>
+&lt;h3 id="代码自动注释">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e8%87%aa%e5%8a%a8%e6%b3%a8%e9%87%8a" class="header-anchor">#&lt;/a>
+代码自动注释
+&lt;/h3>
 &lt;ul>
 &lt;li>选中代码打开右键菜单&lt;/li>
 &lt;/ul>
@@ -2302,5 +2724,8 @@ alt="codeqwen_6-2024-06-17" width="90%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/codeqwen_7-2024-06-17.webp"
 alt="codeqwen_7-2024-06-17" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>Ollama 为我们打开了通往开源 LLM 世界的大门，让每个人都能轻松体验 LLM 的强大功能，并可以根据自身需求进行定制化应用。无论是进行研究、开发，还是日常使用，Ollama 都能为你提供探索 LLM 无限可能的平台。相信随着 Ollama 的不断发展，它将为我们带来更多惊喜，推动 LLM 技术在各个领域的应用和发展。&lt;/p></description></item></channel></rss>

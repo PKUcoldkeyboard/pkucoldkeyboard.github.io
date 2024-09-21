@@ -1,4 +1,7 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">RDMA 之 Memory Window&lt;/h1>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>计算机网络 on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/computer-network/</link><description>Recent content in 计算机网络 on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Wed, 26 Jun 2024 23:55:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/computer-network/index.xml" rel="self" type="application/rss+xml"/><item><title>RDMA 之 Memory Window</title><link>https://cuterwrite.top/p/rdma-memory-window/</link><pubDate>Wed, 26 Jun 2024 23:55:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-memory-window/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373724_p0_master1200.webp" alt="Featured image of post RDMA 之 Memory Window" />&lt;h1 id="rdma-之-memory-window">
+&lt;a href="#rdma-%e4%b9%8b-memory-window" class="header-anchor">#&lt;/a>
+RDMA 之 Memory Window
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/353590347">&lt;cite>知乎专栏：14. RDMA 之 Memory Window&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -9,16 +12,25 @@
 &lt;p>本文我们来讲解 Memory Window 的概念，它是一种基于 Memory Region 的、更灵活的内存管理单元。除了 MW 的概念之外，本文也会更详细的介绍一些 RDMA 领域的内存相关概念，比如 L_Key/R_Key 等。本文配合 &lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
 &lt;/a>
 阅读效果更佳，建议先读者温习一下。&lt;/p>
-&lt;h2 id="memory-window-是什么">Memory Window 是什么&lt;/h2>
+&lt;h2 id="memory-window-是什么">
+&lt;a href="#memory-window-%e6%98%af%e4%bb%80%e4%b9%88" class="header-anchor">#&lt;/a>
+Memory Window 是什么
+&lt;/h2>
 &lt;p>Memory Window 简称 MW，中文就翻译成内存窗口吧。是一种由用户申请的，用于让远端节点访问本端内存区域的 RDMA 资源。每个 MW 都会绑定（称为 bind）在一个已经注册的 MR 上，但是它相比于 MR 可以提供更灵活的权限控制。MW 可以粗略理解为是 MR 的子集，一个 MR 上可以划分出很多 MW，每个 MW 都可以设置自己的权限。MW 和 MR 的关系如下图所示：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_1.webp"
 alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
 &lt;h4>MR 与 MW 的关系&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h2 id="内存的访问权限控制">内存的访问权限控制&lt;/h2>
+&lt;h2 id="内存的访问权限控制">
+&lt;a href="#%e5%86%85%e5%ad%98%e7%9a%84%e8%ae%bf%e9%97%ae%e6%9d%83%e9%99%90%e6%8e%a7%e5%88%b6" class="header-anchor">#&lt;/a>
+内存的访问权限控制
+&lt;/h2>
 &lt;p>为了后文说明为何设计 MW，我们先来把 MR 和 MW 都涉及的权限控制讲解一下。&lt;/p>
-&lt;h3 id="mrmw-的权限配置">MR/MW 的权限配置&lt;/h3>
+&lt;h3 id="mrmw-的权限配置">
+&lt;a href="#mrmw-%e7%9a%84%e6%9d%83%e9%99%90%e9%85%8d%e7%bd%ae" class="header-anchor">#&lt;/a>
+MR/MW 的权限配置
+&lt;/h3>
 &lt;p>这里的权限，指的是本端/对端节点，对于本端内存的读/写权限，它们两两组合形成了四种权限：&lt;/p>
 &lt;table>
 &lt;thead>
@@ -43,7 +55,10 @@ alt="2024-06-28_12_1" width="30%" loading="lazy">&lt;figcaption>
 &lt;/table>
 &lt;p>除了这四种权限之外，还有 Atomic 权限等，不在本文讨论范围内。&lt;/p>
 &lt;p>上表中这四种权限中最低的是本地读（Local Read），是用户必须赋予 MR/MW 的权限，因为如果一块内存本地的用户都无法访问的话，那就失去意义了；另外还有个限制，如果某个 MR 需要配置远端写（Remote Write）或者还没介绍的远端原子操作权限（Remote Atomic），那么也一定要配置本地写（Local Write）权限。在此约束之下，每个 MR 或者 MW 都可以按需配置权限，比如我们注册的一个 MR 需要允许远端节点写入数据，而不允许读，那么我们就打开 Remote Write 权限，关闭 Remote Read 权限。这样 HCA（网卡）收到对端发起的对这个 MR 范围内的某个地址的 WRITE 请求之后，就可以予以放行；而 HCA 收到对端对这个 MR 的 READ 操作时，就会拒绝这个请求，并返回错误信息给对端。&lt;/p>
-&lt;h3 id="memory-key">Memory Key&lt;/h3>
+&lt;h3 id="memory-key">
+&lt;a href="#memory-key" class="header-anchor">#&lt;/a>
+Memory Key
+&lt;/h3>
 &lt;p>上述的访问权限配置，并不能杜绝恶意用户对于本地或者远端内存的访问。比如某个节点给了一块内存区域的 Remote Write 权限，那么岂不是任意远端节点（进程）只要传入了合法的地址信息，都可以对这片区域进行写入了？因此，IB 规范设计了 Memory Key，简单理解它就是访问 MR 的钥匙机制，只有持有正确的钥匙，才能打开 MR/MW 的大门。&lt;/p>
 &lt;p>Key 是一串数字，由两部分组成：24bit 的 Index 以及 8bit 的 Key：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_2.webp"
@@ -53,7 +68,10 @@ alt="2024-06-28_12_2" width="60%" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>其中，Index 用于 HCA 快速索引到本地的虚拟-物理地址转换表等 MR 相关的信息，而 Key 用于校验整个字段的合法性，以防止未授权的用户任意传递 Index。&lt;/p>
 &lt;p>Memory Key 按照用途分为两种，Local Key 和 Remote Key：&lt;/p>
-&lt;h4 id="l_key">L_Key&lt;/h4>
+&lt;h4 id="l_key">
+&lt;a href="#l_key" class="header-anchor">#&lt;/a>
+L_Key
+&lt;/h4>
 &lt;p>即 Local Key，关联到一个 MR 上，用于 HCA 访问本端内存。当本端的某个进程试图使用一个已经注册的 MR 的内存时，HCA 会校验其传递的 L_Key。并且利用 L_Key 中的索引查找地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
 &lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-shared-receive-queue/" >【RDMA 之 Shared Receive Queue】
 &lt;/a>
@@ -63,7 +81,10 @@ alt="2024-06-28_12_3" width="50%" loading="lazy">&lt;figcaption>
 &lt;h4>L_Key 的作用&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h4 id="r_key">R_Key&lt;/h4>
+&lt;h4 id="r_key">
+&lt;a href="#r_key" class="header-anchor">#&lt;/a>
+R_Key
+&lt;/h4>
 &lt;p>即 Remote Key，关联到一个 MR 或者 MW 上，用于远端节点访问本端内存。当远端节点试图访问本端的内存时，一方面本端的 HCA 会校验 R_Key 是否合法，另一方面会利用 R_Key 中的索引查地址转换表，把虚拟地址翻译成物理地址然后访问内存。&lt;/p>
 &lt;p>凡是 RDMA 操作（即 Write/Read/Atomic），用户都要在 WR 中携带远端内存区域的 R_Key。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_4.webp"
@@ -73,7 +94,10 @@ alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>IB 规范通过上述两种机制，来确保 MR 可以按照用户的期望被正确且安全的访问。我们用一个比喻来总结下 MR/MW 权限控制相关的内容：&lt;/p>
 &lt;p>A 给自己的房间（MR）配了两把钥匙（Memory Key），一把留作自用（L_Key），另一把钥匙（R_Key）邮寄（可以是任何通信方式）给了 B。B 可以在 A 不在家的时候（本端 CPU 不感知远端节点对本地内存的 RDMA 操作），通过钥匙（R_Key）打开门。打开门之后，可能 B 只能隔着玻璃查看房间的摆设（A 只给了这个 MR 远程读权限），或者进入房间内发现漆黑一片什么也看不到，但是可以向房间里放物品（A 只给了这个 MR 远程写权限），当然也有可能没有玻璃也开了灯（同时给了远程读写权限）。&lt;/p>
-&lt;h2 id="为什么要有-mw">为什么要有 MW&lt;/h2>
+&lt;h2 id="为什么要有-mw">
+&lt;a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e6%9c%89-mw" class="header-anchor">#&lt;/a>
+为什么要有 MW
+&lt;/h2>
 &lt;p>简而言之，设计 MW 的目的就是想更灵活的控制内存的远程访问权限。&lt;/p>
 &lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-mr/" >【RDMA 之 Memory Region】
 &lt;/a>
@@ -81,27 +105,51 @@ alt="2024-06-28_12_4" width="70%" loading="lazy">&lt;figcaption>
 &lt;p>因为 MR 是由内核管理的，如果用户想修改一个已经存在的 MR 的信息，比如我想收回某个 MR 的远端写权限，只保留远端读权限；或者想要使一个之前已经授权给远端节点的 R_Key 失效，那么用户需要通过重注册 MR（Reregister MR）接口来进行修改，该接口等价于先取消注册 MR（Deregister MR），然后注册 MR（Register MR）。&lt;strong>上述流程需要陷入内核态来完成，而这个过程是耗时较长的&lt;/strong>。&lt;/p>
 &lt;p>不同于需要通过控制路径修改权限的 MR，&lt;strong>MW 在创建好之后，可以通过数据路径（即通过用户态直接下发 WR 到硬件的方式）动态的绑定到一个已经注册的 MR 上，并同时设置或者更改其访问权限，这个过程的速度远远超过重新注册 MR 的过程&lt;/strong>。&lt;/p>
 &lt;p>那么现在为了使一片内存能够被远端节点进行 RDMA WRITE/READ 操作，我们就拥有了注册 MR 以及注册 MW 然后绑定到一个已注册的 MR 两种方式，它们都会产生一个 R_Key 来提供给远端节点。前一种方式准备阶段的步骤简单，但是不够灵活，一旦注册之后修改起来会比较麻烦；后一种方式相比前一种多了注册 MW 和绑定 MW 到 MR 两种操作，但是可以方便迅速的控制远端访问权限。&lt;/p>
-&lt;h2 id="mw-和-mr-权限的关系">MW 和 MR 权限的关系&lt;/h2>
+&lt;h2 id="mw-和-mr-权限的关系">
+&lt;a href="#mw-%e5%92%8c-mr-%e6%9d%83%e9%99%90%e7%9a%84%e5%85%b3%e7%b3%bb" class="header-anchor">#&lt;/a>
+MW 和 MR 权限的关系
+&lt;/h2>
 &lt;p>也许有的读者会想到，MR 申请时配置了自己的权限，MW 绑定到 MR 时也会配置自己的权限，这两者的权限是什么关系呢？IB 规范在 10.6.7.2.2 节有专门介绍：&lt;/p>
 &lt;blockquote>
 &lt;p>When binding a Memory Window, a Consumer can request any combination of remote access rights for the Window. However, if the associated Region does not have local write access enabled and the Consumer requests remote write or remote atomic access for the Window, the Channel Interface must return an error either at bind time or access time.&lt;/p>
 &lt;/blockquote>
 &lt;p>总结来说，&lt;strong>如果想要给 MW 配置远程写或者远程原子操作（Atomic）权限，那么它绑定到的 MR 必须有本地写权限，其他情况下两者权限互不干扰&lt;/strong>：远端用户用 MW，就要遵循 MW 的权限配置；远端用户用 MR，就要遵循 MR 的权限配置。&lt;/p>
-&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;h2 id="用户接口">
+&lt;a href="#%e7%94%a8%e6%88%b7%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+用户接口
+&lt;/h2>
 &lt;p>老样子，用户接口时我们按照控制路径和数据路径来分类：&lt;/p>
-&lt;h3 id="控制路径">控制路径&lt;/h3>
+&lt;h3 id="控制路径">
+&lt;a href="#%e6%8e%a7%e5%88%b6%e8%b7%af%e5%be%84" class="header-anchor">#&lt;/a>
+控制路径
+&lt;/h3>
 &lt;p>MW 支持增、删和查，不能直接修改：&lt;/p>
-&lt;h4 id="创建allocate-mw">创建——Allocate MW&lt;/h4>
+&lt;h4 id="创建allocate-mw">
+&lt;a href="#%e5%88%9b%e5%bb%baallocate-mw" class="header-anchor">#&lt;/a>
+创建——Allocate MW
+&lt;/h4>
 &lt;p>申请 MW，主要是创建 MW 相关的软件结构和让硬件做好准备，用户需要指定后文中介绍的 MW 的类型。这个接口会产生一个 Memory Window 的句柄，用户以后可以用这个句柄指代这个 MW。&lt;/p>
 &lt;p>注意此时 MW 没有绑定到 MR 上，处于不可从远端访问的状态。&lt;/p>
-&lt;h4 id="删除deallocate-mw">删除——Deallocate MW&lt;/h4>
+&lt;h4 id="删除deallocate-mw">
+&lt;a href="#%e5%88%a0%e9%99%a4deallocate-mw" class="header-anchor">#&lt;/a>
+删除——Deallocate MW
+&lt;/h4>
 &lt;p>取消注册 MW。很好理解，就是销毁相关资源。&lt;/p>
-&lt;h4 id="查询query-mw">查询——Query MW&lt;/h4>
+&lt;h4 id="查询query-mw">
+&lt;a href="#%e6%9f%a5%e8%af%a2query-mw" class="header-anchor">#&lt;/a>
+查询——Query MW
+&lt;/h4>
 &lt;p>查询 MW 的信息，包括 R_Key 及其状态、MW 类型以及 PD 等。&lt;/p>
 &lt;p>需要再次强调的是，虽然这个 Verbs 在 IB 规范中有描述，但是并没有在 RDMA 软件栈中实现相关的 API。类似情况的 Verbs 接口还有不少，RDMA 软件栈以实用为原则，没有用户需求的接口一般都没有实现。&lt;/p>
-&lt;h3 id="数据路径">数据路径&lt;/h3>
+&lt;h3 id="数据路径">
+&lt;a href="#%e6%95%b0%e6%8d%ae%e8%b7%af%e5%be%84" class="header-anchor">#&lt;/a>
+数据路径
+&lt;/h3>
 &lt;p>MW 在数据路径有一套独特的接口，分为 Bind 和 Invalidate 两类：&lt;/p>
-&lt;h4 id="绑定bind">绑定——Bind&lt;/h4>
+&lt;h4 id="绑定bind">
+&lt;a href="#%e7%bb%91%e5%ae%9abind" class="header-anchor">#&lt;/a>
+绑定——Bind
+&lt;/h4>
 &lt;p>Bind(ing)意为“绑定”，指的是将一个 MW“关联”到一个已经注册的 MR 的指定范围上，并配置一定的读写权限。绑定的结果会产生一个 R_key，用户可以把这个 R_Key 传递给远端节点用于远程访问。注意一个 MW 可以被多次绑定，一个 MR 上也可以绑定多个 MW。如果一个 MR 还有被绑定的 MW，那么这个 MR 是不能被取消注册的。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_12_5.webp"
 alt="2024-06-28_12_5" width="90%" loading="lazy">&lt;figcaption>
@@ -125,7 +173,10 @@ alt="2024-06-28_12_6" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>两种 Bind 操作的关系&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h4 id="无效化invalidate">无效化——Invalidate&lt;/h4>
+&lt;h4 id="无效化invalidate">
+&lt;a href="#%e6%97%a0%e6%95%88%e5%8c%96invalidate" class="header-anchor">#&lt;/a>
+无效化——Invalidate
+&lt;/h4>
 &lt;p>Invalidate 意为无效化，指的是用户通过下发一个带有 Invalidate 操作码的 WR 到硬件而使一个 R_Key 无效的操作。&lt;/p>
 &lt;p>&lt;strong>需要强调的是，Invalidate 操作的对象是 R_Key 而不是 MW 本身，即 Invalidate 之后的效果是：远端用户无法再使用这个 R_Key 访问对应的 MW，而 MW 资源仍然存在，以后仍然可以生成新的 R_Key 给远端使用。&lt;/strong>&lt;/p>
 &lt;p>Invalidate 操作只能用于下文介绍的 Type 2 的 MW。&lt;/p>
@@ -149,22 +200,37 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;h4>Remote Invalidate 操作的软硬件交互&lt;/h4>
 &lt;/figcaption>
 &lt;/figure>
-&lt;h2 id="mw-的类型">MW 的类型&lt;/h2>
+&lt;h2 id="mw-的类型">
+&lt;a href="#mw-%e7%9a%84%e7%b1%bb%e5%9e%8b" class="header-anchor">#&lt;/a>
+MW 的类型
+&lt;/h2>
 &lt;p>根据实现和应用场景的不同，IB 规范对 MW 进行了分类：&lt;/p>
-&lt;h3 id="type-1">Type 1&lt;/h3>
+&lt;h3 id="type-1">
+&lt;a href="#type-1" class="header-anchor">#&lt;/a>
+Type 1
+&lt;/h3>
 &lt;p>Type 1 的 MW 通过 PD 和一个 QP 关联，不会绑定到一个 QP 上，所以也不会影响销毁同一个 PD 下的 QP。&lt;/p>
 &lt;p>Type 1 的 MW 的 R_Key 的 key 域段由驱动和硬件掌握，这里“掌握”的意思是，由驱动和硬件分配 key，而不是上层用户。这也是前文中说 Type 1 的 MW 不能被执行 Invalidate 操作的原因。如果 Type 1 MW 的用户想要使一个 R_Key 失效，那么重新通过 Bind MW 接口绑定一次这个 MW，硬件或者驱动就回自动分配一个新的 R_Key 的 key 域段，原有的 R_Key 也就失效了。&lt;/p>
 &lt;p>此外，如果用户暂时想要使一个 MW 不再绑定到任何 MR，但是又想保留相关的资源而不是销毁这个 MW，那么可以通过调用 Bind MW 接口，并将 MW 长度设置为 0 来实现。&lt;/p>
 &lt;p>IB 规范允许多个 Type 1 MW 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
-&lt;h3 id="type-2">Type 2&lt;/h3>
+&lt;h3 id="type-2">
+&lt;a href="#type-2" class="header-anchor">#&lt;/a>
+Type 2
+&lt;/h3>
 &lt;p>Type 2 的 MW 赋予了用户更大的自由度，其 R_Key 的 key 域段由用户掌握，即用户想怎么分配就怎么分配。前文已经讲过，用户通过 Post Send Bind MW WR 操作来进行绑定，这个过程并不会返回 R_Key。用户必须记住 Allocate MW 时的 index，并且和其选择的 8 bit key 组成 R_Key 并发送给对端。&lt;/p>
 &lt;p>用户可以通过前文介绍过的 Invalidate 操作来使一个 R_Key 无效，如果想要分配一个新的 R_Key 到 MW 上，必须先通过 Invalidate 操作无效之前的 R_Key。&lt;/p>
 &lt;p>与 Type 1 不同，Type 2 的 MW 不支持 0 长度的绑定。&lt;/p>
 &lt;p>IB 规范同样也允许多个 Type 2 绑定到同一个 MR 上，范围可以相互覆盖。&lt;/p>
 &lt;p>此外，根据绑定关系不同，Type 2 还可以分为两种实现方式，它们的差异仅在于和 QP 的绑定关系上。&lt;/p>
-&lt;h4 id="type-2a">Type 2A&lt;/h4>
+&lt;h4 id="type-2a">
+&lt;a href="#type-2a" class="header-anchor">#&lt;/a>
+Type 2A
+&lt;/h4>
 &lt;p>通过 QPN 和一个 QP 关联，也就是说远端访问这个 MW 范围内的内存时候，除了 R_Key 之外，还必须指定正确的 QPN。如果一个 QP 上还有绑定的 Type 2A 的 MW，那么这个 QP 不可以被销毁。&lt;/p>
-&lt;h4 id="type-2b">Type 2B&lt;/h4>
+&lt;h4 id="type-2b">
+&lt;a href="#type-2b" class="header-anchor">#&lt;/a>
+Type 2B
+&lt;/h4>
 &lt;p>通过 QPN 和 PD 与一个 QP 关联，比 Type 2A 多了个 PD 的校验，即远端通过 RDMA 操作访问 MW 的内存时，除了 QPN 要正确之外，其指定的本端 QP 的 PD 要与绑定这个 MW 时的 PD 相同。另外，与 Type 2A 不同，QP 如果还有 Type 2B MW 绑定关系时是可以被销毁的。&lt;/p>
 &lt;p>这里 IB 规范中原有的介绍就比较分散，我们来简单总结一下几种 MW 的异同：&lt;/p>
 &lt;table>
@@ -218,7 +284,10 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;p>此外，IB 规范中对上述几种类型还有如下描述：HCA 必须实现 Type 1 的 MW，另外可以仅选择实现 Type 2A 和 2B 中的一种。Type 1 和 Type 2 的 MW 可以同时关联到同一个 MR 上。因为我了解到的应用程序中使用 MW 的情况不多，所以具体在什么场景下应该使用哪种 MW 也说不出所以然来，如果读者有对这方面的了解欢迎一起交流。&lt;/p>
 &lt;p>好了，MW 就讲到这里，到此为止 RDMA 技术中常见的资源就都介绍完了。&lt;/p>
 &lt;p>鉴于一般支持 RDMA 的设备都比较昂贵，下一篇我将介绍如何通过软件模拟设备的方式——即 Soft-RoCE 进行一些编程实验。&lt;/p>
-&lt;h2 id="ib-规范相关章节">IB 规范相关章节&lt;/h2>
+&lt;h2 id="ib-规范相关章节">
+&lt;a href="#ib-%e8%a7%84%e8%8c%83%e7%9b%b8%e5%85%b3%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+IB 规范相关章节
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>3.5.3 Memory Keys 介绍&lt;/p>
@@ -233,23 +302,38 @@ alt="2024-06-28_12_8" width="90%" loading="lazy">&lt;figcaption>
 &lt;p>11.2.10.9~12 相关 Verbs 介绍&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="参考文档">参考文档&lt;/h2>
+&lt;h2 id="参考文档">
+&lt;a href="#%e5%8f%82%e8%80%83%e6%96%87%e6%a1%a3" class="header-anchor">#&lt;/a>
+参考文档
+&lt;/h2>
 &lt;p>[1] IB Specification Vol 1-Release-1.4&lt;/p>
-&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA 之 Shared Receive Queue</title><link>https://cuterwrite.top/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA 之 Shared Receive Queue" />&lt;h1 id="rdma-之-shared-receive-queue">RDMA 之 Shared Receive Queue&lt;/h1>
+&lt;p>[2] Linux Kernel Networking - Implementation and Theory. Chapter 13&lt;/p></description></item><item><title>RDMA 之 Shared Receive Queue</title><link>https://cuterwrite.top/p/rdma-shared-receive-queue/</link><pubDate>Wed, 26 Jun 2024 23:34:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-shared-receive-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p0_master1200.webp" alt="Featured image of post RDMA 之 Shared Receive Queue" />&lt;h1 id="rdma-之-shared-receive-queue">
+&lt;a href="#rdma-%e4%b9%8b-shared-receive-queue" class="header-anchor">#&lt;/a>
+RDMA 之 Shared Receive Queue
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/279904125">&lt;cite>知乎专栏：11. RDMA 之 Shared Receive Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>我们曾在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【3. RDMA 基本元素】
 &lt;/a>
 中简单介绍了 SRQ 的概念，本文将带大家了解更多关于 SRQ 的细节。&lt;/p>
-&lt;h2 id="基本概念">基本概念&lt;/h2>
-&lt;h3 id="什么是-srq">什么是 SRQ&lt;/h3>
+&lt;h2 id="基本概念">
+&lt;a href="#%e5%9f%ba%e6%9c%ac%e6%a6%82%e5%bf%b5" class="header-anchor">#&lt;/a>
+基本概念
+&lt;/h2>
+&lt;h3 id="什么是-srq">
+&lt;a href="#%e4%bb%80%e4%b9%88%e6%98%af-srq" class="header-anchor">#&lt;/a>
+什么是 SRQ
+&lt;/h3>
 &lt;p>全称为 Shared Receive Queue，直译为共享接收队列。我们知道，RDMA 通信的基本单位是 QP，每个 QP 都由一个发送队列 SQ 和接收队列 RQ 组成。&lt;/p>
 &lt;p>SRQ 是 IB 协议为了给接收端节省资源而设计的。我们可以把一个 RQ 共享给所有关联的 QP 使用，这个公用的 RQ 就称为 SRQ。当与其关联的 QP 想要下发接收 WQE 时，都填写到这个 SRQ 中。然后每当硬件接收到数据后，就根据 SRQ 中的下一个 WQE 的内容把数据存放到指定位置。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_1.webp"
 alt="2024-06-28_11_1" width="80%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="为什么要用-srq">为什么要用 SRQ&lt;/h3>
+&lt;h3 id="为什么要用-srq">
+&lt;a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e7%94%a8-srq" class="header-anchor">#&lt;/a>
+为什么要用 SRQ
+&lt;/h3>
 &lt;p>通常情况下，我们向 SQ 中下任务的数量要远远超过向 RQ 中下发任务的数量。为什么呢？请先回忆一下哪些操作类型会用到 SQ，哪些又会用到 RQ。&lt;/p>
 &lt;p>SEND/WRITE/READ 都需要通信发起方向 SQ 中下发一个 WR，而只有和 SEND 配合的 RECV 操作才需要通信响应方下发 WR 到 RQ 中（带立即数的 Write 操作也会消耗 Receive WR，我们还没讲到）。而我们又知道，SEND-RECV 这一对操作通常都是用于传递控制信息，WRITE 和 READ 才是进行大量远端内存读写操作时的主角，所以自然 SQ 的使用率是远远高于 RQ 的。&lt;/p>
 &lt;p>每个队列都是有实体的，占用着内存以及网卡的片上存储空间。在商用场景下，QP 的数量是可能达到十万级甚至更高的，对内存容量提出了很高的要求，内存都是白花花的银子买的，SRQ 就是 IB 协议为了节省用户的内存而设计的一种机制。&lt;/p>
@@ -275,29 +359,50 @@ alt="2024-06-28_11_2" width="80%" loading="lazy">
 &lt;/figure>
 &lt;p>上图中的 SRQ 中有两个 RQ WQE，我们看一下 RQ WQE 的内容，它们是由数个 sge（Scatter/Gather Element）组成的，每个 sge 由一个内存地址，长度和秘钥组成。有了起始地址和长度，sge 就可以指向一块连续的内存区域，那么多个 sge 就可以表示多个彼此离散的连续内存块，我们称多个 sge 为 sgl（Scatter/Gather List）。sge 在 IB 软件协议栈中随处可见（其实在整个 Linux 都很常见），可以用非常少的空间表示非常大的内存区域，IB 的用户都使用 sge 来指定发送和接收区域的。&lt;/p>
 &lt;p>可以简单估算下每个 sge 可以指向多大的内存区域，length 是一个 32bit 的无符号整型，可以表示 4GB 的空间。假设一个 RQ WQE 最大可以存放 256 个 sge，那么一个 RQ WQE 一共就是 1TB。当然实际上不可能这么大，这里只是想直观的告诉读者 RQ WQE 背后可能占用着多大的内存空间。&lt;/p>
-&lt;h3 id="srqc">SRQC&lt;/h3>
+&lt;h3 id="srqc">
+&lt;a href="#srqc" class="header-anchor">#&lt;/a>
+SRQC
+&lt;/h3>
 &lt;p>即 SRQ Context。同 QPC 一样，SRQC 是用来告知硬件跟 SRQ 有关的属性的，包括深度、WQE 大小等信息，本文不再赘述了。&lt;/p>
-&lt;h3 id="srqn">SRQN&lt;/h3>
+&lt;h3 id="srqn">
+&lt;a href="#srqn" class="header-anchor">#&lt;/a>
+SRQN
+&lt;/h3>
 &lt;p>即 SRQ Number。同 QP 一样，每个节点中可能存在多个 SRQ，为了标识和区分这些 SRQ，每个 SRQ 都有一个序号，称为 SRQN。&lt;/p>
-&lt;h3 id="srq-的-pd">SRQ 的 PD&lt;/h3>
+&lt;h3 id="srq-的-pd">
+&lt;a href="#srq-%e7%9a%84-pd" class="header-anchor">#&lt;/a>
+SRQ 的 PD
+&lt;/h3>
 &lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-protection-domain/" >【7. RDMA 之 Protection Domain】
 &lt;/a>
 中介绍过 Protection Domain 的概念，它用来隔离不同的 RDMA 资源。每个 SRQ 都必须指定一个自己的 PD，可以跟自己关联的 QP 的 PD 相同，也可以不同；SRQ 之间也可以使用相同的 PD。&lt;/p>
 &lt;p>如果在使用 SRQ 的时候，收到了数据包，那么只有在要访问的 MR 和 SRQ 处于同一个 PD 下，才会正常接收这个数据包，否则会产生立即错误。&lt;/p>
-&lt;h2 id="异步事件">异步事件&lt;/h2>
+&lt;h2 id="异步事件">
+&lt;a href="#%e5%bc%82%e6%ad%a5%e4%ba%8b%e4%bb%b6" class="header-anchor">#&lt;/a>
+异步事件
+&lt;/h2>
 &lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-completion-queue/" >【10. RDMA 之 Completion Queue】
 &lt;/a>
 一文中介绍过，IB 协议根据错误的上报方式将错误类型分为立即错误，完成错误和异步错误。其中的异步错误类似于中断/事件，所以我们有时候也称其为异步事件。每个 HCA 都会注册一个事件处理函数专门用来处理异步事件，收到异步事件后，驱动程序会对其进行必要的处理和进一步上报给用户。&lt;/p>
 &lt;p>关于 SRQ 有一个特殊的异步事件，用来及时通知上层用户 SRQ 的状态，即 SRQ Limit Reached 事件。&lt;/p>
-&lt;h3 id="srq-limit">SRQ Limit&lt;/h3>
+&lt;h3 id="srq-limit">
+&lt;a href="#srq-limit" class="header-anchor">#&lt;/a>
+SRQ Limit
+&lt;/h3>
 &lt;p>SRQ 可以设置一个水线/阈值，当队列中剩余的 WQE 数量小于水线时，这个 SRQ 会就上报一个异步事件。提醒用户“队列中的 WQE 快用完了，请下发更多 WQE 以防没有地方接收新的数据”。这个水线/阈值就被称为 SRQ Limit，这个上报的事件就被称为 SRQ Limit Reached。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_3.webp"
 alt="2024-06-28_11_3" width="30%" loading="lazy">
 &lt;/figure>
 &lt;p>因为 SRQ 是多个 QP 共享的，所以如果深度比较小的情况下，很有可能突然里面的 WQE 就用完了。所以协议设计了这种机制，来保证用户能够及时干预 WQE 不够的情况。&lt;/p>
 &lt;p>上报异步事件之后，SRQ Limit 的值会被硬件重新设置为 0（应该是为了防止一直上报异步事件给上层）。当然用户可以不使用这个机制，只需要将 SRQ Limit 的值设为 0 即可。&lt;/p>
-&lt;h2 id="用户接口">用户接口&lt;/h2>
-&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;h2 id="用户接口">
+&lt;a href="#%e7%94%a8%e6%88%b7%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+用户接口
+&lt;/h2>
+&lt;h3 id="控制面">
+&lt;a href="#%e6%8e%a7%e5%88%b6%e9%9d%a2" class="header-anchor">#&lt;/a>
+控制面
+&lt;/h3>
 &lt;p>还是老四样——“增、删、改、查”：&lt;/p>
 &lt;ul>
 &lt;li>创建——Create SRQ&lt;/li>
@@ -315,21 +420,39 @@ alt="2024-06-28_11_3" width="30%" loading="lazy">
 &lt;li>查询——Query SRQ&lt;/li>
 &lt;/ul>
 &lt;p>通常是用来查询水线的配置的。&lt;/p>
-&lt;h3 id="数据面">数据面&lt;/h3>
-&lt;h3 id="post-srq-receive">Post SRQ Receive&lt;/h3>
+&lt;h3 id="数据面">
+&lt;a href="#%e6%95%b0%e6%8d%ae%e9%9d%a2" class="header-anchor">#&lt;/a>
+数据面
+&lt;/h3>
+&lt;h3 id="post-srq-receive">
+&lt;a href="#post-srq-receive" class="header-anchor">#&lt;/a>
+Post SRQ Receive
+&lt;/h3>
 &lt;p>跟 Post Receive 一样，就是向 SRQ 中下发接收 WQE，里面包含了作为接收缓冲区的内存块的信息。需要注意的是，&lt;strong>主语是 SRQ，与 QP 没有任何关系&lt;/strong>，现在用户是不关心这个 SRQ 被哪些 QP 关联的。&lt;/p>
-&lt;h2 id="srq-和-rq-的区别">SRQ 和 RQ 的区别&lt;/h2>
+&lt;h2 id="srq-和-rq-的区别">
+&lt;a href="#srq-%e5%92%8c-rq-%e7%9a%84%e5%8c%ba%e5%88%ab" class="header-anchor">#&lt;/a>
+SRQ 和 RQ 的区别
+&lt;/h2>
 &lt;p>从功能上来说，SRQ 和 RQ 一样都是用来储存接收任务书的，但是由于 SRQ 的共享性，所以其和 RQ 有一些差异。&lt;/p>
-&lt;h3 id="状态机">状态机&lt;/h3>
+&lt;h3 id="状态机">
+&lt;a href="#%e7%8a%b6%e6%80%81%e6%9c%ba" class="header-anchor">#&lt;/a>
+状态机
+&lt;/h3>
 &lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-queue-pair/" >【9. RDMA 之 Queue Pair】
 &lt;/a>
 中介绍过，QP 有着复杂的状态机，不同的状态下 QP 的收发能力存在差异。而 SRQ 只有非错误和错误两种状态：&lt;/p>
 &lt;p>无论是哪种状态下，用户都可以向 SRQ 中下发 WQE，但是在错误状态下，相关联的 QP 不能从这个 SRQ 中获得收到的数据。另外在错误状态下，用户也无法查询和修改 SRQ 的属性。&lt;/p>
 &lt;p>QP 处于错误状态时，可以通过 Modify QP 来使其回到 RESET 状态，但是对 SRQ 来说，只能通过销毁它来退出错误状态。&lt;/p>
-&lt;h3 id="接收流程">接收流程&lt;/h3>
+&lt;h3 id="接收流程">
+&lt;a href="#%e6%8e%a5%e6%94%b6%e6%b5%81%e7%a8%8b" class="header-anchor">#&lt;/a>
+接收流程
+&lt;/h3>
 &lt;p>对于一个 QP 来说，RQ 和 SRQ 不能同时使用，两者需选其一，如果对一个已经关联 SRQ 的 QP 的 RQ 下发 WQE，那么会返回一个立即错误。&lt;/p>
 &lt;p>下面我们来对比看一下 SRQ 和 RQ 的接收流程。本小结的内容是本文的重点，相信读者看过之后，就对 SRQ 的机制有比较完整的了解了。&lt;/p>
-&lt;h3 id="rq-的接收流程">RQ 的接收流程&lt;/h3>
+&lt;h3 id="rq-的接收流程">
+&lt;a href="#rq-%e7%9a%84%e6%8e%a5%e6%94%b6%e6%b5%81%e7%a8%8b" class="header-anchor">#&lt;/a>
+RQ 的接收流程
+&lt;/h3>
 &lt;p>首先，我们重温一下普通 RQ 的接收流程（结合发送端的完整流程请阅读 &lt;a class="link" href="https://cuterwrite.top/p/rdma-op/" >【4. RDMA 操作类型】
 &lt;/a>
 ）一文）：&lt;/p>
@@ -368,7 +491,10 @@ alt="2024-06-28_11_3" width="30%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_4.webp"
 alt="2024-06-28_11_4" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="srq-的接收流程">SRQ 的接收流程&lt;/h3>
+&lt;h3 id="srq-的接收流程">
+&lt;a href="#srq-%e7%9a%84%e6%8e%a5%e6%94%b6%e6%b5%81%e7%a8%8b" class="header-anchor">#&lt;/a>
+SRQ 的接收流程
+&lt;/h3>
 &lt;p>而 SRQ 的接收流程有一些区别：&lt;/p>
 &lt;ol start="0">
 &lt;li>
@@ -416,10 +542,16 @@ alt="2024-06-28_11_4" width="90%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-28_11_5.webp"
 alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;/figure>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>本文首先介绍了 SRQ 的基本概念，然后是其设计初衷、相关机制和用户接口，最后对比 RQ 描述了 SRQ 的接收流程。在实际业务中，SRQ 的使用率还是蛮高的，希望读者能够深入理解。&lt;/p>
 &lt;p>就写到这里吧，感谢阅读。下一篇我将给大家介绍下 Memeory Window。&lt;/p>
-&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;h2 id="协议相关章节">
+&lt;a href="#%e5%8d%8f%e8%ae%ae%e7%9b%b8%e5%85%b3%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+协议相关章节
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>10.2.9 SRQ 的设计思想以及相关操作&lt;/p>
@@ -437,7 +569,10 @@ alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;p>11.5.2.4 异步事件&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="其他参考资料">其他参考资料&lt;/h2>
+&lt;h2 id="其他参考资料">
+&lt;a href="#%e5%85%b6%e4%bb%96%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
+其他参考资料
+&lt;/h2>
 &lt;div class="footnotes" role="doc-endnotes">
 &lt;hr>
 &lt;ol>
@@ -445,14 +580,20 @@ alt="2024-06-28_11_5" width="90%" loading="lazy">
 &lt;p>Linux Kernel Networking - Implement and Theory. Chapter 13. Shared Receive Queue&amp;#160;&lt;a href="#fnref:1" class="footnote-backref" role="doc-backlink">&amp;#x21a9;&amp;#xfe0e;&lt;/a>&lt;/p>
 &lt;/li>
 &lt;/ol>
-&lt;/div></description></item><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">RDMA 之 Completion Queue&lt;/h1>
+&lt;/div></description></item><item><title>RDMA 之 Completion Queue</title><link>https://cuterwrite.top/p/rdma-completion-queue/</link><pubDate>Wed, 26 Jun 2024 23:11:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-completion-queue/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116903369_p0_master1200.webp" alt="Featured image of post RDMA 之 Completion Queue" />&lt;h1 id="rdma-之-completion-queue">
+&lt;a href="#rdma-%e4%b9%8b-completion-queue" class="header-anchor">#&lt;/a>
+RDMA 之 Completion Queue
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/259650980">&lt;cite>知乎专栏：10. RDMA 之 Completion Queue&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>我们曾经在前面的文章中简单介绍过 CQ，本文将更深入的讲解关于它的一些细节。阅读本文前，读者可以先温习一下这篇文章： &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【“3. RDMA 基本元素”】
 &lt;/a>
 。&lt;/p>
-&lt;h2 id="基本概念">基本概念&lt;/h2>
+&lt;h2 id="基本概念">
+&lt;a href="#%e5%9f%ba%e6%9c%ac%e6%a6%82%e5%bf%b5" class="header-anchor">#&lt;/a>
+基本概念
+&lt;/h2>
 &lt;p>我们先回顾下 CQ 的作用。CQ 意为完成队列，它的作用和 WQ（SQ 和 RQ）相反，硬件通过 CQ 中的 CQE/WC 来告诉软件某个 WQE/WR 的完成情况。再次提醒读者，对于上层用户来说一般用 WC，对于驱动程序来说，一般称为 CQE，本文不对两者进行区分。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_1.webp"
 alt="2024-06-27_10_1" width="80%" loading="lazy">
@@ -474,7 +615,10 @@ alt="2024-06-27_10_1" width="80%" loading="lazy">
 &lt;/ul>
 &lt;p>在产生 CQE 之前，有可能硬件还没有开始写入数据，有可能数据才写了一半，也有可能数据校验出错。所以上层软件在获得 CQE 之前，这段用于存放接收数据的内存区域中的内容是不可信的。&lt;/p>
 &lt;p>总之，用户必须获取到 CQE 并确认其内容之后才能认为消息收发任务已经完成。&lt;/p>
-&lt;h3 id="何时产生">何时产生&lt;/h3>
+&lt;h3 id="何时产生">
+&lt;a href="#%e4%bd%95%e6%97%b6%e4%ba%a7%e7%94%9f" class="header-anchor">#&lt;/a>
+何时产生
+&lt;/h3>
 &lt;p>我们将按照服务类型（本篇只讲 RC 和 UD）和操作类型来分别说明，因为不同的情况产生 CQE 的时机和含义都不同，建议读者回顾第 4 篇&lt;a class="link" href="https://cuterwrite.top/p/rdma-op/" >【“4. RDMA 基本操作”】
 &lt;/a>
 和第 5 篇&lt;a class="link" href="https://cuterwrite.top/p/rdma-service-types/" >【“5. RDMA 基本服务类型”】
@@ -516,7 +660,10 @@ alt="2024-06-27_10_4" width="50%" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_5.webp"
 alt="2024-06-27_10_5" width="50%" loading="lazy">
 &lt;/figure>
-&lt;h3 id="wq-和-cq-的对应关系">WQ 和 CQ 的对应关系&lt;/h3>
+&lt;h3 id="wq-和-cq-的对应关系">
+&lt;a href="#wq-%e5%92%8c-cq-%e7%9a%84%e5%af%b9%e5%ba%94%e5%85%b3%e7%b3%bb" class="header-anchor">#&lt;/a>
+WQ 和 CQ 的对应关系
+&lt;/h3>
 &lt;p>&lt;strong>每个 WQ 都必须关联一个 CQ，而每个 CQ 可以关联多个 SQ 和 RQ。&lt;/strong>&lt;/p>
 &lt;p>这里的所谓“关联”，指的是一个 WQ 的所有 WQE 对应的 CQE，都会被硬件放到绑定的 CQ 中，需要注意同属于一个 QP 的 SQ 和 RQ 可以各自关联不同的 CQ。如下图所示，QP1 的 SQ 和 RQ 都关联了 CQ1，QP2 的 RQ 关联到了 CQ1、SQ 关联到了 CQ2。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_6.webp"
@@ -537,14 +684,23 @@ alt="2024-06-27_10_8" width="auto" loading="lazy">
 &lt;p>上面的描述其实还包含了“同一个 QP 的 SQ 和 RQ 中的 WQE，其对应的 CQE 间是不保序的”的情况，这一点其实比较容易理解，SQ 和 RQ，一个负责主动发起的任务，一个负责被动接收的任务，它们本来就可以是认为是两条不同方向的通道，自然不应该相互影响。假设用户对同一个 QP 先下发了一个 Receive WQE，又下发一个 Send WQE，总不能对端不给本端发送消息，本端就不能发送消息给对端了吧？&lt;/p>
 &lt;p>既然这种情况下 CQE 产生的顺序和获取 WQE 的顺序是不相关的，那么上层应用和驱动是如何知道收到的 CQE 关联的是哪个 WQE 呢？其实很简单，&lt;strong>CQE 中指明它所对应的 WQE 的编号&lt;/strong>就可以了。&lt;/p>
 &lt;p>另外需要注意的是，即使在多个 WQ 共用一个 CQ 的情况下，“同一个 WQ 中的 WQE，其对应的 CQE 间是保序的”这一点也是一定能够保证的，即上图中的属于 WQ1 的 WQE 1、3、4 对应的 CQE 一定是按照顺序产生的，对于属于 WQ2 的 WQE 2、5、6 也是如此。&lt;/p>
-&lt;h3 id="cqc">CQC&lt;/h3>
+&lt;h3 id="cqc">
+&lt;a href="#cqc" class="header-anchor">#&lt;/a>
+CQC
+&lt;/h3>
 &lt;p>同 QP 一样，CQ 只是一段存放 CQE 的队列内存空间。硬件除了知道首地址以外，对于这片区域可以说是一无所知。所以需要提前跟软件约定好格式，然后驱动将申请内存，并按照格式把 CQ 的基本信息填写到这片内存中供硬件读取，这片内存就是 CQC。CQC 中包含了 CQ 的容量大小，当前处理的 CQE 的序号等等信息。所以把 QPC 的图稍微修改一下，就能表示出 CQC 和 CQ 的关系：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-27_10_9.webp"
 alt="2024-06-27_10_9" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h3 id="cqn">CQN&lt;/h3>
+&lt;h3 id="cqn">
+&lt;a href="#cqn" class="header-anchor">#&lt;/a>
+CQN
+&lt;/h3>
 &lt;p>CQ Number，就是 CQ 的编号，用来区别不同的 CQ。CQ 没有像 QP0 和 QP1 一样的特殊保留编号，本文中不再赘述了。&lt;/p>
-&lt;h2 id="完成错误">完成错误&lt;/h2>
+&lt;h2 id="完成错误">
+&lt;a href="#%e5%ae%8c%e6%88%90%e9%94%99%e8%af%af" class="header-anchor">#&lt;/a>
+完成错误
+&lt;/h2>
 &lt;p>IB 协议中有三种错误类型，立即错误（immediate error）、完成错误（Completion Error）以及异步错误（Asynchronous Errors)。&lt;/p>
 &lt;p>立即错误的是“立即停止当前操作，并返回错误给上层用户”；完成错误指的是“通过 CQE 将错误信息返回给上层用户”；而异步错误指的是“通过中断事件的方式上报给上层用户”。可能还是有点抽象，我们来举个例子说明这两种错误都会在什么情况下产生：&lt;/p>
 &lt;ul>
@@ -616,9 +772,15 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;/li>
 &lt;/ul>
 &lt;p>完整的完成错误类型列表请参考 IB 协议的 10.10.3 节。&lt;/p>
-&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;h2 id="用户接口">
+&lt;a href="#%e7%94%a8%e6%88%b7%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+用户接口
+&lt;/h2>
 &lt;p>同 QP 一样，我们依然从通信准备阶段（控制面）和通信进行阶段（数据面）来介绍 IB 协议对上层提供的关于 CQ 的接口。&lt;/p>
-&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;h3 id="控制面">
+&lt;a href="#%e6%8e%a7%e5%88%b6%e9%9d%a2" class="header-anchor">#&lt;/a>
+控制面
+&lt;/h3>
 &lt;p>同 QP 一样，还是“增删改查”四种，但是可能因为对于 CQ 来说，上层用户是资源使用者而不是管理者，只能从 CQ 中读数据而不能写数据，所以对用户开放的可配的参数就只有“CQ 规格”一种。&lt;/p>
 &lt;ul>
 &lt;li>创建——Create CQ&lt;/li>
@@ -639,7 +801,10 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;blockquote>
 &lt;p>通过对比 RDMA 规范和软件协议栈，可以发现很多 verbs 接口并不是按照规范实现的。所以读者如果发现软件 API 和协议有差异时也无须感到疑惑，RDMA 技术本身一直还在演进，软件框架也处于活跃更新的状态。如果更关心编程实现，那么请以软件协议栈的 API 文档为准；如果更关心学术上的研究，那么请以 RDMA 规范为准。&lt;/p>
 &lt;/blockquote>
-&lt;h3 id="数据面">数据面&lt;/h3>
+&lt;h3 id="数据面">
+&lt;a href="#%e6%95%b0%e6%8d%ae%e9%9d%a2" class="header-anchor">#&lt;/a>
+数据面
+&lt;/h3>
 &lt;p>CQE 是硬件将信息传递给软件的媒介，虽然软件知道在什么情况下会产生 CQE，但是软件并不知道具体什么时候硬件会把 CQE 放到 CQ 中。在通信和计算机领域，我们把这种接收方不知道发送方什么时候发送的模式称为“异步”。我们先来举一个网卡的例子，再来说明用户如何通过数据面接口获取 CQE（WC）。&lt;/p>
 &lt;p>网卡收到数据包后如何让 CPU 知道这件事，并进行数据包处理，有两种常见的模式：&lt;/p>
 &lt;ul>
@@ -654,13 +819,22 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;p>通过对比中断模式我们可以发现，轮询模式虽然每隔一段时间需要 CPU 检查一次，带来了一定的开销，但是当业务繁忙的时候采用轮询模式能够极大的减少中断上下文的切换次数，反而减轻了 CPU 的负担。&lt;/p>
 &lt;p>现在的网卡，一般都是中断+轮询的方式，也就是根据业务负载动态切换。&lt;/p>
 &lt;p>在 RDMA 协议中，CQE 就相当于是网卡收到的数据包，RDMA 硬件把它传递给 CPU 去处理。RDMA 框架定义了两种对上层的接口，分别是 poll 和 notify，对应着轮询和中断模式。&lt;/p>
-&lt;h3 id="poll-completion-queue">Poll completion queue&lt;/h3>
+&lt;h3 id="poll-completion-queue">
+&lt;a href="#poll-completion-queue" class="header-anchor">#&lt;/a>
+Poll completion queue
+&lt;/h3>
 &lt;p>很直白，poll 就是轮询的意思。用户调用这个接口之后，CPU 就会定期去检查 CQ 里面是否有新鲜的 CQE，如果有的话，就取出这个 CQE（注意取出之后 CQE 就被“消耗”掉了），解析其中的信息并返回给上层用户。&lt;/p>
-&lt;h3 id="request-completion-notification">Request completion notification&lt;/h3>
+&lt;h3 id="request-completion-notification">
+&lt;a href="#request-completion-notification" class="header-anchor">#&lt;/a>
+Request completion notification
+&lt;/h3>
 &lt;p>直译过来是请求完成通知，用户调用这个接口之后，相当于向系统注册了一个中断。这样当硬件将 CQE 放到 CQ 中后，会立即触发一个中断给 CPU，CPU 进而就会停止手上的工作取出 CQE，处理后返回给用户。&lt;/p>
 &lt;p>同样的，这两种接口使用哪种，取决于用户对于实时性的要求，以及实际业务的繁忙程度。&lt;/p>
 &lt;p>感谢阅读，CQ 就介绍到这里，下篇打算详细讲讲 SRQ。&lt;/p>
-&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;h2 id="协议相关章节">
+&lt;a href="#%e5%8d%8f%e8%ae%ae%e7%9b%b8%e5%85%b3%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+协议相关章节
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>9.9 CQ 错误检测和恢复&lt;/p>
@@ -678,16 +852,28 @@ alt="2024-06-27_10_11" width="auto" loading="lazy">
 &lt;p>11.4.2 CQ 相关数据面接口&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="其他参考资料">其他参考资料&lt;/h2>
-&lt;p>[1] Linux Kernel Networking - Implement and Theory. Chapter 13. Completion Queue&lt;/p></description></item><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">RDMA 之 Queue Pair&lt;/h1>
+&lt;h2 id="其他参考资料">
+&lt;a href="#%e5%85%b6%e4%bb%96%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
+其他参考资料
+&lt;/h2>
+&lt;p>[1] Linux Kernel Networking - Implement and Theory. Chapter 13. Completion Queue&lt;/p></description></item><item><title>RDMA 之 Queue Pair</title><link>https://cuterwrite.top/p/rdma-queue-pair/</link><pubDate>Tue, 25 Jun 2024 02:21:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-queue-pair/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116342820_p0_master1200.webp" alt="Featured image of post RDMA 之 Queue Pair" />&lt;h1 id="rdma-之-queue-pair">
+&lt;a href="#rdma-%e4%b9%8b-queue-pair" class="header-anchor">#&lt;/a>
+RDMA 之 Queue Pair
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/195757767">&lt;cite>知乎专栏：9. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
-&lt;h2 id="queue-pair">Queue Pair&lt;/h2>
+&lt;h2 id="queue-pair">
+&lt;a href="#queue-pair" class="header-anchor">#&lt;/a>
+Queue Pair
+&lt;/h2>
 &lt;p>我们曾经在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【“3. RDMA 基本元素”】
 &lt;/a>
 一文中简单的介绍了 QP 的概念，本文将更深入的讲解一些关于 QP 的细节。&lt;/p>
-&lt;h2 id="基本概念回顾">基本概念回顾&lt;/h2>
+&lt;h2 id="基本概念回顾">
+&lt;a href="#%e5%9f%ba%e6%9c%ac%e6%a6%82%e5%bf%b5%e5%9b%9e%e9%a1%be" class="header-anchor">#&lt;/a>
+基本概念回顾
+&lt;/h2>
 &lt;p>首先我们来简单回顾下关于 QP 的基础知识：&lt;/p>
 &lt;p>根据 IB 协议中的描述，QP 是硬件和软件之间的一个虚拟接口。QP 是队列结构，按顺序存储着软件给硬件下发的任务（WQE），WQE 中包含从哪里取出多长的数据，并且发送给哪个目的地等等信息。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_1.webp"
@@ -706,7 +892,10 @@ alt="2024-06-26_9_1" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>软件上，QP 是一个由 IB 网卡的驱动程序所维护的数据结构，其中包含 QP 的地址指针以及一些相关的软件属性。&lt;/p>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="qpc">QPC&lt;/h3>
+&lt;h3 id="qpc">
+&lt;a href="#qpc" class="header-anchor">#&lt;/a>
+QPC
+&lt;/h3>
 &lt;p>&lt;a class="link" href="https://cuterwrite.top/p/rdma-service-types/" >【“5. RDMA 基本服务类型”】
 &lt;/a>
 一文中，我们曾经提到过 QPC 全称是 Queue Pair Context，用于存储 QP 相关属性。驱动程序里面是有储存 QP 的软件属性的，既然我们可以在软件里储存 QP 的属性，为什么还要用使用 QPC 呢？&lt;/p>
@@ -720,17 +909,32 @@ alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>如上图所示，硬件其实只需要知道 QPC 的地址 0x12350000 就可以了，因为它可以解析 QPC 的内容，从而得知 QP 的位置，QP 序号，QP 大小等等信息。进而就能找到 QP，知道应该取第几个 WQE 去处理。不同的厂商可能实现有些差异，但是大致的原理就是这样。&lt;/p>
 &lt;p>IB 软件栈中还有很多 Context 的概念，除了 QPC 之外，还有 Device Context，SRQC，CQC，EQC（Event Queue Context，事件队列上下文）等，它们的作用与 QPC 类似，都是用来在记录和同步某种资源的相关属性。&lt;/p>
-&lt;h3 id="qp-number">QP Number&lt;/h3>
+&lt;h3 id="qp-number">
+&lt;a href="#qp-number" class="header-anchor">#&lt;/a>
+QP Number
+&lt;/h3>
 &lt;p>简称为 QPN，就是每个 QP 的编号。IB 协议中规定用 $2^{24}$ 个 bit 来表示 QPN，即每个节点最大可以同时使用 $2^{24}$ 个 QP，这已经是一个很大的数量了，几乎不可能用完。每个节点都各自维护着 QPN 的集合，相互之间是独立的，即不同的节点上可以存在编号相同的 QP。&lt;/p>
 &lt;p>QPN 的概念本身非常简单，但是有两个特殊的保留编号需要额外注意一下：&lt;/p>
-&lt;h4 id="qp0">QP0&lt;/h4>
+&lt;h4 id="qp0">
+&lt;a href="#qp0" class="header-anchor">#&lt;/a>
+QP0
+&lt;/h4>
 &lt;p>编号为 0 的 QP 用于子网管理接口 SMI（Subnet Management Interface），用于管理子网中的全部节点，说实话我也还没搞清楚这个接口的作用，暂且按下不表。&lt;/p>
-&lt;h4 id="qp1">QP1&lt;/h4>
+&lt;h4 id="qp1">
+&lt;a href="#qp1" class="header-anchor">#&lt;/a>
+QP1
+&lt;/h4>
 &lt;p>编号为 1 的 QP 用于通用服务接口 GSI（General Service Interface），GSI 是一组管理服务，其中最出名的就是 CM（Communication Management），是一种在通信双方节点正式建立连接之前用来交换必须信息的一种方式。其细节将在后面的文章中专门展开介绍。&lt;/p>
 &lt;p>这也就是我们之前的文章画的关于 QP 的图中，没有出现过 QP0 和 QP1 的原因了。这两个 QP 之外的其他 QP 就都是普通 QP 了。用户在创建 QP 的时候，驱动或者硬件会给这个新 QP 分配一个 QPN，一般的 QPN 都是 2、3、4 这样按顺序分配的。当 QP 被销毁之后，它的 QPN 也会被重新回收，并在合适的时候分配给其他新创建的 QP。&lt;/p>
-&lt;h2 id="用户接口">用户接口&lt;/h2>
+&lt;h2 id="用户接口">
+&lt;a href="#%e7%94%a8%e6%88%b7%e6%8e%a5%e5%8f%a3" class="header-anchor">#&lt;/a>
+用户接口
+&lt;/h2>
 &lt;p>我们从控制层面和数据层面来分类介绍用户接口，控制面即用户对某种资源进行某种设置，一般都是在正式收发数据之前进行；而数据面自然就是真正的数据收发过程中进行的操作。&lt;/p>
-&lt;h3 id="控制面">控制面&lt;/h3>
+&lt;h3 id="控制面">
+&lt;a href="#%e6%8e%a7%e5%88%b6%e9%9d%a2" class="header-anchor">#&lt;/a>
+控制面
+&lt;/h3>
 &lt;p>接触过算法的读者应该都了解，链表的节点涉及到“增、删、改、查”四个操作，链表的节点是一片内存区域，是一种软件资源。&lt;/p>
 &lt;p>“增”即向操作系统申请一片内存用来存放数据，系统将在内存中划分一块空间，并将其标记为“已被进程 XX 使用”，其他没有权限的进程将无法覆盖甚至读取这片内存空间。&lt;/p>
 &lt;p>“删”即通知操作系统，这片空间我不使用了，可以标记成“未使用”并给其它进程使用了。&lt;/p>
@@ -769,24 +973,48 @@ alt="2024-06-26_9_2" width="auto" loading="lazy">&lt;figcaption>
 &lt;/tbody>
 &lt;/table>
 &lt;p>这四种操作，其实就是 Verbs（RDMA 对上层应用的 API）在控制面上对上层用户提供给用户的几个接口：&lt;/p>
-&lt;h4 id="create-qp">Create QP&lt;/h4>
+&lt;h4 id="create-qp">
+&lt;a href="#create-qp" class="header-anchor">#&lt;/a>
+Create QP
+&lt;/h4>
 &lt;p>创建一个 QP 的软硬件资源，包含 QP 本身以及 QPC。用户创建时会写传入一系列的初始化属性，包含该 QP 的服务类型，可以储存的 WQE 数量等信息&lt;/p>
-&lt;h4 id="destroy-qp">Destroy QP&lt;/h4>
+&lt;h4 id="destroy-qp">
+&lt;a href="#destroy-qp" class="header-anchor">#&lt;/a>
+Destroy QP
+&lt;/h4>
 &lt;p>释放一个 QP 的全部软硬件资源，包含 QP 本身及 QPC。销毁 QP 后，用户将无法通过 QPN 索引到这个 QP。&lt;/p>
-&lt;h4 id="modify-qp">Modify QP&lt;/h4>
+&lt;h4 id="modify-qp">
+&lt;a href="#modify-qp" class="header-anchor">#&lt;/a>
+Modify QP
+&lt;/h4>
 &lt;p>修改一个 QP 的某些属性，比如 QP 的状态，路径的 MTU 等等。这个修改过程既包括软件数据结构的修改，也包括对 QPC 的修改。&lt;/p>
-&lt;h4 id="query-qp">Query QP&lt;/h4>
+&lt;h4 id="query-qp">
+&lt;a href="#query-qp" class="header-anchor">#&lt;/a>
+Query QP
+&lt;/h4>
 &lt;p>查询一个 QP 当前的状态和一些属性，查询到的数据来源于驱动以及 QPC 的内容。&lt;/p>
 &lt;p>这四种操作都有配套的 Verbs 接口，类似于 &lt;code>ibv_create_qp()&lt;/code> 这种形式，我们编写 APP 时直接调用就可以了。更多关于对上层的 API 的细节，我们将在后面专门进行介绍。&lt;/p>
-&lt;h2 id="数据面">数据面&lt;/h2>
+&lt;h2 id="数据面">
+&lt;a href="#%e6%95%b0%e6%8d%ae%e9%9d%a2" class="header-anchor">#&lt;/a>
+数据面
+&lt;/h2>
 &lt;p>数据面上，一个 QP 对上层的接口其实只有两种，分别用于向 QP 中填写发送和接收请求。&lt;strong>这里的“发送”和“接收”并不是指的发送和接收数据，而是指的是一次通信过程的“发起方”（Requestor）和“接收方”（Responser）&lt;/strong>。&lt;/p>
 &lt;p>在行为上都是软件向 QP 中填写一个 WQE（对应用层来说叫 WR），请求硬件执行一个动作。所以这两种行为都叫做“Post XXX Request”的形式，即下发 XXX 请求。&lt;/p>
-&lt;h3 id="post-send-request">Post Send Request&lt;/h3>
+&lt;h3 id="post-send-request">
+&lt;a href="#post-send-request" class="header-anchor">#&lt;/a>
+Post Send Request
+&lt;/h3>
 &lt;p>再强调一下，Post Send 本身不是指这个 WQE 的操作类型是 Send，而是表示这个 WQE 属于通信发起方。这个流程中填写到 QP 中的 WQE/WR 可以是 Send 操作，RDMA Write 操作以及 RDMA Read 操作等。&lt;/p>
 &lt;p>用户需要提前准备好数据缓冲区、目的地址等信息，然后调用接口将 WR 传给驱动，驱动再把 WQE 填写到 QP 中。&lt;/p>
-&lt;h3 id="post-receive-request">Post Receive Request&lt;/h3>
+&lt;h3 id="post-receive-request">
+&lt;a href="#post-receive-request" class="header-anchor">#&lt;/a>
+Post Receive Request
+&lt;/h3>
 &lt;p>Post Recv 的使用场景就相对比较少了，一般只在 Send-Recv 操作的接收端执行，接收端需要提前准备好接收数据的缓冲区，并将缓冲区地址等信息以 WQE 的形式告知硬件。&lt;/p>
-&lt;h2 id="qp-状态机">QP 状态机&lt;/h2>
+&lt;h2 id="qp-状态机">
+&lt;a href="#qp-%e7%8a%b6%e6%80%81%e6%9c%ba" class="header-anchor">#&lt;/a>
+QP 状态机
+&lt;/h2>
 &lt;p>说到 QP 的状态，就不得不祭出下面这张图（取自 IB 协议 10.3.1 节）：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-26_9_3.webp"
 alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
@@ -797,25 +1025,52 @@ alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>对于 QP 来说，IB 规范也为其设计了几种状态，处于不同状态的 QP 的功能是有差异的，比如只有进入到 Ready to Send 状态之后，QP 才能够进行 Post Send 数据操作。正常状态（绿色的）之间的状态转换都是由用户通过上文介绍的 Modify QP 的用户接口来主动触发的；而错误状态（红色的）往往是出错之后自动跳转的，当一个 QP 处于错误状态之后就无法执行正常的业务了，就需要上层通过 Modify QP 将其重新配置到正常状态上。&lt;/p>
 &lt;p>上图中我们只关注 QP 的部分，EE（End-to-End Context）是专门给 RD 服务类型使用的一个概念，我们暂不涉及。我们通过 Create QP 接口来进入这个状态图，通过 Destroy QP 接口来离开这个状态图。&lt;/p>
 &lt;p>QP 有以下几种状态，我们仅介绍一下比较重要的点：&lt;/p>
-&lt;h3 id="rstreset">RST（Reset）&lt;/h3>
+&lt;h3 id="rstreset">
+&lt;a href="#rstreset" class="header-anchor">#&lt;/a>
+RST（Reset）
+&lt;/h3>
 &lt;p>复位状态。当一个 QP 通过 Create QP 创建好之后就处于这个状态，相关的资源都已经申请好了，但是这个 QP 目前什么都做不了，其无法接收用户下发的 WQE，也无法接受对端某个 QP 的消息。&lt;/p>
-&lt;h3 id="initinitialized">INIT（Initialized）&lt;/h3>
+&lt;h3 id="initinitialized">
+&lt;a href="#initinitialized" class="header-anchor">#&lt;/a>
+INIT（Initialized）
+&lt;/h3>
 &lt;p>已初始化状态。这个状态下，用户可以通过 Post Receive 给这个 QP 下发 Receive WR，但是接收到的消息并不会被处理，会被静默丢弃；如果用户下发了一个 Post Send 的 WR，则会报错。&lt;/p>
-&lt;h3 id="rtrready-to-receive">RTR（Ready to Receive）&lt;/h3>
+&lt;h3 id="rtrready-to-receive">
+&lt;a href="#rtrready-to-receive" class="header-anchor">#&lt;/a>
+RTR（Ready to Receive）
+&lt;/h3>
 &lt;p>准备接收状态。在 INIT 状态的基础上，RQ 可以正常工作，即对于接收到的消息，可以按照其中 WQE 的指示搬移数据到指定内存位置。此状态下 SQ 仍然不能工作。&lt;/p>
-&lt;h3 id="rtsready-to-send">RTS（Ready to Send）&lt;/h3>
+&lt;h3 id="rtsready-to-send">
+&lt;a href="#rtsready-to-send" class="header-anchor">#&lt;/a>
+RTS（Ready to Send）
+&lt;/h3>
 &lt;p>准备发送状态。在 RTR 基础上，SQ 可以正常工作，即用户可以进行 Post Send，并且硬件也会根据 SQ 的内容将数据发送出去。进入该状态前，QP 必须已于对端建立好链接。&lt;/p>
-&lt;h3 id="sqdsend-queue-drain">SQD（Send Queue Drain）&lt;/h3>
+&lt;h3 id="sqdsend-queue-drain">
+&lt;a href="#sqdsend-queue-drain" class="header-anchor">#&lt;/a>
+SQD（Send Queue Drain）
+&lt;/h3>
 &lt;p>SQ 排空状态。顾名思义，该状态会将 SQ 队列中现存的未处理的 WQE 全部处理掉，这个时候用户还可以下发新的 WQE 下来，但是这些 WQE 要等到旧的 WQE 全处理之后才会被处理。&lt;/p>
-&lt;h3 id="sqersend-queue-error">SQEr（Send Queue Error）&lt;/h3>
+&lt;h3 id="sqersend-queue-error">
+&lt;a href="#sqersend-queue-error" class="header-anchor">#&lt;/a>
+SQEr（Send Queue Error）
+&lt;/h3>
 &lt;p>SQ 错误状态。当某个 Send WR 发生完成错误（即硬件通过 CQE 告知驱动发生的错误）时，会导致 QP 进入此状态。&lt;/p>
-&lt;h3 id="errerror">ERR（Error）&lt;/h3>
+&lt;h3 id="errerror">
+&lt;a href="#errerror" class="header-anchor">#&lt;/a>
+ERR（Error）
+&lt;/h3>
 &lt;p>即错误状态。其他状态如果发生了错误，都可能进入该状态。Error 状态时，QP 会停止处理 WQE，已经处理到一半的 WQE 也会停止。上层需要在修复错误后再将 QP 重新切换到 RST 的初始状态。&lt;/p>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>本文先回顾了 QP 的一些重要基本概念，然后讲解了 QPC、QPN 等 QP 强相关的概念，最后介绍了用户操作 QP 常用的接口以及 QP 状态机，相信本文过后读者一定对 QP 有了更深的了解。&lt;/p>
 &lt;p>其实作为 RDMA 的核心概念，QP 的内容很多，本文难以全部囊括。我将在后面的文章中逐渐把相关的内容补全，比如 QKey 的概念将在后续专门介绍各种 Key 的文章中讲解。&lt;/p>
 &lt;p>好了，本文就到这了，感谢阅读。预告下一篇文章将详细讲解 CQ。&lt;/p>
-&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;h2 id="协议相关章节">
+&lt;a href="#%e5%8d%8f%e8%ae%ae%e7%9b%b8%e5%85%b3%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+协议相关章节
+&lt;/h2>
 &lt;ul>
 &lt;li>
 &lt;p>3.5.1 10.2.4 QP 的基本概念&lt;/p>
@@ -829,13 +1084,19 @@ alt="2024-06-26_9_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>
 &lt;p>11.4 Post Send Post Recv&lt;/p>
 &lt;/li>
-&lt;/ul></description></item><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">RDMA 之 Address Handle&lt;/h1>
+&lt;/ul></description></item><item><title>RDMA 之 Address Handle</title><link>https://cuterwrite.top/p/rdma-address-handle/</link><pubDate>Sat, 15 Jun 2024 01:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-address-handle/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_116373922_p9_master1200.webp" alt="Featured image of post RDMA 之 Address Handle" />&lt;h1 id="rdma-之-address-handle">
+&lt;a href="#rdma-%e4%b9%8b-address-handle" class="header-anchor">#&lt;/a>
+RDMA 之 Address Handle
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/163552044">&lt;cite>知乎专栏：8. RDMA 之 Address Handle&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>前面已经介绍过，RDMA 通信的基本单元是 QP。我们来思考一个问题，假设 A 节点的某个 QP 要跟 B 节点的某个 QP 交换信息，除了要知道 B 节点的 QP 序号——QPN 之外，还需要什么信息？要知道，QPN 是每个节点独立维护的序号，不是整个网络中唯一的。比如 A 的 QP 3 要跟 B 的 QP 5 通信，网络中可不止一个 QP5，可能有很多个节点都有自己的 QP 5。所以我们自然可以想到，还需要找到让每个节点都有一个独立的标识。&lt;/p>
 &lt;p>在传统 TCP-IP 协议栈中，使用了家喻户晓的 IP 地址来标识网络层的每个节点。而 IB 协议中的这个标识被称为&lt;strong>GID（Global Identifier，全局 ID）&lt;/strong>，是一个 128 bits 的序列。关于 GID 本篇不展开讨论，将在后面介绍。&lt;/p>
-&lt;h2 id="ah-是什么">AH 是什么&lt;/h2>
+&lt;h2 id="ah-是什么">
+&lt;a href="#ah-%e6%98%af%e4%bb%80%e4%b9%88" class="header-anchor">#&lt;/a>
+AH 是什么
+&lt;/h2>
 &lt;p>AH 全称为 Address Handle，没有想到特别合适的中文翻译，就先直译为“地址句柄”吧。这里的地址，指的是一组用于找到某个远端节点的信息的集合，在 IB 协议中，地址指的是 GID、端口号等等信息；而所谓句柄，我们可以理解为一个指向某个对象的指针。&lt;/p>
 &lt;p>大家是否还记得 IB 协议中有四种基本服务类型——RC、UD、RD 和 UC，其中最常用的是 RC 和 UD。RC 的特点是两个节点的 QP 之间会建立可靠的连接，一旦建立连接关系便不容易改变，对端的信息是创建 QP 的时候储存在 QP Context 中的；&lt;/p>
 &lt;p>而对于 UD 来说，QP 间没有连接关系，用户想发给谁，就在 WQE 中填好对端的地址信息就可以了。&lt;strong>用户不是直接把对端的地址信息填到 WQE 中的，而是提前准备了一个“地址薄”，每次通过一个索引来指定对端节点的地址信息，而这个索引就是 AH。&lt;/strong>&lt;/p>
@@ -846,7 +1107,10 @@ alt="2024-06-16_8_1" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>对于每一个目的节点，本端都会创建一个对应的 AH，而同一个 AH 可以被多个 QP 共同使用。&lt;/p>
-&lt;h2 id="ah-的作用">AH 的作用&lt;/h2>
+&lt;h2 id="ah-的作用">
+&lt;a href="#ah-%e7%9a%84%e4%bd%9c%e7%94%a8" class="header-anchor">#&lt;/a>
+AH 的作用
+&lt;/h2>
 &lt;p>每次进行 UD 服务类型的通信之前，用户都需要先通过 IB 框架提供的接口，来&lt;strong>为每一个可能的对端节点创建一个 AH&lt;/strong>，然后这些 AH 会被驱动放到一个“安全”的区域，并返回一个索引（指针/句柄）给用户。用户真正下发 WR（Work Request）时，就把这个索引传递进来就可以了。&lt;/p>
 &lt;p>上述过程如下图所示，A 节点收到用户的这样一个任务——使用本端的 QP4 与 B 节点（通过 AH 指定）的 QP3 进行数据交换：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/2024-06-16_8_2.webp"
@@ -875,20 +1139,32 @@ alt="2024-06-16_8_3" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figcaption>
 &lt;/figure>
 &lt;p>​比如上图中，AH1~3 只能被同一个 PD 下的 QP3 和 QP9 使用，而 AH4 只能被 QP5 使用。&lt;/p>
-&lt;h2 id="协议相关章节">协议相关章节&lt;/h2>
+&lt;h2 id="协议相关章节">
+&lt;a href="#%e5%8d%8f%e8%ae%ae%e7%9b%b8%e5%85%b3%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+协议相关章节
+&lt;/h2>
 &lt;p>协议中关于 AH 的篇幅并不多，甚至没有独立介绍其概念的章节：&lt;/p>
 &lt;p>[1] 9.8.3 UD 服务类型中的目的地址由哪些部分组成：包括 AH、 QPN 和 Q_key&lt;/p>
 &lt;p>[2] 10.2.2.2 目的地址的相关注意事项&lt;/p>
 &lt;p>[3] 11.2.2.1 AH 相关的 Verbs 接口&lt;/p>
-&lt;p>AH 就介绍到这里，感谢阅读。下一篇打算向大家描述更多关于 QP 的细节。&lt;/p></description></item><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">RDMA 之 Protection Domain&lt;/h1>
+&lt;p>AH 就介绍到这里，感谢阅读。下一篇打算向大家描述更多关于 QP 的细节。&lt;/p></description></item><item><title>RDMA 之 Protection Domain</title><link>https://cuterwrite.top/p/rdma-protection-domain/</link><pubDate>Thu, 18 Apr 2024 21:42:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-protection-domain/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/d31a474af07682028ca085f871bc5d07195413-2024-04-19.webp" alt="Featured image of post RDMA 之 Protection Domain" />&lt;h1 id="rdma-之-protection-domain">
+&lt;a href="#rdma-%e4%b9%8b-protection-domain" class="header-anchor">#&lt;/a>
+RDMA 之 Protection Domain
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/159493100">&lt;cite>知乎专栏：7. RDMA 之 Protection Domain&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>前文我们简单介绍了 RDMA 中最常见的一些资源，包括各种 Queue，以及 MR 的概念等等。MR 用于控制和管理 HCA 对于本端和远端内存的访问权限，确保 HCA 只有拿到正确 Key 之后才能读写用户已经注册了的内存区域。为了更好的保障安全性，IB 协议又提出了 Protection Domain（PD）的概念，用于保证 RDMA 资源间的相互隔离，本文就介绍一下 PD 的概念。&lt;/p>
-&lt;h2 id="pd-是什么">PD 是什么&lt;/h2>
+&lt;h2 id="pd-是什么">
+&lt;a href="#pd-%e6%98%af%e4%bb%80%e4%b9%88" class="header-anchor">#&lt;/a>
+PD 是什么
+&lt;/h2>
 &lt;p>PD 全称是 Protection Domain，意为&amp;quot;保护域&amp;quot;。域的概念我们经常见到，从数学上的“实数域”、“复数域”，到地理上的“空域”、“海域”等等，表示一个空间/范围。在 RDMA 中，PD 像是一个容纳了各种资源（QP、MR 等）的“容器”，将这些资源纳入自己的保护范围内，避免他们被未经授权的访问。一个节点中可以定义多个保护域，各个 PD 所容纳的资源彼此隔离，无法一起使用。&lt;/p>
 &lt;p>概念还是有些抽象，下面我们来看一下 PD 有什么作用，具体解决了什么问题。&lt;/p>
-&lt;h2 id="pd-的作用">PD 的作用&lt;/h2>
+&lt;h2 id="pd-的作用">
+&lt;a href="#pd-%e7%9a%84%e4%bd%9c%e7%94%a8" class="header-anchor">#&lt;/a>
+PD 的作用
+&lt;/h2>
 &lt;p>一个用户可能创建多个 QP 和多个 MR，每个 QP 可能和不同的远端 QP 建立了连接，比如下图这样（灰色箭头表示 QP 间的连接关系）：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/7_1-2024-04-19.webp"
 alt="7_1-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
@@ -909,21 +1185,30 @@ alt="7_2-2024-04-19" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>Node 0 的 MR1 和 QP3 属于不同的 PD，就算 Node 1 的 QP8 拿到了 MR1 的 VA 和 R_key，硬件也会因为 PD 不同而拒绝提供服务。&lt;/li>
 &lt;/ol>
 &lt;p>所以就如本文一开始所说的，PD 就像是一个容器，将一些 RDMA 资源保护起来，彼此隔离，以提高安全性。其实 RDMA 中不止有 QP、MR 这些资源，后文即将介绍的 Address Handle，Memory Window 等也是由 PD 进行隔离保护的。&lt;/p>
-&lt;h2 id="如何使用-pd">如何使用 PD&lt;/h2>
+&lt;h2 id="如何使用-pd">
+&lt;a href="#%e5%a6%82%e4%bd%95%e4%bd%bf%e7%94%a8-pd" class="header-anchor">#&lt;/a>
+如何使用 PD
+&lt;/h2>
 &lt;p>还是看上面的图，我们注意到 Node 0 为了隔离资源，存在两个 PD；而 Node 1 和 Node 2 只有一个 PD 包含了所有资源。&lt;/p>
 &lt;p>我之所以这样画，是为了说明一个节点上划分多少个 PD 完全是由用户决定的，&lt;strong>如果想提高安全性，那么对每个连接到远端节点的 QP 和供远端访问的 MR 都应该尽量通过划分 PD 做到隔离；如果不追求更高的安全性，那么创建一个 PD，囊括所有的资源也是可以的&lt;/strong>。&lt;/p>
 &lt;p>IB 协议中规定：&lt;strong>每个节点都至少要有一个 PD，每个 QP 都必须属于一个 PD，每个 MR 也必须属于一个 PD&lt;/strong>。&lt;/p>
 &lt;p>那么 PD 的包含关系在软件上是如何体现的呢？它本身是有一个软件实体的（结构体），记录了这个保护域的一些信息。用户在创建 QP 和 MR 等资源之前，必须先通过 IB 框架的接口创建一个 PD，拿到它的指针/句柄。接下来在创建 QP 和 MR 的时候，需要传入这个 PD 的指针/句柄，PD 信息就会包含在 QP 和 MR 中。硬件收发包时，会对 QP 和 MR 的 PD 进行校验。更多的软件协议栈的内容，我会在后面的文章中介绍。&lt;/p>
 &lt;p>另外需要强调的是，&lt;strong>PD 是本地概念，仅存在于节点内部&lt;/strong>，对其他节点是不可见的；而 MR 是对本端和对端都可见的。&lt;/p>
 &lt;p>为了方便大家查阅和学习，以后我会列出文章涉及的协议章节，前面的内容有时间的时候我也会补充一下。&lt;/p>
-&lt;h2 id="pd-相关协议章节">PD 相关协议章节&lt;/h2>
+&lt;h2 id="pd-相关协议章节">
+&lt;a href="#pd-%e7%9b%b8%e5%85%b3%e5%8d%8f%e8%ae%ae%e7%ab%a0%e8%8a%82" class="header-anchor">#&lt;/a>
+PD 相关协议章节
+&lt;/h2>
 &lt;ul>
 &lt;li>3.5.5 PD 的基本概念和作用&lt;/li>
 &lt;li>10.2.3 介绍了 PD 和其他一些 RDMA 资源的关系，以及 PD 相关的软件接口。&lt;/li>
 &lt;li>10.6.3.5 再次强调 PD 和 MR 及 QP 的关系。&lt;/li>
 &lt;li>11.2.1.5 详细介绍 PD 的 Verbs 接口，包括作用、入参、出参和返回值等。&lt;/li>
 &lt;/ul>
-&lt;p>好了，关于 PD 的介绍就到这里。下文我会介绍用于 UD 服务类型的 Address Handle 的概念。&lt;/p></description></item><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">RDMA 之 Memory Region&lt;/h1>
+&lt;p>好了，关于 PD 的介绍就到这里。下文我会介绍用于 UD 服务类型的 Address Handle 的概念。&lt;/p></description></item><item><title>RDMA 之 Memory Region</title><link>https://cuterwrite.top/p/rdma-mr/</link><pubDate>Wed, 03 Apr 2024 16:17:00 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-mr/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/8fa232626b76940fddc8cc52a49c49e9195413-2024-04-04.webp" alt="Featured image of post RDMA 之 Memory Region" />&lt;h1 id="rdma-之-memory-region">
+&lt;a href="#rdma-%e4%b9%8b-memory-region" class="header-anchor">#&lt;/a>
+RDMA 之 Memory Region
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/156975042">&lt;cite>知乎专栏：6. RDMA 之 Memory Region&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -934,15 +1219,24 @@ alt="6_1-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>那么问题来了，APP 提供的地址都是虚拟地址（Virtual Address，下文称 VA），经过 MMU 的转换才能得到真实的物理地址（Physical Address，下文称 PA），我们的&lt;strong>RDMA 网卡是如何得到 PA 从而去内存中拿到数据的呢&lt;/strong>？就算网卡知道上哪去取数据，&lt;strong>如果用户恶意指定了一个非法的 VA，那网卡岂不是有可能被“指使”去读写关键内存&lt;/strong>？&lt;/p>
 &lt;p>为了解决上面的问题，IB 协议提出了 MR 的概念。&lt;/p>
-&lt;h2 id="mr-是什么">MR 是什么&lt;/h2>
+&lt;h2 id="mr-是什么">
+&lt;a href="#mr-%e6%98%af%e4%bb%80%e4%b9%88" class="header-anchor">#&lt;/a>
+MR 是什么
+&lt;/h2>
 &lt;p>MR 全称为 Memory Region，指的是由 RDMA 软件层在内存中规划出的一片区域，用于存放收发的数据。IB 协议中，用户在申请完用于存放数据的内存区域之后，都需要通过调用 IB 框架提供的 API 注册 MR，才能让 RDMA 网卡访问这片内存区域。由下图可以看到，MR 就是一片特殊的内存而已：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_2-2024-04-04.webp"
 alt="6_2-2024-04-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>在对 IB 协议进行相关描述时，我们通常称 RDMA 硬件为&lt;strong>HCA（Host Channel Adapter， 宿主通道适配器）&lt;/strong>，IB 协议中对其的定义是“处理器和 I/O 单元中能够产生和消耗数据包的 IB 设备”，为了与协议保持一致，我们在包括本文及之后的文章中都称硬件部分为 HCA。&lt;/p>
-&lt;h2 id="为什么要注册-mr">为什么要注册 MR&lt;/h2>
+&lt;h2 id="为什么要注册-mr">
+&lt;a href="#%e4%b8%ba%e4%bb%80%e4%b9%88%e8%a6%81%e6%b3%a8%e5%86%8c-mr" class="header-anchor">#&lt;/a>
+为什么要注册 MR
+&lt;/h2>
 &lt;p>下面我们来看一下 MR 是如何解决本文开篇提出的两个问题的：&lt;/p>
-&lt;h3 id="1-注册-mr-以实现虚拟地址与物理地址转换">1. 注册 MR 以实现虚拟地址与物理地址转换&lt;/h3>
+&lt;h3 id="1-注册-mr-以实现虚拟地址与物理地址转换">
+&lt;a href="#1-%e6%b3%a8%e5%86%8c-mr-%e4%bb%a5%e5%ae%9e%e7%8e%b0%e8%99%9a%e6%8b%9f%e5%9c%b0%e5%9d%80%e4%b8%8e%e7%89%a9%e7%90%86%e5%9c%b0%e5%9d%80%e8%bd%ac%e6%8d%a2" class="header-anchor">#&lt;/a>
+1. 注册 MR 以实现虚拟地址与物理地址转换
+&lt;/h3>
 &lt;p>我们都知道 APP 只能看到虚拟地址，而且会在 WQE 中直接把 VA 传递给 HCA（既包括本端的源 VA，也包括对端的目的 VA）。现在的 CPU 都有 MMU 和页表这一“利器”来进行 VA 和 PA 之间的转换，而 HCA 要么直接连接到总线上，要么通过 IOMMU/SMMU 做地址转换后连接到总线上，它是“看不懂”APP 提供的 VA 所对应的真实物理内存地址的。&lt;/p>
 &lt;p>所以注册 MR 的过程中，硬件会在内存中创建并填写一个 VA to PA 的映射表，这样需要的时候就能通过查表把 VA 转换成 PA 了。我们还是提供一个具体的例子来讲一下这个过程：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_3-2024-04-04.webp"
@@ -956,7 +1250,10 @@ alt="6_3-2024-04-04" width="auto" loading="lazy">
 &lt;li>对端 HCA 通过存储在本地内存中的 VA-&amp;gt;PA 映射表，查到真实的物理地址，核对权限无误后，将数据存放到内存中。&lt;/li>
 &lt;/ul>
 &lt;p>再次强调一下，对于右侧节点来说，&lt;strong>无论是地址转换还是写入内存，完全不用其 CPU 的参与&lt;/strong>。&lt;/p>
-&lt;h3 id="2-mr-可以控制-hca-访问内存的权限">2. MR 可以控制 HCA 访问内存的权限&lt;/h3>
+&lt;h3 id="2-mr-可以控制-hca-访问内存的权限">
+&lt;a href="#2-mr-%e5%8f%af%e4%bb%a5%e6%8e%a7%e5%88%b6-hca-%e8%ae%bf%e9%97%ae%e5%86%85%e5%ad%98%e7%9a%84%e6%9d%83%e9%99%90" class="header-anchor">#&lt;/a>
+2. MR 可以控制 HCA 访问内存的权限
+&lt;/h3>
 &lt;p>因为 HCA 访问的内存地址来自于用户，如果用户传入了一个非法的地址（比如系统内存或者其他进程使用的内存），HCA 对其进行读写可能造成信息泄露或者内存覆盖。所以我们需要一种机制来确保 HCA 只能访问已被授权的、安全的内存地址。IB 协议中，APP 在为数据交互做准备的阶段，需要执行注册 MR 的动作。&lt;/p>
 &lt;p>而用户注册 MR 的动作会产生两把钥匙——L_KEY（Local Key）和 R_KEY（Remote Key），说是钥匙，它们的实体其实就是一串序列而已。它们将分别用于保障对于本端和远端内存区域的访问权限。下面两张图分别是描述 L_Key 和 R_Key 的作用的示意图：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/6_4-2024-04-04.webp"
@@ -971,12 +1268,18 @@ alt="6_5-2024-04-04" width="auto" loading="lazy">&lt;figcaption>
 &lt;/figure>
 &lt;p>这里大家可能会有疑问，本端是如何知道对端节点的可用 VA 和对应的 R_Key 的？其实两端的节点在真正的 RDMA 通信之前，都会通过某些方式先建立一条链路（可能是 Socket 连接，也可能是 CM 连接）并通过这条链路交换一些 RDMA 通信所必须的信息（VA，Key，QPN 等），我们称这一过程叫做“建链”和“握手”。我将在后面的文章中详细介绍。&lt;/p>
 &lt;p>除了上面两个点之外，注册 MR 还有个重要的作用：&lt;/p>
-&lt;h3 id="3-mr-可以避免换页">3. MR 可以避免换页&lt;/h3>
+&lt;h3 id="3-mr-可以避免换页">
+&lt;a href="#3-mr-%e5%8f%af%e4%bb%a5%e9%81%bf%e5%85%8d%e6%8d%a2%e9%a1%b5" class="header-anchor">#&lt;/a>
+3. MR 可以避免换页
+&lt;/h3>
 &lt;p>因为物理内存是有限的，所以操作系统通过换页机制来暂时把某个进程不用的内存内容保存到硬盘中。当该进程需要使用时，再通过缺页中断把硬盘中的内容搬移回内存，这一过程几乎必然导致 VA-PA 的映射关系发生改变。&lt;/p>
 &lt;p>由于 HCA 经常会绕过 CPU 对用户提供的 VA 所指向的物理内存区域进行读写，如果前后的 VA-PA 映射关系发生改变，那么我们在前文提到的 VA-&amp;gt;PA 映射表将失去意义，HCA 将无法找到正确的物理地址。&lt;/p>
 &lt;p>为了防止换页所导致的 VA-PA 映射关系发生改变，注册 MR 时会 &amp;ldquo;Pin&amp;rdquo; 住这块内存（亦称“锁页”），即锁定 VA-PA 的映射关系。也就是说，MR 这块内存区域会长期存在于物理内存中不被换页，直到完成通信之后，用户主动注销这片 MR。&lt;/p>
 &lt;p>好了，至此我们介绍完了 MR 的概念和作用，下一篇文章我将给大家介绍一下 PD（Protection Domain，保护域）的概念。&lt;/p>
-&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;h2 id="代码示例">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+代码示例
+&lt;/h2>
 &lt;p>下面是一个简单的 RDMA 程序，展示了如何注册 MR：&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 int main() {
@@ -989,37 +1292,55 @@ uint32_t lkey = mr-&amp;gt;lkey;
 uint32_t rkey = mr-&amp;gt;rkey;
 // 省略其它代码...
 }
-&lt;/code>&lt;/pre></description></item><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">RDMA 基本服务类型&lt;/h1>
+&lt;/code>&lt;/pre></description></item><item><title>RDMA 基本服务类型</title><link>https://cuterwrite.top/p/rdma-service-types/</link><pubDate>Sun, 25 Feb 2024 22:04:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-service-types/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/f71da3ec40dd74648e15471d47ba3b84195413_crop-2024-02-26.webp" alt="Featured image of post RDMA 基本服务类型" />&lt;h1 id="rdma-基本服务类型">
+&lt;a href="#rdma-%e5%9f%ba%e6%9c%ac%e6%9c%8d%e5%8a%a1%e7%b1%bb%e5%9e%8b" class="header-anchor">#&lt;/a>
+RDMA 基本服务类型
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/144099636">&lt;cite>知乎专栏：5. RDMA 基本服务类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>我们在 &lt;a class="link" href="https://cuterwrite.top/p/rdma-element/" >【“3. RDMA 基本元素”】
 &lt;/a>
 一文中提到过，&lt;strong>RDMA 的基本通信单元是 QP&lt;/strong>，而基于 QP 的通信模型有很多种，我们在 RDMA 领域称其为“服务类型”。IB 协议中通过“可靠”和“连接”两个维度来描述一种服务类型。&lt;/p>
-&lt;h2 id="可靠">可靠&lt;/h2>
+&lt;h2 id="可靠">
+&lt;a href="#%e5%8f%af%e9%9d%a0" class="header-anchor">#&lt;/a>
+可靠
+&lt;/h2>
 &lt;p>通信中的可靠性指的是通过一些机制保证发出去的数据包都能够被正常接收。IB 协议中是这样描述可靠服务的：&lt;/p>
 &lt;blockquote>
 &lt;p>&lt;strong>Reliable Service&lt;/strong> provides a guarantee that messages are delivered from a requester to a responder at most once, in order and without corruption.&lt;/p>
 &lt;/blockquote>
 &lt;p>即“可靠服务在发送和接受者之间保证了信息最多只会传递一次，并且能够保证其按照发送顺序完整的被接收”。&lt;/p>
 &lt;p>IB 通过以下三个机制来保证可靠性：&lt;/p>
-&lt;h2 id="应答机制">应答机制&lt;/h2>
+&lt;h2 id="应答机制">
+&lt;a href="#%e5%ba%94%e7%ad%94%e6%9c%ba%e5%88%b6" class="header-anchor">#&lt;/a>
+应答机制
+&lt;/h2>
 &lt;p>假设 A 给 B 发了一个数据包，A 怎样才能知道 B 收到了呢，自然是 B 回复一个“我收到了”消息给 A。在通信领域我们一般称这个回复为应答包或者 ACK（Acknowledge）。在 IB 协议的可靠服务类型中，使用了应答机制来保证数据包被对方收到。IB 的可靠服务类型中，接收方不是每一个包都必须回复，也可以一次回复多个包的 ACK，以后我们再展开讨论。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ib_ack-2024-02-26.webp"
 alt="ib_ack-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="数据校验机制">数据校验机制&lt;/h2>
+&lt;h2 id="数据校验机制">
+&lt;a href="#%e6%95%b0%e6%8d%ae%e6%a0%a1%e9%aa%8c%e6%9c%ba%e5%88%b6" class="header-anchor">#&lt;/a>
+数据校验机制
+&lt;/h2>
 &lt;p>这个比较好理解，发端会对 Header 和 Payload（有效载荷，也就是真正要收发的数据）通过一定的算法得到一个校验值放到数据包的末尾。对端收到数据包后，也会用相同的算法计算出校验值，然后与数据包中的校验值比对，如果不一致，说明数据中包含错误（一般是链路问题导致的），那么接收端就会丢弃这个数据包。IB 协议使用的 CRC 校验，本文对 CRC 不做展开介绍。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crc-2024-02-26.png"
 alt="crc-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="保序机制">保序机制&lt;/h2>
+&lt;h2 id="保序机制">
+&lt;a href="#%e4%bf%9d%e5%ba%8f%e6%9c%ba%e5%88%b6" class="header-anchor">#&lt;/a>
+保序机制
+&lt;/h2>
 &lt;p>保序指的是，保证先被发送到物理链路上的数据包一定要先于后发送的数据包被接收方收到。有一些业务对数据包的先后顺序是有严格要求的，比如语音或者视频。IB 协议中有 PSN（Packet Sequence Number，包序号）的概念，即每个包都有一个递增的编号。PSN 可以用来检测是否丢包，比如收端收到了 1，但是在没收到 2 的情况下就收到了 3，那么其就会认为传输过程中发生了错误，之后会回复一个 NAK 给发端，让其重发丢失的包。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/psn-2024-02-26.webp"
 alt="psn-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>不可靠服务，没有上述这些机制来保证数据包被正确的接收，属于“发出去就行，我不关心有没有被收到”的服务类型。&lt;/p>
-&lt;h2 id="连接与数据报">连接与数据报&lt;/h2>
+&lt;h2 id="连接与数据报">
+&lt;a href="#%e8%bf%9e%e6%8e%a5%e4%b8%8e%e6%95%b0%e6%8d%ae%e6%8a%a5" class="header-anchor">#&lt;/a>
+连接与数据报
+&lt;/h2>
 &lt;p>&lt;strong>连接（Connection）&lt;/strong> 在这里指的是一个抽象的逻辑概念，需要区别于物理连接，熟悉 Socket 的读者一定对这个其不陌生。连接是一条通信的“管道”，一旦管道建立好了，管道这端发出的数据一定会沿着这条管道到达另一端。&lt;/p>
 &lt;p>对于“连接”或者说“面向连接”的定义有很多种，有的侧重于保证消息顺序，有的侧重于消息的传递路径唯一，有的强调需要软硬件开销来维护连接，有的还和可靠性的概念有交集。本专栏既然是介绍 RDMA 技术，那么我们就看一下 IB 协议 3.2.2 节中对其的描述：&lt;/p>
 &lt;blockquote>
@@ -1044,7 +1365,10 @@ alt="Datagram-2024-02-26" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>在数据报类型的 QP 的 Context 中，不包含对端信息，即每个 QP 不跟另一个 QP 绑定。&lt;strong>QP 下发给硬件的每个 WQE 都可能指向不同的目的地&lt;/strong>。比如节点 A 的 QP2 下发的第一个 WQE，指示给节点 C 的 QP3 发数据；而下一个 WQE，可以指示硬件发给节点 B 的 QP7。&lt;/p>
 &lt;p>与连接服务类型一样，本端 QP 可以和哪个对端 QP 发送数据，是在准备阶段提前通过某些方式相互告知的。这也是上文“数据报服务对于每个目的节点都需要执行一次这个交换过程”的含义。&lt;/p>
-&lt;h2 id="服务类型">服务类型&lt;/h2>
+&lt;h2 id="服务类型">
+&lt;a href="#%e6%9c%8d%e5%8a%a1%e7%b1%bb%e5%9e%8b" class="header-anchor">#&lt;/a>
+服务类型
+&lt;/h2>
 &lt;p>上面介绍的两个维度两两组合就形成了 IB 的四种基本服务类型：&lt;/p>
 &lt;table>
 &lt;thead>
@@ -1094,7 +1418,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 同学在评论区指路。&lt;/p>
-&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;h2 id="代码示例">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+代码示例
+&lt;/h2>
 &lt;p>在 RDMA 编程中，我们可以通过 &lt;code>ibv_create_qp&lt;/code> 函数来创建 QP，其中的 &lt;code>struct ibv_qp_init_attr&lt;/code> 结构体中的 &lt;code>qp_type&lt;/code> 字段就是用来指定 QP 的服务类型的。下面是一个简单的示例代码：&lt;/p>
 &lt;pre>&lt;code class="language-c">struct ibv_qp_init_attr qp_init_attr;
 qp_init_attr.qp_type = IBV_QPT_RC; // RC 类型
@@ -1103,13 +1430,19 @@ qp_init_attr.send_cq = cq; // 发送 CQ
 qp_init_attr.recv_cq = cq; // 接收 CQ
 qp_init_attr.cap.max_send_wr = 1024; // SQ 的深度
 struct ibv_qp *qp = ibv_create_qp(pd, &amp;amp;qp_init_attr);
-&lt;/code>&lt;/pre></description></item><item><title>RDMA 操作类型</title><link>https://cuterwrite.top/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA 操作类型" />&lt;h1 id="rdma-操作类型">RDMA 操作类型&lt;/h1>
+&lt;/code>&lt;/pre></description></item><item><title>RDMA 操作类型</title><link>https://cuterwrite.top/p/rdma-op/</link><pubDate>Sat, 24 Feb 2024 03:09:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-op/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/bcb5351691a864a6827138cf4c2e0642195413_crop-2024-02-25.webp" alt="Featured image of post RDMA 操作类型" />&lt;h1 id="rdma-操作类型">
+&lt;a href="#rdma-%e6%93%8d%e4%bd%9c%e7%b1%bb%e5%9e%8b" class="header-anchor">#&lt;/a>
+RDMA 操作类型
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/142175657">&lt;cite>知乎专栏：4. RDMA 操作类型&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
 &lt;p>前面几篇涉及 RDMA 的通信流程时一直在讲 SEND-RECV，然而它其实称不上是“RDMA”，只是一种加入了 0 拷贝和协议栈卸载的传统收发模型的“升级版”，这种操作类型没有完全发挥 RDMA 技术全部实力，常用于两端交换控制信息等场景。当涉及大量数据的收发时，更多使用的是两种 RDMA 独有的操作：WRITE 和 READ。&lt;/p>
 &lt;p>我们先来复习下双端操作——SEND 和 RECV，然后再对比介绍单端操作——WRITE 和 READ。&lt;/p>
-&lt;h2 id="send--recv">SEND &amp;amp; RECV&lt;/h2>
+&lt;h2 id="send--recv">
+&lt;a href="#send--recv" class="header-anchor">#&lt;/a>
+SEND &amp;amp; RECV
+&lt;/h2>
 &lt;p>SEND 和 RECV 是两种不同的操作类型，但是因为如果一端进行 SEND 操作，对端必须进行 RECV 操作，所以通常都把他们放到一起描述。&lt;/p>
 &lt;p>为什么称之为“双端操作”？因为&lt;strong>完成一次通信过程需要两端 CPU 的参与&lt;/strong>，并且收端需要提前显式的下发 WQE。下图是一次 SEND-RECV 操作的过程示意图。原图来自于[1]，我做了一些修改。&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-1-2024-02-25.webp"
@@ -1121,7 +1454,10 @@ alt="rdma-op-1-2024-02-25" width="auto" loading="lazy">
 alt="rdma-op-2-2024-02-25" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>下面将介绍 WRITE 操作，对比之后相信大家可以理解的更好。&lt;/p>
-&lt;h2 id="write">WRITE&lt;/h2>
+&lt;h2 id="write">
+&lt;a href="#write" class="header-anchor">#&lt;/a>
+WRITE
+&lt;/h2>
 &lt;p>WRITE 全称是 RDMA WRITE 操作，是本端主动写入远端内存的行为，除了准备阶段，远端 CPU 不需要参与，也不感知何时有数据写入、数据在何时接收完毕。所以这是一种单端操作。&lt;/p>
 &lt;p>通过下图我们对比一下 WRITE 和 SEND-RECV 操作的差异，本端在准备阶段通过数据交互，获取了对端某一片可用的内存的&lt;strong>地址&lt;/strong>和“&lt;strong>钥匙&lt;/strong>” ，相当于获得了这片远端内存的读写权限。拿到权限之后，本端就可以像访问自己的内存一样&lt;strong>直接对这一远端内存区域进行读写&lt;/strong>，这也是 RDMA——远程直接地址访问的内涵所在。&lt;/p>
 &lt;p>WRITE/READ 操作中的目的地址和钥匙是如何获取的呢？通常可以通过我们刚刚讲过的 SEND-RECV 操作来完成，因为拿到钥匙这个过程总归是要由远端内存的控制者——CPU 允许的。虽然准备工作还比较复杂， 但是一旦完成准备工作，RDMA 就可以发挥其优势，对大量数据进行读写。一旦远端的 CPU 把内存授权给本端使用，它便不再会参与数据收发的过程，这就解放了远端 CPU，也降低了通信的时延。&lt;/p>
@@ -1147,7 +1483,10 @@ alt="rdma-op-4-2024-02-25" width="auto" loading="lazy">
 &lt;p>注：严谨地说，第 6 步回复 ACK 之时，RDMA 网卡只能保证数据包中的 Payload 已经被”暂存“了下来，但不能保证一定已经把数据放到目的内存里面了。不过这一点不影响我们对整理流程的理解，感谢@nekomii 同学的提醒。&lt;/p>
 &lt;p>IB Spec. 9.7.5.1.6 ACKNOWLEDGE MESSAGE SCHEDULING 原文：”For SEND or RDMA WRITE requests, an ACK may be scheduled before data is actually written into the responder’s memory. The ACK simply indicates that the data has successfully reached the fault domain of the responding node. That is, the data has been received by the channel adapter and the channel adapter will write that data to the memory system of the responding node, or the responding application will at least be informed of the failure.“&lt;/p>
 &lt;/blockquote>
-&lt;h2 id="read">READ&lt;/h2>
+&lt;h2 id="read">
+&lt;a href="#read" class="header-anchor">#&lt;/a>
+READ
+&lt;/h2>
 &lt;p>顾名思义，READ 跟 WRITE 是相反的过程，是本端主动读取远端内存的行为。同 WRITE 一样，远端 CPU 不需要参与，也不感知数据在内存中被读取的过程。&lt;/p>
 &lt;p>获取 key 和虚拟地址的流程也跟 WRITE 没有区别，需要注意的是 &lt;strong>&amp;ldquo;读”这个动作所请求的数据&lt;/strong>，是在对端回复的报文中携带的。&lt;/p>
 &lt;p>下面描述一次 READ 操作的流程，注意跟 WRITE 只是方向和步骤顺序的差别。&lt;/p>
@@ -1164,7 +1503,10 @@ alt="rdma5-2024-02-25" width="auto" loading="lazy">
 &lt;li>请求端网卡生成 CQE，放置到 CQ 中。&lt;/li>
 &lt;li>请求端 APP 取得任务完成信息。&lt;/li>
 &lt;/ol>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>我们忽略各种细节进行抽象，RDMA WRITE 和 READ 操作就是在利用网卡完成下面左图的内存拷贝操作而已，只不过复制的过程是由 RDMA 网卡通过网络链路完成的；而本地内存拷贝则如下面右图所示由 CPU 通过总线完成的：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/rdma-op-6-2024-02-25.webp"
 alt="rdma-op-6-2024-02-25" width="auto" loading="lazy">
@@ -1172,7 +1514,10 @@ alt="rdma-op-6-2024-02-25" width="auto" loading="lazy">
 &lt;p>RDMA 标准定义上述几种操作的时候使用的单词是非常贴切的，“收”和“发”是需要有对端主动参与的语义 ，而‘读“和”写“更像是本端对一个没有主动性的对端进行操作的语义。&lt;/p>
 &lt;p>通过对比 SEND/RECV 和 WRITE/READ 操作，我们可以发现传输数据时不需要响应端 CPU 参与的 WRITE/READ 有更大的优势，缺点就是请求端需要在准备阶段获得响应端的一段内存的读写权限。但是实际数据传输时，这个准备阶段的功率和时间损耗都是可以忽略不计的，所以 RDMA WRITE/READ 才是大量传输数据时所应用的操作类型，SEND/RECV 通常只是用来传输一些控制信息。&lt;/p>
 &lt;p>除了本文介绍的几种操作之外，还有 ATOMIC 等更复杂一些的操作类型，将在后面的协议解读部分详细分析。本篇就到这里，下一篇将介绍 RDMA 基本服务类型。&lt;/p>
-&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;h2 id="代码示例">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+代码示例
+&lt;/h2>
 &lt;p>本文中的操作类型都是通过 WQE 来下发的，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过 WQE 来下发一个 WRITE 操作。&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 #include &amp;lt;stdio.h&amp;gt;
@@ -1210,8 +1555,14 @@ ibv_post_send(qp, &amp;amp;wr, &amp;amp;bad_wr);
 return 0;
 }
 &lt;/code>&lt;/pre>
-&lt;h2 id="参考资料">参考资料&lt;/h2>
-&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">RDMA 基本元素&lt;/h1>
+&lt;h2 id="参考资料">
+&lt;a href="#%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
+参考资料
+&lt;/h2>
+&lt;p>[1] part1-OFA_Training_Sept_2016.pdf&lt;/p></description></item><item><title>RDMA 基本元素</title><link>https://cuterwrite.top/p/rdma-element/</link><pubDate>Fri, 02 Feb 2024 01:01:01 +0000</pubDate><guid>https://cuterwrite.top/p/rdma-element/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/73c30b990886bf6988c97858a3e16011195413_crop-2024-02-04.webp" alt="Featured image of post RDMA 基本元素" />&lt;h1 id="rdma-基本元素">
+&lt;a href="#rdma-%e5%9f%ba%e6%9c%ac%e5%85%83%e7%b4%a0" class="header-anchor">#&lt;/a>
+RDMA 基本元素
+&lt;/h1>
 &lt;p>&lt;strong>本文欢迎非商业转载，转载请注明出处。&lt;/strong>&lt;/p>
 &lt;blockquote>
 &lt;p>声明：仅用于收藏，便于阅读&lt;/p>&lt;span class="cite">&lt;span>― &lt;/span>&lt;span>Savir, &lt;/span>&lt;a href="https://zhuanlan.zhihu.com/p/141267386">&lt;cite>知乎专栏：3. RDMA 基本元素&lt;/cite>&lt;/a>&lt;/span>&lt;/blockquote>
@@ -1220,18 +1571,30 @@ return 0;
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03.webp"
 alt="v2-b6723caa5b291ee161d94fd8fd8ce09c_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="wq">WQ&lt;/h2>
+&lt;h2 id="wq">
+&lt;a href="#wq" class="header-anchor">#&lt;/a>
+WQ
+&lt;/h2>
 &lt;p>Work Queue 简称 WQ，是 RDMA 技术中最重要的概念之一。WQ 是一个储存工作请求的队列，为了讲清楚 WQ 是什么，我们先介绍这个队列中的元素 WQE（Work Queue Element，工作队列元素）。&lt;/p>
-&lt;h3 id="wqe">WQE&lt;/h3>
+&lt;h3 id="wqe">
+&lt;a href="#wqe" class="header-anchor">#&lt;/a>
+WQE
+&lt;/h3>
 &lt;p>WQE 可以认为是一种“任务说明”，这个工作请求是软件下发给硬件的，这份说明中包含了软件所希望硬件去做的任务以及有关这个任务的详细信息。比如，某一份任务是这样的：“我想把位于地址 0x12345678 的长度为 10 字节的数据发送给对面的节点”，硬件接到任务之后，就会通过 DMA 去内存中取数据，组装数据包，然后发送。&lt;/p>
 &lt;p>WQE 的含义应该比较明确了，那么我们最开始提到的 WQ 是什么呢？它就是用来存放“任务书”的“文件夹”，WQ 里面可以容纳很多 WQE。有数据结构基础的读者应该都了解，队列是一种先进先出的数据结构，在计算机系统中非常常见，我们可以用下图表示上文中描述的 WQ 和 WQE 的关系：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03.webp"
 alt="v2-40c7e57f2760323c6b6665306e8f8896_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>WQ 这个队列总是由软件向其中增加 WQE（入队），硬件从中取出 WQE，这就是软件给硬件“下发任务”的过程。为什么用队列而不是栈？因为进行“存”和“取“操作的分别是软件和硬件，并且需要保证用户的请求按照顺序被处理在 RDMA 技术中，所有的通信请求都要按照上图这种方式告知硬件，这种方式常被称为“Post”。&lt;/p>
-&lt;h3 id="qp">QP&lt;/h3>
+&lt;h3 id="qp">
+&lt;a href="#qp" class="header-anchor">#&lt;/a>
+QP
+&lt;/h3>
 &lt;p>Queue Pair 简称 QP，就是“一对”WQ 的意思。&lt;/p>
-&lt;h3 id="sq-和-rq">SQ 和 RQ&lt;/h3>
+&lt;h3 id="sq-和-rq">
+&lt;a href="#sq-%e5%92%8c-rq" class="header-anchor">#&lt;/a>
+SQ 和 RQ
+&lt;/h3>
 &lt;p>任何通信过程都要有收发两端，QP 就是一个发送工作队列和一个接受工作队列的组合，这两个队列分别称为 SQ（Send Queue）和 RQ（Receive Queue）。我们再把上面的图丰富一下，左边是发送端，右边是接收端：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03.webp"
 alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="lazy">
@@ -1243,12 +1606,18 @@ alt="v2-b89b321b8d1ae5ab6dcbaf8d6085f107_720w-2024-02-03" width="auto" loading="
 alt="v2-71b3b17ef8aec45d74ef9e4a42a69201_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>每个节点的每个 QP 都有一个唯一的编号，称为 QPN（Queue Pair Number），通过 QPN 可以唯一确定一个节点上的 QP。&lt;/p>
-&lt;h3 id="srq">SRQ&lt;/h3>
+&lt;h3 id="srq">
+&lt;a href="#srq" class="header-anchor">#&lt;/a>
+SRQ
+&lt;/h3>
 &lt;p>Shared Receive Queue 简称 SRQ，意为共享接收队列。概念很好理解，就是一种几个 QP 共享同一个 RQ 时，我们称其为 SRQ。以后我们会了解到，使用 RQ 的情况要远远小于使用 SQ，而每个队列都是要消耗内存资源的。当我们需要使用大量的 QP 时，可以通过 SRQ 来节省内存。如下图所示，QP2~QP4 一起使用同一个 RQ：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03.webp"
 alt="v2-4a21f2b1333877b4b0d97a1ca91d4096_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="cq">CQ&lt;/h2>
+&lt;h2 id="cq">
+&lt;a href="#cq" class="header-anchor">#&lt;/a>
+CQ
+&lt;/h2>
 &lt;p>Completion Queue 简称 CQ，意为完成队列。跟 WQ 一样，我们先介绍 CQ 这个队列当中的元素——CQE（Completion Queue Element）。可以认为 CQE 跟 WQE 是相反的概念，如果 WQE 是软件下发给硬件的“任务书”的话，那么 CQE 就是硬件完成任务之后返回给软件的“任务报告”。CQE 中描述了某个任务是被正确无误的执行，还是遇到了错误，如果遇到了错误，那么错误的原因是什么。&lt;/p>
 &lt;p>而 CQ 就是承载 CQE 的容器——一个先进先出的队列。我们把表示 WQ 和 WQE 关系的图倒过来画，就得到了 CQ 和 CQE 的关系：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-31f9a407ab66381fbc557d8acc5573cb_720w-2024-02-03.webp"
@@ -1281,14 +1650,20 @@ alt="v2-a8d38721903672037b27cc7e49ecee03_720w-2024-02-03" width="auto" loading="
 &lt;div class="notice notice-note" >
 &lt;div class="notice-title">&lt;svg t="1705946198814" class="icon notice-icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="23141" width="200" height="200">&lt;path d="M195.541333 739.029333C151.594667 692.352 128 640 128 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642667 148.864a149.333333 149.333333 0 0 1-149.333334 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z m426.666667 0C578.261333 692.352 554.666667 640 554.666667 555.136c0-149.333333 104.832-283.178667 257.28-349.354667l38.101333 58.794667c-142.293333 76.970667-170.112 176.853333-181.205333 239.829333 22.912-11.861333 52.906667-16 82.304-13.269333 76.970667 7.125333 137.642667 70.314667 137.642666 148.864a149.333333 149.333333 0 0 1-149.333333 149.333333 165.162667 165.162667 0 0 1-117.248-50.304z" p-id="23142" fill="#ffffff">&lt;/path>&lt;/svg>&lt;/div>&lt;p>NOTE: 需要注意的一点是，上图中的例子是可靠服务类型的交互流程，如果是不可靠服务，那么不会有步骤 5 的 ACK 回复，而且步骤 9 以及之后的步骤会在步骤 5 之后立即触发。关于服务类型以及可靠与不可靠，我们将在《RDMA 基本服务类型》一文中讲解。&lt;/p>&lt;/div>
 &lt;p>至此，通过 WQ 和 CQ 这两种媒介，两端软硬件共同完成了一次收发过程。&lt;/p>
-&lt;h2 id="wr-和-wc">WR 和 WC&lt;/h2>
+&lt;h2 id="wr-和-wc">
+&lt;a href="#wr-%e5%92%8c-wc" class="header-anchor">#&lt;/a>
+WR 和 WC
+&lt;/h2>
 &lt;p>说完了几个 Queue 之后，其实还有两个文章开头提到的概念没有解释，那就是 WR 和 WC（不是 Water Closet 的缩写）。&lt;/p>
 &lt;p>WR 全称为 Work Request，意为工作请求；WC 全称 Work Completion，意为工作完成。这两者其实是 WQE 和 CQE 在用户层的“映射”。因为 APP 是通过调用协议栈接口来完成 RDMA 通信的，WQE 和 CQE 本身并不对用户可见，是驱动中的概念。用户真正通过 API 下发的是 WR，收到的是 WC。&lt;/p>
 &lt;p>WR/WC 和 WQE/CQE 是相同的概念在不同层次的实体，他们都是“任务书”和“任务报告”。于是我们把前文的两个图又加了点内容：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03.webp"
 alt="v2-00b87c111a8e1701f96fbfb78e078b29_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="代码示例">代码示例&lt;/h2>
+&lt;h2 id="代码示例">
+&lt;a href="#%e4%bb%a3%e7%a0%81%e7%a4%ba%e4%be%8b" class="header-anchor">#&lt;/a>
+代码示例
+&lt;/h2>
 &lt;p>最后，下面是一个简单的例子，展示了如何使用 libibverbs 来创建一个 QP，然后通过这个 QP 来发送一次数据。这是一个非常简单的例子，只是为了让读者对上文中的概念有一个直观的认识。&lt;/p>
 &lt;pre>&lt;code class="language-c">#include &amp;lt;infiniband/verbs.h&amp;gt;
 int main() {
@@ -1320,12 +1695,18 @@ ibv_poll_cq(cq, 1, &amp;amp;wc);
 return 0;
 }
 &lt;/code>&lt;/pre>
-&lt;h2 id="总结">总结&lt;/h2>
+&lt;h2 id="总结">
+&lt;a href="#%e6%80%bb%e7%bb%93" class="header-anchor">#&lt;/a>
+总结
+&lt;/h2>
 &lt;p>好了，我们用 IB 协议[1]3.2.1 中的 Figure 11 这张图总结一下本篇文章的内容：&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03.webp"
 alt="v2-2107a9bf8230c45ad73aa5ff0b8626ff_720w-2024-02-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>用户态的 WR，由驱动转化成了 WQE 填写到了 WQ 中，WQ 可以是负责发送的 SQ，也可以是负责接收的 RQ。硬件会从各个 WQ 中取出 WQE，并根据 WQE 中的要求完成发送或者接收任务。任务完成后，会给这个任务生成一个 CQE 填写到 CQ 中。驱动会从 CQ 中取出 CQE，并转换成 WC 返回给用户。&lt;/p>
 &lt;p>基础概念就介绍到这里，下一篇将介绍 RDMA 的几种常见操作类型。&lt;/p>
-&lt;h2 id="参考文献">参考文献&lt;/h2>
+&lt;h2 id="参考文献">
+&lt;a href="#%e5%8f%82%e8%80%83%e6%96%87%e7%8c%ae" class="header-anchor">#&lt;/a>
+参考文献
+&lt;/h2>
 &lt;p>[1]《IB Specification Vol 1-Release-1.3-2015-03-03》&lt;/p></description></item></channel></rss>

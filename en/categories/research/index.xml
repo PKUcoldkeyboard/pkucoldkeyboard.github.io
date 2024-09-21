@@ -1,5 +1,11 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Research Related on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/categories/research/</link><description>Recent content in Research Related on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 03 Mar 2024 01:16:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/categories/research/index.xml" rel="self" type="application/rss+xml"/><item><title>Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory</title><link>https://cuterwrite.top/en/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/pure/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory" />&lt;h1 id="note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes">Note: Pure: Improve message passing to better utilize shared memory within nodes&lt;/h1>
-&lt;h2 id="citation">Citation&lt;/h2>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Research Related on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/categories/research/</link><description>Recent content in Research Related on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 03 Mar 2024 01:16:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/categories/research/index.xml" rel="self" type="application/rss+xml"/><item><title>Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory</title><link>https://cuterwrite.top/en/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/pure/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory" />&lt;h1 id="note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes">
+&lt;a href="#note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes" class="header-anchor">#&lt;/a>
+Note: Pure: Improve message passing to better utilize shared memory within nodes
+&lt;/h1>
+&lt;h2 id="citation">
+&lt;a href="#citation" class="header-anchor">#&lt;/a>
+Citation
+&lt;/h2>
 &lt;p>James Psota and Armando Solar-Lezama. 2024. Pure: Evolving Message Passing To Better Leverage Shared Memory Within Nodes. In Proceedings of the 29th ACM SIGPLAN Annual Symposium on Principles and Practice of Parallel Programming (&lt;strong>PPoPP &amp;lsquo;24&lt;/strong>). Association for Computing Machinery, New York, NY, USA, 133–146. &lt;a class="link" href="https://doi.org/10.1145/3627535.3638503" target="_blank" rel="noopener" >https://doi.org/10.1145/3627535.3638503
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -9,7 +15,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;h2 id="keywords">Keywords&lt;/h2>
+&lt;h2 id="keywords">
+&lt;a href="#keywords" class="header-anchor">#&lt;/a>
+Keywords
+&lt;/h2>
 &lt;ul>
 &lt;li>Parallel programming model&lt;/li>
 &lt;li>Distributed runtime system&lt;/li>
@@ -17,9 +26,15 @@ fill="currentColor">
 &lt;li>Concurrent data structures&lt;/li>
 &lt;li>Lock-free data structure&lt;/li>
 &lt;/ul>
-&lt;h2 id="summary">Summary&lt;/h2>
+&lt;h2 id="summary">
+&lt;a href="#summary" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
 &lt;p>Pure is a new programming model and runtime system designed to fully utilize shared memory within nodes in environments based on the Message Passing Interface (enhancing task usage to leverage idle core capabilities). Pure leverages shared memory in two ways: (1) allowing ranks to steal work from each other while waiting for messages to arrive; (2) using efficient lock-free data structures to achieve high-performance message passing and collective operations among processes within a node. Researchers evaluated Pure&amp;rsquo;s key message passing and collective features through micro benchmark tests and demonstrated that in CoMD molecular dynamics and miniAMR adaptive mesh refinement applications, Pure can achieve up to &lt;strong>2.1x&lt;/strong> application speedup when scaling to 4096 ranks.&lt;/p>
-&lt;h2 id="1-introduction">1. Introduction&lt;/h2>
+&lt;h2 id="1-introduction">
+&lt;a href="#1-introduction" class="header-anchor">#&lt;/a>
+1. Introduction
+&lt;/h2>
 &lt;p>In recent decades, the field of high-performance computing has transitioned from large vector computers to clusters composed of single processors interconnected through networks. MPI has become the de facto standard for parallel programming on distributed memory systems. With advancements in hardware, the emergence of multi-core clusters has allowed cores within nodes to share memory and communicate over networks, prompting the community to continually seek new paradigms to more efficiently utilize modern cluster resources. Currently, there are two main strategies: one is to maintain a unified MPI programming approach by improving the MPI runtime system to better utilize shared memory; the other is to adopt hybrid programming models like MPI+X, using shared memory parallelism within nodes while continuing to use MPI between nodes. &lt;strong>However, these approaches may either be limited by the MPI standard&amp;rsquo;s specifications on interface behavior, preventing performance maximization, or present challenges to programmers in managing two programming models.&lt;/strong>&lt;/p>
 &lt;p>The community has tried many other methods, including the &lt;strong>PGAS&lt;/strong> model, which provides a shared memory abstraction across clusters, and implicitly parallel programming languages like &lt;strong>Legion&lt;/strong>, &lt;strong>Chapel&lt;/strong>, and &lt;strong>X10&lt;/strong>, which offer high-level abstractions and attempt to automatically and efficiently coordinate applications. Despite some progress, many modern HPC applications still rely on MPI. &lt;strong>MPC&lt;/strong> and &lt;strong>AMPI&lt;/strong> also attempt to improve performance by using threads as MPI Rank to leverage internal shared memory.&lt;/p>
 &lt;p>However, using only MPI methods often performs better than hybrid programming methods. This may be due to the limitations of the interface and the inability to fully utilize shared memory within nodes, causing MPI to fail to fully realize its potential performance. Therefore, the Pure system proposed in this article is built based on the MPI-everywhere method, breaking some traditional assumptions of MPI, more effectively utilizing shared memory, while avoiding the need for major restructuring of existing programs. Pure adopts a programming model similar to MPI, thus enabling the use of the existing MPI knowledge and application base of the HPC community.&lt;/p>
@@ -37,7 +52,10 @@ fill="currentColor">
 &lt;li>Describes a well-designed lock-free, multithreaded, and distributed runtime system that shows significant speed improvements over MPI within nodes.&lt;/li>
 &lt;li>It has been proven that by making minimal source code modifications to existing MPI applications, significant performance improvements can be achieved in micro benchmark tests and three real-world applications compared to state-of-the-art MPI implementations.&lt;/li>
 &lt;/ol>
-&lt;h2 id="2-pure-usage-example">2. Pure Usage Example&lt;/h2>
+&lt;h2 id="2-pure-usage-example">
+&lt;a href="#2-pure-usage-example" class="header-anchor">#&lt;/a>
+2. Pure Usage Example
+&lt;/h2>
 &lt;p>This section illustrates the use of Pure through a simple 1-D Stencil algorithm example. Although this example is simple, it clearly demonstrates the core concepts of Pure and its similarities with MPI, laying the foundation for developers to write more complex applications.&lt;/p>
 &lt;p>In the MPI version implementation code &lt;code>rand_stencil_mpi&lt;/code>, the main computational work is performed in the function &lt;code>random_work&lt;/code>. In simple terms, the &lt;code>rand_stencil_mpi&lt;/code> function first enters a loop, iterating &lt;code>iters&lt;/code> times, calculating &lt;code>random_work&lt;/code> on each element of the array &lt;code>a&lt;/code>. It is noteworthy that the execution time of &lt;code>random_work&lt;/code> is variable and unknown, which introduces load imbalance. Moreover, &lt;code>random_work&lt;/code> does not modify the contents of the array &lt;code>a&lt;/code>, but instead updates the array &lt;code>a&lt;/code> by averaging adjacent elements. Finally, the program uses &lt;code>MPI_Send&lt;/code> and &lt;code>MPI_Recv&lt;/code> to exchange the first and last elements of the &lt;code>temp&lt;/code> array to compute the first and last elements of the array &lt;code>a&lt;/code>. Due to the varying time required by &lt;code>random_work&lt;/code>, some processing units will complete tasks early and sometimes become blocked while waiting for the slower sender in an &lt;code>MPI_Recv&lt;/code> call.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1D_stencil-2024-03-14.webp"
@@ -134,7 +152,10 @@ alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>Thanks to the variable capture feature of lambda expressions, context information can be efficiently shared between different ranks.&lt;/li>
 &lt;/ul>
 &lt;p>The experimental results show that on a single node configured with 32 ranks, the Pure version achieves a 10% performance improvement compared to the MPI version due to faster message passing and parallel execution of Pure Tasks. In scenarios with uneven load distribution, the acceleration ratio of Pure even exceeds 200%. Although the degree of these performance improvements is affected by load imbalance, in practical application scenarios, Pure still demonstrates significant performance enhancements. This is attributed to the capability of the Pure Runtime system, which can automatically detect and efficiently utilize underutilized computational resources.&lt;/p>
-&lt;h2 id="3-programming-model">3. Programming Model&lt;/h2>
+&lt;h2 id="3-programming-model">
+&lt;a href="#3-programming-model" class="header-anchor">#&lt;/a>
+3. Programming Model
+&lt;/h2>
 &lt;p>The core of Pure&amp;rsquo;s programming model is &amp;ldquo;message passing combined with optional task parallelism.&amp;rdquo; Semantically, Pure&amp;rsquo;s message passing and collective communication operations are equivalent to MPI, with differences mainly in some syntactical details.&lt;/p>
 &lt;p>Although Pure uses threads within nodes, its rank namespace remains non-hierarchical across the entire cluster. During the execution cycle of a Pure program, the number of ranks remains unchanged.&lt;/p>
 &lt;p>The Pure application is written in C++ and runs using the SPMD (Single Program Multiple Data) model, achieving internal multithreading. On the same node, all ranks are implemented through kernel threads.&lt;/p>
@@ -144,7 +165,10 @@ alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>Compute-intensive hotspot areas.&lt;/li>
 &lt;li>Tasks that can be executed concurrently.&lt;/li>
 &lt;/ol>
-&lt;h3 id="message-passing-and-collective-communication-operations">Message passing and collective communication operations&lt;/h3>
+&lt;h3 id="message-passing-and-collective-communication-operations">
+&lt;a href="#message-passing-and-collective-communication-operations" class="header-anchor">#&lt;/a>
+Message passing and collective communication operations
+&lt;/h3>
 &lt;p>In Pure, the &lt;code>pure_send_msg&lt;/code> and &lt;code>pure_recv_msg&lt;/code> functions correspond functionally to MPI&amp;rsquo;s &lt;code>MPI_Send&lt;/code> and &lt;code>MPI_Recv&lt;/code>, and Pure also provides corresponding non-blocking versions.&lt;/p>
 &lt;p>Pure Runtime system ensures that all messages are delivered and in the order they are sent. Pure also implements a series of collective communication operations, including:&lt;/p>
 &lt;ul>
@@ -155,7 +179,10 @@ alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;/ul>
 &lt;p>In addition, Pure introduced the concept of a communication subgroup, allowing developers to further subdivide a communication subset into smaller subsets through the &lt;code>pure_comm_split&lt;/code> function.&lt;/p>
 &lt;p>In order to use Pure, the application needs to be written using modern C++ standards, and it is recommended to compile using &lt;code>std=c++11&lt;/code> or a higher version. Pure provides a Make-based build system that automatically configures appropriate compiler options and links to the Pure Runtime system (libpure), while defining a series of targets for debugging and performance analysis.&lt;/p>
-&lt;h3 id="pure-task">Pure Task&lt;/h3>
+&lt;h3 id="pure-task">
+&lt;a href="#pure-task" class="header-anchor">#&lt;/a>
+Pure Task
+&lt;/h3>
 &lt;p>Pure Task allows developers to define the computational parts of an application and break them down into chunks that can be executed in parallel. These chunks can be automatically executed concurrently by the Pure Runtime system.&lt;/p>
 &lt;p>However, Pure Task is not necessary and is only recommended when a task can be divided into multiple smaller chunks and doing so helps alleviate load imbalance issues.&lt;/p>
 &lt;p>Pure Task is implemented through C++ Lambda expressions and synchronously executed when the &lt;code>execute&lt;/code> method is called on the rank that owns the task. Each rank can only execute one Pure Task at a time. The variable capture feature of Lambda expressions allows different ranks to efficiently share context information when executing different chunks. Typically, a Pure Task is defined once during the application&amp;rsquo;s runtime and then executed multiple times at each timestep or other iterations.&lt;/p>
@@ -165,7 +192,10 @@ alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>Pure Task uses chunk ranges to provide flexibility to the scheduler, allowing multiple chunks to be allocated at once. The number of chunks is determined by the Pure task scheduler, but will not exceed the &lt;code>PURE_MAX_TASK_CHUNKS&lt;/code> predefined in the Makefile.&lt;/p>
 &lt;p>Currently, the Pure Task interface requires manually mapping chunk numbers to array indices, which can be cumbersome when dealing with multidimensional arrays. Therefore, the future goal is to extend the interface to provide a more concise and higher-level interface similar to TBB&amp;rsquo;s &lt;code>parallel_for&lt;/code>.&lt;/p>
 &lt;p>Finally, developers need to ensure that the internal implementation of Pure Task is thread-safe to avoid mutual contention between chunks of the same task being executed concurrently. For example, in the CoMD molecular dynamics benchmark, the issue of multiple threads writing to the same memory location simultaneously needs to be addressed, and in such cases, an &lt;code>std::atomic&lt;/code> array can be used to replace a regular &lt;code>int&lt;/code> array.&lt;/p>
-&lt;h2 id="4-runtime-system">4. Runtime System&lt;/h2>
+&lt;h2 id="4-runtime-system">
+&lt;a href="#4-runtime-system" class="header-anchor">#&lt;/a>
+4. Runtime System
+&lt;/h2>
 &lt;p>The Pure runtime system is a dynamic library for multithreaded and distributed runtime, used to support the development of Pure applications. Developers need to include the &lt;code>pure.h&lt;/code> header file when using it, compile with the C++17 standard, and link to the &lt;code>libpure&lt;/code> library. The Pure runtime system can automatically find and exploit opportunities for overlapping execution between computation and communication operations, especially in cases of high communication latency.&lt;/p>
 &lt;p>The main functions of the Pure runtime system include:&lt;/p>
 &lt;ul>
@@ -174,16 +204,25 @@ alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;li>Manage internal memory buffers and data structures.&lt;/li>
 &lt;li>If a Pure Task is defined in the application, the runtime system is also responsible for scheduling and executing these tasks.&lt;/li>
 &lt;/ul>
-&lt;h3 id="rank-initialization-and-mapping">Rank initialization and mapping&lt;/h3>
+&lt;h3 id="rank-initialization-and-mapping">
+&lt;a href="#rank-initialization-and-mapping" class="header-anchor">#&lt;/a>
+Rank initialization and mapping
+&lt;/h3>
 &lt;p>In Pure, rank is implemented as the kernel thread of an MPI process. In multi-node applications, Pure runs MPI to handle cross-node communication, whereas in single-node applications, MPI is not used. Nonetheless, Pure applications do not directly call MPI functions. Through Makefile configuration, a Pure program can start an MPI process on a node or NUMA node and create a corresponding number of threads based on the number of cores per node or NUMA node. For application developers, they only need to understand the non-hierarchical rank namespace, while underlying concepts such as nodes, threads, MPI processes, and communication latency are abstracted and transparent to the developers.&lt;/p>
 &lt;p>Pure supports flexible rank-to-node mapping strategies and defaults to using an SMP-style allocation strategy. Additionally, Pure supports custom rank mapping, including the use of CrayPAT rank reordering files. While these hardware-related details are invisible to developers, Pure internally utilizes this information to optimize key functionalities.&lt;/p>
 &lt;p>When a Pure application starts, the original &lt;code>main&lt;/code> function of the application is not executed directly. Instead, the underlying MPI program calls the &lt;code>main&lt;/code> function defined in the Pure runtime system, which is responsible for initializing Pure&amp;rsquo;s core data structures. It then creates and binds threads, each executing an &lt;code>original_main&lt;/code> function, which is a renamed version of the original &lt;code>main&lt;/code> function from the application code. After the application completes execution, the &lt;code>original_main&lt;/code> function returns to the Pure runtime system, which is responsible for completing the MPI cleanup and termination process.&lt;/p>
-&lt;h3 id="spin-steal-waiting-loop-ssw-loop">Spin-Steal Waiting Loop (SSW-Loop)&lt;/h3>
+&lt;h3 id="spin-steal-waiting-loop-ssw-loop">
+&lt;a href="#spin-steal-waiting-loop-ssw-loop" class="header-anchor">#&lt;/a>
+Spin-Steal Waiting Loop (SSW-Loop)
+&lt;/h3>
 &lt;p>When a Pure rank encounters a blocking event, such as waiting for a message to arrive, it will execute a mechanism called the &lt;strong>Spin, Steal, Wait Loop (SSW-Loop)&lt;/strong> instead of simply entering an idle state. In this loop, the rank checks if the blocking condition is met, such as whether a message has arrived, and if not, it will attempt to steal tasks from other ranks. If a blocking rank can assist in completing tasks that other threads in its process are concurrently executing, it will participate in such assistance work.&lt;/p>
 &lt;p>Since threads are bound to specific CPUs and each rank runs only one application, Pure chooses to have ranks actively spin-wait rather than relinquish the CPU. The SSW-Loop gives ranks in computation &amp;ldquo;polymorphism&amp;rdquo;: they can act as computing nodes for the main program, assist other ranks in executing stolen task blocks, and then return to check their own blocking events.&lt;/p>
 &lt;p>Pure follows the strategy of prioritizing the stolen workload of the current rank and adheres to the scheduling principle of workload priority.&lt;/p>
 &lt;p>Unlike systems that use auxiliary threads to achieve workload stealing or communication, Pure is characterized by allowing application-level compute nodes to directly perform task stealing operations.&lt;/p>
-&lt;h3 id="implementation-instructions">Implementation Instructions&lt;/h3>
+&lt;h3 id="implementation-instructions">
+&lt;a href="#implementation-instructions" class="header-anchor">#&lt;/a>
+Implementation Instructions
+&lt;/h3>
 &lt;p>Pure is written using the C++17 standard library. The Pure runtime system consists of about 21,000 lines of source code, and the Pure tools contain about 14,000 lines of source code. Pure has been tested in various environments, including laptops and clusters, and only requires a C++17 supporting compiler, a Unix-like operating system, and an MPI environment to run. The source code for Pure is publicly available on GitHub at the following link: &lt;a class="link" href="https://github.com/psota/pure" target="_blank" rel="noopener" >https://github.com/psota/pure
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -193,7 +232,10 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 .&lt;/p>
-&lt;h3 id="point-to-point-communication">Point-to-point communication&lt;/h3>
+&lt;h3 id="point-to-point-communication">
+&lt;a href="#point-to-point-communication" class="header-anchor">#&lt;/a>
+Point-to-point communication
+&lt;/h3>
 &lt;p>Pure provides blocking and non-blocking point-to-point message passing functionality, consistent with the message passing semantics of MPI.&lt;/p>
 &lt;p>Pure internally uses three different strategies for message passing, and the choice of strategy depends on the size of the message and whether the sender and receiver are located on the same node.&lt;/p>
 &lt;p>Pure allocates and reuses a persistent Channel object throughout the program&amp;rsquo;s lifecycle, which is stored in the runtime system. The internal Channel Manager is responsible for mapping message parameters to the appropriate data structures and creating these structures as needed.&lt;/p>
@@ -229,7 +271,10 @@ alt="strategy-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="collective-communication">Collective communication&lt;/h3>
+&lt;h3 id="collective-communication">
+&lt;a href="#collective-communication" class="header-anchor">#&lt;/a>
+Collective communication
+&lt;/h3>
 &lt;p>The collective communication operations of Pure are semantically the same as MPI, but they are implemented within nodes using a bottom-up constructed data structure. This has shown significant performance improvements in both single-node and multi-node benchmarks, even though it still relies on MPI&amp;rsquo;s collective operations for cross-node communication.&lt;/p>
 &lt;p>Pure uses a leader thread to coordinate the collective communication process, while other threads assist with computation and call MPI collective functions as needed.&lt;/p>
 &lt;ul>
@@ -267,7 +312,10 @@ alt="SPTD-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;h3 id="task-scheduler">Task Scheduler&lt;/h3>
+&lt;h3 id="task-scheduler">
+&lt;a href="#task-scheduler" class="header-anchor">#&lt;/a>
+Task Scheduler
+&lt;/h3>
 &lt;p>The Pure runtime system has meticulously designed a task scheduler that maintains an array named &lt;code>active_tasks&lt;/code> in shared memory. This array stores a series of atomic pointers, each corresponding to a task being executed, and allocates an entry for each node and each rank in the system. These entries are initially set to &lt;code>nullptr&lt;/code>, indicating that a task has not yet been assigned.&lt;/p>
 &lt;p>When a task is created and prepared for execution, the system initializes its state and updates the corresponding entry in the &lt;code>active_tasks&lt;/code> array through an atomic operation to reflect that the task has been assigned. This update process ensures that the execution state of the task is visible to all threads in the system, allowing the task to be &amp;ldquo;stolen&amp;rdquo; by other threads.&lt;/p>
 &lt;p>During the execution of the task, the rank owning the task will begin executing a series of chunks, which are the subdivided work units of the task. Meanwhile, other threads will continuously check the &lt;code>active_tasks&lt;/code> array during their SSL-Loop, using atomic load operations to look for executable non-empty tasks.&lt;/p>
@@ -275,9 +323,15 @@ alt="SPTD-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
 &lt;p>Each time a chunk is successfully completed, the thread atomically increments the value of &lt;code>chunks_done&lt;/code>. The owner thread updates its local storage to avoid cache misses. Finally, the owner rank will wait until all chunks are executed, ensuring the complete execution of the task.&lt;/p>
 &lt;p>It is worth noting that the task&amp;rsquo;s chunk and the application&amp;rsquo;s rank are executed on the same hardware thread. In Pure applications, each hardware thread is assigned to a specific rank. Although currently Pure does not utilize hardware accelerators (such as GPUs) to accelerate task execution, the designers believe that Pure&amp;rsquo;s architecture is fully capable of supporting such acceleration.&lt;/p>
 &lt;p>The Pure task scheduler provides various execution modes and stealing algorithms to accommodate different execution needs. For example, the author implemented a single chunk execution mode and a guided self-scheduling mode, the latter being a work partitioning algorithm that prioritizes the allocation of larger work chunks followed by smaller ones. Additionally, the scheduler includes a NUMA-aware stealing mode, which prioritizes stealing tasks from threads on the same NUMA node, and a &amp;ldquo;sticky&amp;rdquo; stealing mode, allowing thief threads to return to tasks they recently stole that are still active. These features collectively ensure the efficiency and flexibility of task scheduling.&lt;/p>
-&lt;h2 id="evaluation">Evaluation&lt;/h2>
+&lt;h2 id="evaluation">
+&lt;a href="#evaluation" class="header-anchor">#&lt;/a>
+Evaluation
+&lt;/h2>
 &lt;p>The performance evaluation of Pure was conducted on the Cori HPC cluster at Berkeley NERSC. This cluster consists of 2388 nodes, each configured with 2 sockets, 16 cores, and 128GB of memory, interconnected via Cray Aires. The experimental configuration enabled hyper-threading and adopted a 256-bit vector width. Two processes were run on each node, totaling 32 threads. The evaluation used the Intel compiler and Cray MPICH as the performance baseline.&lt;/p>
-&lt;h3 id="nas-dt-benchmark-results">NAS DT benchmark results&lt;/h3>
+&lt;h3 id="nas-dt-benchmark-results">
+&lt;a href="#nas-dt-benchmark-results" class="header-anchor">#&lt;/a>
+NAS DT benchmark results
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/nasdt-2024-03-15.webp"
 alt="nasdt-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
@@ -286,7 +340,10 @@ alt="nasdt-2024-03-15" width="auto" loading="lazy">
 &lt;li>After introducing Pure Tasks, the performance acceleration ratio increased to 1.7 times to 2.6 times.&lt;/li>
 &lt;li>Auxiliary threads can slightly improve performance, but only if there are remaining unused CPU cores available. Here, except in the case of 80 ranks where 24 cores were idle, the CPU cores were fully utilized in other cases.&lt;/li>
 &lt;/ul>
-&lt;h3 id="comd-and-miniamr-benchmarks">CoMD and miniAMR benchmarks&lt;/h3>
+&lt;h3 id="comd-and-miniamr-benchmarks">
+&lt;a href="#comd-and-miniamr-benchmarks" class="header-anchor">#&lt;/a>
+CoMD and miniAMR benchmarks
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-2024-03-15.webp"
 alt="benchmark-pure-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
@@ -294,14 +351,20 @@ alt="benchmark-pure-2024-03-15" width="auto" loading="lazy">
 &lt;ul>
 &lt;li>In the miniAMR adaptive mesh refinement application, Pure achieved at least a 20% and at most a 50% performance acceleration.&lt;/li>
 &lt;/ul>
-&lt;h3 id="collective-communication-performance">Collective communication performance&lt;/h3>
+&lt;h3 id="collective-communication-performance">
+&lt;a href="#collective-communication-performance" class="header-anchor">#&lt;/a>
+Collective communication performance
+&lt;/h3>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-msg-2024-03-15.webp"
 alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ul>
 &lt;li>Pure exhibits outstanding performance in collective communication operations, where its internal optimization mechanisms and data structure design allow Pure to demonstrate significant efficiency and advantages when handling large-scale parallel computing tasks.&lt;/li>
 &lt;/ul>
-&lt;h2 id="related-work">Related work&lt;/h2>
+&lt;h2 id="related-work">
+&lt;a href="#related-work" class="header-anchor">#&lt;/a>
+Related work
+&lt;/h2>
 &lt;table>
 &lt;thead>
 &lt;tr>
@@ -333,10 +396,22 @@ alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
-&lt;h2 id="summary-1">Summary&lt;/h2>
-&lt;p>For decades, message passing has been regarded as the standard model for parallel programming due to its relative simplicity and performance advantages. However, this paper demonstrates that message passing and shared memory are not incompatible. In fact, by designing appropriate libraries, shared memory can be fully utilized without sacrificing most of the advantages of message passing.&lt;/p></description></item><item><title>Scientific Research Chart Drawing</title><link>https://cuterwrite.top/en/p/science-plot/</link><pubDate>Tue, 27 Feb 2024 00:14:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/science-plot/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_ee40c9cb9e33ffe888365e66e0a104dc195413-2024-02-28.webp" alt="Featured image of post Scientific Research Chart Drawing" />&lt;h1 id="scientific-chart-plotting">Scientific chart plotting&lt;/h1>
-&lt;h2 id="prerequisite-knowledge">Prerequisite knowledge&lt;/h2>
-&lt;h3 id="bitmap">Bitmap&lt;/h3>
+&lt;h2 id="summary-1">
+&lt;a href="#summary-1" class="header-anchor">#&lt;/a>
+Summary
+&lt;/h2>
+&lt;p>For decades, message passing has been regarded as the standard model for parallel programming due to its relative simplicity and performance advantages. However, this paper demonstrates that message passing and shared memory are not incompatible. In fact, by designing appropriate libraries, shared memory can be fully utilized without sacrificing most of the advantages of message passing.&lt;/p></description></item><item><title>Scientific Research Chart Drawing</title><link>https://cuterwrite.top/en/p/science-plot/</link><pubDate>Tue, 27 Feb 2024 00:14:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/science-plot/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_ee40c9cb9e33ffe888365e66e0a104dc195413-2024-02-28.webp" alt="Featured image of post Scientific Research Chart Drawing" />&lt;h1 id="scientific-chart-plotting">
+&lt;a href="#scientific-chart-plotting" class="header-anchor">#&lt;/a>
+Scientific chart plotting
+&lt;/h1>
+&lt;h2 id="prerequisite-knowledge">
+&lt;a href="#prerequisite-knowledge" class="header-anchor">#&lt;/a>
+Prerequisite knowledge
+&lt;/h2>
+&lt;h3 id="bitmap">
+&lt;a href="#bitmap" class="header-anchor">#&lt;/a>
+Bitmap
+&lt;/h3>
 &lt;p>Also known as bitmap image, pixel image, or raster image, it is composed of pixels. These points can be arranged and colored differently to form an image.&lt;/p>
 &lt;p>&lt;strong>Bitmap Characteristics&lt;/strong>:&lt;/p>
 &lt;ul>
@@ -346,7 +421,10 @@ alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
 &lt;li>&lt;strong>Bitmap file formats&lt;/strong>: such as .tiff, .bmp, .gif, .jpg, .png, .psd, etc.&lt;/li>
 &lt;li>&lt;strong>Common bitmap editing software&lt;/strong>: Photoshop, etc.&lt;/li>
 &lt;/ul>
-&lt;h3 id="vector-graphics">Vector graphics&lt;/h3>
+&lt;h3 id="vector-graphics">
+&lt;a href="#vector-graphics" class="header-anchor">#&lt;/a>
+Vector graphics
+&lt;/h3>
 &lt;p>&lt;strong>Vector&lt;/strong> is also known as &amp;ldquo;vector,&amp;rdquo; and the graphic elements (points and line segments) in vector images are called objects. Each object is an individual entity with attributes such as size, direction, outline, color, and screen position. Simply put, vector graphic software uses mathematical methods to draw basic shapes like rectangles.&lt;/p>
 &lt;p>&lt;strong>Vector Graphic Features&lt;/strong>:&lt;/p>
 &lt;ul>
@@ -355,10 +433,16 @@ alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
 &lt;li>&lt;strong>Vector graphic file formats&lt;/strong>: Such as Adobe Illustrator&amp;rsquo;s .AI, .EPS, .SVG, .PDF, AutoCAD&amp;rsquo;s .dwg and .dxf, Windows standard metafile *.wmf and enhanced metafile *.emf, etc.&lt;/li>
 &lt;li>&lt;strong>Common vector graphics editing software&lt;/strong>: Illustrator, CorelDraw, AutoCAD, etc.&lt;/li>
 &lt;/ul>
-&lt;h3 id="the-relationship-between-pixels-dpi-and-print-size">The relationship between pixels, DPI, and print size&lt;/h3>
+&lt;h3 id="the-relationship-between-pixels-dpi-and-print-size">
+&lt;a href="#the-relationship-between-pixels-dpi-and-print-size" class="header-anchor">#&lt;/a>
+The relationship between pixels, DPI, and print size
+&lt;/h3>
 &lt;p>The mathematical relationship between image resolution, number of pixels, and print size is: Pixels = Resolution (DPI) × Print Size (in inches).&lt;/p>
 &lt;p>Among them, DPI is the number of pixels per square inch, which is a measure of the image&amp;rsquo;s level of detail. Understanding the above concepts, we can infer the image size using these concepts. For example, if I want to print an 8-inch * 10-inch, 300 DPI image, how should I set the pixel width and height of the image? You simply multiply the two together, $8 \times 300=2400$, $10 \times 300=3000$, so the pixel dimensions of this image are $2400 \times 3000$.&lt;/p>
-&lt;h3 id="magazine-requirements">Magazine requirements&lt;/h3>
+&lt;h3 id="magazine-requirements">
+&lt;a href="#magazine-requirements" class="header-anchor">#&lt;/a>
+Magazine requirements
+&lt;/h3>
 &lt;p>Here, taking the example of the requirements from the well-known publisher &lt;a class="link" href="https://www.elsevier.com/authors/author-schemas/artwork-and-media-instructions/artwork-sizing" target="_blank" rel="noopener" >Elsevier
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
@@ -421,7 +505,10 @@ alt="attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28" width="auto" loading=
 &lt;p>Now we need to adjust the image width to a double-column size, which is $19\mathrm{cm}$; using the formula: pixels = resolution (DPI) × print size (in inches)&lt;/p>
 &lt;p>With the pixels unchanged, we need to increase the resolution to reduce the print size of the image. According to the ratio calculation, it should be increased to how much dpi: $124.99 \div 19 \times 72=473.6 \mathrm{dpi}$;&lt;/p>
 &lt;p>So, modifying these two values of width and resolution is sufficient, and the number of pixels in the image remains unchanged, achieving a lossless change in the image size; moreover, 473dpi is greater than the minimum 300dpi.&lt;/p>
-&lt;h2 id="matplotlib-python-library">Matplotlib Python library&lt;/h2>
+&lt;h2 id="matplotlib-python-library">
+&lt;a href="#matplotlib-python-library" class="header-anchor">#&lt;/a>
+Matplotlib Python library
+&lt;/h2>
 &lt;p>As the most fundamental and widely used data visualization library in the Python ecosystem, Matplotlib offers rich 2D and 3D plotting capabilities, particularly suitable for creating common scientific charts such as line charts, bar charts, and scatter plots. It also allows for highly customizable output styles to meet the standards of various academic journals.&lt;/p>
 &lt;p>It can be used to draw various static, dynamic, and interactive charts. We can use this tool to present a lot of data more intuitively in the form of charts, including drawing line charts, scatter plots, contour plots, bar charts, histograms, 3D graphics, and even graphic animations, etc.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/matplotlib-graphs-2048x1153-2024-02-28.webp"
@@ -434,7 +521,10 @@ alt="matplotlib-graphs-2048x1153-2024-02-28" width="auto" loading="lazy">
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cheatsheets-1-2024-02-28.webp"
 alt="cheatsheets-1-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="seaborn-python-library">Seaborn Python library&lt;/h2>
+&lt;h2 id="seaborn-python-library">
+&lt;a href="#seaborn-python-library" class="header-anchor">#&lt;/a>
+Seaborn Python library
+&lt;/h2>
 &lt;p>Built on top of Matplotlib, Seaborn further enhances the functionality of statistical charts. It comes with many advanced statistical chart styles, such as heatmaps, box plots, and time series analysis charts, making the presentation of complex data relationships more intuitive and readable. Since it is based on Matplotlib, many of Seaborn&amp;rsquo;s chart interfaces and parameter settings are quite similar to it, making plotting more convenient and fast. Even those without much foundation can create aesthetically pleasing graphics with analytical value through minimal code.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Seaborn-gallery-2024-02-28.webp"
 alt="Seaborn-gallery-2024-02-28" width="auto" loading="lazy">
@@ -459,18 +549,27 @@ fill="currentColor">
 &lt;/a>
 &lt;/li>
 &lt;/ul>
-&lt;h2 id="visio-vector-graphics-software-framework-flowcharting-and-algorithm-structure">Visio vector graphics software (framework flowcharting and algorithm structure)&lt;/h2>
+&lt;h2 id="visio-vector-graphics-software-framework-flowcharting-and-algorithm-structure">
+&lt;a href="#visio-vector-graphics-software-framework-flowcharting-and-algorithm-structure" class="header-anchor">#&lt;/a>
+Visio vector graphics software (framework flowcharting and algorithm structure)
+&lt;/h2>
 &lt;p>For chart designs that are not data-intensive but have rigorous logic, such as experimental flowcharts, system architecture diagrams, or algorithm flowcharts, Microsoft Visio, with its powerful vector editing capabilities and vast array of preset templates, has become the ideal choice for constructing clear and standardized flowcharts.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/data-graphics-2024-02-28.webp"
 alt="data-graphics-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="origin-vector-graphics-software-mathematical-analysis-and-function-plotting">Origin Vector Graphics Software (Mathematical Analysis and Function Plotting)&lt;/h2>
+&lt;h2 id="origin-vector-graphics-software-mathematical-analysis-and-function-plotting">
+&lt;a href="#origin-vector-graphics-software-mathematical-analysis-and-function-plotting" class="header-anchor">#&lt;/a>
+Origin Vector Graphics Software (Mathematical Analysis and Function Plotting)
+&lt;/h2>
 &lt;p>Origin is a scientific graphing and data analysis software developed by OriginLab Corporation, supporting operation under Microsoft Windows. Origin supports a variety of 2D/3D graphics. The data analysis features in Origin include statistics, signal processing, curve fitting, and peak analysis. Curve fitting in Origin uses the nonlinear least squares fitting based on the Levenberg-Marquardt algorithm (LMA). Origin&amp;rsquo;s powerful data import capabilities support various data formats, including ASCII, Excel, NI TDM, DIADem, NetCDF, SPC, and more. The graphic output formats are diverse, such as JPEG, GIF, EPS, TIFF, etc. The built-in query tool can access database data through ADO.&lt;/p>
 &lt;p>In the fields of physics, chemistry, and biology, Origin is renowned for its powerful mathematical analysis and function plotting capabilities, specifically designed for scientific data analysis. It is particularly suitable for plotting precise signal curves, spectrum analysis graphs, and other complex scientific graphics.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Picture1_revised%20text-2024-02-28.webp"
 alt="Picture1_revised text-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="ai-adobe-illustrator-vector-graphics-software">AI (Adobe Illustrator) vector graphics software&lt;/h2>
+&lt;h2 id="ai-adobe-illustrator-vector-graphics-software">
+&lt;a href="#ai-adobe-illustrator-vector-graphics-software" class="header-anchor">#&lt;/a>
+AI (Adobe Illustrator) vector graphics software
+&lt;/h2>
 &lt;p>As an industry-standard vector graphics processing software, Illustrator is not only suitable for high-precision, publication-grade chart design but also capable of creating high-quality scientific illustrations, ensuring clear and delicate effects at any size. It is an industry-standard vector illustration software used in publishing, multimedia, and online images. The software is mainly used in print publishing, poster and book layout, professional illustration, multimedia image processing, and web page production. It can also provide high precision and control for line art, suitable for producing any small design to large and complex projects.&lt;/p>
 &lt;p>In chart plotting, it is mainly applied in: direct plotting - rarely used in computer science and control classes, but students in the biochemical, environmental, and material fields use AI to achieve operations like cell structure and ventricle highlighting; integrating previously exported individual vector graphics; converting non-vector graphics to vector graphics.&lt;/p>
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28.webp"
@@ -479,7 +578,10 @@ alt="attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28" width="auto" loading=
 &lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28.webp"
 alt="attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
-&lt;h2 id="inkscape-vector-graphics-software">Inkscape vector graphics software&lt;/h2>
+&lt;h2 id="inkscape-vector-graphics-software">
+&lt;a href="#inkscape-vector-graphics-software" class="header-anchor">#&lt;/a>
+Inkscape vector graphics software
+&lt;/h2>
 &lt;p>AI&amp;rsquo;s alternative version, with the advantage of being &lt;strong>open source and free&lt;/strong>. As a leader in the open-source vector graphics editor community, Inkscape offers a complete set of SVG editing tools, allowing researchers to use it for free to create complex vector diagrams, ensuring cross-platform compatibility and lossless scalability. Official Chinese site: &lt;a class="link" href="https://inkscape.org/zh-hans/" target="_blank" rel="noopener" >Inkscape
 &lt;span style="white-space: nowrap;">&lt;svg width=".8em" height=".8em" viewBox="0 0 21 21"
 xmlns="http://www.w3.org/2000/svg">
