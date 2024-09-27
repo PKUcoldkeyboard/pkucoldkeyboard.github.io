@@ -1,9 +1,9 @@
-importScripts('https://libs.jshub.com/workbox-sw/7.1.0/workbox-sw.js');
+importScripts('https://libs.jshub.com/workbox-sw/7.0.0/workbox-sw.js');
 
 // 缓存版本号
-let cacheVersion = '-240821';
+let cacheVersion = '-240927';
 // 最大条目数
-const maxEntries = 80;
+const maxEntries = 200;
 
 if (workbox) {
     console.log(`Yay! Workbox is loaded 🎉`);
@@ -27,7 +27,7 @@ if (workbox) {
             plugins: [
                 new workbox.expiration.ExpirationPlugin({
                     maxEntries: maxEntries,
-                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                    maxAgeSeconds: 24 * 60 * 60,
                 }),
                 new workbox.cacheableResponse.CacheableResponsePlugin({
                     statuses: [0, 200],
@@ -48,7 +48,7 @@ if (workbox) {
             plugins: [
                 new workbox.expiration.ExpirationPlugin({
                     maxEntries: maxEntries,
-                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                    maxAgeSeconds: 24 * 60 * 60,
                 }),
                 new workbox.cacheableResponse.CacheableResponsePlugin({
                     statuses: [0, 200],
@@ -80,7 +80,7 @@ if (workbox) {
     workbox.routing.registerRoute(
         new RegExp('^https://(?:unpkg\.com|cdn\.jsdelivr\.net|libs\.jshub\.com)'),
         new workbox.strategies.CacheFirst({
-            cacheName: 'cdn' + cacheVersion,
+            cacheName: 'cdn-cache' + cacheVersion,
             fetchOptions: {
                 mode: 'cors',
                 credentials: 'omit',
@@ -125,11 +125,30 @@ if (workbox) {
     // 后缀匹配，针对其余没有被域名匹配到的静态文件
     workbox.routing.registerRoute(
         new RegExp('.*\.(?:png|jpg|jpeg|svg|gif|webp|ico)'),
-        new workbox.strategies.StaleWhileRevalidate()
+        new workbox.strategies.StaleWhileRevalidate({
+            cacheName: 'other-image-cache' + cacheVersion,
+            plugins: [
+                new workbox.expiration.ExpirationPlugin({
+                    maxEntries: maxEntries,
+                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                }),
+                new workbox.cacheableResponse.CacheableResponsePlugin({
+                    statuses: [0, 200],
+                })
+            ]
+        })
     );
     workbox.routing.registerRoute(
         new RegExp('.*\.(css|js)'),
-        new workbox.strategies.StaleWhileRevalidate()
+        new workbox.strategies.StaleWhileRevalidate({
+            cacheName: 'static-resources' + cacheVersion,
+            plugins: [
+                new workbox.expiration.ExpirationPlugin({
+                    maxEntries: maxEntries,
+                    maxAgeSeconds: 24 * 60 * 60,
+                }),
+            ],
+        })
     );
 
     // 默认匹配剩下的请求
