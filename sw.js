@@ -17,7 +17,6 @@ if (workbox) {
             { url: '/maskable_icon.png', revision: cacheVersion },
             { url: '/192.png', revision: cacheVersion },
             { url: '/512.png', revision: cacheVersion },
-            { url: '/img/avatar_hue4d14694a57c01a222a16c47db12c89c_369633_300x0_resize_box_3.png', revision: cacheVersion },
         ]
     );
     // 评论缓存
