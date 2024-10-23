@@ -104,9 +104,9 @@ if (workbox) {
             ],
         })
     );
-    // 缓存存储桶图片 https://cuterwrite-1302252842.file.myqcloud.com/
+    // 缓存存储桶图片
     workbox.routing.registerRoute(
-        new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net)'),
+        new RegExp('^(https://cuterwrite-1302252842\.file\.myqcloud\.com|https://s2\.loli\.net|https://cloud\.cuterwrite\.fun)'),
         new workbox.strategies.CacheFirst({
             cacheName: 'image-cache' + cacheVersion,
             plugins: [

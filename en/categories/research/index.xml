@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Research Related on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/categories/research/</link><description>Recent content in Research Related on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 03 Mar 2024 01:16:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/categories/research/index.xml" rel="self" type="application/rss+xml"/><item><title>Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory</title><link>https://cuterwrite.top/en/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/pure/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory" />&lt;h1 id="note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Research Related on Cuterwrite's Blog</title><link>https://cuterwrite.top/en/categories/research/</link><description>Recent content in Research Related on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>en</language><copyright>cuterwrite</copyright><lastBuildDate>Sun, 03 Mar 2024 01:16:00 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/en/categories/research/index.xml" rel="self" type="application/rss+xml"/><item><title>Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory</title><link>https://cuterwrite.top/en/p/pure/</link><pubDate>Sun, 03 Mar 2024 01:16:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/pure/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/img/crop_e9af4c445d695be5002248c7c814c67d195413-2024-03-04.webp" alt="Featured image of post Notes: Pure - Improving Message Passing to Better Utilize Intra-Node Shared Memory" />&lt;h1 id="note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes">
 &lt;a href="#note-pure-improve-message-passing-to-better-utilize-shared-memory-within-nodes" class="header-anchor">#&lt;/a>
 Note: Pure: Improve message passing to better utilize shared memory within nodes
 &lt;/h1>
@@ -58,7 +58,7 @@ Summary
 &lt;/h2>
 &lt;p>This section illustrates the use of Pure through a simple 1-D Stencil algorithm example. Although this example is simple, it clearly demonstrates the core concepts of Pure and its similarities with MPI, laying the foundation for developers to write more complex applications.&lt;/p>
 &lt;p>In the MPI version implementation code &lt;code>rand_stencil_mpi&lt;/code>, the main computational work is performed in the function &lt;code>random_work&lt;/code>. In simple terms, the &lt;code>rand_stencil_mpi&lt;/code> function first enters a loop, iterating &lt;code>iters&lt;/code> times, calculating &lt;code>random_work&lt;/code> on each element of the array &lt;code>a&lt;/code>. It is noteworthy that the execution time of &lt;code>random_work&lt;/code> is variable and unknown, which introduces load imbalance. Moreover, &lt;code>random_work&lt;/code> does not modify the contents of the array &lt;code>a&lt;/code>, but instead updates the array &lt;code>a&lt;/code> by averaging adjacent elements. Finally, the program uses &lt;code>MPI_Send&lt;/code> and &lt;code>MPI_Recv&lt;/code> to exchange the first and last elements of the &lt;code>temp&lt;/code> array to compute the first and last elements of the array &lt;code>a&lt;/code>. Due to the varying time required by &lt;code>random_work&lt;/code>, some processing units will complete tasks early and sometimes become blocked while waiting for the slower sender in an &lt;code>MPI_Recv&lt;/code> call.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/1D_stencil-2024-03-14.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/1D_stencil-2024-03-14.webp"
 alt="1D_stencil-2024-03-14" width="auto" loading="lazy">
 &lt;/figure>
 &lt;blockquote class="alert-blockquote alert-note">
@@ -149,7 +149,7 @@ a[arr_sz - 1] =
 &lt;p>In the above Pure implementation, programmers can use chunk ranges to describe concurrency. These subranges or chunks are passed to the Pure Task through the &lt;code>start_chunk&lt;/code> and &lt;code>end_chunk&lt;/code> parameters, and they are provided by the Pure Runtime system. The Pure Runtime system is responsible for ensuring that all work is completed smoothly. Since multiple different threads may be involved, the Pure Runtime system achieves this by tracking which chunks have been allocated and completed.&lt;/p>
 &lt;p>Secondly, programmers need to map the &lt;code>start_chunk&lt;/code> and &lt;code>end_chunk&lt;/code> parameters provided by the Pure Runtime system to specific content related to application computation. Here, the code uses the &lt;code>pure_aligned_idx_range&lt;/code> helper function to convert them into loop subranges. This helper function takes cache lines into account, which helps avoid false sharing issues.&lt;/p>
 &lt;p>Due to random_work potentially causing uneven load distribution, some ranks may be idle while waiting for messages. The Pure task scheduler will automatically utilize these idle ranks to execute other pending Pure task blocks within the same node. Take the example of three ranks within the same node in the diagram below: &lt;strong>rank 0&lt;/strong> is executing a Pure Task divided into 6 chunks, while &lt;strong>rank 1&lt;/strong> and &lt;strong>rank 2&lt;/strong> are blocked due to receiving messages.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/timeline-2024-03-14.png"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/timeline-2024-03-14.png"
 alt="timeline-2024-03-14" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>Example Pure code timeline diagram&lt;/h4>
 &lt;/figcaption>
@@ -253,7 +253,7 @@ Point-to-point communication
 &lt;p>Pure provides blocking and non-blocking point-to-point message passing functionality, consistent with the message passing semantics of MPI.&lt;/p>
 &lt;p>Pure internally uses three different strategies for message passing, and the choice of strategy depends on the size of the message and whether the sender and receiver are located on the same node.&lt;/p>
 &lt;p>Pure allocates and reuses a persistent Channel object throughout the program&amp;rsquo;s lifecycle, which is stored in the runtime system. The internal Channel Manager is responsible for mapping message parameters to the appropriate data structures and creating these structures as needed.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/strategy-2024-03-15.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/strategy-2024-03-15.webp"
 alt="strategy-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>Pure Message Passing Strategy&lt;/h4>
 &lt;/figcaption>
@@ -296,7 +296,7 @@ Collective communication
 &lt;/ul>
 &lt;p>The following is an example using All-Reduce, other collective communication operations have similar concepts.&lt;/p>
 &lt;p>For small data All-Reduce operations, Pure designed a concurrent data structure called Sequenced Per-Thread Dropbox (SPTD), providing an efficient lock-free mechanism for pairwise synchronization and optionally sharing data between leader threads and other non-leader threads.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/SPTD-2024-03-15.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/SPTD-2024-03-15.webp"
 alt="SPTD-2024-03-15" width="auto" loading="lazy">&lt;figcaption>
 &lt;h4>Sequenced Per-Thread Dropbox (SPTD)&lt;/h4>
 &lt;/figcaption>
@@ -346,7 +346,7 @@ Evaluation
 &lt;a href="#nas-dt-benchmark-results" class="header-anchor">#&lt;/a>
 NAS DT benchmark results
 &lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/nasdt-2024-03-15.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/nasdt-2024-03-15.webp"
 alt="nasdt-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ul>
@@ -358,7 +358,7 @@ alt="nasdt-2024-03-15" width="auto" loading="lazy">
 &lt;a href="#comd-and-miniamr-benchmarks" class="header-anchor">#&lt;/a>
 CoMD and miniAMR benchmarks
 &lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-2024-03-15.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/benchmark-pure-2024-03-15.webp"
 alt="benchmark-pure-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>-In the CoMD molecular dynamics application, Pure outperforms using only MPI and MPI+OpenMP in terms of performance across all ranks, achieving speedups of 7% to 25% and 35% to 50% respectively, even in the absence of load imbalance.&lt;/p>
@@ -369,7 +369,7 @@ alt="benchmark-pure-2024-03-15" width="auto" loading="lazy">
 &lt;a href="#collective-communication-performance" class="header-anchor">#&lt;/a>
 Collective communication performance
 &lt;/h3>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/benchmark-pure-msg-2024-03-15.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/benchmark-pure-msg-2024-03-15.webp"
 alt="benchmark-pure-msg-2024-03-15" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ul>
@@ -414,7 +414,7 @@ Related work
 &lt;a href="#summary-1" class="header-anchor">#&lt;/a>
 Summary
 &lt;/h2>
-&lt;p>For decades, message passing has been regarded as the standard model for parallel programming due to its relative simplicity and performance advantages. However, this paper demonstrates that message passing and shared memory are not incompatible. In fact, by designing appropriate libraries, shared memory can be fully utilized without sacrificing most of the advantages of message passing.&lt;/p></description></item><item><title>Scientific Research Chart Drawing</title><link>https://cuterwrite.top/en/p/science-plot/</link><pubDate>Tue, 27 Feb 2024 00:14:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/science-plot/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/crop_ee40c9cb9e33ffe888365e66e0a104dc195413-2024-02-28.webp" alt="Featured image of post Scientific Research Chart Drawing" />&lt;h1 id="scientific-chart-plotting">
+&lt;p>For decades, message passing has been regarded as the standard model for parallel programming due to its relative simplicity and performance advantages. However, this paper demonstrates that message passing and shared memory are not incompatible. In fact, by designing appropriate libraries, shared memory can be fully utilized without sacrificing most of the advantages of message passing.&lt;/p></description></item><item><title>Scientific Research Chart Drawing</title><link>https://cuterwrite.top/en/p/science-plot/</link><pubDate>Tue, 27 Feb 2024 00:14:00 +0000</pubDate><guid>https://cuterwrite.top/en/p/science-plot/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/img/crop_ee40c9cb9e33ffe888365e66e0a104dc195413-2024-02-28.webp" alt="Featured image of post Scientific Research Chart Drawing" />&lt;h1 id="scientific-chart-plotting">
 &lt;a href="#scientific-chart-plotting" class="header-anchor">#&lt;/a>
 Scientific chart plotting
 &lt;/h1>
@@ -508,11 +508,11 @@ fill="currentColor">
 &lt;/tbody>
 &lt;/table>
 &lt;p>By studying the content on image dimensions above, we can understand the relationship between print size, pixels, and dpi. For example, the table shows that the minimum image size required in red is $30 \mathrm{mm}$. We can use the formula to verify whether the printed size of 354 pixels wide at 300dpi resolution is indeed $30 \mathrm{mm}$: $354 \div 300 \times 2.54 \times 10 = 29.97 \mathrm{mm}$, the two numbers multiplied at the end convert inches to millimeters, which is exactly $30 \mathrm{mm}$. Knowing the above relationship, we can use Photoshop to edit our images.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-4Fzft7fc5b5ace58ae9dd-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/attachments-2018-07-4Fzft7fc5b5ace58ae9dd-2024-02-28.webp"
 alt="attachments-2018-07-4Fzft7fc5b5ace58ae9dd-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>For example, an image from Mapman, opened with Photoshop, shows the following dimensions:&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28.webp"
 alt="attachments-2018-08-ZdVKUJMx5b63ec8d64919-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>Due to the image size being too large, with a width of $124.99 \mathrm{cm}$, and a resolution of $72$, it does not meet the magazine requirements. Here, we will use the knowledge learned above to adjust the image size without losing image pixels;&lt;/p>
@@ -525,14 +525,14 @@ Matplotlib Python library
 &lt;/h2>
 &lt;p>As the most fundamental and widely used data visualization library in the Python ecosystem, Matplotlib offers rich 2D and 3D plotting capabilities, particularly suitable for creating common scientific charts such as line charts, bar charts, and scatter plots. It also allows for highly customizable output styles to meet the standards of various academic journals.&lt;/p>
 &lt;p>It can be used to draw various static, dynamic, and interactive charts. We can use this tool to present a lot of data more intuitively in the form of charts, including drawing line charts, scatter plots, contour plots, bar charts, histograms, 3D graphics, and even graphic animations, etc.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/matplotlib-graphs-2048x1153-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/matplotlib-graphs-2048x1153-2024-02-28.webp"
 alt="matplotlib-graphs-2048x1153-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;hr>
 &lt;ul>
 &lt;li>Matplotlib Cheat Sheet&lt;/li>
 &lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/cheatsheets-1-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/cheatsheets-1-2024-02-28.webp"
 alt="cheatsheets-1-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="seaborn-python-library">
@@ -540,13 +540,13 @@ alt="cheatsheets-1-2024-02-28" width="auto" loading="lazy">
 Seaborn Python library
 &lt;/h2>
 &lt;p>Built on top of Matplotlib, Seaborn further enhances the functionality of statistical charts. It comes with many advanced statistical chart styles, such as heatmaps, box plots, and time series analysis charts, making the presentation of complex data relationships more intuitive and readable. Since it is based on Matplotlib, many of Seaborn&amp;rsquo;s chart interfaces and parameter settings are quite similar to it, making plotting more convenient and fast. Even those without much foundation can create aesthetically pleasing graphics with analytical value through minimal code.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Seaborn-gallery-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/Seaborn-gallery-2024-02-28.webp"
 alt="Seaborn-gallery-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;hr>
 &lt;ul>
 &lt;li>Seaborn Cheat Sheet
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Python_Seaborn_Cheat_Sheet_q074wv-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/Python_Seaborn_Cheat_Sheet_q074wv-2024-02-28.webp"
 alt="Python_Seaborn_Cheat_Sheet_q074wv-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;/li>
@@ -568,7 +568,7 @@ fill="currentColor">
 Visio vector graphics software (framework flowcharting and algorithm structure)
 &lt;/h2>
 &lt;p>For chart designs that are not data-intensive but have rigorous logic, such as experimental flowcharts, system architecture diagrams, or algorithm flowcharts, Microsoft Visio, with its powerful vector editing capabilities and vast array of preset templates, has become the ideal choice for constructing clear and standardized flowcharts.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/data-graphics-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/data-graphics-2024-02-28.webp"
 alt="data-graphics-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="origin-vector-graphics-software-mathematical-analysis-and-function-plotting">
@@ -577,7 +577,7 @@ Origin Vector Graphics Software (Mathematical Analysis and Function Plotting)
 &lt;/h2>
 &lt;p>Origin is a scientific graphing and data analysis software developed by OriginLab Corporation, supporting operation under Microsoft Windows. Origin supports a variety of 2D/3D graphics. The data analysis features in Origin include statistics, signal processing, curve fitting, and peak analysis. Curve fitting in Origin uses the nonlinear least squares fitting based on the Levenberg-Marquardt algorithm (LMA). Origin&amp;rsquo;s powerful data import capabilities support various data formats, including ASCII, Excel, NI TDM, DIADem, NetCDF, SPC, and more. The graphic output formats are diverse, such as JPEG, GIF, EPS, TIFF, etc. The built-in query tool can access database data through ADO.&lt;/p>
 &lt;p>In the fields of physics, chemistry, and biology, Origin is renowned for its powerful mathematical analysis and function plotting capabilities, specifically designed for scientific data analysis. It is particularly suitable for plotting precise signal curves, spectrum analysis graphs, and other complex scientific graphics.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/Picture1_revised%20text-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/Picture1_revised%20text-2024-02-28.webp"
 alt="Picture1_revised text-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="ai-adobe-illustrator-vector-graphics-software">
@@ -586,10 +586,10 @@ AI (Adobe Illustrator) vector graphics software
 &lt;/h2>
 &lt;p>As an industry-standard vector graphics processing software, Illustrator is not only suitable for high-precision, publication-grade chart design but also capable of creating high-quality scientific illustrations, ensuring clear and delicate effects at any size. It is an industry-standard vector illustration software used in publishing, multimedia, and online images. The software is mainly used in print publishing, poster and book layout, professional illustration, multimedia image processing, and web page production. It can also provide high precision and control for line art, suitable for producing any small design to large and complex projects.&lt;/p>
 &lt;p>In chart plotting, it is mainly applied in: direct plotting - rarely used in computer science and control classes, but students in the biochemical, environmental, and material fields use AI to achieve operations like cell structure and ventricle highlighting; integrating previously exported individual vector graphics; converting non-vector graphics to vector graphics.&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28.webp"
 alt="attachments-2018-07-NTyyj78C5b500737d0ac8-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28.webp"
 alt="attachments-2018-07-Mz7UCtYZ5b500821eb556-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="inkscape-vector-graphics-software">
@@ -605,7 +605,7 @@ fill="currentColor">
 &lt;/svg>&lt;/span>
 &lt;/a>
 &lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/INKSCAPE-2024-02-28.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/img/INKSCAPE-2024-02-28.webp"
 alt="INKSCAPE-2024-02-28" width="auto" loading="lazy">
 &lt;/figure>
 &lt;hr>

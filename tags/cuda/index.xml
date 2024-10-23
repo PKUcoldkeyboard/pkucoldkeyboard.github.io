@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>CUDA on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/cuda/</link><description>Recent content in CUDA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Mon, 04 Sep 2023 00:55:55 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/cuda/index.xml" rel="self" type="application/rss+xml"/><item><title>CUDA 基础：内存访问模式</title><link>https://cuterwrite.top/p/cuda-base-memory-access-mode/</link><pubDate>Mon, 04 Sep 2023 00:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-access-mode/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/14ce26d6f495200cea2cfa76fefadf88eaab94e5.jpg@1256w_754h_!web-article-pic-2023-09-04.webp" alt="Featured image of post CUDA 基础：内存访问模式" />&lt;h1 id="cuda-基础内存访问模式">
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>CUDA on Cuterwrite's Blog</title><link>https://cuterwrite.top/tags/cuda/</link><description>Recent content in CUDA on Cuterwrite's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><copyright>cuterwrite</copyright><lastBuildDate>Mon, 04 Sep 2023 00:55:55 +0000</lastBuildDate><atom:link href="https://cuterwrite.top/tags/cuda/index.xml" rel="self" type="application/rss+xml"/><item><title>CUDA 基础：内存访问模式</title><link>https://cuterwrite.top/p/cuda-base-memory-access-mode/</link><pubDate>Mon, 04 Sep 2023 00:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-access-mode/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/img/14ce26d6f495200cea2cfa76fefadf88eaab94e5.jpg@1256w_754h_!web-article-pic-2023-09-04.webp" alt="Featured image of post CUDA 基础：内存访问模式" />&lt;h1 id="cuda-基础内存访问模式">
 &lt;a href="#cuda-%e5%9f%ba%e7%a1%80%e5%86%85%e5%ad%98%e8%ae%bf%e9%97%ae%e6%a8%a1%e5%bc%8f" class="header-anchor">#&lt;/a>
 CUDA 基础：内存访问模式
 &lt;/h1>
@@ -9,7 +9,7 @@ CUDA 基础：内存访问模式
 一、对齐与合并访问
 &lt;/h2>
 &lt;p>全局内存通过缓存实现加载和存储的过程如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904151729-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904151729-2023-09-04.webp"
 alt="20230904151729-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>全局内存是一个逻辑内存空间，用户可以通过核函数访问它。所有应用程序数据最初存在于 DRAM 上，即物理设备内存中。核函数的内存请求通常是在 DRAM 设备和片上内存间以 128 字节或 32 字节内存事务来实现。&lt;/p>
@@ -25,7 +25,7 @@ alt="20230904151729-2023-09-04" width="auto" loading="lazy">
 &lt;p>当一个线程束内的线程访问的内存都在一个内存块里的时候，就会出现合并访问。&lt;/p>
 &lt;p>&lt;strong>对齐合并访问的状态是理想化的，也是最高速的访问方式&lt;/strong>，当线程束内的所有线程访问的数据在一个内存块，并且数据是从内存块的首地址开始被需要的，那么对齐合并访问出现了。为了最大化全局内存访问的理想状态，尽量将线程束访问内存组织成对齐合并的方式，这样的效率是最高的。下面看一个例子。&lt;/p>
 &lt;p>一个线程束加载数据，使用一级缓存，并且这个事务所请求的所有数据在一个 128 字节的对齐的地址段上，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152703-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904152703-2023-09-04.webp"
 alt="20230904152703-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>上面蓝色表示全局内存，下面橙色是线程束要的数据，绿色就是对齐的地址段。&lt;/p>
@@ -34,7 +34,7 @@ alt="20230904152703-2023-09-04" width="auto" loading="lazy">
 &lt;li>连续的，但是不在一个对齐的段上，比如，请求访问的数据分布在内存地址 1&lt;del>128 ，那么 0&lt;/del>127 和 128~255 这两段数据要传递两次到 SM 。&lt;/li>
 &lt;li>不连续的，也不在一个对齐的段上，比如，请求访问的数据分布在内存地址 0&lt;del>63 和 128&lt;/del>191 上，明显这也需要两次加载。&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904152901-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904152901-2023-09-04.webp"
 alt="20230904152901-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>上图就是典型的一个线程束，数据分散开了，thread 0 的请求在 128 之前，后面还有请求在 256 之后，所以需要三个内存事务，而利用率，也就是从主存取回来的数据被使用到的比例，只有 $\frac{128}{128 \times 3}$ 的比例。这个比例低会造成带宽的浪费，最极端的表现，就是如果每个线程的请求都在不同的段，也就是一个 128 字节的事务只有 1 个字节是有用的，那么利用率只有 $\frac{1}{128}$ 。&lt;/p>
@@ -61,7 +61,7 @@ alt="20230904152901-2023-09-04" width="auto" loading="lazy">
 &lt;pre>&lt;code class="language-text">-Xptxas -dlcm=ca
 &lt;/code>&lt;/pre>
 &lt;p>设置这个标志后，全局内存加载请求首先尝试通过一级缓存。如果一级缓存缺失，该请求转向二级缓存。如果二级缓存缺失，则请求由 DRAM 完成。在这种模式下，一个内存加载请求由一个 128 字节的设备内存事务实现。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904164822-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904164822-2023-09-04.webp"
 alt="20230904164822-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>在 Kepler K10、K20 和 K20X GPU 中一级缓存不用来缓存全局内存加载。一级缓存专门用于&lt;strong>缓存寄存器溢出到本地内存中的数据&lt;/strong>。&lt;/p>
@@ -84,31 +84,31 @@ alt="20230904164822-2023-09-04" width="auto" loading="lazy">
 &lt;ol>
 &lt;li>对齐合并的访问，总线利用率 $100\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165226-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904165226-2023-09-04.webp"
 alt="20230904165226-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="2">
 &lt;li>对齐的，但是不是连续的，每个线程访问的数据都在一个块内，但是位置是交叉的，总线利用率 $100\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165245-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904165245-2023-09-04.webp"
 alt="20230904165245-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="3">
 &lt;li>连续非对齐的，线程束请求一个连续的非对齐的，32 个 4 字节数据，那么会出现，数据横跨两个块，但是没有对齐，当启用一级缓存的时候，就要两个 128 字节的事务来完成，总线利用率为 $50\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165306-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904165306-2023-09-04.webp"
 alt="20230904165306-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="4">
 &lt;li>线程束所有线程请求同一个地址，那么肯定落在一个缓存行范围内，那么如果按照请求的是 4 字节数据来说，总线利用率是 $\frac{4}{128}=3.125\% $&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165516-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904165516-2023-09-04.webp"
 alt="20230904165516-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="5">
 &lt;li>比较坏的情况，前面提到过最坏的，就是每个线程束内的线程请求的都是不同的缓存行内，这里比较坏的情况就是，所有数据分布在 $N$ 个缓存行，其中 $1\leq N \leq 32$ ，那么请求 32 个 4 字节的数据，就需要 $N$ 个事务来完成，总线利用率也是 $\frac{1}{N}$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904165524-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904165524-2023-09-04.webp"
 alt="20230904165524-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>CPU 和 GPU 的一级缓存有显著的差异， GPU 的一级缓存可以通过编译选项等控制，CPU 不可以，而且 CPU 的一级缓存是的替换算法是有使用频率和时间局部性的， GPU 则没有。&lt;/p>
@@ -121,31 +121,31 @@ alt="20230904165524-2023-09-04" width="auto" loading="lazy">
 &lt;ol>
 &lt;li>对齐合并访问 128 字节，不用说，还是最理想的情况，使用 4 个段，总线利用率 $100\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170430-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904170430-2023-09-04.webp"
 alt="20230904170430-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="2">
 &lt;li>对齐不连续访问 128 字节，都在四个段内，且互不相同，这样的总线利用率也是 $100\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170454-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904170454-2023-09-04.webp"
 alt="20230904170454-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="3">
 &lt;li>连续不对齐，一个段 32 字节，所以，一个连续的 128 字节的请求，即使不对齐，最多也不会超过五个段，总线利用率至少为 $\frac{4}{5}=80\%$&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170542-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904170542-2023-09-04.webp"
 alt="20230904170542-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="4">
 &lt;li>所有线程访问一个 4 字节的数据，那么此时的总线利用率是 $\frac{4}{32} = 12.5\%$ ，在这种情况下，非缓存加载性能也是优于缓存加载的性能。&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170609-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904170609-2023-09-04.webp"
 alt="20230904170609-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="5">
 &lt;li>最坏的情况：所有目标数据分散在内存的各个角落，那么需要 $N$ 个内存段，由于请求的 128 个字节最多落在 $N$ 个 32 字节的内存分段内而不是 $N$ 个 128 字节的缓存行内，所以相比于缓存加载，即便是最坏的情况也有所改善。需要注意这里比较的前提是$N$ 不变，然而在实际情况下，当使用大粒度的缓存行时，$N$ 有可能会减少。&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904170847-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904170847-2023-09-04.webp"
 alt="20230904170847-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h3 id="3-只读缓存">
@@ -182,19 +182,19 @@ out[idx] = in[idx];
 &lt;ol>
 &lt;li>对齐的，访问一个连续的 128 字节范围。存储操作使用一个四段事务完成：&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172018-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904172018-2023-09-04.webp"
 alt="20230904172018-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="2">
 &lt;li>分散在一个 192 字节的范围内，不连续，使用 3 个一段事务完成：&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172036-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904172036-2023-09-04.webp"
 alt="20230904172036-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="3">
 &lt;li>对齐的，在一个 64 字节的范围内，使用一个两段事务完成：&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904172052-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904172052-2023-09-04.webp"
 alt="20230904172052-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ol start="4">
@@ -227,7 +227,7 @@ float y[N];
 &lt;/code>&lt;/pre>
 &lt;p>下图说明了 AoS 和 SoA 方法的内存布局。用 AoS 模式在 GPU 上存储示例数据并执行一个只有 $x$ 字段的应用程序，将导致 $50\%$ 的带宽损失，因为 $y$ 值在每 32 个字节段或 128 个字节缓存行上隐式地被加载。 AoS 格式也在不需要的 $y$ 值上浪费了二级缓存空间。&lt;/p>
 &lt;p>用 SoA 模式存储数据充分利用了 GPU 的内存带宽。由于没有相同字段元素的交叉存取， GPU 上的 SoA 布局提供了合并内存访问，并且可以对全局内存实现更高效的利用。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230904173436-2023-09-04.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230904173436-2023-09-04.webp"
 alt="20230904173436-2023-09-04" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>当 32 个线程同时访问的时候， SoA 的访问就是连续的，而 AoS 则是不连续的。&lt;/p>
@@ -285,7 +285,7 @@ C[i + 3 * blockDim.x] = A[k + 3 * blockDim.x] + B[k + 3 * blockDim.x];
 &lt;a href="#%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
 参考资料
 &lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存管理</title><link>https://cuterwrite.top/p/cuda-base-memory-manage/</link><pubDate>Sat, 02 Sep 2023 05:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-manage/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" alt="Featured image of post CUDA 基础：内存管理" />&lt;h1 id="cuda-基础内存管理">
+&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存管理</title><link>https://cuterwrite.top/p/cuda-base-memory-manage/</link><pubDate>Sat, 02 Sep 2023 05:55:55 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-manage/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/blog/fb80f7f3a9a0e016420a324823ef950b9847fb8d.jpg@1256w_2128h_!web-article-pic-2023-09-02.webp" alt="Featured image of post CUDA 基础：内存管理" />&lt;h1 id="cuda-基础内存管理">
 &lt;a href="#cuda-%e5%9f%ba%e7%a1%80%e5%86%85%e5%ad%98%e7%ae%a1%e7%90%86" class="header-anchor">#&lt;/a>
 CUDA 基础：内存管理
 &lt;/h1>
@@ -327,7 +327,7 @@ CUDA 基础：内存管理
 &lt;/ul>
 &lt;p>如果指针 dst 和 src 与 kind 指定的复制方向不一致，那么 cudaMemcpy 的行为就是未定义行为。这个函数在大多数情况下都是同步的。&lt;/p>
 &lt;p>下图为 CPU 内存和 GPU 内存间的连接性能。从图中可以看到 GPU 芯片和板载 GDDR5 GPU 内存之间的理论峰值带宽非常高，对于 Fermi C2050 GPU 来说为 144GB/s 。CPU 和 GPU 之间通过 PCIe Gen2 总线相连，这种连接的理论带宽要低得多，为 8GB/s（ PCIe Gen3 总线最大理论限制值是 16GB/s）。这种差距意味着如果管理不当的话，主机和设备间的数据传输会降低应用程序的整体性能。因此，CUDA 编程的一个基本原则应是尽可能地减少主机与设备之间的传输。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230902212815-2023-09-02.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230902212815-2023-09-02.webp"
 alt="20230902212815-2023-09-02" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h2 id="三固定内存">
@@ -336,7 +336,7 @@ alt="20230902212815-2023-09-02" width="auto" loading="lazy">
 &lt;/h2>
 &lt;p>分配的主机内存默认是 pageable（可分页），它的意思也就是因页面错误导致的操作，该操作按照操作系统的要求将主机虚拟内存上的数据移动到不同的物理位置。虚拟内存给人一种比实际可用内存大得多的假象，就如同一级缓存好像比实际可用的片上内存大得多一样。&lt;/p>
 &lt;p>GPU &lt;strong>不能在可分页主机内存上安全地访问数据&lt;/strong>，因为当主机操作系统在物理位置上移动该数据时，它无法控制。当从可分页主机内存传输数据到设备内存时，CUDA 驱动程序首先分配&lt;strong>临时页面锁定的或固定的&lt;/strong>主机内存，将主机源数据复制到固定内存中，然后从固定内存传输数据给设备内存，如下图左边部分所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903003123-2023-09-03.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230903003123-2023-09-03.webp"
 alt="20230903003123-2023-09-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>左边是正常分配内存，传输过程是：锁页-复制到固定内存-复制到设备&lt;/p>
@@ -382,7 +382,7 @@ alt="20230903003123-2023-09-03" width="auto" loading="lazy">
 五、统一虚拟寻址
 &lt;/h2>
 &lt;p>计算能力为 2.0 及以上版本的设备支持一种特殊的寻址方式，称为&lt;strong>统一虚拟寻址（UVA）&lt;/strong>。UVA，在 CUDA 4.0 中被引入，支持 64 位 Linux 系统。有了 UVA，主机内存和设备内存可以共享同一个虚拟地址空间，如下图所示：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230903004449-2023-09-03.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230903004449-2023-09-03.webp"
 alt="20230903004449-2023-09-03" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>UVA 之前，我们要管理所有的设备和主机内存，尤其是它们的指针，零拷贝内存尤其麻烦。有了 UVA，由指针指向的内存空间对应用程序代码来说是透明的。&lt;/p>
@@ -415,7 +415,7 @@ alt="20230903004449-2023-09-03" width="auto" loading="lazy">
 &lt;a href="#%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
 参考资料
 &lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存模型概述</title><link>https://cuterwrite.top/p/cuda-base-memory-model/</link><pubDate>Fri, 01 Sep 2023 04:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-model/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" alt="Featured image of post CUDA 基础：内存模型概述" />&lt;h1 id="cuda-基础内存模型概述">
+&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：内存模型概述</title><link>https://cuterwrite.top/p/cuda-base-memory-model/</link><pubDate>Fri, 01 Sep 2023 04:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-memory-model/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/blog/47a9b8a012cf3a3f552c9aba3aeaa93fe669cf70.jpg@1256w_970h_!web-article-pic-2023-09-01.webp" alt="Featured image of post CUDA 基础：内存模型概述" />&lt;h1 id="cuda-基础内存模型概述">
 &lt;a href="#cuda-%e5%9f%ba%e7%a1%80%e5%86%85%e5%ad%98%e6%a8%a1%e5%9e%8b%e6%a6%82%e8%bf%b0" class="header-anchor">#&lt;/a>
 CUDA 基础：内存模型概述
 &lt;/h1>
@@ -431,7 +431,7 @@ CUDA 基础：内存模型概述
 &lt;li>空间局部性：如果一个数据被访问，那么它附近的数据也会被访问。&lt;/li>
 &lt;/ol>
 &lt;p>现代计算机的内存结构主要如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901232704-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901232704-2023-09-01.webp"
 alt="20230901232704-2023-09-01" width="auto" loading="lazy">
 &lt;/figure>
 &lt;p>一个内存层次结构由具有不同延迟、带宽和容量的多级内存组成。通常，随着从处理器到内存延迟的增加，内存的容量也在增加。&lt;/p>
@@ -456,7 +456,7 @@ alt="20230901232704-2023-09-01" width="auto" loading="lazy">
 &lt;li>全局内存&lt;/li>
 &lt;/ul>
 &lt;p>下图所示为这些内存空间的层次结构，每种都有不同的作用域、生命周期和缓存行为。一个核函数中的线程都有自己私有的&lt;strong>本地内存&lt;/strong>。一个线程块有自己的&lt;strong>共享内存&lt;/strong>，对同一线程块中所有线程都可见，其内容持续线程块的整个生命周期。所有线程都可以访问&lt;strong>全局内存&lt;/strong>。所有线程都能访问的只读内存空间有：&lt;strong>常量内存空间和纹理内存空间&lt;/strong>。全局内存、常量内存和纹理内存空间有不同的用途。&lt;strong>纹理内存&lt;/strong>为各种数据布局提供了不同的寻址模式和滤波模式。对于一个应用程序来说， &lt;strong>全局内存、常量内存和纹理内存&lt;/strong>中的内容具有相同的生命周期。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901233955-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901233955-2023-09-01.webp"
 alt="20230901233955-2023-09-01" width="auto" loading="lazy">
 &lt;/figure>
 &lt;h3 id="1-寄存器">
@@ -726,7 +726,7 @@ cudaGetSymbolAddress((void**)&amp;amp;dptr, devData);
 &lt;a href="#%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
 参考资料
 &lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：线程束执行的本质</title><link>https://cuterwrite.top/p/cuda-base-warp/</link><pubDate>Thu, 31 Aug 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-warp/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184001-2023-08-31.webp" alt="Featured image of post CUDA 基础：线程束执行的本质" />&lt;h1 id="cuda-基础线程束执行的本质">
+&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 基础：线程束执行的本质</title><link>https://cuterwrite.top/p/cuda-base-warp/</link><pubDate>Thu, 31 Aug 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-base-warp/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/blog/20230831184001-2023-08-31.webp" alt="Featured image of post CUDA 基础：线程束执行的本质" />&lt;h1 id="cuda-基础线程束执行的本质">
 &lt;a href="#cuda-%e5%9f%ba%e7%a1%80%e7%ba%bf%e7%a8%8b%e6%9d%9f%e6%89%a7%e8%a1%8c%e7%9a%84%e6%9c%ac%e8%b4%a8" class="header-anchor">#&lt;/a>
 CUDA 基础：线程束执行的本质
 &lt;/h1>
@@ -735,7 +735,7 @@ CUDA 基础：线程束执行的本质
 1. 线程束和线程块
 &lt;/h2>
 &lt;p>线程束是 SM 中基本的执行单元，当一个线程块的网格被启动后，网格中的线程块分布在 SM 中。一旦线程块被调度在一个 SM 上，线程块中的线程会被进一步划分为线程束。一个线程束由 32 个连续的线程组成（目前的 GPU 都是 32 个线程，但不保证未来是 32 个），在一个线程束中，所有的线程按照单指令多线程（SIMT）方式执行；也就是说，所有线程都执行相同的指令，每个线程在私有数据上进行操作。下图展示了线程块的逻辑视图和硬件视图之间的关系：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831184443-2023-08-31.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230831184443-2023-08-31.webp"
 alt="20230831184443-2023-08-31" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>然而，从硬件的角度来看，所有的线程都被组织成了一维的，线程块可以被配置为一维、二维、三维的。在一个块中，每个线程都有唯一的 ID 。对于一维的线程块，唯一的线程 ID 被存储在 CUDA 的内置变量 threadIdx.x 中，并且，threadIdx.x 中拥有连续值得线程被分组到线程束中。例如，一个有 128 个线程的一维线程块被组织到 4 个线程束里，如下所示：&lt;/p>
@@ -791,7 +791,7 @@ $$&lt;/p>
 &lt;p>假设在一个线程束中有 16 个线程执行这段代码，cond 为 true，但对于其他 16 个来说 cond 为 false 。一半的线程束需要执行 if 语句块中的指令，而另一半需要执行 else 语句块中的指令。在同一线程束中的线程执行不同的指令，被称为&lt;strong>线程束分化&lt;/strong>。我们已经知道，在一个线程束中所有线程在每个周期中必须执行相同的指令，所以线程束分化似乎会产生一个悖论。&lt;/p>
 &lt;p>如果一个线程束中的线程产生分化，线程束将连续执行每一个分支路径，而禁用不执行这一路径的线程。线程束分化会导致性能明显地下降。在前面的例子中可以看到，线程中并行线程的数量减少了一半: 只有 16 个线程同时活跃地执行，而其他 16 个被禁用了。条件分支越多，并行性削弱越严重。此外，线程束分化只发生在同一个线程束中。在不同的线程束中，不同的条件值不会引起线程束分化。&lt;/p>
 &lt;p>执行过程如下：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831205444-2023-08-31.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230831205444-2023-08-31.webp"
 alt="20230831205444-2023-08-31" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>因为线程束分化导致的性能下降就应该用线程束的方法解决，根本思路是&lt;strong>避免同一个线程束内的线程分化&lt;/strong>，而让我们能控制线程束内线程行为的原因是线程块中线程分配到线程束是有规律的而不是随机的。这就使得我们根据线程编号来设计分支是可以的，补充说明下，当一个线程束中所有的线程都执行 if 或者，都执行 else 时，不存在性能下降；只有当线程束内有分歧产生分支的时候，性能才会急剧下降。&lt;/p>
@@ -829,11 +829,11 @@ c[tid] = a + b;
 $$&lt;/p>
 &lt;p>以上线程束分化例子的完整代码如下：&lt;/p>
 &lt;a href="https://github.com/PKUcoldkeyboard/cuda-demo/blob/main/Chap3/simpleDivergence.cu" target="_blank" class="card-github fetch-waiting no-styling"
-repo="PKUcoldkeyboard/cuda-demo" id="repo-GErdywBGo6gBvKXg-card">
+repo="PKUcoldkeyboard/cuda-demo" id="repo-gTtX0Tqbjk3UgzQB-card">
 &lt;div class="gc-titlebar">
 &lt;div class="gc-titlebar-left">
 &lt;div class="gc-owner">
-&lt;div id="repo-GErdywBGo6gBvKXg-avatar" class="gc-avatar">&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-avatar" class="gc-avatar">&lt;/div>
 &lt;div class="gc-user">PKUcoldkeyboard&lt;/div>
 &lt;/div>
 &lt;div class="gc-divider">/&lt;/div>
@@ -841,43 +841,43 @@ repo="PKUcoldkeyboard/cuda-demo" id="repo-GErdywBGo6gBvKXg-card">
 &lt;/div>
 &lt;div class="github-logo">&lt;/div>
 &lt;/div>
-&lt;div id="repo-GErdywBGo6gBvKXg-description" class="gc-description">Waiting for api.github.com...&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-description" class="gc-description">Waiting for api.github.com...&lt;/div>
 &lt;div class="gc-infobar">
-&lt;div id="repo-GErdywBGo6gBvKXg-stars" class="gc-stars">0&lt;/div>
-&lt;div id="repo-GErdywBGo6gBvKXg-forks" class="gc-forks">0&lt;/div>
-&lt;div id="repo-GErdywBGo6gBvKXg-license" class="gc-license">unkown&lt;/div>
-&lt;div id="repo-GErdywBGo6gBvKXg-language" class="gc-language">Waiting...&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-stars" class="gc-stars">0&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-forks" class="gc-forks">0&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-license" class="gc-license">unkown&lt;/div>
+&lt;div id="repo-gTtX0Tqbjk3UgzQB-language" class="gc-language">Waiting...&lt;/div>
 &lt;/div>
 &lt;/a>
-&lt;script id="repo-GErdywBGo6gBvKXg-script" type="text/javascript" defer>
+&lt;script id="repo-gTtX0Tqbjk3UgzQB-script" type="text/javascript" defer>
 fetch('https://api.cuterwrite.top/api/repos/PKUcoldkeyboard\/cuda-demo', {
 referrerPolicy: "no-referrer"
 })
 .then(response => response.json())
 .then(data => {
-document.getElementById('repo-GErdywBGo6gBvKXg-description').innerText = data.description.replace(
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-description').innerText = data.description.replace(
 /:[a-zA-Z0-9_]+:/g, '');
-document.getElementById('repo-GErdywBGo6gBvKXg-language').innerText = data.language;
-document.getElementById('repo-GErdywBGo6gBvKXg-forks').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-language').innerText = data.language;
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-forks').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.forks).replaceAll("\u202f", '');
-document.getElementById('repo-GErdywBGo6gBvKXg-stars').innerText = Intl.NumberFormat('en-us', {
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-stars').innerText = Intl.NumberFormat('en-us', {
 notation: "compact",
 maximumFractionDigits: 1
 }).format(data.stargazers_count).replaceAll("\u202f", '');
-const avatarEl = document.getElementById('repo-GErdywBGo6gBvKXg-avatar');
+const avatarEl = document.getElementById('repo-gTtX0Tqbjk3UgzQB-avatar');
 avatarEl.style.backgroundImage = 'url(' + data.owner.avatar_url + ')';
 avatarEl.style.backgroundColor = 'transparent';
 if (data.license?.spdx_id) {
-document.getElementById('repo-GErdywBGo6gBvKXg-license').innerText = data.license.spdx_id
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-license').innerText = data.license.spdx_id
 } else {
-document.getElementById('repo-GErdywBGo6gBvKXg-license').classList.add = "no-license"
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-license').classList.add = "no-license"
 };
-document.getElementById('repo-GErdywBGo6gBvKXg-card').classList.remove("fetch-waiting");
+document.getElementById('repo-gTtX0Tqbjk3UgzQB-card').classList.remove("fetch-waiting");
 console.log("[GITHUB-CARD] Loaded card for PKUcoldkeyboard\/cuda-demo.")
 }).catch(err => {
-const c = document.getElementById('repo-GErdywBGo6gBvKXg-card');
+const c = document.getElementById('repo-gTtX0Tqbjk3UgzQB-card');
 c.classList.add("fetch-error");
 console.warn("[GITHUB-CARD] (Error) Loading card for PKUcoldkeyboard\/cuda-demo.")
 })
@@ -886,7 +886,7 @@ console.warn("[GITHUB-CARD] (Error) Loading card for PKUcoldkeyboard\/cuda-demo.
 &lt;pre>&lt;code class="language-shell">nvcc -g -G -arch=sm_75 -o simpleDivergence simpleDivergence.cu
 &lt;/code>&lt;/pre>
 &lt;p>运行结果为：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230831223456-2023-08-31.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230831223456-2023-08-31.webp"
 alt="20230831223456-2023-08-31" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>代码中的 Warmup 部分是提前启动一次 GPU，因为第一次启动 GPU 时会比第二次速度慢一些，具体原因未知，可以去查一下 CUDA 的相关技术文档了解内容。我们可以通过 Nvidia Nsight Compute 来查看分支效率（&lt;strong>旧版的 nvprof 被弃用了&lt;/strong>，metrics 参数对应的修改可以参考 &lt;a class="link" href="https://blog.csdn.net/weixin_44334901/article/details/128596081" target="_blank" rel="noopener" >CUDA 编程性能分析工具 nvprof/ncu &amp;ndash;metrics 参数含义
@@ -952,18 +952,18 @@ smsp_sass_average_branch_targets_threads_uniform.pct 100.00%
 &lt;ol>
 &lt;li>寄存器资源的分配&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150726-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901150726-2023-09-01.webp"
 alt="20230901150726-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;ol start="2">
 &lt;li>共享内存的分配&lt;/li>
 &lt;/ol>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150743-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901150743-2023-09-01.webp"
 alt="20230901150743-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>上面讲的主要是线程束，如果从逻辑上来看线程块的话，可用资源的分配也会影响常驻线程块的数量。特别是当 SM 内的资源没办法处理一个完整块，那么程序将无法启动。&lt;/p>
 &lt;p>以下是资源列表：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901150843-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901150843-2023-09-01.webp"
 alt="20230901150843-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>当寄存器和共享内存分配给了线程块，这个线程块处于活跃状态，所包含的线程束称为活跃线程束。活跃的线程束又分为三类：&lt;/p>
@@ -996,7 +996,7 @@ alt="20230901150843-2023-09-01" width="90%" loading="lazy">
 &lt;li>全局内存访问为 400～800 个周期&lt;/li>
 &lt;/ul>
 &lt;p>下图是阻塞线程束到可选线程束的过程逻辑图：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151502-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901151502-2023-09-01.webp"
 alt="20230901151502-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>其中线程束 0 （Warp 0） 阻塞两段时间后恢复可选模式，但是在这段等待时间中，SM 没有闲置。那么至少需要多少线程，线程束来保证最小化延迟呢？可以根据利特尔法则（Little&amp;rsquo;s Law）提供一个合理的近似值。它起源于队列理论中的一个定理，也可以用于 GPU 中：&lt;/p>
@@ -1013,12 +1013,12 @@ $$&lt;/p>
 &lt;p>注意带宽和吞吐量的区别，带宽一般指的是理论峰值，最大每个时钟周期能执行多少个指令，吞吐量是指实际操作过程中每分钟处理多少个指令。简单来说，带宽通常是指理论峰值，而吞吐量是指已达到的值。&lt;/p>
 &lt;/blockquote>
 &lt;p>这个可以想象成一个瀑布，像这样，绿箭头是线程束，只要线程束足够多，吞吐量是不会降低的：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901151942-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901151942-2023-09-01.webp"
 alt="20230901151942-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>假设在 kernel 里一条指令的平均延迟是 5 个周期。为了保持在每个周期内执行 6 个线程束的吞吐量，则至少需要 30 个未完成的线程束。&lt;/p>
 &lt;p>对于算术运算来说，其所需的并行可以表示成隐藏算术延迟所需要的操作数量。下面的表格出了 Fermi 和 Kepler 设备所需的操作数量。示例中的算术运算是一个 32 位的浮点数乘加运算 (a + b $\times$ c)，表示在每个 SM 中每个时钟周期内的操作数量。吞吐量因不同的算术指令而不同。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152413-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901152413-2023-09-01.webp"
 alt="20230901152413-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>吞吐量由 SM 中每个周期内的操作数量确定，而执行一条指令的一个线程束对应 32 个操作。因此，为保持计算资源的充分利用，对于 Fermi GPU 而言，每个 SM 中所需的线程束数量通过计算为 $640 \div 32 = 20 $ 个线程束。因此，算术运算所需的并行可以用操作的数量或线程束的数量来表示。这个简单的单位转换表明，有两种方法可以提高并行：&lt;/p>
@@ -1027,7 +1027,7 @@ alt="20230901152413-2023-09-01" width="90%" loading="lazy">
 &lt;li>线程级并行（TLP）：很多并发地符合条件的线程&lt;/li>
 &lt;/ul>
 &lt;p>同样，与指令周期隐藏延迟类似，&lt;strong>内存隐藏延迟&lt;/strong>是靠内存读取的并发操作来完成的，需要注意的是，指令隐藏的关键目的是使用全部的计算资源，而内存读取的延迟隐藏是为了使用全部的内存带宽，内存延迟的时候，计算资源正在被别的线程束使用，所以我们不考虑内存读取延迟的时候计算资源在做了什么，我们的根本目的是把计算资源，内存读取的带宽资源全部使用满，这样就能达到理论的最大效率。同样下表根据利特尔法则给出了需要多少线程束来最小化内存读取延迟，不过这里有个单位换算过程，机器的性能指标内存读取速度给出的是 GB/s 的单位，而我们需要的是每个时钟周期读取字节数，所以要用这个速度除以频率，例如 Tesla C2070 的内存带宽是 144 GB/s，转化成时钟周期： $\frac{144\mathrm{GB/s}}{1.566 \mathrm{GHz}}=92\mathrm{B/t}$，这样就能得到单位时间周期的内存带宽了。即下表的数据：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901152915-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901152915-2023-09-01.webp"
 alt="20230901152915-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>需要说明的是这个速度不是单个 SM 的而是整个 GPU 设备的。Fermi 需要并行的读取 74KB 的数据才能让 GPU 带宽满载，如果每个线程读取 4 个字节，我们大约需要 18500 个线程，大约 579 个线程束才能达到这个峰值。&lt;/p>
@@ -1060,7 +1060,7 @@ deviceProp.maxThreadsPerMultiProcessor / 32);
 return 0;
 &lt;/code>&lt;/pre>
 &lt;p>输出结果为：&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901155126-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901155126-2023-09-01.webp"
 alt="20230901155126-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;p>可以看到 RTX4090 最大 64 个线程束每个 SM。&lt;/p>
@@ -1101,14 +1101,14 @@ alt="20230901155126-2023-09-01" width="90%" loading="lazy">
 &lt;p>能够在可变数量的计算核心上执行相同的应用程序代码的能力被称为&lt;strong>透明可扩展性&lt;/strong>。一个透明的可扩展平台拓宽了现有应用程序的应用范围，并减少了开发人员的负担，因为它们可以避免新的或不同的硬件产生的变化。可扩展性比效率更重要。一个可扩展但效率很低的系统可以通过简单添加硬件核心来处理更大的工作负载。一个效率很高但不可扩展的系统可能很快会达到可实现性能的上限。&lt;/p>
 &lt;p>CUDA 内核启动时，线程块分布在多个 SM 中。网格中的线程块以并行或连续或任意的顺序被执行。这种独立性使得 CUDA 程序在任意数量的计算核心间可以扩展。&lt;/p>
 &lt;p>下图展示了 CUDA 架构可扩展性的一个例子。左侧的 GPU 有两个 SM， 可以同时执行两个块；右侧的 GPU 有 4 个 SM ，可以同时执行 4 个块。不修改任何代码，一个应用程序可以在不同的 GPU 配置上运行，并且所需的执行时间根据可用的资源而改变。&lt;/p>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/20230901163747-2023-09-01.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/20230901163747-2023-09-01.webp"
 alt="20230901163747-2023-09-01" width="90%" loading="lazy">
 &lt;/figure>
 &lt;h2 id="参考资料">
 &lt;a href="#%e5%8f%82%e8%80%83%e8%b5%84%e6%96%99" class="header-anchor">#&lt;/a>
 参考资料
 &lt;/h2>
-&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 编程：从基础到应用</title><link>https://cuterwrite.top/p/cuda-tutorial/</link><pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-tutorial/</guid><description>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/img/ba25bc69cbefbfac1287056fee570cee2b6458ff.jpg@1256w_880h_!web-article-pic.avif" alt="Featured image of post CUDA 编程：从基础到应用" />&lt;h1 id="cuda-编程从基础到应用">
+&lt;p>[1] CUDA C 编程权威指南，机械工业出版社，（美）程润伟（John Cheng） 等著&lt;/p></description></item><item><title>CUDA 编程：从基础到应用</title><link>https://cuterwrite.top/p/cuda-tutorial/</link><pubDate>Tue, 11 Jul 2023 00:00:00 +0000</pubDate><guid>https://cuterwrite.top/p/cuda-tutorial/</guid><description>&lt;img src="https://cloud.cuterwrite.fun/img/ba25bc69cbefbfac1287056fee570cee2b6458ff.jpg@1256w_880h_!web-article-pic.avif" alt="Featured image of post CUDA 编程：从基础到应用" />&lt;h1 id="cuda-编程从基础到应用">
 &lt;a href="#cuda-%e7%bc%96%e7%a8%8b%e4%bb%8e%e5%9f%ba%e7%a1%80%e5%88%b0%e5%ba%94%e7%94%a8" class="header-anchor">#&lt;/a>
 CUDA 编程：从基础到应用
 &lt;/h1>
@@ -1179,31 +1179,31 @@ CUDA 编程：从基础到应用
 &lt;table>
 &lt;thead>
 &lt;tr>
-&lt;th style="text-align: left">&lt;/th>
-&lt;th style="text-align: left">CPU&lt;/th>
-&lt;th style="text-align: left">GPU&lt;/th>
+&lt;th>&lt;/th>
+&lt;th>CPU&lt;/th>
+&lt;th>GPU&lt;/th>
 &lt;/tr>
 &lt;/thead>
 &lt;tbody>
 &lt;tr>
-&lt;td style="text-align: left">缓存&lt;/td>
-&lt;td style="text-align: left">大缓存：掩盖较长的存储器延迟&lt;/td>
-&lt;td style="text-align: left">小缓存：但通过更快的存储提高吞吐量&lt;/td>
+&lt;td>缓存&lt;/td>
+&lt;td>大缓存：掩盖较长的存储器延迟&lt;/td>
+&lt;td>小缓存：但通过更快的存储提高吞吐量&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align: left">运算器&lt;/td>
-&lt;td style="text-align: left">强大的运算器：降低运算延迟&lt;/td>
-&lt;td style="text-align: left">更节能的运算器：延迟大但总吞吐量大&lt;/td>
+&lt;td>运算器&lt;/td>
+&lt;td>强大的运算器：降低运算延迟&lt;/td>
+&lt;td>更节能的运算器：延迟大但总吞吐量大&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align: left">控制机制&lt;/td>
-&lt;td style="text-align: left">复杂的控制机制：分支预测等&lt;/td>
-&lt;td style="text-align: left">简单的控制流机制：无分支预测&lt;/td>
+&lt;td>控制机制&lt;/td>
+&lt;td>复杂的控制机制：分支预测等&lt;/td>
+&lt;td>简单的控制流机制：无分支预测&lt;/td>
 &lt;/tr>
 &lt;tr>
-&lt;td style="text-align: left">线程&lt;/td>
-&lt;td style="text-align: left">线程高度轻量级：大量并发&lt;/td>
-&lt;td style="text-align: left">线程高度轻量级：大量并发&lt;/td>
+&lt;td>线程&lt;/td>
+&lt;td>线程高度轻量级：大量并发&lt;/td>
+&lt;td>线程高度轻量级：大量并发&lt;/td>
 &lt;/tr>
 &lt;/tbody>
 &lt;/table>
@@ -1357,7 +1357,7 @@ CUDA 编程：从基础到应用
 &lt;/ul>
 &lt;/li>
 &lt;/ul>
-&lt;figure>&lt;img src="https://cuterwrite-1302252842.file.myqcloud.com/blog/grid-of-thread-blocks.webp"
+&lt;figure>&lt;img src="https://cloud.cuterwrite.fun/blog/grid-of-thread-blocks.webp"
 alt="grid-of-thread-blocks" width="auto" loading="lazy">
 &lt;/figure>
 &lt;ul>
