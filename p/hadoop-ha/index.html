@@ -38,7 +38,7 @@ Zookeeper</h3><p>Zookeeper 是一个轻量级的分布式架构集群，为分�
 </code></pre><p>修改完成以后，重新启动 slave 节点的 Linux 系统。</p><p>这样就完成了 master 节点和 slave 节点的配置，然后，需要在各个节点上都执行如下命令，测试是否相互 ping 得通，如果 ping 不通，后面就无法顺利配置成功：</p><pre><code class=language-shell>ping master -c 3
 ping slave1 -c 3
 ping slave2 -c 3
-</code></pre><p>例如，在 master 节点上 ping slave1，如果 ping 通的话，会显示如下图所示的结果：</p><figure><img src=https://cloud.cuterwrite.fun/typora/2022-09-20-22-51-51-image.webp width=90% loading=lazy></figure><h3 id=安装-ssh-并配置-ssh-免密登录><a href=#%e5%ae%89%e8%a3%85-ssh-%e5%b9%b6%e9%85%8d%e7%bd%ae-ssh-%e5%85%8d%e5%af%86%e7%99%bb%e5%bd%95 class=header-anchor>#</a>
+</code></pre><p>例如，在 master 节点上 ping slave1，如果 ping 通的话，会显示如下图所示的结果：</p><figure><img src=https://cloud.cuterwrite.fun/blog/2022-09-20-22-51-51-image.webp width=90% loading=lazy></figure><h3 id=安装-ssh-并配置-ssh-免密登录><a href=#%e5%ae%89%e8%a3%85-ssh-%e5%b9%b6%e9%85%8d%e7%bd%ae-ssh-%e5%85%8d%e5%af%86%e7%99%bb%e5%bd%95 class=header-anchor>#</a>
 安装 SSH 并配置 SSH 免密登录</h3><p>集群模式需要用到 SSH 登陆，Ubuntu 默认已经安装 SSH client，此外还需要安装 SSH server</p><pre><code class=language-shell>sudo apt-get install openssh-server
 </code></pre><p>安装后，可以使用如下命令登陆本机</p><pre><code class=language-shell>ssh localhost
 </code></pre><p>在集群模式中，必须要让 master 节点可以 SSH 免密登录到各个 slave 节点上。首先，生成 master 节点的公钥，如果之前已经生成过公钥，必须要删除原来生成的公钥，重新生成一次。具体命令如下：</p><pre><code class=language-shell>cd ~/.ssh #如果没有该目录，先执行一次 ssh localhost
@@ -51,21 +51,21 @@ scp ~/.ssh/id_rsa.pub hadoop@slave2:/home/hadoop/
 cat ~/id_rsa.pub &gt;&gt; ~/.ssh/authorized_keys
 rm ~/id_rsa.pub #用完之后可以删除掉
 </code></pre><p>这样，master 节点就可以免密登录到各个 slave 节点上了，例如执行如下命令：</p><pre><code class=language-shell>ssh slave1
-</code></pre><p>会显示如下结果，显示已经登录到 slave1 节点上。</p><figure><img src=https://cloud.cuterwrite.fun/typora/2022-09-20-22-52-30-image.webp width=90% loading=lazy></figure><h3 id=安装-java-环境><a href=#%e5%ae%89%e8%a3%85-java-%e7%8e%af%e5%a2%83 class=header-anchor>#</a>
+</code></pre><p>会显示如下结果，显示已经登录到 slave1 节点上。</p><figure><img src=https://cloud.cuterwrite.fun/blog/2022-09-20-22-52-30-image.webp width=90% loading=lazy></figure><h3 id=安装-java-环境><a href=#%e5%ae%89%e8%a3%85-java-%e7%8e%af%e5%a2%83 class=header-anchor>#</a>
 安装 Java 环境</h3><p>Hadoop3 需要 JDK 版本在 1.8 以上，这里我选择 11 版本 JDK 作为 Java 环境，先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
 sudo wget https://repo.huaweicloud.com/openjdk/11.0.2/openjdk-11.0.2_linux-x64_bin.tar.gz
 </code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf openjdk-11.0.2_linux-x64_bin.tar.gz;
 sudo mv jdk-11.0.2 openjdk;
 </code></pre><p>这时，可以执行以下命令查看是否安装成功</p><pre><code class=language-shell>cd openjdk;
 ./bin/java --version;
-</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cloud.cuterwrite.fun/typora/2022-09-20-22-52-51-image.webp width=90% loading=lazy></figure><h3 id=安装-hadoop3><a href=#%e5%ae%89%e8%a3%85-hadoop3 class=header-anchor>#</a>
+</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cloud.cuterwrite.fun/blog/2022-09-20-22-52-51-image.webp width=90% loading=lazy></figure><h3 id=安装-hadoop3><a href=#%e5%ae%89%e8%a3%85-hadoop3 class=header-anchor>#</a>
 安装 hadoop3</h3><p>先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/hadoop/common/hadoop-3.2.3/hadoop-3.2.3.tar.gz
 </code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf hadoop-3.2.3.tar.gz;
 sudo mv hadoop-3.2.3 hadoop
 </code></pre><p>这时，可以执行以下命令查看是否安装成功</p><pre><code class=language-shell>cd hadoop;
 ./bin/hadoop version
-</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cloud.cuterwrite.fun/typora/2022-09-20-22-53-11-image.webp width=90% loading=lazy></figure><h3 id=安装-zookeeper><a href=#%e5%ae%89%e8%a3%85-zookeeper class=header-anchor>#</a>
+</code></pre><p>如果返回如下信息，则说明安装成功：</p><figure><img src=https://cloud.cuterwrite.fun/blog/2022-09-20-22-53-11-image.webp width=90% loading=lazy></figure><h3 id=安装-zookeeper><a href=#%e5%ae%89%e8%a3%85-zookeeper class=header-anchor>#</a>
 安装 Zookeeper</h3><p>先执行以下命令下载压缩包。</p><pre><code class=language-shell>cd /usr/local/softwares;
 sudo wget https://mirrors.pku.edu.cn/apache/zookeeper/stable/apache-zookeeper-3.6.3-bin.tar.gz;
 </code></pre><p>然后，使用如下命令解压缩：</p><pre><code class=language-shell>sudo tar -xzf apache-zookeeper-3.6.3-bin.tar.gz;
